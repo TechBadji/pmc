@@ -1,6 +1,7 @@
 import csv
 import io
 
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
@@ -29,8 +30,9 @@ from .serializers import (
     PMCTokenObtainPairSerializer,
     UserCreateSerializer,
     UserSerializer,
+    unique_login_email,
 )
-from .text_utils import make_login
+from .text_utils import make_login, unique_login
 
 
 class PMCTokenObtainPairView(TokenObtainPairView):
@@ -76,11 +78,13 @@ class ForgotPasswordView(APIView):
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data["email"]
+        identifier = serializer.validated_data["email"]
 
-        user = User.objects.filter(email__iexact=email).first()
+        user = User.objects.filter(
+            Q(email__iexact=identifier) | Q(generated_login__iexact=identifier)
+        ).first()
         generic_message = (
-            "Si un compte existe avec cet email, une demande de réinitialisation "
+            "Si un compte existe avec cet identifiant, une demande de réinitialisation "
             "a été transmise à votre administrateur."
         )
         if not user:
@@ -201,16 +205,14 @@ class CompanyViewSet(viewsets.ModelViewSet):
                 if User.objects.filter(email=email).exists():
                     errors.append({"row": row_number, "error": f"Email déjà utilisé: {email}"})
                     continue
-                login = make_login(first_name, last_name)
+                # Le login sert d'identifiant de connexion : unique
+                # globalement, même quand un email réel est fourni.
+                existing_logins = set(User.objects.values_list("generated_login", flat=True))
+                login = unique_login(make_login(first_name, last_name), existing_logins)
             else:
-                base_login = make_login(first_name, last_name)
-                login, candidate_email = base_login, f"{base_login}@{company.slug}.pmc.local"
-                suffix = 2
-                while User.objects.filter(email=candidate_email).exists():
-                    login = f"{base_login}{suffix}"
-                    candidate_email = f"{login}@{company.slug}.pmc.local"
-                    suffix += 1
-                email = candidate_email
+                login, email = unique_login_email(
+                    make_login(first_name, last_name), f"{company.slug}.pmc.local"
+                )
 
             user = User(
                 email=email,

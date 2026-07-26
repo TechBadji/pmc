@@ -91,7 +91,7 @@ export default function CompaniesPage() {
   async function handleResetAdminPassword(company: Company) {
     if (!company.admin_user) return;
     await apiClient.post(`/users/${company.admin_user}/reset-password/`);
-    setActionMessage(t("companies.adminPasswordReset", { email: company.admin_email }));
+    setActionMessage(t("companies.adminPasswordReset", { login: company.admin_login }));
     load();
   }
 
@@ -381,8 +381,6 @@ export default function CompaniesPage() {
             {credentials?.admin_email && (
               <Alert severity="info">
                 {t("companies.ceoAccessLogin")} <strong>{credentials.admin_login}</strong>
-                <br />
-                {t("common.email")}: <strong>{credentials.admin_email}</strong>
                 <br />
                 {t("companies.defaultPassword")} <strong>123456</strong> ({t("companies.mustChangeOnFirstLogin")})
               </Alert>

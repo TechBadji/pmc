@@ -70,6 +70,7 @@
   "login": {
     "subtitle": "People Management Canvas",
     "welcomeSubtitle": "Entrez vos identifiants pour accéder à votre tableau de bord.",
+    "identifier": "Identifiant ou email",
     "brandHeadline": "Pilotez la performance de vos équipes avec méthode.",
     "brandBody": "La méthodologie ID-3A combine Aptitudes et Attitudes pour révéler l'Altitude réelle de chaque collaborateur.",
     "brandFooter": "Conçu pour les dirigeants et managers d'équipe",
@@ -82,7 +83,6 @@
     "loggingIn": "Connexion…",
     "forgotPassword": "Mot de passe oublié ?",
     "forgotExplanation": "Une demande sera envoyée à l'administrateur de votre entreprise, qui réinitialisera votre mot de passe à la valeur par défaut (123456).",
-    "yourEmail": "Votre email",
     "sending": "Envoi…",
     "sendRequest": "Envoyer la demande",
     "forgotError": "Une erreur est survenue, veuillez réessayer."
@@ -162,7 +162,7 @@
     "changePlan": "Changer la formule",
     "currentPlan": "Formule actuelle :",
     "newPlan": "Nouvelle formule",
-    "adminPasswordReset": "Mot de passe de {{email}} réinitialisé à 123456.",
+    "adminPasswordReset": "Mot de passe de {{login}} réinitialisé à 123456.",
     "blockedMessage": "{{name}} a été bloquée : tous ses utilisateurs ont perdu l'accès.",
     "unblockedMessage": "{{name}} a été débloquée.",
     "deleteTooltip": "Supprimer définitivement l'entreprise et toutes ses données",

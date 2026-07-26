@@ -17,12 +17,18 @@ def _unique_company_slug(name: str) -> str:
     return slug
 
 
-def _unique_login_email(login: str, domain: str) -> tuple[str, str]:
-    """Retourne (login, email) en garantissant l'unicité de l'email généré."""
+def unique_login_email(login: str, domain: str) -> tuple[str, str]:
+    """Retourne (login, email) en garantissant l'unicité du login généré ET
+    de l'email technique — le login sert désormais directement d'identifiant
+    de connexion, il doit donc être unique globalement (pas seulement au
+    sein d'une entreprise, contrairement à l'email qui inclut déjà le slug)."""
     base_login = login
     candidate = login
     suffix = 2
-    while User.objects.filter(email=f"{candidate}@{domain}").exists():
+    while (
+        User.objects.filter(generated_login=candidate).exists()
+        or User.objects.filter(email=f"{candidate}@{domain}").exists()
+    ):
         candidate = f"{base_login}{suffix}"
         suffix += 1
     return candidate, f"{candidate}@{domain}"
@@ -85,7 +91,7 @@ class CompanySerializer(serializers.ModelSerializer):
             Department.objects.create(company=company, code=code, name=name)
 
         if admin_first_name or admin_last_name:
-            login, email = _unique_login_email(
+            login, email = unique_login_email(
                 make_login(admin_first_name, admin_last_name), f"{company.slug}.pmc.local"
             )
             ceo = User(
@@ -252,7 +258,9 @@ class PasswordResetRequestSerializer(serializers.ModelSerializer):
 
 
 class ForgotPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    # CharField (pas EmailField) : accepte aussi bien l'email que l'identifiant
+    # court généré (ex. "ebadji"), cohérent avec le formulaire de connexion.
+    email = serializers.CharField()
 
 
 class PMCTokenObtainPairSerializer(TokenObtainPairSerializer):

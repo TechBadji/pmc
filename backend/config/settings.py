@@ -81,6 +81,12 @@ DATABASES = {
 
 AUTH_USER_MODEL = "core.User"
 
+# Autorise la connexion soit par email, soit par l'identifiant court généré
+# (ex. "ebadji") — voir apps/core/auth_backends.py.
+AUTHENTICATION_BACKENDS = [
+    "apps.core.auth_backends.EmailOrLoginBackend",
+]
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},

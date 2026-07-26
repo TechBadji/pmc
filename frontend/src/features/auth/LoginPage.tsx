@@ -1,6 +1,6 @@
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
@@ -200,8 +200,8 @@ export default function LoginPage() {
             <Stack spacing={2.5}>
               {error && <Alert severity="error">{error}</Alert>}
               <TextField
-                label={t("common.email")}
-                type="email"
+                label={t("login.identifier")}
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoFocus
@@ -210,7 +210,7 @@ export default function LoginPage() {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <EmailOutlinedIcon fontSize="small" color="action" />
+                      <PersonOutlineOutlinedIcon fontSize="small" color="action" />
                     </InputAdornment>
                   ),
                 }}
@@ -288,8 +288,8 @@ export default function LoginPage() {
               {t("login.forgotExplanation")}
             </Typography>
             <TextField
-              label={t("login.yourEmail")}
-              type="email"
+              label={t("login.identifier")}
+              type="text"
               value={forgotEmail}
               onChange={(e) => setForgotEmail(e.target.value)}
               autoFocus

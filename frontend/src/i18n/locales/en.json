@@ -70,6 +70,7 @@
   "login": {
     "subtitle": "People Management Canvas",
     "welcomeSubtitle": "Enter your credentials to access your dashboard.",
+    "identifier": "Login or email",
     "brandHeadline": "Lead your teams' performance with method.",
     "brandBody": "The ID-3A methodology combines Aptitudes and Attitudes to reveal each team member's true Altitude.",
     "brandFooter": "Built for executives and team managers",
@@ -82,7 +83,6 @@
     "loggingIn": "Signing in…",
     "forgotPassword": "Forgot password?",
     "forgotExplanation": "A request will be sent to your company's administrator, who will reset your password to the default value (123456).",
-    "yourEmail": "Your email",
     "sending": "Sending…",
     "sendRequest": "Send request",
     "forgotError": "Something went wrong, please try again."
@@ -162,7 +162,7 @@
     "changePlan": "Change plan",
     "currentPlan": "Current plan:",
     "newPlan": "New plan",
-    "adminPasswordReset": "Password for {{email}} reset to 123456.",
+    "adminPasswordReset": "Password for {{login}} reset to 123456.",
     "blockedMessage": "{{name}} has been blocked: all its users have lost access.",
     "unblockedMessage": "{{name}} has been unblocked.",
     "deleteTooltip": "Permanently delete the company and all its data",
