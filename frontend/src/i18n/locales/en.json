@@ -119,7 +119,7 @@
       "title": "Super Admin dashboard",
       "companies": "Companies",
       "activeCompanies": "Active companies",
-      "totalUsers": "Users (all tenants)"
+      "totalUsers": "Users (all employees)"
     },
     "companyAdmin": {
       "title": "Company dashboard",

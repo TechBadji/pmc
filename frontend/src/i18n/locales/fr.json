@@ -119,7 +119,7 @@
       "title": "Tableau de bord Super Admin",
       "companies": "Entreprises",
       "activeCompanies": "Entreprises actives",
-      "totalUsers": "Utilisateurs (tous tenants)"
+      "totalUsers": "Utilisateurs (tous employés)"
     },
     "companyAdmin": {
       "title": "Tableau de bord Entreprise",
