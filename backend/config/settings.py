@@ -37,6 +37,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -95,6 +96,11 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -123,3 +129,12 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = os.getenv(
     "CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173"
 ).split(",")
+
+# Déploiement derrière un reverse proxy (Traefik/nginx) qui termine le TLS :
+# Django doit faire confiance à l'en-tête transmis pour détecter le HTTPS
+# (redirections, cookies "secure", admin login) et connaître les origines
+# autorisées à poster des formulaires (CSRF, ex. l'admin Django).
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_TRUSTED_ORIGINS = [
+    o for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o
+]

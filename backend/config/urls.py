@@ -2,6 +2,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -35,6 +36,7 @@ router.register("action-plans", ActionPlanViewSet, basename="action-plan")
 router.register("password-reset-requests", PasswordResetRequestViewSet, basename="password-reset-request")
 
 urlpatterns = [
+    path("health/", lambda request: HttpResponse("ok"), name="health"),
     path("admin/", admin.site.urls),
     path("api/auth/login/", PMCTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
@@ -44,5 +46,4 @@ urlpatterns = [
     path("api/", include(router.urls)),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
