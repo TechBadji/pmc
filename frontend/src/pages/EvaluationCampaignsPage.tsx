@@ -1,0 +1,191 @@
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
+import {
+  Alert,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { apiClient } from "@/api/client";
+import type { EvaluationCampaign, Paginated } from "@/api/types";
+
+export default function EvaluationCampaignsPage() {
+  const { t } = useTranslation();
+  const [campaigns, setCampaigns] = useState<EvaluationCampaign[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", start_date: "", end_date: "" });
+  const [loadError, setLoadError] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  function load() {
+    setLoadError(false);
+    apiClient
+      .get<Paginated<EvaluationCampaign>>("/evaluation-campaigns/", { params: { page_size: 500 } })
+      .then((r) => setCampaigns(r.data.results))
+      .catch(() => setLoadError(true));
+  }
+
+  useEffect(load, []);
+
+  async function handleCreate() {
+    setActionError(null);
+    try {
+      await apiClient.post("/evaluation-campaigns/", form);
+      setDialogOpen(false);
+      setForm({ name: "", start_date: "", end_date: "" });
+      load();
+    } catch {
+      setActionError(t("common.saveError"));
+    }
+  }
+
+  async function handleToggleClosed(campaign: EvaluationCampaign) {
+    setActionError(null);
+    try {
+      await apiClient.post(`/evaluation-campaigns/${campaign.id}/${campaign.is_closed ? "reopen" : "close"}/`);
+      load();
+    } catch {
+      setActionError(t("common.saveError"));
+    }
+  }
+
+  return (
+    <Stack spacing={3}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack>
+          <Typography variant="h5" fontWeight={700}>
+            {t("evaluationCampaigns.title")}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t("evaluationCampaigns.subtitle")}
+          </Typography>
+        </Stack>
+        <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setDialogOpen(true)}>
+          {t("evaluationCampaigns.newCampaign")}
+        </Button>
+      </Stack>
+
+      {actionError && (
+        <Alert severity="error" onClose={() => setActionError(null)}>
+          {actionError}
+        </Alert>
+      )}
+
+      {loadError && (
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={load}>
+              {t("common.retry")}
+            </Button>
+          }
+        >
+          {t("common.loadError")}
+        </Alert>
+      )}
+
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>{t("evaluationCampaigns.name")}</TableCell>
+                <TableCell>{t("evaluationCampaigns.startDate")}</TableCell>
+                <TableCell>{t("evaluationCampaigns.endDate")}</TableCell>
+                <TableCell align="right">{t("evaluationCampaigns.evaluationsCount")}</TableCell>
+                <TableCell>{t("common.status")}</TableCell>
+                <TableCell align="right">{t("common.actions")}</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {campaigns.map((c) => (
+                <TableRow key={c.id} hover>
+                  <TableCell>{c.name}</TableCell>
+                  <TableCell>{c.start_date}</TableCell>
+                  <TableCell>{c.end_date}</TableCell>
+                  <TableCell align="right">{c.evaluations_count}</TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      label={c.is_closed ? t("evaluationCampaigns.closed") : t("evaluationCampaigns.open")}
+                      color={c.is_closed ? "default" : "success"}
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Tooltip
+                      title={c.is_closed ? t("evaluationCampaigns.reopenTooltip") : t("evaluationCampaigns.closeTooltip")}
+                    >
+                      <IconButton size="small" onClick={() => handleToggleClosed(c)}>
+                        {c.is_closed ? <LockOpenOutlinedIcon fontSize="small" /> : <LockOutlinedIcon fontSize="small" />}
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>{t("evaluationCampaigns.newCampaign")}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label={t("evaluationCampaigns.name")}
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder={t("evaluationCampaigns.namePlaceholder")}
+              autoFocus
+              fullWidth
+            />
+            <TextField
+              label={t("evaluationCampaigns.startDate")}
+              type="date"
+              value={form.start_date}
+              onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+            <TextField
+              label={t("evaluationCampaigns.endDate")}
+              type="date"
+              value={form.end_date}
+              onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>{t("common.cancel")}</Button>
+          <Button
+            variant="contained"
+            onClick={handleCreate}
+            disabled={!form.name || !form.start_date || !form.end_date}
+          >
+            {t("common.create")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Stack>
+  );
+}

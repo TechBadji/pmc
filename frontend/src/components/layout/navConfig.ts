@@ -1,0 +1,48 @@
+import type { Role } from "@/api/types";
+
+export interface NavItem {
+  labelKey: string;
+  path: string;
+  icon:
+    | "dashboard"
+    | "business"
+    | "groups"
+    | "hub"
+    | "scatterPlot"
+    | "assignment"
+    | "person"
+    | "school"
+    | "upload"
+    | "lockReset"
+    | "event";
+}
+
+export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
+  SUPER_ADMIN: [
+    { labelKey: "nav.dashboard", path: "/", icon: "dashboard" },
+    { labelKey: "nav.companies", path: "/companies", icon: "business" },
+    { labelKey: "nav.skillMatrices", path: "/skills-admin", icon: "school" },
+    { labelKey: "nav.bulkUpload", path: "/upload", icon: "upload" },
+    { labelKey: "nav.passwordRequests", path: "/password-requests", icon: "lockReset" },
+  ],
+  COMPANY_ADMIN: [
+    { labelKey: "nav.dashboard", path: "/", icon: "dashboard" },
+    { labelKey: "nav.teams", path: "/teams", icon: "groups" },
+    { labelKey: "nav.skillMatrices", path: "/skills", icon: "school" },
+    { labelKey: "nav.id3aMatrix", path: "/id3a-matrix", icon: "scatterPlot" },
+    { labelKey: "nav.evaluationCampaigns", path: "/evaluation-campaigns", icon: "event" },
+    { labelKey: "nav.actionPlans", path: "/action-plans", icon: "assignment" },
+    { labelKey: "nav.passwordRequests", path: "/password-requests", icon: "lockReset" },
+  ],
+  MANAGER: [
+    { labelKey: "nav.myTeam", path: "/teams", icon: "groups" },
+    { labelKey: "nav.cohesion", path: "/cohesion", icon: "hub" },
+    { labelKey: "nav.id3aMatrix", path: "/id3a-matrix", icon: "scatterPlot" },
+    { labelKey: "nav.evaluations", path: "/evaluations", icon: "assignment" },
+    { labelKey: "nav.actionPlans", path: "/action-plans", icon: "assignment" },
+  ],
+  MEMBER: [
+    { labelKey: "nav.myProfile", path: "/", icon: "person" },
+    { labelKey: "nav.myPerformance", path: "/my-performance", icon: "scatterPlot" },
+  ],
+};

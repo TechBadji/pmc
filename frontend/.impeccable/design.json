@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-26T00:00:00Z",
+  "title": "Design System: ID-PMC",
+  "extensions": {
+    "colorMeta": {
+      "trust-blue": { "role": "primary", "displayName": "Bleu Confiance", "canonical": "#2E8FCB" },
+      "signal-magenta": { "role": "secondary", "displayName": "Magenta Signal", "canonical": "#B23FA0" },
+      "alert-orange": { "role": "tertiary", "displayName": "Orange Alerte", "canonical": "#E08A34" },
+      "hard-skills-blue": { "role": "status", "displayName": "Bleu Hard Skills", "canonical": "#2E5AAC" },
+      "soft-skills-green": { "role": "status", "displayName": "Vert Soft Skills", "canonical": "#3F9142" },
+      "perf-very-low": { "role": "status", "displayName": "Palier Très faible", "canonical": "#d03b3b" },
+      "perf-low": { "role": "status", "displayName": "Palier Faible", "canonical": "#ec835a" },
+      "perf-average": { "role": "status", "displayName": "Palier Moyenne", "canonical": "#898781" },
+      "perf-good": { "role": "status", "displayName": "Palier Bonne", "canonical": "#4caf50" },
+      "perf-outstanding": { "role": "status", "displayName": "Palier Exceptionnelle", "canonical": "#0ca30c" },
+      "surface-light": { "role": "neutral", "displayName": "Surface (clair)", "canonical": "#ffffff" },
+      "canvas-light": { "role": "neutral", "displayName": "Canvas (clair)", "canonical": "#f9f9f7" },
+      "surface-dark": { "role": "neutral", "displayName": "Surface (sombre)", "canonical": "#1a1a1a" },
+      "canvas-dark": { "role": "neutral", "displayName": "Canvas (sombre)", "canonical": "#121212" },
+      "chart-grid": { "role": "neutral", "displayName": "Grille de graphique", "canonical": "#e1e0d9" },
+      "chart-ink": { "role": "neutral", "displayName": "Texte de graphique", "canonical": "#898781" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display/Headline", "purpose": "Titres de page (h1/h2 MUI, weight 700)." },
+      "headline": { "displayName": "Title", "purpose": "Sous-titres de section, valeurs chiffrées mises en avant (h3 MUI, weight 600)." },
+      "body": { "displayName": "Body", "purpose": "Contenu courant, tableaux, libellés de formulaire." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "hover-grow", "value": "150ms ease (r, width, height, x, y)", "purpose": "Agrandissement au survol des vignettes photo de la Matrice ID-3A." },
+      { "name": "notification-pulse", "value": "scale(1) → scale(1.35) → scale(1), 1.1s ease-in-out infinite", "purpose": "Badge de notification pulsant sur une action en attente (ex. demande de mot de passe)." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Bouton primaire",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Action principale d'un écran ou d'un dialogue.",
+      "html": "<button class=\"ds-btn-primary\">Enregistrer</button>",
+      "css": ".ds-btn-primary { background: #2E8FCB; color: #fff; padding: 6px 16px; border-radius: 10px; border: none; font-weight: 500; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.875rem; cursor: pointer; transition: background-color 0.2s; } .ds-btn-primary:hover { background: #2578ab; } .ds-btn-primary:focus-visible { outline: 2px solid #2E8FCB; outline-offset: 2px; }"
+    },
+    {
+      "name": "Bouton secondaire (outlined)",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Action secondaire (Annuler), toujours à côté d'un bouton primaire.",
+      "html": "<button class=\"ds-btn-outline\">Annuler</button>",
+      "css": ".ds-btn-outline { background: transparent; color: #2E8FCB; padding: 5px 15px; border-radius: 10px; border: 1px solid #2E8FCB; font-weight: 500; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.875rem; cursor: pointer; transition: background-color 0.2s; } .ds-btn-outline:hover { background: rgba(46, 143, 203, 0.08); }"
+    },
+    {
+      "name": "Puce de statut (teintée)",
+      "kind": "chip",
+      "refersTo": "chip-status",
+      "description": "Vocabulaire dominant pour tout statut catégoriel : rôle, palier de performance, actif/bloqué, formule d'abonnement.",
+      "html": "<span class=\"ds-chip-status\">Bonne (90-100%)</span>",
+      "css": ".ds-chip-status { display: inline-flex; align-items: center; background: rgba(76, 175, 80, 0.13); color: #4caf50; font-weight: 600; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.8125rem; padding: 4px 10px; border-radius: 16px; }"
+    },
+    {
+      "name": "Puce d'état neutre",
+      "kind": "chip",
+      "refersTo": "chip-neutral",
+      "description": "Absence de valeur (ex. \"Non évalué\") — distincte visuellement d'une vraie catégorie.",
+      "html": "<span class=\"ds-chip-neutral\">Non évalué</span>",
+      "css": ".ds-chip-neutral { display: inline-flex; align-items: center; background: transparent; color: rgba(0,0,0,0.6); font-weight: 600; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.8125rem; padding: 3px 9px; border: 1px solid rgba(0,0,0,0.23); border-radius: 16px; }"
+    },
+    {
+      "name": "Carte plate",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Conteneur standard de toute section de contenu — jamais d'ombre, toujours une bordure fine.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-title\">Titre de section</div><div class=\"ds-card-body\">Contenu</div></div>",
+      "css": ".ds-card { background: #ffffff; border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; padding: 24px; } .ds-card-title { font-weight: 700; font-size: 1.125rem; margin-bottom: 8px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; } .ds-card-body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: rgba(0,0,0,0.87); }"
+    },
+    {
+      "name": "En-tête de tableau catégoriel (Hard Skills)",
+      "kind": "custom",
+      "refersTo": "table-header-hard",
+      "description": "En-tête plein-fond coloré identifiant la catégorie Hard Skills, texte blanc en gras.",
+      "html": "<div class=\"ds-table-header-hard\">Aptitudes (Hard Skills)</div>",
+      "css": ".ds-table-header-hard { background: #2E5AAC; color: #fff; font-weight: 700; padding: 8px 16px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }"
+    },
+    {
+      "name": "Item de navigation (sélectionné)",
+      "kind": "nav",
+      "refersTo": "nav-item-selected",
+      "description": "Item du menu latéral permanent à l'état actif.",
+      "html": "<div class=\"ds-nav-item ds-nav-item-selected\">Tableau de bord</div>",
+      "css": ".ds-nav-item { display: flex; align-items: center; padding: 8px 16px; border-radius: 16px; margin-bottom: 4px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.9375rem; color: rgba(0,0,0,0.87); cursor: pointer; transition: background-color 0.2s; } .ds-nav-item:hover { background: rgba(0,0,0,0.04); } .ds-nav-item-selected { background: rgba(46, 143, 203, 0.12); color: #2E8FCB; font-weight: 600; }"
+    },
+    {
+      "name": "Vignette photo cerclée",
+      "kind": "custom",
+      "refersTo": "photo-dot",
+      "description": "Composant signature de la Matrice ID-3A : photo circulaire entourée d'un anneau coloré selon le palier de performance.",
+      "html": "<div class=\"ds-photo-dot\"><img src=\"https://placehold.co/64x64\" alt=\"\" /></div>",
+      "css": ".ds-photo-dot { width: 64px; height: 64px; border-radius: 50%; padding: 4px; background: #4caf50; box-sizing: border-box; transition: all 0.15s ease; } .ds-photo-dot img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; } .ds-photo-dot:hover { transform: scale(1.3); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Le Tableau de Bord du Stratège",
+    "overview": "ID-PMC est l'instrument d'un dirigeant ou d'un manager qui pilote la performance de son équipe avec méthode : précis, digne de confiance, jamais tape-à-l'œil. L'interface reste chaleureuse sans perdre en rigueur — les photos des collaborateurs, cerclées de la couleur de leur palier de performance, humanisent des données qui pourraient autrement rester abstraites. Rien n'est décoratif sans fonction : chaque couleur, chaque bordure, chaque puce porte une information (un rôle, un statut, un palier), jamais un simple effet.\n\nLe système rejette explicitement le vocabulaire du SaaS \"grand public\" ludifié (badges de gamification, illustrations décoratives, tons pastel criards) au profit d'une esthétique d'outil professionnel : surfaces plates, bordures fines, couleur réservée aux signaux qui comptent.",
+    "keyCharacteristics": [
+      "Plat par défaut, jamais d'ombre portée — la hiérarchie se lit par la bordure et l'espacement, pas par l'élévation.",
+      "La couleur est un signal, pas une décoration : réservée aux paliers de performance, aux rôles et aux statuts.",
+      "Les photos de collaborateurs (cerclées de couleur) sont le seul élément véritablement chaleureux d'une interface autrement dense et fonctionnelle."
+    ],
+    "rules": [
+      { "name": "La Règle du Signal Unique", "body": "Une couleur ne porte jamais deux significations différentes selon l'écran : le bleu Hard Skills ne devient jamais un bouton d'action, le bleu Confiance ne sert jamais à distinguer un palier de performance.", "section": "colors" },
+      { "name": "La Règle du Plat-par-Défaut", "body": "Une carte se distingue du fond par une bordure fine, jamais par une ombre. Les seules exceptions sont les Dialog/menus contextuels MUI (ombre native du composant, non stylée manuellement).", "section": "elevation" }
+    ],
+    "dos": [
+      "Do réserver la couleur aux signaux qui comptent (statut, rôle, palier, catégorie Hard/Soft Skills) — jamais décorative.",
+      "Do utiliser elevation={0} + bordure divider pour toute carte ou panneau.",
+      "Do garder les données saisies par l'utilisateur (noms, postes, notes) dans leur langue d'origine, jamais traduites automatiquement.",
+      "Do afficher un état vide/neutre explicitement (Chip outlined, \"—\") plutôt que de masquer une cellule sans valeur."
+    ],
+    "donts": [
+      "Don't ajouter d'ombre portée à une carte ou un bouton — la profondeur vient de la bordure et du fond, jamais du flou.",
+      "Don't réutiliser le bleu Hard Skills (#2E5AAC) ou le vert Soft Skills (#3F9142) en dehors de leur rôle Aptitudes/Attitudes.",
+      "Don't traduire \"Hard Skills\"/\"Soft Skills\" ni les libellés d'axes de la Matrice ID-3A — ils restent identiques en français et en anglais.",
+      "Don't introduire de gamification (badges décoratifs, confettis, tons pastel) — l'outil reste sobre et professionnel même dans ses moments chaleureux."
+    ]
+  }
+}
