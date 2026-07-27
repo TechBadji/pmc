@@ -1,9 +1,9 @@
 """URL principal de l'API ID-PMC."""
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import HttpResponse
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.views.static import serve as serve_static
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -46,4 +46,14 @@ urlpatterns = [
     path("api/", include(router.urls)),
 ]
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += [
+    # `django.conf.urls.static.static()` no-op quand DEBUG=False (vérifié en
+    # interne, indépendamment de tout `if settings.DEBUG` autour de l'appel)
+    # — on enregistre donc la route manuellement pour qu'elle fonctionne
+    # aussi en production (voir MEDIA_ROOT toujours servi dans settings.py).
+    re_path(
+        r"^media/(?P<path>.*)$",
+        serve_static,
+        {"document_root": settings.MEDIA_ROOT},
+    ),
+]
