@@ -1,5 +1,7 @@
+from django.db.models import ProtectedError
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.permissions import (
@@ -35,6 +37,17 @@ class EvaluationCampaignViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
             serializer.save(company_id=company_id, created_by=user)
         else:
             serializer.save(company=user.company, created_by=user)
+
+    def perform_destroy(self, instance):
+        # Evaluation.campaign est en PROTECT (garde-fou volontaire) : on
+        # transforme le ProtectedError brut en erreur de validation lisible
+        # plutôt que de laisser remonter un 500.
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise ValidationError(
+                {"detail": "Impossible de supprimer une campagne qui contient déjà des évaluations."}
+            )
 
     @action(detail=True, methods=["post"], url_path="close")
     def close(self, request, pk=None):

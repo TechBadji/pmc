@@ -1,4 +1,6 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import {
@@ -31,9 +33,12 @@ export default function EvaluationCampaignsPage() {
   const { t } = useTranslation();
   const [campaigns, setCampaigns] = useState<EvaluationCampaign[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<EvaluationCampaign | null>(null);
   const [form, setForm] = useState({ name: "", start_date: "", end_date: "" });
+  const [deleteTarget, setDeleteTarget] = useState<EvaluationCampaign | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   function load() {
     setLoadError(false);
@@ -45,15 +50,44 @@ export default function EvaluationCampaignsPage() {
 
   useEffect(load, []);
 
-  async function handleCreate() {
+  function openCreateDialog() {
+    setEditingCampaign(null);
+    setForm({ name: "", start_date: "", end_date: "" });
+    setDialogOpen(true);
+  }
+
+  function openEditDialog(campaign: EvaluationCampaign) {
+    setEditingCampaign(campaign);
+    setForm({ name: campaign.name, start_date: campaign.start_date, end_date: campaign.end_date });
+    setDialogOpen(true);
+  }
+
+  async function handleSubmit() {
     setActionError(null);
     try {
-      await apiClient.post("/evaluation-campaigns/", form);
+      if (editingCampaign) {
+        await apiClient.patch(`/evaluation-campaigns/${editingCampaign.id}/`, form);
+      } else {
+        await apiClient.post("/evaluation-campaigns/", form);
+      }
       setDialogOpen(false);
+      setEditingCampaign(null);
       setForm({ name: "", start_date: "", end_date: "" });
       load();
     } catch {
       setActionError(t("common.saveError"));
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    try {
+      await apiClient.delete(`/evaluation-campaigns/${deleteTarget.id}/`);
+      setDeleteTarget(null);
+      load();
+    } catch (err: any) {
+      setDeleteError(err.response?.data?.detail ?? t("common.saveError"));
     }
   }
 
@@ -78,7 +112,7 @@ export default function EvaluationCampaignsPage() {
             {t("evaluationCampaigns.subtitle")}
           </Typography>
         </Stack>
-        <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setDialogOpen(true)}>
+        <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={openCreateDialog}>
           {t("evaluationCampaigns.newCampaign")}
         </Button>
       </Stack>
@@ -133,9 +167,39 @@ export default function EvaluationCampaignsPage() {
                     <Tooltip
                       title={c.is_closed ? t("evaluationCampaigns.reopenTooltip") : t("evaluationCampaigns.closeTooltip")}
                     >
-                      <IconButton size="small" onClick={() => handleToggleClosed(c)}>
+                      <IconButton
+                        size="small"
+                        aria-label={c.is_closed ? t("evaluationCampaigns.reopenTooltip") : t("evaluationCampaigns.closeTooltip")}
+                        onClick={() => handleToggleClosed(c)}
+                      >
                         {c.is_closed ? <LockOpenOutlinedIcon fontSize="small" /> : <LockOutlinedIcon fontSize="small" />}
                       </IconButton>
+                    </Tooltip>
+                    <Tooltip title={t("common.edit")}>
+                      <IconButton size="small" aria-label={t("common.edit")} onClick={() => openEditDialog(c)}>
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip
+                      title={
+                        c.evaluations_count > 0
+                          ? t("evaluationCampaigns.deleteBlockedTooltip")
+                          : t("common.delete")
+                      }
+                    >
+                      <span>
+                        <IconButton
+                          size="small"
+                          aria-label={t("common.delete")}
+                          disabled={c.evaluations_count > 0}
+                          onClick={() => {
+                            setDeleteError(null);
+                            setDeleteTarget(c);
+                          }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </TableCell>
                 </TableRow>
@@ -146,7 +210,9 @@ export default function EvaluationCampaignsPage() {
       </Paper>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle>{t("evaluationCampaigns.newCampaign")}</DialogTitle>
+        <DialogTitle>
+          {editingCampaign ? t("evaluationCampaigns.editCampaign") : t("evaluationCampaigns.newCampaign")}
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
@@ -179,10 +245,28 @@ export default function EvaluationCampaignsPage() {
           <Button onClick={() => setDialogOpen(false)}>{t("common.cancel")}</Button>
           <Button
             variant="contained"
-            onClick={handleCreate}
+            onClick={handleSubmit}
             disabled={!form.name || !form.start_date || !form.end_date}
           >
-            {t("common.create")}
+            {editingCampaign ? t("common.save") : t("common.create")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} fullWidth maxWidth="xs">
+        <DialogTitle>{t("evaluationCampaigns.deleteConfirmTitle")}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Typography variant="body2">
+              {t("evaluationCampaigns.deleteConfirmMessage", { name: deleteTarget?.name })}
+            </Typography>
+            {deleteError && <Alert severity="error">{deleteError}</Alert>}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteTarget(null)}>{t("common.cancel")}</Button>
+          <Button variant="contained" color="error" onClick={handleDelete}>
+            {t("common.delete")}
           </Button>
         </DialogActions>
       </Dialog>
