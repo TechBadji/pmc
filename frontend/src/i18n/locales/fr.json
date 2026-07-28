@@ -13,7 +13,8 @@
     "evaluations": "Évaluations",
     "myProfile": "Mon profil",
     "myPerformance": "Mes performances",
-    "evaluationCampaigns": "Campagnes d'évaluation"
+    "evaluationCampaigns": "Campagnes d'évaluation",
+    "logs": "Logs"
   },
   "common": {
     "logout": "Déconnexion",
@@ -42,6 +43,7 @@
     "manager": "Manager",
     "period": "Période",
     "retry": "Réessayer",
+    "refresh": "Actualiser",
     "loadError": "Impossible de charger les données. Vérifiez votre connexion et réessayez.",
     "saveError": "Une erreur est survenue lors de l'enregistrement. Veuillez réessayer.",
     "skills": "Compétences",
@@ -359,5 +361,19 @@
     "altitude": "Altitude (Performance)",
     "summary": "Objectifs Business atteints à {{business}}%, objectifs People à {{people}}% — période {{period}}.",
     "noEvaluation": "Aucune évaluation disponible pour le moment."
+  },
+  "logs": {
+    "title": "Journal d'activité",
+    "subtitle": "Événements administratifs importants de la plateforme, et qui en est à l'origine.",
+    "lastRefreshed": "Actualisé à {{time}}",
+    "timestamp": "Horodatage",
+    "event": "Événement",
+    "company": "Entreprise",
+    "noEvents": "Aucun événement pour le moment.",
+    "categories": {
+      "company": "Entreprise",
+      "user": "Compte",
+      "campaign": "Campagne"
+    }
   }
 }

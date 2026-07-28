@@ -239,6 +239,17 @@ export interface PasswordResetRequest {
   resolved_by_name: string | null;
 }
 
+export interface AuditLog {
+  id: number;
+  created_at: string;
+  actor: number | null;
+  actor_name: string;
+  actor_role: Role | "";
+  company_name: string;
+  action: string;
+  description: string;
+}
+
 export interface Paginated<T> {
   count: number;
   next: string | null;

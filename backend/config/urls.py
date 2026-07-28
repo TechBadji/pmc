@@ -9,6 +9,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.actionplans.views import ActionPlanViewSet
 from apps.core.views import (
+    AuditLogViewSet,
     ChangePasswordView,
     CompanyViewSet,
     DepartmentViewSet,
@@ -34,6 +35,7 @@ router.register("cohesion-analyses", TeamCohesionAnalysisViewSet, basename="cohe
 router.register("team-relationships", TeamRelationshipViewSet, basename="team-relationship")
 router.register("action-plans", ActionPlanViewSet, basename="action-plan")
 router.register("password-reset-requests", PasswordResetRequestViewSet, basename="password-reset-request")
+router.register("audit-logs", AuditLogViewSet, basename="audit-log")
 
 urlpatterns = [
     path("health/", lambda request: HttpResponse("ok"), name="health"),

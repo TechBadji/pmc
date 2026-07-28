@@ -13,7 +13,8 @@
     "evaluations": "Evaluations",
     "myProfile": "My profile",
     "myPerformance": "My performance",
-    "evaluationCampaigns": "Evaluation campaigns"
+    "evaluationCampaigns": "Evaluation campaigns",
+    "logs": "Logs"
   },
   "common": {
     "logout": "Log out",
@@ -42,6 +43,7 @@
     "manager": "Manager",
     "period": "Period",
     "retry": "Retry",
+    "refresh": "Refresh",
     "loadError": "Could not load data. Check your connection and try again.",
     "saveError": "Something went wrong while saving. Please try again.",
     "skills": "Skills",
@@ -359,5 +361,19 @@
     "altitude": "Altitude (Performance)",
     "summary": "Business objectives achieved: {{business}}%, People objectives: {{people}}% — period {{period}}.",
     "noEvaluation": "No evaluation available yet."
+  },
+  "logs": {
+    "title": "Activity log",
+    "subtitle": "Important administrative events on the platform, and who's behind them.",
+    "lastRefreshed": "Refreshed at {{time}}",
+    "timestamp": "Timestamp",
+    "event": "Event",
+    "company": "Company",
+    "noEvents": "No events yet.",
+    "categories": {
+      "company": "Company",
+      "user": "Account",
+      "campaign": "Campaign"
+    }
   }
 }

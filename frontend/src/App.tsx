@@ -13,6 +13,7 @@ import EvaluationCampaignsPage from "@/pages/EvaluationCampaignsPage";
 import EvaluationFormPage from "@/pages/EvaluationFormPage";
 import EvaluationsPage from "@/pages/EvaluationsPage";
 import ID3AMatrixPage from "@/pages/ID3AMatrixPage";
+import LogsPage from "@/pages/LogsPage";
 import MyPerformancePage from "@/pages/MyPerformancePage";
 import PasswordResetRequestsPage from "@/pages/PasswordResetRequestsPage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/action-plans" element={<ActionPlansPage />} />
           <Route path="/my-performance" element={<MyPerformancePage />} />
           <Route path="/password-requests" element={<PasswordResetRequestsPage />} />
+          <Route path="/logs" element={<LogsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Route>

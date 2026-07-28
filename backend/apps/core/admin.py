@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from .models import Company, Department, PasswordResetRequest, User
+from .models import AuditLog, Company, Department, PasswordResetRequest, User
 
 
 @admin.register(Company)
@@ -48,3 +48,11 @@ class PasswordResetRequestAdmin(admin.ModelAdmin):
     list_display = ("user", "requested_at", "resolved", "resolved_by", "resolved_at")
     list_filter = ("resolved",)
     search_fields = ("user__email",)
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "actor_name", "action", "company_name")
+    list_filter = ("action", "company_name")
+    search_fields = ("actor_name", "description", "company_name")
+    ordering = ("-created_at",)

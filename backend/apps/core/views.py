@@ -11,8 +11,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from .audit import log_event
 from .constants import DEFAULT_PASSWORD
-from .models import Company, Department, PasswordResetRequest, User
+from .models import AuditLog, Company, Department, PasswordResetRequest, User
 from .permissions import (
     CompanyScopedQuerySetMixin,
     IsCompanyAdminOrManager,
@@ -20,6 +21,7 @@ from .permissions import (
     IsSuperAdminOrCompanyAdminOrManager,
 )
 from .serializers import (
+    AuditLogSerializer,
     ChangePasswordSerializer,
     CompanySerializer,
     DepartmentSerializer,
@@ -125,6 +127,26 @@ class CompanyViewSet(viewsets.ModelViewSet):
             return Company.objects.select_related("admin_user").all()
         return Company.objects.select_related("admin_user").filter(id=user.company_id)
 
+    def perform_create(self, serializer):
+        company = serializer.save()
+        log_event(
+            self.request.user,
+            "company.created",
+            f"a créé l'entreprise « {company.name} » (formule {company.plan}).",
+            company=company,
+        )
+
+    def perform_update(self, serializer):
+        previous_plan = serializer.instance.plan
+        company = serializer.save()
+        if company.plan != previous_plan:
+            log_event(
+                self.request.user,
+                "company.plan_changed",
+                f"a changé la formule de « {company.name} » : {previous_plan} → {company.plan}.",
+                company=company,
+            )
+
     @action(detail=True, methods=["post"], url_path="toggle-active")
     def toggle_active(self, request, pk=None):
         """Bloque/débloque l'ENTREPRISE entière (tous ses utilisateurs
@@ -133,6 +155,12 @@ class CompanyViewSet(viewsets.ModelViewSet):
         company = self.get_object()
         company.is_active = not company.is_active
         company.save(update_fields=["is_active"])
+        log_event(
+            request.user,
+            "company.blocked" if not company.is_active else "company.unblocked",
+            f"a {'bloqué' if not company.is_active else 'débloqué'} l'entreprise « {company.name} ».",
+            company=company,
+        )
         return Response(CompanySerializer(company).data)
 
     def perform_destroy(self, instance):
@@ -151,8 +179,15 @@ class CompanyViewSet(viewsets.ModelViewSet):
         """
         from apps.evaluations.models import Evaluation
 
+        company_name = instance.name
         Evaluation.objects.filter(user__company=instance).delete()
         instance.delete()
+        log_event(
+            self.request.user,
+            "company.deleted",
+            f"a supprimé l'entreprise « {company_name} » et toutes ses données.",
+            company_name=company_name,
+        )
 
     @action(detail=True, methods=["post"], url_path="bulk-upload-users", parser_classes=[MultiPartParser])
     def bulk_upload_users(self, request, pk=None):
@@ -237,6 +272,14 @@ class CompanyViewSet(viewsets.ModelViewSet):
                     "role": role,
                     "password": DEFAULT_PASSWORD,
                 }
+            )
+
+        if created:
+            log_event(
+                self.request.user,
+                "user.bulk_created",
+                f"a chargé {len(created)} collaborateur(s) par CSV dans « {company.name} ».",
+                company=company,
             )
 
         return Response({"created": created, "errors": errors, "created_count": len(created)})
@@ -332,22 +375,43 @@ class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
                 raise PermissionDenied(
                     "Un manager ne peut créer des membres que dans son propre département."
                 )
-        serializer.save(company=actor.company)
+        new_user = serializer.save(company=actor.company)
+        log_event(
+            actor,
+            "user.created",
+            f"a créé le compte {new_user.get_full_name()} ({new_user.get_role_display()}).",
+            company=new_user.company,
+        )
 
     def perform_update(self, serializer):
         actor = self.request.user
         target = serializer.instance
         if not self._can_manage(actor, target):
             raise PermissionDenied("Vous ne pouvez pas modifier ce compte.")
+        previous_role = target.role
         new_role = serializer.validated_data.get("role", target.role)
         if new_role != target.role and new_role not in self._assignable_roles(actor):
             raise PermissionDenied("Vous ne pouvez pas attribuer ce rôle.")
-        serializer.save()
+        updated = serializer.save()
+        if updated.role != previous_role:
+            log_event(
+                actor,
+                "user.role_changed",
+                f"a changé le rôle de {updated.get_full_name()} : {previous_role} → {updated.role}.",
+                company=updated.company,
+            )
 
     def perform_destroy(self, instance):
         if not self._can_manage(self.request.user, instance):
             raise PermissionDenied("Vous ne pouvez pas supprimer ce compte.")
+        full_name, company = instance.get_full_name(), instance.company
         instance.delete()
+        log_event(
+            self.request.user,
+            "user.deleted",
+            f"a supprimé le compte {full_name}.",
+            company=company,
+        )
 
     @staticmethod
     def _can_manage(actor, target):
@@ -373,6 +437,12 @@ class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         target.set_password(DEFAULT_PASSWORD)
         target.must_change_password = True
         target.save(update_fields=["password", "must_change_password"])
+        log_event(
+            request.user,
+            "user.password_reset",
+            f"a réinitialisé le mot de passe de {target.get_full_name()}.",
+            company=target.company,
+        )
         return Response({"detail": "Mot de passe réinitialisé.", "password": DEFAULT_PASSWORD})
 
     @action(detail=True, methods=["post"], url_path="toggle-active")
@@ -382,6 +452,12 @@ class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             raise PermissionDenied("Vous ne pouvez pas bloquer/débloquer ce compte.")
         target.is_active = not target.is_active
         target.save(update_fields=["is_active"])
+        log_event(
+            request.user,
+            "user.blocked" if not target.is_active else "user.unblocked",
+            f"a {'bloqué' if not target.is_active else 'débloqué'} le compte {target.get_full_name()}.",
+            company=target.company,
+        )
         return Response(UserSerializer(target).data)
 
 
@@ -422,4 +498,19 @@ class PasswordResetRequestViewSet(viewsets.ReadOnlyModelViewSet):
         reset_request.resolved_at = timezone.now()
         reset_request.resolved_by = request.user
         reset_request.save(update_fields=["resolved", "resolved_at", "resolved_by"])
+        log_event(
+            request.user,
+            "user.password_reset",
+            f"a traité la demande de réinitialisation de {target.get_full_name()}.",
+            company=target.company,
+        )
         return Response(PasswordResetRequestSerializer(reset_request).data)
+
+
+class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
+    """Journal d'activité de la plateforme — réservé au Super Admin."""
+
+    queryset = AuditLog.objects.all()
+    serializer_class = AuditLogSerializer
+    permission_classes = [IsSuperAdmin]
+    filterset_fields = ["action"]

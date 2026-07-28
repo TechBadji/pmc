@@ -215,3 +215,34 @@ class PasswordResetRequest(models.Model):
 
     def __str__(self):
         return f"Réinitialisation pour {self.user} ({'traitée' if self.resolved else 'en attente'})"
+
+
+class AuditLog(models.Model):
+    """Journal des événements administratifs importants de la plateforme
+    (entreprises, comptes, campagnes) — consulté par le Super Admin.
+    `actor`/`company` restent en SET_NULL/CASCADE→snapshot texte : un
+    utilisateur ou une entreprise supprimée ne doit jamais faire disparaître
+    la trace de ce qu'il/elle a fait."""
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    actor = models.ForeignKey(
+        "core.User",
+        verbose_name="Auteur",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+    )
+    actor_name = models.CharField("Nom de l'auteur", max_length=255)
+    actor_role = models.CharField("Rôle de l'auteur", max_length=20, blank=True)
+    company_name = models.CharField("Entreprise concernée", max_length=255, blank=True)
+    action = models.CharField("Type d'événement", max_length=50)
+    description = models.TextField("Description")
+
+    class Meta:
+        verbose_name = "Événement du journal"
+        verbose_name_plural = "Journal d'activité"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.created_at:%Y-%m-%d %H:%M}] {self.actor_name}: {self.description}"

@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from apps.core.audit import log_event
 from apps.core.permissions import (
     CompanyScopedQuerySetMixin,
     IsCompanyAdminOrManager,
@@ -34,26 +35,45 @@ class EvaluationCampaignViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
         user = self.request.user
         if user.role == user.Role.SUPER_ADMIN:
             company_id = self.request.data.get("company")
-            serializer.save(company_id=company_id, created_by=user)
+            campaign = serializer.save(company_id=company_id, created_by=user)
         else:
-            serializer.save(company=user.company, created_by=user)
+            campaign = serializer.save(company=user.company, created_by=user)
+        log_event(
+            user,
+            "campaign.created",
+            f"a créé la campagne « {campaign.name} ».",
+            company=campaign.company,
+        )
 
     def perform_destroy(self, instance):
         # Evaluation.campaign est en PROTECT (garde-fou volontaire) : on
         # transforme le ProtectedError brut en erreur de validation lisible
         # plutôt que de laisser remonter un 500.
+        name, company = instance.name, instance.company
         try:
             instance.delete()
         except ProtectedError:
             raise ValidationError(
                 {"detail": "Impossible de supprimer une campagne qui contient déjà des évaluations."}
             )
+        log_event(
+            self.request.user,
+            "campaign.deleted",
+            f"a supprimé la campagne « {name} ».",
+            company=company,
+        )
 
     @action(detail=True, methods=["post"], url_path="close")
     def close(self, request, pk=None):
         campaign = self.get_object()
         campaign.is_closed = True
         campaign.save(update_fields=["is_closed"])
+        log_event(
+            request.user,
+            "campaign.closed",
+            f"a clôturé la campagne « {campaign.name} ».",
+            company=campaign.company,
+        )
         return Response(self.get_serializer(campaign).data)
 
     @action(detail=True, methods=["post"], url_path="reopen")
@@ -61,6 +81,12 @@ class EvaluationCampaignViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
         campaign = self.get_object()
         campaign.is_closed = False
         campaign.save(update_fields=["is_closed"])
+        log_event(
+            request.user,
+            "campaign.reopened",
+            f"a rouvert la campagne « {campaign.name} ».",
+            company=campaign.company,
+        )
         return Response(self.get_serializer(campaign).data)
 
 

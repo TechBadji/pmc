@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .constants import DEFAULT_DEPARTMENTS, PLAN_FEATURES, DEFAULT_PASSWORD
-from .models import Company, Department, PasswordResetRequest, User
+from .models import AuditLog, Company, Department, PasswordResetRequest, User
 from .text_utils import make_login, slugify_company
 
 
@@ -285,3 +285,12 @@ class PMCTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["company_id"] = user.company_id
         token["full_name"] = user.get_full_name()
         return token
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AuditLog
+        fields = [
+            "id", "created_at", "actor", "actor_name", "actor_role",
+            "company_name", "action", "description",
+        ]

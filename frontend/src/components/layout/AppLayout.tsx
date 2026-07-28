@@ -3,6 +3,7 @@ import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import HubOutlinedIcon from "@mui/icons-material/HubOutlined";
 import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
@@ -52,6 +53,7 @@ const ICONS: Record<NavItem["icon"], React.ReactNode> = {
   school: <SchoolOutlinedIcon />,
   upload: <UploadFileOutlinedIcon />,
   lockReset: <LockResetOutlinedIcon />,
+  history: <HistoryOutlinedIcon />,
 };
 
 export default function AppLayout() {
