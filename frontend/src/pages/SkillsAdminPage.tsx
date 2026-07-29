@@ -26,6 +26,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import type { Company, Paginated, SkillMatrix } from "@/api/types";
+import { HARD_SKILLS_COLOR as HARD_COLOR, SOFT_SKILLS_COLOR as SOFT_COLOR } from "@/theme";
 
 export default function SkillsAdminPage() {
   const { t } = useTranslation();
@@ -116,12 +117,17 @@ export default function SkillsAdminPage() {
               <Chip
                 size="small"
                 label={matrix.type === "HARD" ? "Hard Skills" : "Soft Skills"}
-                color={matrix.type === "HARD" ? "primary" : "secondary"}
+                sx={{
+                  bgcolor: (matrix.type === "HARD" ? HARD_COLOR : SOFT_COLOR) + "22",
+                  color: matrix.type === "HARD" ? HARD_COLOR : SOFT_COLOR,
+                  fontWeight: 600,
+                }}
               />
               <Chip size="small" variant="outlined" label={t("skillsAdmin.itemCount", { count: matrix.items.length })} />
               <Stack sx={{ flexGrow: 1 }} />
               <IconButton
                 size="small"
+                aria-label={t("common.delete")}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteMatrix(matrix);
@@ -146,7 +152,7 @@ export default function SkillsAdminPage() {
                     <TableCell>{item.name}</TableCell>
                     <TableCell align="right">{item.weight}</TableCell>
                     <TableCell align="right">
-                      <IconButton size="small" onClick={() => handleDeleteItem(item.id)}>
+                      <IconButton size="small" aria-label={t("common.delete")} onClick={() => handleDeleteItem(item.id)}>
                         <DeleteOutlineIcon fontSize="small" />
                       </IconButton>
                     </TableCell>

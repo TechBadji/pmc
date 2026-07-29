@@ -131,7 +131,7 @@ export default function LoginPage() {
               alignSelf: "flex-start",
               border: "1px solid",
               borderColor: "rgba(255,255,255,0.35)",
-              borderRadius: 10,
+              borderRadius: 1,
               px: 1.5,
               py: 0.5,
             }}

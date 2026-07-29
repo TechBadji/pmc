@@ -82,25 +82,26 @@ class ForgotPasswordView(APIView):
         serializer.is_valid(raise_exception=True)
         identifier = serializer.validated_data["email"]
 
-        user = User.objects.filter(
-            Q(email__iexact=identifier) | Q(generated_login__iexact=identifier)
-        ).first()
+        # Réponse strictement identique dans tous les cas (compte inexistant,
+        # Super Admin, ou compte normal) : révéler qu'un identifiant existe —
+        # ou pire, qu'il appartient à un Super Admin — permettrait de
+        # fingerprinter des comptes à haute valeur pour du credential
+        # stuffing/phishing ciblé.
         generic_message = (
             "Si un compte existe avec cet identifiant, une demande de réinitialisation "
             "a été transmise à votre administrateur."
         )
-        if not user:
-            return Response({"detail": generic_message})
 
-        if user.role == User.Role.SUPER_ADMIN:
-            return Response(
-                {
-                    "detail": "Un compte Super Admin ne peut pas être réinitialisé "
-                    "automatiquement. Merci de contacter le support technique."
-                }
-            )
+        user = User.objects.filter(
+            Q(email__iexact=identifier) | Q(generated_login__iexact=identifier)
+        ).first()
 
-        PasswordResetRequest.objects.get_or_create(user=user, resolved=False)
+        if user and user.role != User.Role.SUPER_ADMIN:
+            PasswordResetRequest.objects.get_or_create(user=user, resolved=False)
+        # Un compte Super Admin n'a personne à notifier (pas d'Admin
+        # Entreprise au-dessus) : aucune demande n'est créée, mais la réponse
+        # reste identique — le traitement passe par le support technique.
+
         return Response(
             {
                 "detail": "Une demande de réinitialisation a été envoyée à "
@@ -500,7 +501,7 @@ class PasswordResetRequestViewSet(viewsets.ReadOnlyModelViewSet):
         reset_request.save(update_fields=["resolved", "resolved_at", "resolved_by"])
         log_event(
             request.user,
-            "user.password_reset",
+            "user.password_reset_request_resolved",
             f"a traité la demande de réinitialisation de {target.get_full_name()}.",
             company=target.company,
         )

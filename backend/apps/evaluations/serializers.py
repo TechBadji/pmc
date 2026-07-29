@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from apps.core.validators import require_same_company
@@ -131,8 +132,28 @@ class EvaluationWriteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"skill_scores": "Compétence invalide pour cette entreprise."}
                 )
+            # skill_scores est un ListField(DictField()) écrit ensuite via
+            # bulk_create (_save_scores) : ni les validators du modèle
+            # EvaluationSkillScore, ni full_clean(), ne s'exécutent sur ce
+            # chemin — la borne 1-5 doit donc être vérifiée ici explicitement.
+            for item in skill_scores:
+                for field in ("score", "objective_score", "achievement_rate"):
+                    value = item.get(field)
+                    if value in (None, ""):
+                        continue
+                    try:
+                        value = float(value)
+                    except (TypeError, ValueError):
+                        raise serializers.ValidationError(
+                            {"skill_scores": f"Valeur invalide pour {field}: {item.get(field)!r}."}
+                        )
+                    if not 1 <= value <= 5:
+                        raise serializers.ValidationError(
+                            {"skill_scores": f"{field} doit être compris entre 1 et 5 (reçu {value})."}
+                        )
         return attrs
 
+    @transaction.atomic
     def create(self, validated_data):
         scores = validated_data.pop("skill_scores", [])
         evaluation = Evaluation.objects.create(
@@ -141,7 +162,10 @@ class EvaluationWriteSerializer(serializers.ModelSerializer):
         self._save_scores(evaluation, scores)
         return evaluation
 
+    @transaction.atomic
     def update(self, instance, validated_data):
+        # atomic : sans ça, un bulk_create qui échoue après le delete()
+        # laisserait l'évaluation sans aucune note (perte de données).
         scores = validated_data.pop("skill_scores", None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

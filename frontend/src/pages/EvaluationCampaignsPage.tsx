@@ -164,43 +164,45 @@ export default function EvaluationCampaignsPage() {
                     />
                   </TableCell>
                   <TableCell align="right">
-                    <Tooltip
-                      title={c.is_closed ? t("evaluationCampaigns.reopenTooltip") : t("evaluationCampaigns.closeTooltip")}
-                    >
-                      <IconButton
-                        size="small"
-                        aria-label={c.is_closed ? t("evaluationCampaigns.reopenTooltip") : t("evaluationCampaigns.closeTooltip")}
-                        onClick={() => handleToggleClosed(c)}
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                      <Tooltip
+                        title={c.is_closed ? t("evaluationCampaigns.reopenTooltip") : t("evaluationCampaigns.closeTooltip")}
                       >
-                        {c.is_closed ? <LockOpenOutlinedIcon fontSize="small" /> : <LockOutlinedIcon fontSize="small" />}
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title={t("common.edit")}>
-                      <IconButton size="small" aria-label={t("common.edit")} onClick={() => openEditDialog(c)}>
-                        <EditOutlinedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip
-                      title={
-                        c.evaluations_count > 0
-                          ? t("evaluationCampaigns.deleteBlockedTooltip")
-                          : t("common.delete")
-                      }
-                    >
-                      <span>
                         <IconButton
                           size="small"
-                          aria-label={t("common.delete")}
-                          disabled={c.evaluations_count > 0}
-                          onClick={() => {
-                            setDeleteError(null);
-                            setDeleteTarget(c);
-                          }}
+                          aria-label={c.is_closed ? t("evaluationCampaigns.reopenTooltip") : t("evaluationCampaigns.closeTooltip")}
+                          onClick={() => handleToggleClosed(c)}
                         >
-                          <DeleteOutlineIcon fontSize="small" />
+                          {c.is_closed ? <LockOpenOutlinedIcon fontSize="small" /> : <LockOutlinedIcon fontSize="small" />}
                         </IconButton>
-                      </span>
-                    </Tooltip>
+                      </Tooltip>
+                      <Tooltip title={t("common.edit")}>
+                        <IconButton size="small" aria-label={t("common.edit")} onClick={() => openEditDialog(c)}>
+                          <EditOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip
+                        title={
+                          c.evaluations_count > 0
+                            ? t("evaluationCampaigns.deleteBlockedTooltip")
+                            : t("common.delete")
+                        }
+                      >
+                        <span>
+                          <IconButton
+                            size="small"
+                            aria-label={t("common.delete")}
+                            disabled={c.evaluations_count > 0}
+                            onClick={() => {
+                              setDeleteError(null);
+                              setDeleteTarget(c);
+                            }}
+                          >
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))}
@@ -257,9 +259,9 @@ export default function EvaluationCampaignsPage() {
         <DialogTitle>{t("evaluationCampaigns.deleteConfirmTitle")}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <Typography variant="body2">
+            <Alert severity="error">
               {t("evaluationCampaigns.deleteConfirmMessage", { name: deleteTarget?.name })}
-            </Typography>
+            </Alert>
             {deleteError && <Alert severity="error">{deleteError}</Alert>}
           </Stack>
         </DialogContent>

@@ -42,7 +42,7 @@ import {
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Evaluation, Paginated, PerformanceRating } from "@/api/types";
-import { performanceColors } from "@/theme";
+import { CHART_NEUTRALS, performanceColors } from "@/theme";
 
 const AXIS_TICKS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 
@@ -128,7 +128,7 @@ function CustomTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const p: Point = payload[0].payload;
   return (
-    <Paper elevation={3} sx={{ p: 1.5, minWidth: 200 }}>
+    <Paper elevation={0} sx={{ p: 1.5, minWidth: 200, border: "1px solid", borderColor: "divider" }}>
       <Stack direction="row" spacing={1.25} alignItems="center">
         <Avatar src={p.avatar ?? undefined} sx={{ width: 32, height: 32, fontSize: 14, bgcolor: "primary.main" }}>
           {p.name.charAt(0).toUpperCase()}
@@ -218,7 +218,7 @@ function PhotoDot({ cx, cy, payload, dimmed, onSelect }: any) {
       {/* Halo de séparation dessiné à l'extérieur de l'anneau (jamais par-
           dessus), pour que la couleur du palier de performance enroule tout
           le tour de la photo sans être entamée par le liseré blanc. */}
-      <circle cx={cx} cy={cy} r={r + 1.5} fill="#fcfcfb" style={{ transition: DOT_TRANSITION }} />
+      <circle cx={cx} cy={cy} r={r + 1.5} fill={CHART_NEUTRALS.halo} style={{ transition: DOT_TRANSITION }} />
       {/* Anneau de couleur du palier de performance, renforcé pour rester
           bien visible même sur les points estompés de l'historique. */}
       <circle cx={cx} cy={cy} r={r} fill={color} style={{ transition: DOT_TRANSITION }} />
@@ -260,7 +260,7 @@ function PhotoDot({ cx, cy, payload, dimmed, onSelect }: any) {
         fontSize={hovered ? 13 : 10}
         fontWeight={700}
         fill={color}
-        stroke="#fcfcfb"
+        stroke={CHART_NEUTRALS.halo}
         strokeWidth={3}
         paintOrder="stroke"
         style={{ transition: DOT_TRANSITION }}
@@ -305,7 +305,7 @@ function MatrixConnectors({ xAxisMap, yAxisMap, currentPoints, comparePoints }: 
     <g>
       <defs>
         <marker id="id3a-matrix-arrow" markerWidth="9" markerHeight="9" refX="6.5" refY="3.5" orient="auto">
-          <path d="M0,0 L7,3.5 L0,7 Z" fill="#8a95a3" />
+          <path d="M0,0 L7,3.5 L0,7 Z" fill={CHART_NEUTRALS.connectorArrow} />
         </marker>
       </defs>
       {currentPoints.map((cp: Point) => {
@@ -336,7 +336,7 @@ function MatrixConnectors({ xAxisMap, yAxisMap, currentPoints, comparePoints }: 
             y1={y1}
             x2={x2}
             y2={y2}
-            stroke="#8a95a3"
+            stroke={CHART_NEUTRALS.connectorArrow}
             strokeWidth={1.75}
             strokeDasharray="6 4"
             strokeLinecap="round"
@@ -360,7 +360,7 @@ function MatrixTrail({ xAxisMap, yAxisMap, trail }: any) {
     <g>
       <defs>
         <marker id="id3a-trail-arrow" markerWidth="9" markerHeight="9" refX="6.5" refY="3.5" orient="auto">
-          <path d="M0,0 L7,3.5 L0,7 Z" fill="#8a95a3" />
+          <path d="M0,0 L7,3.5 L0,7 Z" fill={CHART_NEUTRALS.connectorArrow} />
         </marker>
       </defs>
       {trail.slice(1).map((p: Point, i: number) => {
@@ -385,7 +385,7 @@ function MatrixTrail({ xAxisMap, yAxisMap, trail }: any) {
             y1={y1}
             x2={x2}
             y2={y2}
-            stroke="#8a95a3"
+            stroke={CHART_NEUTRALS.connectorArrow}
             strokeWidth={1.75}
             strokeDasharray="6 4"
             strokeLinecap="round"
@@ -416,7 +416,7 @@ function MatrixQuadrants({ xAxisMap, yAxisMap }: any) {
     fontSize: 10,
     fontWeight: 700,
     letterSpacing: 0.6,
-    fill: "#b3b2aa",
+    fill: CHART_NEUTRALS.quadrantLabel,
   } as const;
 
   return (
@@ -466,8 +466,8 @@ function ObjectiveMiniChart({ current, prev }: ObjectivePair) {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={140}>
       {/* axes */}
-      <line x1={ML} y1={MT} x2={ML} y2={MT + plotH} stroke="#cfcec6" strokeWidth={1} />
-      <line x1={ML} y1={MT + plotH} x2={ML + plotW} y2={MT + plotH} stroke="#cfcec6" strokeWidth={1} />
+      <line x1={ML} y1={MT} x2={ML} y2={MT + plotH} stroke={CHART_NEUTRALS.plotAxisLine} strokeWidth={1} />
+      <line x1={ML} y1={MT + plotH} x2={ML + plotW} y2={MT + plotH} stroke={CHART_NEUTRALS.plotAxisLine} strokeWidth={1} />
       <text x={ML - 4} y={MT + 4} textAnchor="end" fontSize={8} fill="#898781">5</text>
       <text x={ML - 4} y={MT + plotH} textAnchor="end" fontSize={8} fill="#898781">0</text>
       <text x={ML} y={H - 2} textAnchor="start" fontSize={8} fill="#898781">0</text>
@@ -475,9 +475,9 @@ function ObjectiveMiniChart({ current, prev }: ObjectivePair) {
 
       {prev && (
         <g>
-          <line x1={sx(prev.x)} y1={sy(prev.y)} x2={sx(prev.x)} y2={MT + plotH} stroke="#b7b6b0" strokeDasharray="2,2" />
-          <line x1={ML} y1={sy(prev.y)} x2={sx(prev.x)} y2={sy(prev.y)} stroke="#b7b6b0" strokeDasharray="2,2" />
-          <circle cx={sx(prev.x)} cy={sy(prev.y)} r={6} fill="#b7b6b0" stroke="#fff" strokeWidth={1.5} />
+          <line x1={sx(prev.x)} y1={sy(prev.y)} x2={sx(prev.x)} y2={MT + plotH} stroke={CHART_NEUTRALS.trailMarker} strokeDasharray="2,2" />
+          <line x1={ML} y1={sy(prev.y)} x2={sx(prev.x)} y2={sy(prev.y)} stroke={CHART_NEUTRALS.trailMarker} strokeDasharray="2,2" />
+          <circle cx={sx(prev.x)} cy={sy(prev.y)} r={6} fill={CHART_NEUTRALS.trailMarker} stroke="#fff" strokeWidth={1.5} />
           <text x={sx(prev.x) + 8} y={sy(prev.y) + 3} fontSize={9} fill="#898781">
             {prev.altitude}%
           </text>
@@ -909,7 +909,7 @@ export default function ID3AMatrixPage() {
                 domain={[0, 5]}
                 ticks={AXIS_TICKS}
                 tick={{ fill: "#898781", fontSize: 12 }}
-                label={{ value: "ATTITUDE (SOFT SKILLS)", position: "insideBottom", offset: -10, fill: "#52514e" }}
+                label={{ value: "ATTITUDE (SOFT SKILLS)", position: "insideBottom", offset: -10, fill: CHART_NEUTRALS.axisTitle }}
               />
               <YAxis
                 type="number"
@@ -918,7 +918,7 @@ export default function ID3AMatrixPage() {
                 domain={[0, 5]}
                 ticks={AXIS_TICKS}
                 tick={{ fill: "#898781", fontSize: 12 }}
-                label={{ value: "APTITUDES (HARD SKILLS)", angle: -90, position: "insideLeft", fill: "#52514e" }}
+                label={{ value: "APTITUDES (HARD SKILLS)", angle: -90, position: "insideLeft", fill: CHART_NEUTRALS.axisTitle }}
               />
               <ZAxis type="number" dataKey="z" range={[120, 120]} />
               <Customized component={<MatrixQuadrants />} />
@@ -980,7 +980,7 @@ export default function ID3AMatrixPage() {
             </Stack>
             {compareCampaignId !== NONE_PERIOD && (
               <Stack direction="row" spacing={0.75} alignItems="center">
-                <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#b7b6b0" }} />
+                <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: CHART_NEUTRALS.trailMarker }} />
                 <Typography variant="caption" color="text.secondary">
                   {personTrail.length > 1
                     ? t("id3aMatrix.trailPositions", { count: personTrail.length })
@@ -1027,7 +1027,7 @@ export default function ID3AMatrixPage() {
                 </Typography>
               </Box>
             </Stack>
-            <IconButton size="small" onClick={() => setSelectedUserId(null)}>
+            <IconButton size="small" aria-label={t("common.close")} onClick={() => setSelectedUserId(null)}>
               <CloseOutlinedIcon fontSize="small" />
             </IconButton>
           </Stack>

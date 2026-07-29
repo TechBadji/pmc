@@ -45,6 +45,20 @@ class EvaluationCampaignViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
             company=campaign.company,
         )
 
+    def perform_update(self, serializer):
+        before = {"name": serializer.instance.name, "start_date": serializer.instance.start_date, "end_date": serializer.instance.end_date}
+        campaign = serializer.save()
+        changed = [
+            field for field, old in before.items() if old != getattr(campaign, field)
+        ]
+        if changed:
+            log_event(
+                self.request.user,
+                "campaign.updated",
+                f"a modifié la campagne « {campaign.name} » ({', '.join(changed)}).",
+                company=campaign.company,
+            )
+
     def perform_destroy(self, instance):
         # Evaluation.campaign est en PROTECT (garde-fou volontaire) : on
         # transforme le ProtectedError brut en erreur de validation lisible

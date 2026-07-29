@@ -33,10 +33,7 @@ import type {
   SkillMatrix,
   UserRecord,
 } from "@/api/types";
-import { performanceColors } from "@/theme";
-
-const HARD_COLOR = "#2E5AAC";
-const SOFT_COLOR = "#3F9142";
+import { HARD_SKILLS_COLOR as HARD_COLOR, SOFT_SKILLS_COLOR as SOFT_COLOR, performanceColors } from "@/theme";
 
 function ratingFor(pct: number): PerformanceRating {
   if (pct < 50) return "VERY_LOW";

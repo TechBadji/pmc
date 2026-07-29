@@ -5,6 +5,7 @@ and overall Performance (Altitude) against Business & People objectives.
 """
 from decimal import Decimal
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -73,10 +74,18 @@ class Evaluation(models.Model):
         related_name="evaluations",
     )
     business_objectives_score = models.DecimalField(
-        "Score objectifs business (%)", max_digits=5, decimal_places=1, default=0
+        "Score objectifs business (%)",
+        max_digits=5,
+        decimal_places=1,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(200)],
     )
     people_objectives_score = models.DecimalField(
-        "Score objectifs people (%)", max_digits=5, decimal_places=1, default=0
+        "Score objectifs people (%)",
+        max_digits=5,
+        decimal_places=1,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(200)],
     )
     notes = models.TextField("Notes", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -147,9 +156,19 @@ class EvaluationSkillScore(models.Model):
         on_delete=models.CASCADE,
         related_name="scores",
     )
-    score = models.DecimalField("Note (1-5)", max_digits=3, decimal_places=1)
+    score = models.DecimalField(
+        "Note (1-5)",
+        max_digits=3,
+        decimal_places=1,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
     objective_score = models.DecimalField(
-        "Objectif (1-5)", max_digits=3, decimal_places=1, null=True, blank=True
+        "Objectif (1-5)",
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
     )
     achievement_rate = models.DecimalField(
         "Réalisé par rapport à l'objectif précédent (1-5)",
@@ -157,6 +176,7 @@ class EvaluationSkillScore(models.Model):
         decimal_places=1,
         null=True,
         blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
     )
 
     class Meta:

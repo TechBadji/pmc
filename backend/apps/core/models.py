@@ -4,6 +4,8 @@ Core models: Company (tenant), User, Department.
 """
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Q
+from django.db.models.functions import Lower
 
 from .constants import SubscriptionPlan
 from .managers import UserManager
@@ -130,6 +132,21 @@ class User(AbstractUser):
         verbose_name = "Utilisateur"
         verbose_name_plural = "Utilisateurs"
         ordering = ["last_name", "first_name"]
+        constraints = [
+            # `generated_login` sert d'identifiant de connexion (voir
+            # EmailOrLoginBackend) : deux comptes avec le même login rendent
+            # les deux injoignables (MultipleObjectsReturned silencieusement
+            # avalé à l'authentification). La génération applicative
+            # (unique_login/unique_login_email) n'est qu'un check-then-insert
+            # non atomique — ce constraint est le vrai garde-fou. Exclut les
+            # chaînes vides (comptes sans login généré, ex. créés par un
+            # manager avec un email saisi à la main).
+            models.UniqueConstraint(
+                Lower("generated_login"),
+                condition=~Q(generated_login=""),
+                name="unique_generated_login_ci",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.get_full_name() or self.email} ({self.get_role_display()})"

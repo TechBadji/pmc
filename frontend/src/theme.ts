@@ -22,6 +22,24 @@ export const performanceLabels: Record<keyof typeof performanceColors, string> =
   OUTSTANDING: "Exceptionnelle (>100%)",
 };
 
+// Distinguent systématiquement les deux volets Aptitudes/Attitudes de la
+// méthodologie ID-3A (en-têtes de tableau, vignettes, graphiques) — jamais
+// interchangés, jamais réutilisés hors de ce rôle (voir DESIGN.md).
+export const HARD_SKILLS_COLOR = "#2E5AAC";
+export const SOFT_SKILLS_COLOR = "#3F9142";
+
+// Chrome neutre de la Matrice ID-3A (halos, connecteurs, axes, quadrants) —
+// gris/blancs cassés au même titre que chart-grid/chart-ink, réservés au
+// dessin du graphique lui-même (jamais un signal de statut).
+export const CHART_NEUTRALS = {
+  halo: "#fcfcfb",
+  connectorArrow: "#8a95a3",
+  quadrantLabel: "#b3b2aa",
+  plotAxisLine: "#cfcec6",
+  trailMarker: "#b7b6b0",
+  axisTitle: "#52514e",
+} as const;
+
 export function createAppTheme(mode: PaletteMode) {
   return createTheme({
     palette: {

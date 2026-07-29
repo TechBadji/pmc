@@ -370,6 +370,8 @@
     "event": "Event",
     "company": "Company",
     "noEvents": "No events yet.",
+    "newEventsAnnouncement_one": "{{count}} new event loaded.",
+    "newEventsAnnouncement_other": "{{count}} new events loaded.",
     "categories": {
       "company": "Company",
       "user": "Account",

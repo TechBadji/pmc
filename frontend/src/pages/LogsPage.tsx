@@ -22,12 +22,6 @@ import type { AuditLog, Paginated } from "@/api/types";
 
 const POLL_MS = 8000;
 
-const CATEGORY_COLOR: Record<string, "primary" | "secondary" | "warning" | "default"> = {
-  company: "primary",
-  user: "secondary",
-  campaign: "warning",
-};
-
 export default function LogsPage() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "en" ? "en-US" : "fr-FR";
@@ -37,8 +31,10 @@ export default function LogsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [loadError, setLoadError] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [newEventsAnnouncement, setNewEventsAnnouncement] = useState("");
   const pageRef = useRef(page);
   pageRef.current = page;
+  const knownIdsRef = useRef<Set<number> | null>(null);
 
   function load() {
     setLoadError(false);
@@ -50,6 +46,20 @@ export default function LogsPage() {
         setLogs(r.data.results);
         setCount(r.data.count);
         setLastRefreshed(new Date());
+
+        // N'annonce (lecteur d'écran) que si de VRAIS nouveaux événements
+        // sont apparus depuis le dernier chargement — jamais à chaque poll
+        // silencieux, sous peine de spammer les utilisateurs non-voyants.
+        if (pageRef.current === 0) {
+          const currentIds = new Set(r.data.results.map((log) => log.id));
+          if (knownIdsRef.current) {
+            const newCount = [...currentIds].filter((id) => !knownIdsRef.current!.has(id)).length;
+            if (newCount > 0) {
+              setNewEventsAnnouncement(t("logs.newEventsAnnouncement", { count: newCount }));
+            }
+          }
+          knownIdsRef.current = currentIds;
+        }
       })
       .catch(() => setLoadError(true));
   }
@@ -90,6 +100,25 @@ export default function LogsPage() {
         </Stack>
       </Stack>
 
+      {/* Zone d'annonce dédiée aux lecteurs d'écran : le tableau se
+          rafraîchit tout seul (polling) sans qu'un utilisateur non-voyant
+          en soit autrement informé — on annonce uniquement quand de
+          nouveaux événements sont réellement arrivés, jamais à chaque
+          poll silencieux, pour ne pas noyer l'utilisateur d'annonces. */}
+      <Box
+        role="status"
+        aria-live="polite"
+        sx={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          overflow: "hidden",
+          clip: "rect(0 0 0 0)",
+        }}
+      >
+        {newEventsAnnouncement}
+      </Box>
+
       {loadError && (
         <Alert
           severity="error"
@@ -117,7 +146,7 @@ export default function LogsPage() {
               {logs.map((log) => {
                 const category = log.action.split(".")[0];
                 return (
-                  <TableRow key={log.id} hover>
+                  <TableRow key={log.id}>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>
                       <Typography variant="body2">
                         {new Date(log.created_at).toLocaleString(locale)}
@@ -128,7 +157,6 @@ export default function LogsPage() {
                         <Chip
                           size="small"
                           label={t(`logs.categories.${category}`, category)}
-                          color={CATEGORY_COLOR[category] ?? "default"}
                           variant="outlined"
                         />
                         <Typography variant="body2">
