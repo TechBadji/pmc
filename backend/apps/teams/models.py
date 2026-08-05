@@ -3,6 +3,7 @@ Module 1 : Analyse de Cohésion d'Équipe (ICE / OCE) et dynamique relationnelle
 Team Cohesion Analysis (ICE score) & Relationship Dynamic (Nourishers/Toxins,
 Catalysts/Inhibitors).
 """
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -18,6 +19,13 @@ class TeamCohesionAnalysis(models.Model):
     date = models.DateField("Date de l'analyse")
     ice_score = models.DecimalField(
         "ICE — Indice de Cohésion d'Équipe", max_digits=3, decimal_places=1, default=0
+    )
+    oce_score = models.DecimalField(
+        "OCE — Objectif de Cohésion d'Équipe (moyenne)",
+        max_digits=3,
+        decimal_places=1,
+        default=0,
+        help_text="Moyenne des objectifs par critère — recalculée automatiquement.",
     )
     notes = models.TextField("Notes", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -41,6 +49,22 @@ class CohesionCriterionScore(models.Model):
     )
     criterion = models.CharField("Critère", max_length=500)
     score = models.PositiveSmallIntegerField("Note (1-5)")
+    objective_score = models.DecimalField(
+        "OCE — Objectif pour ce critère (1-5)",
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    achieved_score = models.DecimalField(
+        "Réalisé pour ce critère (1-5)",
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
 
     class Meta:
         verbose_name = "Note de critère de cohésion"

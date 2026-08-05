@@ -8,20 +8,40 @@ from .models import CohesionCriterionScore, TeamCohesionAnalysis, TeamRelationsh
 class CohesionCriterionScoreSerializer(serializers.ModelSerializer):
     class Meta:
         model = CohesionCriterionScore
-        fields = ["id", "analysis", "criterion", "score"]
+        fields = ["id", "analysis", "criterion", "score", "objective_score", "achieved_score"]
+        # `analysis` est toujours fourni par `_sync_criteria` (l'objet n'existe
+        # pas encore côté client au moment de l'écriture imbriquée) — jamais
+        # par le payload. Sans ce read_only, le champ FK requis fait échouer
+        # toute création/mise à jour de TeamCohesionAnalysis.
+        read_only_fields = ["id", "analysis"]
 
 
 class TeamCohesionAnalysisSerializer(serializers.ModelSerializer):
     criterion_scores = CohesionCriterionScoreSerializer(many=True, required=False)
     team_name = serializers.CharField(source="team.name", read_only=True)
+    achieved_score = serializers.SerializerMethodField()
+    tco = serializers.SerializerMethodField()
 
     class Meta:
         model = TeamCohesionAnalysis
         fields = [
-            "id", "team", "team_name", "date", "ice_score", "notes",
-            "criterion_scores", "created_at",
+            "id", "team", "team_name", "date", "ice_score", "oce_score",
+            "achieved_score", "tco", "notes", "criterion_scores", "created_at",
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["id", "ice_score", "oce_score", "created_at"]
+
+    def get_achieved_score(self, obj):
+        """Moyenne des 'Réalisé' par critère — TCO en dérive. Non stockée
+        (calculée à la volée, comme ice_score/oce_score le sont à l'écriture)."""
+        values = [c.achieved_score for c in obj.criterion_scores.all() if c.achieved_score is not None]
+        return round(sum(values) / len(values), 1) if values else None
+
+    def get_tco(self, obj):
+        """Taux de Cohésion Obtenu = Réalisé moyen / OCE moyen (%)."""
+        achieved = self.get_achieved_score(obj)
+        if achieved is None or not obj.oce_score:
+            return None
+        return round(float(achieved) / float(obj.oce_score) * 100, 1)
 
     def validate(self, attrs):
         actor = self.context["request"].user
@@ -53,7 +73,9 @@ class TeamCohesionAnalysisSerializer(serializers.ModelSerializer):
         if criteria:
             avg = sum(c["score"] for c in criteria) / len(criteria)
             analysis.ice_score = round(avg, 1)
-            analysis.save(update_fields=["ice_score"])
+            objectives = [c["objective_score"] for c in criteria if c.get("objective_score") is not None]
+            analysis.oce_score = round(sum(objectives) / len(objectives), 1) if objectives else 0
+            analysis.save(update_fields=["ice_score", "oce_score"])
 
 
 class TeamRelationshipSerializer(serializers.ModelSerializer):

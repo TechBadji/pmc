@@ -10,7 +10,7 @@ class CohesionCriterionScoreInline(admin.TabularInline):
 
 @admin.register(TeamCohesionAnalysis)
 class TeamCohesionAnalysisAdmin(admin.ModelAdmin):
-    list_display = ("team", "date", "ice_score")
+    list_display = ("team", "date", "ice_score", "oce_score")
     list_filter = ("team__company",)
     inlines = [CohesionCriterionScoreInline]
 

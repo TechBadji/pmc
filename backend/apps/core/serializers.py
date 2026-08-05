@@ -133,7 +133,11 @@ class DepartmentSerializer(serializers.ModelSerializer):
             "id", "company", "name", "code", "manager", "manager_name",
             "member_count", "created_at",
         ]
-        read_only_fields = ["id", "created_at"]
+        # `company` est toujours injecté par DepartmentViewSet.perform_create
+        # (jamais par le payload client, sauf pour le Super Admin qui le lit
+        # directement dans request.data en contournant le serializer) — sans
+        # ce read_only, le champ FK requis fait échouer toute création.
+        read_only_fields = ["id", "company", "created_at"]
 
     def validate_code(self, value):
         return value.strip().upper()

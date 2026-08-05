@@ -40,6 +40,23 @@ export const CHART_NEUTRALS = {
   axisTitle: "#52514e",
 } as const;
 
+// Barème 1-5 de la Fiche de Cohésion d'Équipe (ICE/OCE/Réalisé) — même
+// palette à 5 paliers que performanceColors (rouge → orange → gris → vert
+// clair → vert foncé), réutilisée telle quelle : c'est le même langage visuel
+// "note sur 5" que l'Altitude ID-3A, pas un sens concurrent (voir DESIGN.md).
+export const COHESION_TIER_COLORS = [
+  performanceColors.VERY_LOW,
+  performanceColors.LOW,
+  performanceColors.AVERAGE,
+  performanceColors.GOOD,
+  performanceColors.OUTSTANDING,
+] as const;
+
+export function cohesionColor(score: number): string {
+  const tier = Math.min(5, Math.max(1, Math.round(score)));
+  return COHESION_TIER_COLORS[tier - 1];
+}
+
 export function createAppTheme(mode: PaletteMode) {
   return createTheme({
     palette: {

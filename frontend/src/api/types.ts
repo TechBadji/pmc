@@ -194,6 +194,8 @@ export interface CohesionCriterionScore {
   id?: number;
   criterion: string;
   score: number;
+  objective_score: number | null;
+  achieved_score: number | null;
 }
 
 export interface TeamCohesionAnalysis {
@@ -202,8 +204,12 @@ export interface TeamCohesionAnalysis {
   team_name: string;
   date: string;
   ice_score: string;
+  oce_score: string;
+  achieved_score: string | null;
+  tco: number | null;
   notes: string;
   criterion_scores: CohesionCriterionScore[];
+  created_at: string;
 }
 
 export interface ActionPlan {

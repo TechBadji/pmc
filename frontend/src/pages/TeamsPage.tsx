@@ -40,6 +40,7 @@ export default function TeamsPage() {
   const [deptDialog, setDeptDialog] = useState(false);
   const [memberDialog, setMemberDialog] = useState<Department | null>(null);
   const [deptName, setDeptName] = useState("");
+  const [deptCode, setDeptCode] = useState("");
   const [memberForm, setMemberForm] = useState({
     email: "",
     password: "",
@@ -65,9 +66,10 @@ export default function TeamsPage() {
   useEffect(load, []);
 
   async function handleCreateDepartment() {
-    await apiClient.post("/departments/", { name: deptName });
+    await apiClient.post("/departments/", { name: deptName, code: deptCode });
     setDeptDialog(false);
     setDeptName("");
+    setDeptCode("");
     load();
   }
 
@@ -227,18 +229,26 @@ export default function TeamsPage() {
       <Dialog open={deptDialog} onClose={() => setDeptDialog(false)} fullWidth maxWidth="xs">
         <DialogTitle>{t("departments.newDepartment")}</DialogTitle>
         <DialogContent>
-          <TextField
-            label={t("departments.departmentName")}
-            value={deptName}
-            onChange={(e) => setDeptName(e.target.value)}
-            autoFocus
-            fullWidth
-            sx={{ mt: 1 }}
-          />
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label={t("departments.departmentName")}
+              value={deptName}
+              onChange={(e) => setDeptName(e.target.value)}
+              autoFocus
+              fullWidth
+            />
+            <TextField
+              label={t("departments.code")}
+              value={deptCode}
+              onChange={(e) => setDeptCode(e.target.value.toUpperCase().slice(0, 4))}
+              helperText={t("departments.codeHelper")}
+              fullWidth
+            />
+          </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeptDialog(false)}>{t("common.cancel")}</Button>
-          <Button variant="contained" onClick={handleCreateDepartment} disabled={!deptName}>
+          <Button variant="contained" onClick={handleCreateDepartment} disabled={!deptName || !deptCode}>
             {t("common.create")}
           </Button>
         </DialogActions>
