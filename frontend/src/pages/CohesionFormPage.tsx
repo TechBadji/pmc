@@ -405,7 +405,11 @@ export default function CohesionFormPage() {
               {t("cohesion.save")}
             </Button>
           </Stack>
-          {saved && <Typography color="success.main">{t("cohesion.saved")}</Typography>}
+          {saved && (
+            <Alert severity="success" onClose={() => setSaved(false)}>
+              {t("cohesion.saved")}
+            </Alert>
+          )}
 
           {history.length > 0 && (
             <>
