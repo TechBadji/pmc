@@ -139,6 +139,11 @@ export default function CohesionFormPage() {
   }, []);
 
   useEffect(() => {
+    // Changer d'équipe repart d'une fiche vierge — sans ce reset, les scores
+    // saisis (mais non enregistrés) pour l'équipe précédente restaient
+    // affichés et risquaient d'être soumis par erreur pour la nouvelle équipe.
+    setRows(criteria.map((c) => ({ criterion: c, score: 3, objective_score: null, achieved_score: null })));
+    setSaved(false);
     if (!teamId) {
       setHistory([]);
       setPlans([]);
@@ -150,6 +155,7 @@ export default function CohesionFormPage() {
     apiClient
       .get<Paginated<ActionPlan>>("/action-plans/", { params: { team: teamId } })
       .then((r) => setPlans(r.data.results));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
 
   const ownTeamExists = !isCompanyAdmin || departments.some((d) => d.manager === user!.id);
