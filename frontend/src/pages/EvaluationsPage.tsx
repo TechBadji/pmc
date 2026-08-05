@@ -141,9 +141,11 @@ export default function EvaluationsPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {scores.map((s) => (
+            {scores.map((s, i) => (
               <TableRow key={s.id}>
-                <TableCell>{s.skill_name}</TableCell>
+                <TableCell>
+                  {i + 1}. {s.skill_name}
+                </TableCell>
                 <TableCell align="right">{Number(s.score).toFixed(1)}</TableCell>
                 <TableCell align="right">{s.objective_score ? Number(s.objective_score).toFixed(1) : "—"}</TableCell>
                 <TableCell align="right">{s.achievement_rate ? Number(s.achievement_rate).toFixed(1) : "—"}</TableCell>

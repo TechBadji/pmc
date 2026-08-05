@@ -308,7 +308,7 @@ export default function EvaluationFormPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {items.map((item) => {
+              {items.map((item, i) => {
                 const previousObjective = previousObjectives[item.id];
                 const hasPreviousObjective = typeof previousObjective === "number";
                 return (
@@ -327,7 +327,9 @@ export default function EvaluationFormPage() {
                         }}
                       />
                     </TableCell>
-                    <TableCell>{item.name}</TableCell>
+                    <TableCell>
+                      {i + 1}. {item.name}
+                    </TableCell>
                     <TableCell align="center">
                       <TextField
                         type="number"

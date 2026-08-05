@@ -1,4 +1,5 @@
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
+import GridOnOutlinedIcon from "@mui/icons-material/GridOnOutlined";
 import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
 import TrendingFlatOutlinedIcon from "@mui/icons-material/TrendingFlatOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
@@ -45,6 +46,9 @@ import type { Evaluation, Paginated, PerformanceRating } from "@/api/types";
 import { CHART_NEUTRALS, performanceColors } from "@/theme";
 
 const AXIS_TICKS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+// Quadrillage secondaire (pas de 0.25) — lecture plus fine entre les
+// graduations principales de 0.5, sans les dupliquer.
+const MINOR_AXIS_TICKS = [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75];
 
 interface Point {
   userId: number;
@@ -401,6 +405,29 @@ function MatrixTrail({ xAxisMap, yAxisMap, trail }: any) {
  * (2,5 / 2,5) et un libellé par cadran, pour donner un sens de lecture
  * immédiat sans ajouter de couleur (les couleurs restent réservées aux
  * paliers de performance des vignettes, seul canal identitaire du graphe). */
+/** Fond gris clair optionnel de la zone de tracé, dessiné avant les
+ * quadrants/points (voir `matrixBackground`) — mêmes coordonnées d'échelle
+ * que MatrixQuadrants pour rester pixel-parfait avec les axes. */
+function MatrixBackground({ xAxisMap, yAxisMap, enabled }: any) {
+  if (!enabled) return null;
+  const xAxis = xAxisMap?.[0];
+  const yAxis = yAxisMap?.[0];
+  if (!xAxis || !yAxis) return null;
+  const x0 = xAxis.scale(0);
+  const x5 = xAxis.scale(5);
+  const y0 = yAxis.scale(0);
+  const y5 = yAxis.scale(5);
+  return (
+    <rect
+      x={Math.min(x0, x5)}
+      y={Math.min(y0, y5)}
+      width={Math.abs(x5 - x0)}
+      height={Math.abs(y0 - y5)}
+      fill="#f3f2ee"
+    />
+  );
+}
+
 function MatrixQuadrants({ xAxisMap, yAxisMap }: any) {
   const { t } = useTranslation();
   const xAxis = xAxisMap?.[0];
@@ -619,6 +646,7 @@ export default function ID3AMatrixPage() {
   const [memberFilter, setMemberFilter] = useState<number | "">("");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"matrix" | "objectives">("matrix");
+  const [matrixBackground, setMatrixBackground] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -888,6 +916,22 @@ export default function ID3AMatrixPage() {
             ))}
           </TextField>
         )}
+        {viewMode === "matrix" && (
+          <IconButton
+            size="small"
+            aria-label={t("id3aMatrix.toggleBackground")}
+            aria-pressed={matrixBackground}
+            onClick={() => setMatrixBackground((v) => !v)}
+            sx={{
+              border: "1px solid",
+              borderColor: matrixBackground ? "primary.main" : "divider",
+              color: matrixBackground ? "primary.main" : "text.secondary",
+              borderRadius: 1,
+            }}
+          >
+            <GridOnOutlinedIcon fontSize="small" />
+          </IconButton>
+        )}
       </Stack>
 
       {viewMode === "matrix" ? (
@@ -901,6 +945,8 @@ export default function ID3AMatrixPage() {
         <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
           <ResponsiveContainer width="100%" height={480}>
             <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
+              <Customized component={<MatrixBackground enabled={matrixBackground} />} />
+              <CartesianGrid horizontalValues={MINOR_AXIS_TICKS} verticalValues={MINOR_AXIS_TICKS} stroke="#e1e0d9" strokeDasharray="2 3" strokeOpacity={0.6} />
               <CartesianGrid stroke="#e1e0d9" />
               <XAxis
                 type="number"

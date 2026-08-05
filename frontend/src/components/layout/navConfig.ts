@@ -30,6 +30,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   COMPANY_ADMIN: [
     { labelKey: "nav.dashboard", path: "/", icon: "dashboard" },
     { labelKey: "nav.teams", path: "/teams", icon: "groups" },
+    { labelKey: "nav.cohesion", path: "/cohesion", icon: "hub" },
     { labelKey: "nav.skillMatrices", path: "/skills", icon: "school" },
     { labelKey: "nav.id3aMatrix", path: "/id3a-matrix", icon: "scatterPlot" },
     { labelKey: "nav.evaluationCampaigns", path: "/evaluation-campaigns", icon: "event" },
