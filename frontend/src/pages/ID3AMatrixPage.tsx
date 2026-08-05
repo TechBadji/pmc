@@ -43,6 +43,7 @@ import {
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Evaluation, Paginated, PerformanceRating } from "@/api/types";
+import StatCard from "@/components/StatCard";
 import { CHART_NEUTRALS, performanceColors } from "@/theme";
 
 const AXIS_TICKS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
@@ -717,6 +718,17 @@ export default function ID3AMatrixPage() {
     () => (selectedCampaignId ? filterEvaluations(selectedCampaignId) : []),
     [scopedEvaluations, selectedCampaignId]
   );
+
+  // TAP/TPR/TOPR — indicateurs d'équipe du CEO, calculés côté client à partir
+  // des points déjà chargés pour la matrice (pas d'appel réseau supplémentaire).
+  const teamKpis = useMemo(() => {
+    if (!currentPoints.length) return null;
+    const altitudes = currentPoints.map((p) => Number(p.altitude));
+    const tap = altitudes.reduce((s, v) => s + v, 0) / altitudes.length;
+    const tpr = (altitudes.filter((v) => v >= 90).length / altitudes.length) * 100;
+    const topr = (altitudes.filter((v) => v > 100).length / altitudes.length) * 100;
+    return { tap, tpr, topr };
+  }, [currentPoints]);
   const comparePoints = useMemo(
     () => (compareCampaignId !== NONE_PERIOD ? filterEvaluations(compareCampaignId) : []),
     [scopedEvaluations, compareCampaignId]
@@ -804,6 +816,14 @@ export default function ID3AMatrixPage() {
           {viewMode === "matrix" ? t("id3aMatrix.subtitleMatrix") : t("id3aMatrix.subtitleObjectives")}
         </Typography>
       </Box>
+
+      {canFilterLeadership && viewMode === "matrix" && teamKpis && (
+        <Stack direction="row" spacing={2} flexWrap="wrap">
+          <StatCard label={t("id3aMatrix.tap")} value={`${teamKpis.tap.toFixed(0)}%`} color="#2E8FCB" />
+          <StatCard label={t("id3aMatrix.tpr")} value={`${teamKpis.tpr.toFixed(0)}%`} color="#4caf50" />
+          <StatCard label={t("id3aMatrix.topr")} value={`${teamKpis.topr.toFixed(0)}%`} color="#0ca30c" />
+        </Stack>
+      )}
 
       {loadError && (
         <Alert

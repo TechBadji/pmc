@@ -9,6 +9,7 @@ import CohesionFormPage from "@/pages/CohesionFormPage";
 import CompaniesPage from "@/pages/CompaniesPage";
 import CompanyDepartmentsPage from "@/pages/CompanyDepartmentsPage";
 import DashboardPage from "@/pages/DashboardPage";
+import DepartmentDetailPage from "@/pages/DepartmentDetailPage";
 import EvaluationCampaignsPage from "@/pages/EvaluationCampaignsPage";
 import EvaluationFormPage from "@/pages/EvaluationFormPage";
 import EvaluationsPage from "@/pages/EvaluationsPage";
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/skills-admin" element={<SkillsAdminPage />} />
           <Route path="/upload" element={<BulkUploadPage />} />
           <Route path="/teams" element={<TeamsPage />} />
+          <Route path="/departments/:id" element={<DepartmentDetailPage />} />
           <Route path="/skills" element={<SkillsPage />} />
           <Route path="/cohesion" element={<CohesionFormPage />} />
           <Route path="/id3a-matrix" element={<ID3AMatrixPage />} />
