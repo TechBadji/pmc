@@ -26,17 +26,19 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
-import type { Department, Paginated, UserRecord } from "@/api/types";
+import type { Department, Evaluation, Paginated, UserRecord } from "@/api/types";
+import StatCard from "@/components/StatCard";
 
 export default function TeamsPage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [members, setMembers] = useState<UserRecord[]>([]);
+  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [deptDialog, setDeptDialog] = useState(false);
   const [memberDialog, setMemberDialog] = useState<Department | null>(null);
   const [deptName, setDeptName] = useState("");
@@ -55,15 +57,35 @@ export default function TeamsPage() {
     Promise.all([
       apiClient.get<Paginated<Department>>("/departments/", { params: { page_size: 500 } }),
       apiClient.get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } }),
+      apiClient.get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } }),
     ])
-      .then(([deptRes, usersRes]) => {
+      .then(([deptRes, usersRes, evalRes]) => {
         setDepartments(deptRes.data.results);
         setMembers(usersRes.data.results);
+        setEvaluations(evalRes.data.results);
       })
       .catch(() => setLoadError(true));
   }
 
   useEffect(load, []);
+
+  // TAP/TPR/TOPR de l'équipe du manager (rubrique "Mon équipe") — dernière
+  // évaluation connue de chaque membre, même définition que côté CEO.
+  const teamKpis = useMemo(() => {
+    if (user?.role !== "MANAGER") return null;
+    const lastByUser = new Map<number, Evaluation>();
+    evaluations.forEach((e) => {
+      const current = lastByUser.get(e.user);
+      if (!current || e.campaign_start_date > current.campaign_start_date) lastByUser.set(e.user, e);
+    });
+    const altitudes = Array.from(lastByUser.values()).map((e) => Number(e.altitude_percentage));
+    if (!altitudes.length) return null;
+    return {
+      tap: altitudes.reduce((s, v) => s + v, 0) / altitudes.length,
+      tpr: (altitudes.filter((v) => v >= 90).length / altitudes.length) * 100,
+      topr: (altitudes.filter((v) => v > 100).length / altitudes.length) * 100,
+    };
+  }, [evaluations, user]);
 
   async function handleCreateDepartment() {
     await apiClient.post("/departments/", { name: deptName, code: deptCode });
@@ -121,6 +143,14 @@ export default function TeamsPage() {
           </Button>
         )}
       </Stack>
+
+      {teamKpis && (
+        <Stack direction="row" spacing={2} flexWrap="wrap">
+          <StatCard label={t("id3aMatrix.tap")} value={`${teamKpis.tap.toFixed(0)}%`} color="#2E8FCB" />
+          <StatCard label={t("id3aMatrix.tpr")} value={`${teamKpis.tpr.toFixed(0)}%`} color="#4caf50" />
+          <StatCard label={t("id3aMatrix.topr")} value={`${teamKpis.topr.toFixed(0)}%`} color="#0ca30c" />
+        </Stack>
+      )}
 
       {actionMessage && (
         <Alert severity="success" onClose={() => setActionMessage(null)}>

@@ -150,6 +150,7 @@ class UserSerializer(serializers.ModelSerializer):
         source="department.name", read_only=True, default=None
     )
     avatar = serializers.SerializerMethodField()
+    avatar_full_body = serializers.SerializerMethodField()
 
     def get_avatar(self, obj):
         # URL relative volontairement (jamais construite via
@@ -160,6 +161,9 @@ class UserSerializer(serializers.ModelSerializer):
         # propre origin et re-proxyée correctement par Vite.
         return obj.avatar.url if obj.avatar else None
 
+    def get_avatar_full_body(self, obj):
+        return obj.avatar_full_body.url if obj.avatar_full_body else None
+
     age = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -168,8 +172,8 @@ class UserSerializer(serializers.ModelSerializer):
             "id", "email", "first_name", "last_name", "full_name",
             "role", "role_display", "position", "company", "department",
             "department_name", "manager", "is_active", "generated_login",
-            "must_change_password", "avatar", "phone", "birth_date", "age",
-            "theme_preference", "language", "date_joined",
+            "must_change_password", "avatar", "avatar_full_body", "phone",
+            "birth_date", "age", "theme_preference", "language", "date_joined",
         ]
         read_only_fields = ["id", "date_joined", "company", "generated_login"]
 
@@ -208,12 +212,13 @@ class MeUpdateSerializer(serializers.ModelSerializer):
     administrateur."""
 
     avatar = serializers.ImageField(required=False, allow_null=True)
+    avatar_full_body = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
         fields = [
             "first_name", "last_name", "position", "phone",
-            "theme_preference", "language", "avatar",
+            "theme_preference", "language", "avatar", "avatar_full_body",
         ]
 
 

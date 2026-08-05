@@ -100,6 +100,13 @@ class User(AbstractUser):
     avatar = models.ImageField(
         "Photo de profil", upload_to="avatars/", null=True, blank=True
     )
+    avatar_full_body = models.ImageField(
+        "Photo pleine hauteur",
+        upload_to="avatars_full/",
+        null=True,
+        blank=True,
+        help_text="Portrait debout, affiché sur la fiche d'évaluation des managers.",
+    )
     phone = models.CharField("Téléphone", max_length=30, blank=True)
     birth_date = models.DateField("Date de naissance", null=True, blank=True)
 

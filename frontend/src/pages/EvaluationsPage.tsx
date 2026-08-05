@@ -8,6 +8,11 @@ import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  MenuItem,
   Paper,
   Stack,
   Table,
@@ -17,13 +22,16 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TextField,
   Typography,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
+import { useAppSelector } from "@/app/hooks";
 import type { Evaluation, Paginated, SkillScore, UserRecord } from "@/api/types";
+import StatCard from "@/components/StatCard";
 import { performanceColors } from "@/theme";
 
 function average(values: number[]): number | null {
@@ -64,9 +72,15 @@ function DeltaBadge({ current, previous }: { current: number; previous: number |
 export default function EvaluationsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAppSelector((s) => s.auth);
+  // Un manager évalue les membres de son équipe ; l'Admin Entreprise évalue
+  // ses directeurs (rôle MANAGER) — même page, même parcours, scope différent.
+  const evaluatedRole = user?.role === "COMPANY_ADMIN" ? "MANAGER" : "MEMBER";
   const [members, setMembers] = useState<UserRecord[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<number | "">("");
+  const [skillDialog, setSkillDialog] = useState<{ skillItem: number; name: string; type: "HARD" | "SOFT" } | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loadError, setLoadError] = useState(false);
@@ -74,21 +88,32 @@ export default function EvaluationsPage() {
   function load() {
     setLoadError(false);
     Promise.all([
-      apiClient.get<Paginated<UserRecord>>("/users/", { params: { page_size: 500, role: "MEMBER" } }),
+      apiClient.get<Paginated<UserRecord>>("/users/", { params: { page_size: 500, role: evaluatedRole } }),
       apiClient.get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } }),
     ])
       .then(([membersRes, evaluationsRes]) => {
         setMembers(membersRes.data.results);
         setEvaluations(evaluationsRes.data.results);
+        const sorted = [...evaluationsRes.data.results].sort((a, b) => a.campaign_start_date.localeCompare(b.campaign_start_date));
+        if (sorted.length) setSelectedCampaignId((prev) => (prev === "" ? sorted[sorted.length - 1].campaign : prev));
       })
       .catch(() => setLoadError(true));
   }
 
   useEffect(load, []);
 
+  // Campagnes distinctes disponibles, triées chronologiquement — alimente le
+  // sélecteur de période global (remplace l'ancienne colonne "Période" par
+  // ligne, qui n'affichait toujours que la dernière évaluation connue).
+  const campaignOptions = useMemo(() => {
+    const byId = new Map<number, { id: number; name: string; start_date: string }>();
+    evaluations.forEach((e) => byId.set(e.campaign, { id: e.campaign, name: e.campaign_name, start_date: e.campaign_start_date }));
+    return Array.from(byId.values()).sort((a, b) => a.start_date.localeCompare(b.start_date));
+  }, [evaluations]);
+
   // Historique complet (trié chronologiquement) par collaborateur — permet de
-  // retrouver aussi bien la dernière évaluation que celle d'avant, pour
-  // calculer une tendance, sans requête supplémentaire.
+  // retrouver l'évaluation de n'importe quelle période sélectionnée ainsi que
+  // celle qui la précède, pour calculer une tendance, sans requête supplémentaire.
   const historyByMember = useMemo(() => {
     const map = new Map<number, Evaluation[]>();
     evaluations.forEach((e) => {
@@ -99,24 +124,54 @@ export default function EvaluationsPage() {
     return map;
   }, [evaluations]);
 
-  const lastEvaluationByMember = useMemo(() => {
+  const evaluationForSelectedCampaign = useMemo(() => {
     const map = new Map<number, Evaluation>();
-    historyByMember.forEach((list, userId) => map.set(userId, list[list.length - 1]));
+    if (selectedCampaignId !== "") {
+      evaluations.forEach((e) => {
+        if (e.campaign === selectedCampaignId) map.set(e.user, e);
+      });
+    }
     return map;
-  }, [historyByMember]);
+  }, [evaluations, selectedCampaignId]);
+
+  // Moyennes d'équipe sur la période sélectionnée — THSI/TSI (indices moyens)
+  // et TPPR/TOSPR (taux d'équipe >= 90 % / > 100 %), même définition que
+  // TAP/TPR/TOPR côté CEO mais restreinte à l'équipe du manager.
+  const teamAverages = useMemo(() => {
+    const evals = Array.from(evaluationForSelectedCampaign.values());
+    if (!evals.length) return null;
+    const altitudes = evals.map((e) => Number(e.altitude_percentage));
+    return {
+      thsi: average(evals.map((e) => Number(e.hsi))),
+      tsi: average(evals.map((e) => Number(e.ssi))),
+      tppr: (altitudes.filter((v) => v >= 90).length / altitudes.length) * 100,
+      tospr: (altitudes.filter((v) => v > 100).length / altitudes.length) * 100,
+    };
+  }, [evaluationForSelectedCampaign]);
 
   const pagedMembers = members.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const selectedMember = members.find((m) => m.id === selectedMemberId) ?? null;
   const selectedHistory = selectedMemberId ? historyByMember.get(selectedMemberId) ?? [] : [];
-  const selectedEvaluation = selectedHistory[selectedHistory.length - 1] ?? null;
-  const previousEvaluation = selectedHistory.length > 1 ? selectedHistory[selectedHistory.length - 2] : null;
+  const selectedEvaluation = selectedHistory.find((e) => e.campaign === selectedCampaignId) ?? null;
+  const selectedIndex = selectedEvaluation ? selectedHistory.indexOf(selectedEvaluation) : -1;
+  const previousEvaluation = selectedIndex > 0 ? selectedHistory[selectedIndex - 1] : null;
 
   const hardScores: SkillScore[] = selectedEvaluation?.skill_scores.filter((s) => s.skill_type === "HARD") ?? [];
   const softScores: SkillScore[] = selectedEvaluation?.skill_scores.filter((s) => s.skill_type === "SOFT") ?? [];
 
   const hso = average(hardScores.map((s) => s.objective_score).filter((v): v is string => v !== null).map(Number));
   const sso = average(softScores.map((s) => s.objective_score).filter((v): v is string => v !== null).map(Number));
+
+  const skillHistory = useMemo(() => {
+    if (!skillDialog) return [];
+    return selectedHistory
+      .map((e) => ({
+        period: e.campaign_name,
+        score: e.skill_scores.find((s) => s.skill_item === skillDialog.skillItem) ?? null,
+      }))
+      .filter((row) => row.score !== null) as { period: string; score: SkillScore }[];
+  }, [skillDialog, selectedHistory]);
 
   function handleNewEvaluation(member: UserRecord) {
     navigate(`/evaluations/new?user=${member.id}`);
@@ -142,7 +197,12 @@ export default function EvaluationsPage() {
           </TableHead>
           <TableBody>
             {scores.map((s, i) => (
-              <TableRow key={s.id}>
+              <TableRow
+                key={s.id}
+                hover
+                sx={{ cursor: "pointer" }}
+                onClick={() => setSkillDialog({ skillItem: s.skill_item, name: s.skill_name, type: s.skill_type })}
+              >
                 <TableCell>
                   {i + 1}. {s.skill_name}
                 </TableCell>
@@ -159,14 +219,32 @@ export default function EvaluationsPage() {
 
   return (
     <Stack spacing={3}>
-      <Box>
-        <Typography variant="h5" fontWeight={700}>
-          {t("evaluations.title")}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t("evaluations.clickHint")}
-        </Typography>
-      </Box>
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
+        <Box>
+          <Typography variant="h5" fontWeight={700}>
+            {t("evaluations.title")}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t("evaluations.clickHint")}
+          </Typography>
+        </Box>
+        {campaignOptions.length > 0 && (
+          <TextField
+            select
+            size="small"
+            label={t("common.period")}
+            value={selectedCampaignId}
+            onChange={(e) => setSelectedCampaignId(Number(e.target.value))}
+            sx={{ minWidth: 200 }}
+          >
+            {campaignOptions.map((c) => (
+              <MenuItem key={c.id} value={c.id}>
+                {c.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
+      </Stack>
 
       {loadError && (
         <Alert
@@ -181,6 +259,15 @@ export default function EvaluationsPage() {
         </Alert>
       )}
 
+      {teamAverages && (
+        <Stack direction="row" spacing={2} flexWrap="wrap">
+          <StatCard label="THSI" value={teamAverages.thsi ?? "—"} color="#2E5AAC" />
+          <StatCard label="TSI" value={teamAverages.tsi ?? "—"} color="#3F9142" />
+          <StatCard label={t("evaluations.tppr")} value={`${teamAverages.tppr.toFixed(0)}%`} color="#4caf50" />
+          <StatCard label={t("evaluations.tospr")} value={`${teamAverages.tospr.toFixed(0)}%`} color="#0ca30c" />
+        </Stack>
+      )}
+
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
         <TableContainer>
           <Table size="small">
@@ -188,7 +275,6 @@ export default function EvaluationsPage() {
               <TableRow>
                 <TableCell>{t("dashboard.manager.member")}</TableCell>
                 <TableCell>{t("common.position")}</TableCell>
-                <TableCell>{t("common.period")}</TableCell>
                 <TableCell align="center">HSI</TableCell>
                 <TableCell align="center">SSI</TableCell>
                 <TableCell align="right">{t("dashboard.manager.altitude")}</TableCell>
@@ -197,7 +283,7 @@ export default function EvaluationsPage() {
             </TableHead>
             <TableBody>
               {pagedMembers.map((m) => {
-                const last = lastEvaluationByMember.get(m.id);
+                const evalRow = evaluationForSelectedCampaign.get(m.id);
                 return (
                   <TableRow
                     key={m.id}
@@ -224,18 +310,17 @@ export default function EvaluationsPage() {
                       </Stack>
                     </TableCell>
                     <TableCell>{m.position}</TableCell>
-                    <TableCell>{last?.campaign_name ?? "—"}</TableCell>
-                    <TableCell align="center">{last?.hsi ?? "—"}</TableCell>
-                    <TableCell align="center">{last?.ssi ?? "—"}</TableCell>
-                    <TableCell align="right">{last ? `${last.altitude_percentage}%` : "—"}</TableCell>
+                    <TableCell align="center">{evalRow?.hsi ?? "—"}</TableCell>
+                    <TableCell align="center">{evalRow?.ssi ?? "—"}</TableCell>
+                    <TableCell align="right">{evalRow ? `${evalRow.altitude_percentage}%` : "—"}</TableCell>
                     <TableCell>
-                      {last ? (
+                      {evalRow ? (
                         <Chip
                           size="small"
-                          label={t(`common.performance.${last.performance_rating}`)}
+                          label={t(`common.performance.${evalRow.performance_rating}`)}
                           sx={{
-                            bgcolor: performanceColors[last.performance_rating] + "22",
-                            color: performanceColors[last.performance_rating],
+                            bgcolor: performanceColors[evalRow.performance_rating] + "22",
+                            color: performanceColors[evalRow.performance_rating],
                             fontWeight: 600,
                           }}
                         />
@@ -318,6 +403,17 @@ export default function EvaluationsPage() {
 
           {selectedEvaluation ? (
             <>
+              {selectedMember.avatar_full_body && selectedMember.role === "MANAGER" && (
+                <Box sx={{ float: { sm: "right" }, ml: { sm: 3 }, mb: 2, textAlign: "center" }}>
+                  <Box
+                    component="img"
+                    src={selectedMember.avatar_full_body}
+                    alt={selectedMember.full_name}
+                    sx={{ height: 260, borderRadius: 1, objectFit: "cover" }}
+                  />
+                </Box>
+              )}
+
               {/* Altitude — la métrique qui résume la performance globale,
                   mise en avant en priorité devant le détail HSI/SSI. */}
               <Paper
@@ -441,11 +537,46 @@ export default function EvaluationsPage() {
             </>
           ) : (
             <Typography color="text.secondary">
-              {t("evaluations.noEvaluationYet", { name: selectedMember.full_name })}
+              {t("evaluations.noEvaluationForPeriod", { name: selectedMember.full_name })}
             </Typography>
           )}
         </Paper>
       )}
+
+      <Dialog open={!!skillDialog} onClose={() => setSkillDialog(null)} fullWidth maxWidth="xs">
+        <DialogTitle>{skillDialog?.name}</DialogTitle>
+        <DialogContent>
+          {skillHistory.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              {t("evaluations.noSkillHistory")}
+            </Typography>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t("common.period")}</TableCell>
+                  <TableCell align="right">{t("evaluationForm.current")}</TableCell>
+                  <TableCell align="right">{t("evaluationForm.objective")}</TableCell>
+                  <TableCell align="right">{t("evaluationForm.achieved")}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {skillHistory.map((row, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{row.period}</TableCell>
+                    <TableCell align="right">{Number(row.score.score).toFixed(1)}</TableCell>
+                    <TableCell align="right">{row.score.objective_score ? Number(row.score.objective_score).toFixed(1) : "—"}</TableCell>
+                    <TableCell align="right">{row.score.achievement_rate ? Number(row.score.achievement_rate).toFixed(1) : "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSkillDialog(null)}>{t("common.close")}</Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

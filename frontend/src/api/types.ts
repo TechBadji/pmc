@@ -19,6 +19,7 @@ export interface Me {
   manager: number | null;
   must_change_password: boolean;
   avatar: string | null;
+  avatar_full_body: string | null;
   phone: string;
   birth_date: string | null;
   age: number | null;
@@ -88,6 +89,7 @@ export interface UserRecord {
   generated_login: string;
   must_change_password: boolean;
   avatar: string | null;
+  avatar_full_body: string | null;
   phone: string;
   birth_date: string | null;
   age: number | null;
