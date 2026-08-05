@@ -57,6 +57,11 @@ export function cohesionColor(score: number): string {
   return COHESION_TIER_COLORS[tier - 1];
 }
 
+// Accent "rang exécutif" — usage unique et volontairement hors de la palette
+// de statut/marque : distingue le nœud CEO dans l'organigramme de l'équipe
+// dirigeante, jamais réutilisé comme code de performance ou de catégorie.
+export const EXECUTIVE_BADGE_COLOR = "#9C7A2E";
+
 export function createAppTheme(mode: PaletteMode) {
   return createTheme({
     palette: {

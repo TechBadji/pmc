@@ -130,7 +130,10 @@
       "headcount": "Headcount",
       "hsiManager": "HSI (manager)",
       "ssiManager": "SSI (manager)",
-      "performance": "Performance"
+      "performance": "Performance",
+      "leadershipTitle": "Leadership Team Overview",
+      "age": "Age",
+      "teamHeadcount": "Team headcount"
     },
     "manager": {
       "member": "Team member",

@@ -130,7 +130,10 @@
       "headcount": "Effectif",
       "hsiManager": "HSI (manager)",
       "ssiManager": "SSI (manager)",
-      "performance": "Performance"
+      "performance": "Performance",
+      "leadershipTitle": "Aperçu de l'Équipe Dirigeante",
+      "age": "Âge",
+      "teamHeadcount": "Effectif de l'équipe"
     },
     "manager": {
       "member": "Collaborateur",

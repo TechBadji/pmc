@@ -16,7 +16,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
+import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, Paginated, UserRecord } from "@/api/types";
+import LeadershipOverview from "@/components/LeadershipOverview";
 import StatCard from "@/components/StatCard";
 import { performanceColors } from "@/theme";
 
@@ -35,6 +37,7 @@ function average(values: number[]): number {
 export default function CompanyAdminDashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAppSelector((s) => s.auth);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [members, setMembers] = useState<UserRecord[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -90,8 +93,12 @@ export default function CompanyAdminDashboard() {
     return "OUTSTANDING" as const;
   }
 
+  const directors = members.filter((m) => m.role === "MANAGER");
+
   return (
     <Stack spacing={3}>
+      {user && <LeadershipOverview ceo={user} directors={directors} departments={departments} />}
+
       <Typography variant="h5" fontWeight={700}>
         {t("dashboard.companyAdmin.title")}
       </Typography>
