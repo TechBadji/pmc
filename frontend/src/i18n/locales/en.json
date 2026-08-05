@@ -241,7 +241,7 @@
     "competencyNameLabel": "Competency name"
   },
   "cohesion": {
-    "title": "Module 1 — Team Cohesion Analysis",
+    "title": "Team Cohesion Sheet",
     "team": "Team",
     "iceLabel": "TCI",
     "oceLabel": "TCO",
@@ -256,7 +256,7 @@
     "ceoTeamName": "Executive Committee",
     "provisionOwnTeam": "Set up my leadership team",
     "provisionHint": "No leadership team is set up for you yet. Create it to track the cohesion of your direct reports.",
-    "criterionCol": "Criterion",
+    "criterionCol": "COHESION CRITERIA",
     "scoreCol": "Score",
     "oceCol": "TCO",
     "achievedCol": "Achieved",

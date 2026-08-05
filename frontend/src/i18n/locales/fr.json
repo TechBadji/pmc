@@ -241,7 +241,7 @@
     "competencyNameLabel": "Nom de la compétence"
   },
   "cohesion": {
-    "title": "Module 1 — Analyse de Cohésion d'Équipe",
+    "title": "Fiche de Cohésion d'Équipe",
     "team": "Équipe",
     "iceLabel": "ICE",
     "oceLabel": "OCE",
@@ -256,7 +256,7 @@
     "ceoTeamName": "Comité de Direction",
     "provisionOwnTeam": "Configurer mon équipe de direction",
     "provisionHint": "Aucune équipe de direction n'est encore configurée pour vous. Créez-la pour suivre la cohésion de vos rapports directs.",
-    "criterionCol": "Critère",
+    "criterionCol": "CRITERES DE COHESION",
     "scoreCol": "Score",
     "oceCol": "OCE",
     "achievedCol": "Réalisé",

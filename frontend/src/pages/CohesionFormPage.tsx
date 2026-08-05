@@ -307,34 +307,29 @@ export default function CohesionFormPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell rowSpan={2} sx={{ width: "30%", verticalAlign: "bottom", bgcolor: "#dbe4ee", fontWeight: 700 }}>
+                    <TableCell sx={{ width: "30%", bgcolor: "#dbe4ee", fontWeight: 700, fontSize: 12 }}>
                       {t("cohesion.criterionCol")}
                     </TableCell>
-                    <TableCell colSpan={5} align="center" sx={{ fontWeight: 700, color: "text.secondary" }}>
-                      {t("cohesion.scoreCol")}
-                    </TableCell>
-                    <TableCell rowSpan={2} align="center" sx={{ verticalAlign: "bottom", fontWeight: 700 }}>
-                      {t("cohesion.totalCol")}
-                    </TableCell>
-                    <TableCell rowSpan={2} align="center" sx={{ verticalAlign: "bottom", fontWeight: 700, bgcolor: "#fff4c2" }}>
-                      {t("cohesion.oceCol")}
-                    </TableCell>
-                    <TableCell rowSpan={2} align="center" sx={{ verticalAlign: "bottom", fontWeight: 700, bgcolor: "#dbeeff" }}>
-                      {t("cohesion.achievedCol")}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
                     {TIERS.map((tier) => (
                       <TableCell
                         key={tier}
                         align="center"
-                        sx={{ bgcolor: cohesionColor(tier), color: "#fff", fontWeight: 700, lineHeight: 1.2, minWidth: 72 }}
+                        sx={{ bgcolor: cohesionColor(tier), color: "#fff", fontWeight: 700, fontSize: 11, lineHeight: 1.2, minWidth: 72 }}
                       >
                         {t(TIER_LABELS[tier - 1]).toUpperCase()}
                         <br />
                         {tier}
                       </TableCell>
                     ))}
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
+                      {t("cohesion.totalCol")}
+                    </TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12, bgcolor: "#fff4c2" }}>
+                      {t("cohesion.oceCol")}
+                    </TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12, bgcolor: "#dbeeff" }}>
+                      {t("cohesion.achievedCol")}
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
