@@ -293,9 +293,6 @@ export default function CohesionFormPage() {
 
         {teamId && (
           <Stack alignItems={{ xs: "flex-start", sm: "flex-end" }} spacing={1}>
-            <Typography variant="subtitle1" fontWeight={700}>
-              {t("cohesion.subtitle")}
-            </Typography>
             <Stack direction="row" spacing={3} flexWrap="wrap">
               <ValueBox label={t("cohesion.iceLabel")} value={ice} />
               <ValueBox label={t("cohesion.oceLabel")} value={oce} bg="#fff4c2" />

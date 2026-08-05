@@ -252,7 +252,6 @@
     "teamSize": "{{count}} member",
     "teamSize_other": "{{count}} members",
     "headcount": "Headcount",
-    "subtitle": "ID-PMC — Team Cohesion Sheet",
     "ceoTeamName": "Executive Committee",
     "provisionOwnTeam": "Set up my leadership team",
     "provisionHint": "No leadership team is set up for you yet. Create it to track the cohesion of your direct reports.",
