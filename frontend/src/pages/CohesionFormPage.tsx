@@ -3,7 +3,6 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -18,8 +17,6 @@ import {
   TableHead,
   TableRow,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
@@ -56,32 +53,57 @@ function sixMonthsFromNow(): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Pastille circulaire colorée (barème 1-5) — ICE/OCE en tête de page. */
-function ScorePastille({ label, value }: { label: string; value: number | null }) {
-  const color = value !== null ? cohesionColor(value) : "#c9c8c0";
+const TIER_LABELS = ["cohesion.legend.1", "cohesion.legend.2", "cohesion.legend.3", "cohesion.legend.4", "cohesion.legend.5"];
+
+/** Encadré valeur (ICE/OCE/Réalisé) — reprend le style "case Excel" de la
+ * fiche ID-PMC de référence : boîte bordée avec la valeur en grand. */
+function ValueBox({ label, value, bg, suffix }: { label: string; value: number | string | null; bg?: string; suffix?: string }) {
   return (
-    <Stack alignItems="center" spacing={0.5}>
-      <Box
-        sx={{
-          width: 84,
-          height: 84,
-          borderRadius: "50%",
-          bgcolor: color + "22",
-          border: "3px solid",
-          borderColor: color,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Typography variant="h5" fontWeight={700} sx={{ color }}>
-          {value !== null ? value.toFixed(1) : "—"}
-        </Typography>
-      </Box>
-      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Typography variant="subtitle2" fontWeight={700}>
         {label}
       </Typography>
+      <Box
+        sx={{
+          minWidth: 64,
+          px: 1.5,
+          py: 0.5,
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 1,
+          bgcolor: bg ?? "background.paper",
+          textAlign: "center",
+        }}
+      >
+        <Typography variant="h6" fontWeight={700}>
+          {value !== null ? `${typeof value === "number" ? value.toFixed(1) : value}${suffix ?? ""}` : "—"}
+        </Typography>
+      </Box>
     </Stack>
+  );
+}
+
+/** Pastille ovale sélectionnable — une par palier (1 à 5), colorée quand
+ * sélectionnée, grise sinon — reprend les boutons de la fiche Excel ID-PMC. */
+function ScoreOval({ selected, color, onClick, ariaLabel }: { selected: boolean; color: string; onClick: () => void; ariaLabel: string }) {
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      aria-pressed={selected}
+      sx={{
+        width: 40,
+        height: 24,
+        borderRadius: 12,
+        border: "none",
+        cursor: "pointer",
+        bgcolor: selected ? color : "#d9d8d2",
+        transition: "background-color 0.15s",
+        "&:hover": { bgcolor: selected ? color : "#c3c2ba" },
+      }}
+    />
   );
 }
 
@@ -205,34 +227,13 @@ export default function CohesionFormPage() {
   );
 
   return (
-    <Stack spacing={3} maxWidth={980}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-        <Typography variant="h5" fontWeight={700}>
-          {t("cohesion.title")}
+    <Stack spacing={3} maxWidth={1180}>
+      {/* Bandeau titre — reprend l'entête beige de la fiche ID-PMC de référence. */}
+      <Paper elevation={0} sx={{ py: 1.5, textAlign: "center", bgcolor: "#e8dfc8", border: "1px solid", borderColor: "divider" }}>
+        <Typography variant="h6" fontWeight={700} sx={{ color: "#3a3a2e" }}>
+          {t("cohesion.title").toUpperCase()}
         </Typography>
-        <Stack direction="row" spacing={2} alignItems="center">
-          <TextField
-            select
-            label={t("cohesion.team")}
-            value={teamId}
-            onChange={(e) => {
-              setTeamId(Number(e.target.value));
-              setSaved(false);
-            }}
-            size="small"
-            sx={{ minWidth: 240 }}
-          >
-            {departments.map((d) => (
-              <MenuItem key={d.id} value={d.id}>
-                {d.name}
-              </MenuItem>
-            ))}
-          </TextField>
-          {selectedDept && (
-            <Chip size="small" variant="outlined" label={t("cohesion.teamSize", { count: selectedDept.member_count })} />
-          )}
-        </Stack>
-      </Stack>
+      </Paper>
 
       {isCompanyAdmin && !ownTeamExists && (
         <Alert
@@ -247,47 +248,93 @@ export default function CohesionFormPage() {
         </Alert>
       )}
 
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={3}>
+        <Stack spacing={1.5}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="subtitle2" fontWeight={700} sx={{ minWidth: 90 }}>
+              {t("cohesion.team")}
+            </Typography>
+            <TextField
+              select
+              value={teamId}
+              onChange={(e) => {
+                setTeamId(Number(e.target.value));
+                setSaved(false);
+              }}
+              size="small"
+              sx={{ minWidth: 260 }}
+            >
+              {departments.map((d) => (
+                <MenuItem key={d.id} value={d.id}>
+                  {d.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+          {selectedDept && (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="subtitle2" fontWeight={700} sx={{ minWidth: 90 }}>
+                {t("cohesion.headcount")}
+              </Typography>
+              <Box sx={{ px: 1.5, py: 0.5, border: "1px solid", borderColor: "divider", borderRadius: 1, minWidth: 60, textAlign: "center" }}>
+                <Typography variant="body2" fontWeight={700}>
+                  {selectedDept.member_count}
+                </Typography>
+              </Box>
+            </Stack>
+          )}
+        </Stack>
+
+        {teamId && (
+          <Stack alignItems={{ xs: "flex-start", sm: "flex-end" }} spacing={1}>
+            <Typography variant="subtitle1" fontWeight={700}>
+              {t("cohesion.subtitle")}
+            </Typography>
+            <Stack direction="row" spacing={3} flexWrap="wrap">
+              <ValueBox label={t("cohesion.iceLabel")} value={ice} />
+              <ValueBox label={t("cohesion.oceLabel")} value={oce} bg="#fff4c2" />
+              <ValueBox label={t("cohesion.achievedLabel")} value={achieved} bg="#dbeeff" />
+              <ValueBox label={t("cohesion.tcoLabel")} value={tco} suffix="%" />
+            </Stack>
+          </Stack>
+        )}
+      </Stack>
+
       {teamId && (
         <>
-          <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}>
-            <Stack direction="row" spacing={4} alignItems="center" justifyContent="center" flexWrap="wrap">
-              <ScorePastille label={t("cohesion.iceLabel")} value={ice} />
-              <ScorePastille label={t("cohesion.oceLabel")} value={oce} />
-              <ScorePastille label={t("cohesion.achievedLabel")} value={achieved} />
-              {tco !== null && (
-                <Stack alignItems="center" spacing={0.5}>
-                  <Typography variant="h5" fontWeight={700} color="text.primary">
-                    {tco}%
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                    {t("cohesion.tcoLabel")}
-                  </Typography>
-                </Stack>
-              )}
-            </Stack>
-          </Paper>
-
-          <Stack direction="row" spacing={2} flexWrap="wrap" justifyContent="center">
-            {TIERS.map((tier) => (
-              <Stack key={tier} direction="row" spacing={0.75} alignItems="center">
-                <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: cohesionColor(tier) }} />
-                <Typography variant="caption" color="text.secondary">
-                  {tier} — {t(`cohesion.legend.${tier}`)}
-                </Typography>
-              </Stack>
-            ))}
-          </Stack>
-
           <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
             <TableContainer>
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ width: "38%" }}>{t("cohesion.criterionCol")}</TableCell>
-                    <TableCell align="center">{t("cohesion.scoreCol")}</TableCell>
-                    <TableCell align="center">{t("cohesion.oceCol")}</TableCell>
-                    <TableCell align="center">{t("cohesion.achievedCol")}</TableCell>
-                    <TableCell align="center">{t("cohesion.totalCol")}</TableCell>
+                    <TableCell rowSpan={2} sx={{ width: "30%", verticalAlign: "bottom", bgcolor: "#dbe4ee", fontWeight: 700 }}>
+                      {t("cohesion.criterionCol")}
+                    </TableCell>
+                    <TableCell colSpan={5} align="center" sx={{ fontWeight: 700, color: "text.secondary" }}>
+                      {t("cohesion.scoreCol")}
+                    </TableCell>
+                    <TableCell rowSpan={2} align="center" sx={{ verticalAlign: "bottom", fontWeight: 700 }}>
+                      {t("cohesion.totalCol")}
+                    </TableCell>
+                    <TableCell rowSpan={2} align="center" sx={{ verticalAlign: "bottom", fontWeight: 700, bgcolor: "#fff4c2" }}>
+                      {t("cohesion.oceCol")}
+                    </TableCell>
+                    <TableCell rowSpan={2} align="center" sx={{ verticalAlign: "bottom", fontWeight: 700, bgcolor: "#dbeeff" }}>
+                      {t("cohesion.achievedCol")}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    {TIERS.map((tier) => (
+                      <TableCell
+                        key={tier}
+                        align="center"
+                        sx={{ bgcolor: cohesionColor(tier), color: "#fff", fontWeight: 700, lineHeight: 1.2, minWidth: 72 }}
+                      >
+                        {t(TIER_LABELS[tier - 1]).toUpperCase()}
+                        <br />
+                        {tier}
+                      </TableCell>
+                    ))}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -298,33 +345,24 @@ export default function CohesionFormPage() {
                           {i + 1}. {row.criterion}
                         </Typography>
                       </TableCell>
+                      {TIERS.map((tier) => (
+                        <TableCell key={tier} align="center">
+                          <ScoreOval
+                            selected={row.score === tier}
+                            color={cohesionColor(tier)}
+                            onClick={() => updateRow(i, { score: tier })}
+                            ariaLabel={`${row.criterion} — ${tier}`}
+                          />
+                        </TableCell>
+                      ))}
                       <TableCell align="center">
-                        <ToggleButtonGroup
-                          size="small"
-                          exclusive
-                          value={row.score}
-                          onChange={(_, v) => v && updateRow(i, { score: v })}
-                        >
-                          {TIERS.map((tier) => (
-                            <ToggleButton
-                              key={tier}
-                              value={tier}
-                              sx={{
-                                px: 1,
-                                py: 0.25,
-                                "&.Mui-selected": {
-                                  bgcolor: cohesionColor(tier) + "33",
-                                  color: cohesionColor(tier),
-                                  "&:hover": { bgcolor: cohesionColor(tier) + "44" },
-                                },
-                              }}
-                            >
-                              {tier}
-                            </ToggleButton>
-                          ))}
-                        </ToggleButtonGroup>
+                        <Box sx={{ px: 1, py: 0.25, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+                          <Typography variant="body2" fontWeight={700}>
+                            {row.score.toFixed(1)}
+                          </Typography>
+                        </Box>
                       </TableCell>
-                      <TableCell align="center">
+                      <TableCell align="center" sx={{ bgcolor: "#fffaf0" }}>
                         <TextField
                           select
                           size="small"
@@ -332,7 +370,7 @@ export default function CohesionFormPage() {
                           onChange={(e) =>
                             updateRow(i, { objective_score: e.target.value === "" ? null : Number(e.target.value) })
                           }
-                          sx={{ minWidth: 72 }}
+                          sx={{ minWidth: 64, bgcolor: "#fff4c2", borderRadius: 1 }}
                         >
                           <MenuItem value="">{t("cohesion.unset")}</MenuItem>
                           {TIERS.map((tier) => (
@@ -342,7 +380,7 @@ export default function CohesionFormPage() {
                           ))}
                         </TextField>
                       </TableCell>
-                      <TableCell align="center">
+                      <TableCell align="center" sx={{ bgcolor: "#f5faff" }}>
                         <TextField
                           select
                           size="small"
@@ -350,7 +388,7 @@ export default function CohesionFormPage() {
                           onChange={(e) =>
                             updateRow(i, { achieved_score: e.target.value === "" ? null : Number(e.target.value) })
                           }
-                          sx={{ minWidth: 72 }}
+                          sx={{ minWidth: 64, bgcolor: "#dbeeff", borderRadius: 1 }}
                         >
                           <MenuItem value="">{t("cohesion.unset")}</MenuItem>
                           {TIERS.map((tier) => (
@@ -359,17 +397,6 @@ export default function CohesionFormPage() {
                             </MenuItem>
                           ))}
                         </TextField>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          size="small"
-                          label={row.score.toFixed(1)}
-                          sx={{
-                            bgcolor: cohesionColor(row.score) + "22",
-                            color: cohesionColor(row.score),
-                            fontWeight: 700,
-                          }}
-                        />
                       </TableCell>
                     </TableRow>
                   ))}

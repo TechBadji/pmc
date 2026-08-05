@@ -251,6 +251,8 @@
     "saved": "Analyse de cohésion enregistrée.",
     "teamSize": "{{count}} membre",
     "teamSize_other": "{{count}} membres",
+    "headcount": "Effectif",
+    "subtitle": "ID-PMC — Fiche de Cohésion d'Équipe",
     "ceoTeamName": "Comité de Direction",
     "provisionOwnTeam": "Configurer mon équipe de direction",
     "provisionHint": "Aucune équipe de direction n'est encore configurée pour vous. Créez-la pour suivre la cohésion de vos rapports directs.",
