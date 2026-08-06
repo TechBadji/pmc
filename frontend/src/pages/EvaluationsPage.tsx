@@ -179,7 +179,15 @@ export default function EvaluationsPage() {
 
   function renderSkillTable(scores: SkillScore[], headerColor: string, title: string) {
     return (
-      <TableContainer sx={{ flex: 1, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+      <TableContainer
+        sx={{
+          flex: 1,
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 1,
+          "& .MuiTableCell-root": { fontSize: 12, py: 0.5 },
+        }}
+      >
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: headerColor }}>
