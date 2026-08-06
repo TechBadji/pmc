@@ -3,12 +3,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { apiClient } from "@/api/client";
-import type { Evaluation, Paginated, UserRecord } from "@/api/types";
-import { EXECUTIVE_BADGE_COLOR } from "@/theme";
+import type { Evaluation, Paginated, PerformanceRating, UserRecord } from "@/api/types";
+import { EXECUTIVE_BADGE_COLOR, performanceColors } from "@/theme";
 
 interface YearPoint {
   year: string;
   value: number;
+  rating: PerformanceRating;
 }
 
 /** Étiquette de valeur au-dessus/en-dessous du point — au-dessus par défaut,
@@ -34,6 +35,11 @@ function makeValueLabel(points: YearPoint[]) {
 function DirectorPerformanceCard({ director, points }: { director: UserRecord; points: YearPoint[] }) {
   const { t } = useTranslation();
   const ValueLabel = useMemo(() => makeValueLabel(points), [points]);
+  // Anneau coloré selon le palier de performance le plus récent affiché —
+  // même code couleur que la Matrice ID-3A (rouge → vert), pas de sens
+  // concurrent (voir DESIGN.md).
+  const currentRating = points[points.length - 1]?.rating;
+  const ringColor = currentRating ? performanceColors[currentRating] : "#c9c8c0";
 
   return (
     <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider", position: "relative" }}>
@@ -41,7 +47,13 @@ function DirectorPerformanceCard({ director, points }: { director: UserRecord; p
         <Stack alignItems="center" spacing={0.4}>
           <Avatar
             src={director.avatar ?? undefined}
-            sx={{ width: 46, height: 46, border: "2px solid", borderColor: "background.paper", boxShadow: "0 2px 6px rgba(0,0,0,0.15)" }}
+            sx={{
+              width: 46,
+              height: 46,
+              border: "3px solid",
+              borderColor: ringColor,
+              boxShadow: `0 2px 8px ${ringColor}55`,
+            }}
           >
             {(director.full_name || director.email).charAt(0).toUpperCase()}
           </Avatar>
@@ -103,7 +115,11 @@ export default function DirectorsPerformanceReviewPage() {
     directors.forEach((d) => {
       const history = evaluations
         .filter((e) => e.user === d.id)
-        .map((e) => ({ year: e.campaign_start_date.slice(0, 4), value: Math.round(Number(e.altitude_percentage)) }))
+        .map((e) => ({
+          year: e.campaign_start_date.slice(0, 4),
+          value: Math.round(Number(e.altitude_percentage)),
+          rating: e.performance_rating,
+        }))
         .sort((a, b) => a.year.localeCompare(b.year));
       map.set(d.id, history);
     });
@@ -174,6 +190,17 @@ export default function DirectorsPerformanceReviewPage() {
           </TextField>
         </Stack>
       )}
+
+      <Stack direction="row" spacing={2} flexWrap="wrap" justifyContent="center">
+        {(Object.keys(performanceColors) as PerformanceRating[]).map((rating) => (
+          <Stack key={rating} direction="row" spacing={0.75} alignItems="center">
+            <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: performanceColors[rating] }} />
+            <Typography variant="caption" color="text.secondary">
+              {t(`common.performance.${rating}`)}
+            </Typography>
+          </Stack>
+        ))}
+      </Stack>
 
       <Box
         sx={{
