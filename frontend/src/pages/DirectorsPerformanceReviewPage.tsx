@@ -48,11 +48,11 @@ function DirectorPerformanceCard({ director, points }: { director: UserRecord; p
           <Avatar
             src={director.avatar ?? undefined}
             sx={{
-              width: 46,
-              height: 46,
-              border: "3px solid",
+              width: 52,
+              height: 52,
+              border: "5px solid",
               borderColor: ringColor,
-              boxShadow: `0 2px 8px ${ringColor}55`,
+              boxShadow: `0 0 0 2px ${ringColor}33, 0 3px 10px ${ringColor}80`,
             }}
           >
             {(director.full_name || director.email).charAt(0).toUpperCase()}
