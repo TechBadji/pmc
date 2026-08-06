@@ -403,17 +403,6 @@ export default function EvaluationsPage() {
 
           {selectedEvaluation ? (
             <>
-              {selectedMember.avatar_full_body && selectedMember.role === "MANAGER" && (
-                <Box sx={{ float: { sm: "right" }, ml: { sm: 3 }, mb: 2, textAlign: "center" }}>
-                  <Box
-                    component="img"
-                    src={selectedMember.avatar_full_body}
-                    alt={selectedMember.full_name}
-                    sx={{ height: 260, borderRadius: 1, objectFit: "cover" }}
-                  />
-                </Box>
-              )}
-
               {/* Altitude — la métrique qui résume la performance globale,
                   mise en avant en priorité devant le détail HSI/SSI. */}
               <Paper
@@ -530,8 +519,32 @@ export default function EvaluationsPage() {
                 </Paper>
               </Stack>
 
-              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+              <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "flex-start" }}>
                 {renderSkillTable(hardScores, "#2E5AAC", t("evaluationForm.aptitudes"))}
+                {selectedMember.avatar_full_body && selectedMember.role === "MANAGER" && (
+                  <Stack alignItems="center" spacing={1} sx={{ flexShrink: 0, width: { xs: "100%", md: 170 }, mx: "auto" }}>
+                    <Avatar
+                      src={selectedMember.avatar ?? undefined}
+                      sx={{ width: 56, height: 56, border: "2px solid", borderColor: "divider" }}
+                    >
+                      {(selectedMember.full_name || selectedMember.email).charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Paper elevation={0} sx={{ px: 1.5, py: 0.3, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+                      <Typography variant="body2" fontWeight={700} noWrap>
+                        {selectedMember.full_name}
+                      </Typography>
+                    </Paper>
+                    <Typography variant="caption" fontWeight={700} textAlign="center" sx={{ color: "text.secondary" }}>
+                      {selectedMember.position}
+                    </Typography>
+                    <Box
+                      component="img"
+                      src={selectedMember.avatar_full_body}
+                      alt={selectedMember.full_name}
+                      sx={{ width: "100%", maxWidth: 170, borderRadius: 1, objectFit: "cover", mt: 0.5 }}
+                    />
+                  </Stack>
+                )}
                 {renderSkillTable(softScores, "#3F9142", t("evaluationForm.attitudes"))}
               </Stack>
             </>
