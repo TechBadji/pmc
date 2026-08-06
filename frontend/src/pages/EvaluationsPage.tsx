@@ -558,7 +558,7 @@ export default function EvaluationsPage() {
                       component="img"
                       src={selectedMember.avatar_full_body}
                       alt={selectedMember.full_name}
-                      sx={{ width: "100%", maxWidth: 110, height: 150, borderRadius: 1, objectFit: "cover", mt: 0.5 }}
+                      sx={{ width: "100%", maxWidth: 110, borderRadius: 1, display: "block", mt: 0.5 }}
                     />
                   </Stack>
                 )}
