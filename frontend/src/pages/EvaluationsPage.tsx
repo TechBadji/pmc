@@ -504,7 +504,7 @@ export default function EvaluationsPage() {
                 </Paper>
                 </Box>
                 {selectedMember.avatar_full_body && selectedMember.role === "MANAGER" && (
-                  <Box sx={{ flexShrink: 0, width: { xs: 0, md: 170 } }} />
+                  <Box sx={{ flexShrink: 0, width: { xs: 0, md: 110 } }} />
                 )}
                 <Box sx={{ flex: 1 }}>
                 <Paper
@@ -545,26 +545,26 @@ export default function EvaluationsPage() {
               <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "flex-start" }}>
                 {renderSkillTable(hardScores, "#2E5AAC", t("evaluationForm.aptitudes"))}
                 {selectedMember.avatar_full_body && selectedMember.role === "MANAGER" && (
-                  <Stack alignItems="center" spacing={1} sx={{ flexShrink: 0, width: { xs: "100%", md: 170 }, mx: "auto" }}>
+                  <Stack alignItems="center" spacing={0.5} sx={{ flexShrink: 0, width: { xs: "100%", md: 110 }, mx: "auto" }}>
                     <Avatar
                       src={selectedMember.avatar ?? undefined}
-                      sx={{ width: 56, height: 56, border: "2px solid", borderColor: "divider" }}
+                      sx={{ width: 38, height: 38, border: "2px solid", borderColor: "divider" }}
                     >
                       {(selectedMember.full_name || selectedMember.email).charAt(0).toUpperCase()}
                     </Avatar>
-                    <Paper elevation={0} sx={{ px: 1.5, py: 0.3, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
-                      <Typography variant="body2" fontWeight={700} noWrap>
+                    <Paper elevation={0} sx={{ px: 1, py: 0.15, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+                      <Typography variant="caption" fontWeight={700} noWrap sx={{ fontSize: 11 }}>
                         {selectedMember.full_name}
                       </Typography>
                     </Paper>
-                    <Typography variant="caption" fontWeight={700} textAlign="center" sx={{ color: "text.secondary" }}>
+                    <Typography variant="caption" fontWeight={700} textAlign="center" sx={{ color: "text.secondary", fontSize: 9.5 }}>
                       {selectedMember.position}
                     </Typography>
                     <Box
                       component="img"
                       src={selectedMember.avatar_full_body}
                       alt={selectedMember.full_name}
-                      sx={{ width: "100%", maxWidth: 170, borderRadius: 1, objectFit: "cover", mt: 0.5 }}
+                      sx={{ width: "100%", maxWidth: 110, height: 150, borderRadius: 1, objectFit: "cover", mt: 0.5 }}
                     />
                   </Stack>
                 )}
