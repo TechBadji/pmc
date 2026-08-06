@@ -546,12 +546,6 @@ export default function EvaluationsPage() {
                 {renderSkillTable(hardScores, "#2E5AAC", t("evaluationForm.aptitudes"))}
                 {selectedMember.avatar_full_body && selectedMember.role === "MANAGER" && (
                   <Stack alignItems="center" spacing={0.5} sx={{ flexShrink: 0, width: { xs: "100%", md: 110 }, mx: "auto" }}>
-                    <Avatar
-                      src={selectedMember.avatar ?? undefined}
-                      sx={{ width: 38, height: 38, border: "2px solid", borderColor: "divider" }}
-                    >
-                      {(selectedMember.full_name || selectedMember.email).charAt(0).toUpperCase()}
-                    </Avatar>
                     <Paper elevation={0} sx={{ px: 1, py: 0.15, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
                       <Typography variant="caption" fontWeight={700} noWrap sx={{ fontSize: 11 }}>
                         {selectedMember.full_name}
