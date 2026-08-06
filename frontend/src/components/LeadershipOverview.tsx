@@ -200,7 +200,7 @@ export default function LeadershipOverview({
             display: "grid",
             gridTemplateColumns,
             minWidth: gridMinWidth,
-            fontSize: 13,
+            fontSize: 10.5,
             mt: 1.5,
             border: "1px solid",
             borderColor: "divider",
@@ -214,8 +214,8 @@ export default function LeadershipOverview({
               <Box
                 sx={{
                   bgcolor: row.gapBefore ? EXECUTIVE_BADGE_COLOR + "33" : EXECUTIVE_BADGE_COLOR + "1f",
-                  px: 1.5,
-                  py: 0.75,
+                  px: 1.25,
+                  py: 0.5,
                   fontWeight: 700,
                   borderTop: rowIdx === 0 || row.gapBefore ? "none" : "1px solid",
                   borderColor: "divider",
@@ -227,8 +227,8 @@ export default function LeadershipOverview({
                 <Box
                   key={i}
                   sx={{
-                    px: 1,
-                    py: 0.75,
+                    px: 0.75,
+                    py: 0.5,
                     textAlign: "center",
                     borderLeft: "1px solid",
                     borderTop: rowIdx === 0 || row.gapBefore ? "none" : "1px solid",
