@@ -408,8 +408,8 @@ export default function EvaluationsPage() {
               <Paper
                 elevation={0}
                 sx={{
-                  p: 2.5,
-                  mb: 2,
+                  p: 0.75,
+                  mb: 1,
                   border: "2px solid",
                   borderColor: performanceColors[selectedEvaluation.performance_rating],
                   borderRadius: 1,
@@ -418,28 +418,28 @@ export default function EvaluationsPage() {
               >
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
-                  spacing={2}
+                  spacing={1}
                   alignItems={{ xs: "flex-start", sm: "center" }}
                   justifyContent="space-between"
                 >
-                  <Stack direction="row" spacing={3} alignItems="center">
+                  <Stack direction="row" spacing={1.5} alignItems="center">
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
                         {t("dashboard.manager.altitude")}
                       </Typography>
                       <Typography
-                        variant="h3"
+                        variant="h6"
                         fontWeight={700}
                         sx={{ color: performanceColors[selectedEvaluation.performance_rating], lineHeight: 1 }}
                       >
                         {selectedEvaluation.altitude_percentage}%
                       </Typography>
                     </Box>
-                    <Stack spacing={0.5}>
-                      <Typography variant="caption" color="text.secondary">
+                    <Stack spacing={0.25}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
                         {t("evaluationForm.businessScore")}: <strong>{selectedEvaluation.business_objectives_score}%</strong>
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
                         {t("evaluationForm.peopleScore")}: <strong>{selectedEvaluation.people_objectives_score}%</strong>
                       </Typography>
                     </Stack>
@@ -454,33 +454,33 @@ export default function EvaluationsPage() {
               </Paper>
 
               {/* Indices Summary */}
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 1 }}>
                 <Paper
                   sx={{
                     flex: 1,
-                    p: 2,
+                    p: 0.5,
                     bgcolor: "#E3F2FD",
                     border: "2px solid #2E5AAC",
                     borderRadius: 1,
                   }}
                 >
-                  <Typography variant="subtitle2" sx={{ color: "#2E5AAC", fontWeight: 700 }} gutterBottom>
+                  <Typography variant="caption" sx={{ color: "#2E5AAC", fontWeight: 700, fontSize: 10 }}>
                     {t("evaluationForm.aptitudes")}
                   </Typography>
-                  <Stack direction="row" spacing={3}>
+                  <Stack direction="row" spacing={1.5}>
                     <Box>
-                      <Typography variant="caption" color="textSecondary">
+                      <Typography variant="caption" color="textSecondary" sx={{ fontSize: 9 }}>
                         HSI
                       </Typography>
-                      <Typography variant="h6" fontWeight={700} sx={{ color: "#2E5AAC" }}>
+                      <Typography variant="body2" fontWeight={700} sx={{ color: "#2E5AAC" }}>
                         {selectedEvaluation.hsi}
                       </Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="textSecondary">
+                      <Typography variant="caption" color="textSecondary" sx={{ fontSize: 9 }}>
                         HSO
                       </Typography>
-                      <Typography variant="h6" fontWeight={700} sx={{ color: "#2E5AAC" }}>
+                      <Typography variant="body2" fontWeight={700} sx={{ color: "#2E5AAC" }}>
                         {hso !== null ? hso : "—"}
                       </Typography>
                     </Box>
@@ -489,29 +489,29 @@ export default function EvaluationsPage() {
                 <Paper
                   sx={{
                     flex: 1,
-                    p: 2,
+                    p: 0.5,
                     bgcolor: "#F1F8E9",
                     border: "2px solid #3F9142",
                     borderRadius: 1,
                   }}
                 >
-                  <Typography variant="subtitle2" sx={{ color: "#3F9142", fontWeight: 700 }} gutterBottom>
+                  <Typography variant="caption" sx={{ color: "#3F9142", fontWeight: 700, fontSize: 10 }}>
                     {t("evaluationForm.attitudes")}
                   </Typography>
-                  <Stack direction="row" spacing={3}>
+                  <Stack direction="row" spacing={1.5}>
                     <Box>
-                      <Typography variant="caption" color="textSecondary">
+                      <Typography variant="caption" color="textSecondary" sx={{ fontSize: 9 }}>
                         SSI
                       </Typography>
-                      <Typography variant="h6" fontWeight={700} sx={{ color: "#3F9142" }}>
+                      <Typography variant="body2" fontWeight={700} sx={{ color: "#3F9142" }}>
                         {selectedEvaluation.ssi}
                       </Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="textSecondary">
+                      <Typography variant="caption" color="textSecondary" sx={{ fontSize: 9 }}>
                         SSO
                       </Typography>
-                      <Typography variant="h6" fontWeight={700} sx={{ color: "#3F9142" }}>
+                      <Typography variant="body2" fontWeight={700} sx={{ color: "#3F9142" }}>
                         {sso !== null ? sso : "—"}
                       </Typography>
                     </Box>
