@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import type { Department, Evaluation, Me, UserRecord } from "@/api/types";
 import { EXECUTIVE_BADGE_COLOR, performanceColors } from "@/theme";
 
-const LABEL_WIDTH = 128;
-const COL_WIDTH = 74;
+const LABEL_WIDTH = 200;
+const COL_WIDTH = 92;
 
 interface PersonNodeProps {
   name: string;
@@ -61,10 +61,10 @@ function PerformanceTooltip({ name, position, evaluation }: { name: string; posi
 }
 
 function PersonNode({ name, position, avatar, evaluation, root }: PersonNodeProps) {
-  const size = root ? 52 : 40;
+  const size = root ? 64 : 50;
   return (
     <Tooltip title={<PerformanceTooltip name={name} position={position} evaluation={evaluation} />} arrow>
-      <Stack alignItems="center" spacing={0.4} sx={{ width: "100%", cursor: "default" }}>
+      <Stack alignItems="center" spacing={0.5} sx={{ width: "100%", cursor: "default" }}>
         <Avatar
           src={avatar ?? undefined}
           sx={{
@@ -81,16 +81,16 @@ function PersonNode({ name, position, avatar, evaluation, root }: PersonNodeProp
         </Avatar>
         <Paper
           elevation={0}
-          sx={{ px: 0.75, py: 0.1, border: "1px solid", borderColor: "divider", borderRadius: 1, width: "100%", textAlign: "center" }}
+          sx={{ px: 1, py: 0.2, border: "1px solid", borderColor: "divider", borderRadius: 1, width: "100%", textAlign: "center" }}
         >
-          <Typography variant="caption" fontWeight={700} noWrap sx={{ fontSize: root ? 11.5 : 10 }}>
+          <Typography variant="caption" fontWeight={700} noWrap sx={{ fontSize: root ? 13 : 11.5 }}>
             {name}
           </Typography>
         </Paper>
         <Box
           sx={{
-            px: 0.75,
-            py: 0.1,
+            px: 1,
+            py: 0.2,
             borderRadius: 1,
             width: "100%",
             textAlign: "center",
@@ -101,7 +101,7 @@ function PersonNode({ name, position, avatar, evaluation, root }: PersonNodeProp
             variant="caption"
             fontWeight={600}
             noWrap
-            sx={{ color: root ? "#fff" : "text.secondary", lineHeight: 1.2, display: "block", fontSize: 9 }}
+            sx={{ color: root ? "#fff" : "text.secondary", lineHeight: 1.25, display: "block", fontSize: 10 }}
           >
             {position || "—"}
           </Typography>
@@ -156,20 +156,20 @@ export default function LeadershipOverview({
   const gridMinWidth = LABEL_WIDTH + directors.length * COL_WIDTH;
 
   return (
-    <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2 }, border: "1px solid", borderColor: "divider" }}>
-      <Typography variant="subtitle2" fontWeight={800} textAlign="center" sx={{ color: "primary.main", mb: 1.5, letterSpacing: 0.3 }}>
+    <Paper elevation={0} sx={{ p: { xs: 2, sm: 2.5 }, border: "1px solid", borderColor: "divider" }}>
+      <Typography variant="subtitle1" fontWeight={800} textAlign="center" sx={{ color: "primary.main", mb: 2, letterSpacing: 0.3 }}>
         {t("dashboard.companyAdmin.leadershipTitle")}
       </Typography>
 
       <Stack alignItems="center">
-        <Box sx={{ width: 96 }}>
+        <Box sx={{ width: 116 }}>
           <PersonNode name={ceo.full_name} position={ceo.position} avatar={ceo.avatar} evaluation={lastEvaluationByUser.get(ceo.id)} root />
         </Box>
-        <Box sx={{ width: 2, height: 12, bgcolor: "divider" }} />
+        <Box sx={{ width: 2, height: 14, bgcolor: "divider" }} />
       </Stack>
 
       <Box sx={{ overflowX: "auto" }}>
-        <Box sx={{ display: "grid", gridTemplateColumns, minWidth: gridMinWidth, fontSize: 10.5 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns, minWidth: gridMinWidth, fontSize: 13 }}>
           {/* barre de connexion horizontale, alignée sur les colonnes directeurs */}
           <Box />
           <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, height: 2, bgcolor: "divider" }} />
@@ -177,8 +177,8 @@ export default function LeadershipOverview({
           {/* organigramme : flèche + photo de chaque directeur, dans sa colonne */}
           <Box />
           {directors.map((d) => (
-            <Stack key={d.id} alignItems="center" spacing={0} sx={{ px: 0.5, pt: 0.25 }}>
-              <KeyboardArrowDownRoundedIcon fontSize="small" sx={{ color: "divider", fontSize: 16 }} />
+            <Stack key={d.id} alignItems="center" spacing={0} sx={{ px: 0.75, pt: 0.25 }}>
+              <KeyboardArrowDownRoundedIcon fontSize="small" sx={{ color: "divider" }} />
               <PersonNode
                 name={d.full_name || d.email}
                 position={d.position}
@@ -197,8 +197,8 @@ export default function LeadershipOverview({
             display: "grid",
             gridTemplateColumns,
             minWidth: gridMinWidth,
-            fontSize: 10.5,
-            mt: 1.25,
+            fontSize: 13,
+            mt: 1.5,
             border: "1px solid",
             borderColor: "divider",
             borderRadius: 1,
@@ -207,12 +207,12 @@ export default function LeadershipOverview({
         >
           {statRows.map((row, rowIdx) => (
             <Box key={row.labelKey} sx={{ display: "contents" }}>
-              {row.gapBefore && <Box sx={{ gridColumn: "1 / -1", height: 5, bgcolor: "background.paper" }} />}
+              {row.gapBefore && <Box sx={{ gridColumn: "1 / -1", height: 6, bgcolor: "background.paper" }} />}
               <Box
                 sx={{
                   bgcolor: row.gapBefore ? EXECUTIVE_BADGE_COLOR + "33" : EXECUTIVE_BADGE_COLOR + "1f",
-                  px: 1,
-                  py: 0.35,
+                  px: 1.5,
+                  py: 0.75,
                   fontWeight: 700,
                   borderTop: rowIdx === 0 || row.gapBefore ? "none" : "1px solid",
                   borderColor: "divider",
@@ -224,8 +224,8 @@ export default function LeadershipOverview({
                 <Box
                   key={i}
                   sx={{
-                    px: 0.5,
-                    py: 0.35,
+                    px: 1,
+                    py: 0.75,
                     textAlign: "center",
                     borderLeft: "1px solid",
                     borderTop: rowIdx === 0 || row.gapBefore ? "none" : "1px solid",
