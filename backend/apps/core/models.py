@@ -109,6 +109,18 @@ class User(AbstractUser):
     )
     phone = models.CharField("Téléphone", max_length=30, blank=True)
     birth_date = models.DateField("Date de naissance", null=True, blank=True)
+    career_start_date = models.DateField(
+        "Début de carrière", null=True, blank=True,
+        help_text="Utilisé pour calculer l'expérience totale.",
+    )
+    hire_date = models.DateField(
+        "Date d'entrée dans l'entreprise", null=True, blank=True,
+        help_text="Utilisé pour calculer l'ancienneté dans l'entreprise.",
+    )
+    role_start_date = models.DateField(
+        "Date de prise de poste actuel", null=True, blank=True,
+        help_text="Utilisé pour calculer l'ancienneté dans le poste actuel.",
+    )
 
     class ThemePreference(models.TextChoices):
         LIGHT = "LIGHT", "Clair"
@@ -162,17 +174,33 @@ class User(AbstractUser):
     def is_super_admin(self):
         return self.role == self.Role.SUPER_ADMIN
 
-    @property
-    def age(self):
-        if not self.birth_date:
+    @staticmethod
+    def _years_since(start_date):
+        if not start_date:
             return None
         from datetime import date
 
         today = date.today()
-        years = today.year - self.birth_date.year
-        if (today.month, today.day) < (self.birth_date.month, self.birth_date.day):
+        years = today.year - start_date.year
+        if (today.month, today.day) < (start_date.month, start_date.day):
             years -= 1
         return years
+
+    @property
+    def age(self):
+        return self._years_since(self.birth_date)
+
+    @property
+    def total_experience_years(self):
+        return self._years_since(self.career_start_date)
+
+    @property
+    def years_in_company(self):
+        return self._years_since(self.hire_date)
+
+    @property
+    def years_in_current_role(self):
+        return self._years_since(self.role_start_date)
 
 
 class Department(models.Model):

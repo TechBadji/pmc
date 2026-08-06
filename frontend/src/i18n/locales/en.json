@@ -133,6 +133,9 @@
       "performance": "Performance",
       "leadershipTitle": "Leadership Team Overview",
       "age": "Age",
+      "yearsInRole": "Experience in current role",
+      "yearsInCompany": "Years of experience in company",
+      "totalExperience": "Total years of experience",
       "teamHeadcount": "Team headcount"
     },
     "manager": {

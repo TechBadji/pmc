@@ -97,7 +97,14 @@ export default function CompanyAdminDashboard() {
 
   return (
     <Stack spacing={3}>
-      {user && <LeadershipOverview ceo={user} directors={directors} departments={departments} />}
+      {user && (
+        <LeadershipOverview
+          ceo={user}
+          directors={directors}
+          departments={departments}
+          lastEvaluationByUser={lastEvaluationByUser}
+        />
+      )}
 
       <Typography variant="h5" fontWeight={700}>
         {t("dashboard.companyAdmin.title")}

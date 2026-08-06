@@ -23,6 +23,12 @@ export interface Me {
   phone: string;
   birth_date: string | null;
   age: number | null;
+  career_start_date: string | null;
+  total_experience_years: number | null;
+  hire_date: string | null;
+  years_in_company: number | null;
+  role_start_date: string | null;
+  years_in_current_role: number | null;
   theme_preference: ThemePreference;
   language: AppLanguage;
 }
@@ -93,6 +99,12 @@ export interface UserRecord {
   phone: string;
   birth_date: string | null;
   age: number | null;
+  career_start_date: string | null;
+  total_experience_years: number | null;
+  hire_date: string | null;
+  years_in_company: number | null;
+  role_start_date: string | null;
+  years_in_current_role: number | null;
   theme_preference: ThemePreference;
   language: AppLanguage;
 }

@@ -132,8 +132,11 @@
       "ssiManager": "SSI (manager)",
       "performance": "Performance",
       "leadershipTitle": "Aperçu de l'Équipe Dirigeante",
-      "age": "Âge",
-      "teamHeadcount": "Effectif de l'équipe"
+      "age": "Age",
+      "yearsInRole": "Experience in current role",
+      "yearsInCompany": "Years of experience in company",
+      "totalExperience": "Total years of experience",
+      "teamHeadcount": "Nbre de Managers dans l'équipe"
     },
     "manager": {
       "member": "Collaborateur",

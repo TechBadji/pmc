@@ -165,6 +165,9 @@ class UserSerializer(serializers.ModelSerializer):
         return obj.avatar_full_body.url if obj.avatar_full_body else None
 
     age = serializers.IntegerField(read_only=True)
+    total_experience_years = serializers.IntegerField(read_only=True)
+    years_in_company = serializers.IntegerField(read_only=True)
+    years_in_current_role = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = User
@@ -173,7 +176,9 @@ class UserSerializer(serializers.ModelSerializer):
             "role", "role_display", "position", "company", "department",
             "department_name", "manager", "is_active", "generated_login",
             "must_change_password", "avatar", "avatar_full_body", "phone",
-            "birth_date", "age", "theme_preference", "language", "date_joined",
+            "birth_date", "age", "career_start_date", "total_experience_years",
+            "hire_date", "years_in_company", "role_start_date", "years_in_current_role",
+            "theme_preference", "language", "date_joined",
         ]
         read_only_fields = ["id", "date_joined", "company", "generated_login"]
 
