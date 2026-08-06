@@ -1,3 +1,4 @@
+import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import { Paper, Stack, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 
@@ -33,13 +34,15 @@ export default function StatCard({
       sx={{
         p: 2.5,
         border: "1px solid",
-        borderColor: "divider",
+        borderColor: onClick ? (color ?? "primary.main") : "divider",
         minWidth: 180,
         flex: 1,
         ...(onClick && {
           cursor: "pointer",
-          transition: "border-color 0.15s",
-          "&:hover": { borderColor: color ?? "primary.main" },
+          bgcolor: (color ?? "#2E8FCB") + "0d",
+          boxShadow: `0 2px 10px ${(color ?? "#2E8FCB") + "26"}`,
+          transition: "box-shadow 0.15s, transform 0.15s",
+          "&:hover": { boxShadow: `0 4px 16px ${(color ?? "#2E8FCB") + "40"}`, transform: "translateY(-1px)" },
         }),
       }}
     >
@@ -54,12 +57,13 @@ export default function StatCard({
               color: color ?? "primary.main",
               alignItems: "center",
               justifyContent: "center",
+              flexShrink: 0,
             }}
           >
             {icon}
           </Stack>
         )}
-        <Stack>
+        <Stack sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography variant="caption" color="text.secondary">
             {label}
           </Typography>
@@ -67,6 +71,7 @@ export default function StatCard({
             {value}
           </Typography>
         </Stack>
+        {onClick && <ArrowForwardRoundedIcon sx={{ color: color ?? "primary.main", flexShrink: 0 }} />}
       </Stack>
     </Paper>
   );
