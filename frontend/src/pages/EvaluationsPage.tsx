@@ -410,6 +410,8 @@ export default function EvaluationsPage() {
                 sx={{
                   p: 0.75,
                   mb: 1,
+                  width: "fit-content",
+                  maxWidth: "100%",
                   border: "2px solid",
                   borderColor: performanceColors[selectedEvaluation.performance_rating],
                   borderRadius: 1,
@@ -457,7 +459,8 @@ export default function EvaluationsPage() {
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 1 }}>
                 <Paper
                   sx={{
-                    flex: 1,
+                    width: "fit-content",
+                    maxWidth: "100%",
                     p: 0.5,
                     bgcolor: "#E3F2FD",
                     border: "2px solid #2E5AAC",
@@ -488,7 +491,8 @@ export default function EvaluationsPage() {
                 </Paper>
                 <Paper
                   sx={{
-                    flex: 1,
+                    width: "fit-content",
+                    maxWidth: "100%",
                     p: 0.5,
                     bgcolor: "#F1F8E9",
                     border: "2px solid #3F9142",
