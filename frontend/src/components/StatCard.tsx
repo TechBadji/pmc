@@ -6,21 +6,41 @@ export default function StatCard({
   value,
   color,
   icon,
+  onClick,
 }: {
   label: string;
   value: ReactNode;
   color?: string;
   icon?: ReactNode;
+  onClick?: () => void;
 }) {
   return (
     <Paper
       elevation={0}
+      onClick={onClick}
+      tabIndex={onClick ? 0 : undefined}
+      role={onClick ? "button" : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       sx={{
         p: 2.5,
         border: "1px solid",
         borderColor: "divider",
         minWidth: 180,
         flex: 1,
+        ...(onClick && {
+          cursor: "pointer",
+          transition: "border-color 0.15s",
+          "&:hover": { borderColor: color ?? "primary.main" },
+        }),
       }}
     >
       <Stack direction="row" spacing={1.5} alignItems="center">

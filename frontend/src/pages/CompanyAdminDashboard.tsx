@@ -1,4 +1,5 @@
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import WorkspacesOutlinedIcon from "@mui/icons-material/WorkspacesOutlined";
 import {
@@ -20,7 +21,7 @@ import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, Paginated, UserRecord } from "@/api/types";
 import LeadershipOverview from "@/components/LeadershipOverview";
 import StatCard from "@/components/StatCard";
-import { performanceColors } from "@/theme";
+import { EXECUTIVE_BADGE_COLOR, performanceColors } from "@/theme";
 
 interface DeptRow {
   department: Department;
@@ -116,6 +117,13 @@ export default function CompanyAdminDashboard() {
           value={evaluations.length}
           color="#B23FA0"
           icon={<GroupsOutlinedIcon />}
+        />
+        <StatCard
+          label={t("nav.directorsReview")}
+          value={directors.length}
+          color={EXECUTIVE_BADGE_COLOR}
+          icon={<InsightsOutlinedIcon />}
+          onClick={() => navigate("/directors-performance-review")}
         />
         <StatCard
           label={t("dashboard.companyAdmin.avgPerformance")}

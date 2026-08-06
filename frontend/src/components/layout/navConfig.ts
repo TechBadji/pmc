@@ -36,7 +36,6 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { labelKey: "nav.id3aMatrix", path: "/id3a-matrix", icon: "scatterPlot" },
     { labelKey: "nav.evaluationCampaigns", path: "/evaluation-campaigns", icon: "event" },
     { labelKey: "nav.evaluations", path: "/evaluations", icon: "assignment" },
-    { labelKey: "nav.directorsReview", path: "/directors-performance-review", icon: "insights" },
     { labelKey: "nav.actionPlans", path: "/action-plans", icon: "assignment" },
     { labelKey: "nav.passwordRequests", path: "/password-requests", icon: "lockReset" },
   ],
