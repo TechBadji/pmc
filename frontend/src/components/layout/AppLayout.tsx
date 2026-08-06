@@ -5,6 +5,7 @@ import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import HubOutlinedIcon from "@mui/icons-material/HubOutlined";
+import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -47,6 +48,7 @@ const ICONS: Record<NavItem["icon"], React.ReactNode> = {
   business: <BusinessOutlinedIcon />,
   groups: <GroupsOutlinedIcon />,
   hub: <HubOutlinedIcon />,
+  insights: <InsightsOutlinedIcon />,
   scatterPlot: <ScatterPlotOutlinedIcon />,
   assignment: <AssignmentOutlinedIcon />,
   person: <PersonOutlineIcon />,

@@ -10,6 +10,7 @@ import CompaniesPage from "@/pages/CompaniesPage";
 import CompanyDepartmentsPage from "@/pages/CompanyDepartmentsPage";
 import DashboardPage from "@/pages/DashboardPage";
 import DepartmentDetailPage from "@/pages/DepartmentDetailPage";
+import DirectorsPerformanceReviewPage from "@/pages/DirectorsPerformanceReviewPage";
 import EvaluationCampaignsPage from "@/pages/EvaluationCampaignsPage";
 import EvaluationFormPage from "@/pages/EvaluationFormPage";
 import EvaluationsPage from "@/pages/EvaluationsPage";
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/evaluations" element={<EvaluationsPage />} />
           <Route path="/evaluations/new" element={<EvaluationFormPage />} />
           <Route path="/evaluations/:id" element={<EvaluationFormPage />} />
+          <Route path="/directors-performance-review" element={<DirectorsPerformanceReviewPage />} />
           <Route path="/action-plans" element={<ActionPlansPage />} />
           <Route path="/my-performance" element={<MyPerformancePage />} />
           <Route path="/password-requests" element={<PasswordResetRequestsPage />} />

@@ -14,7 +14,8 @@
     "myProfile": "Mon profil",
     "myPerformance": "Mes performances",
     "evaluationCampaigns": "Campagnes d'évaluation",
-    "logs": "Logs"
+    "logs": "Logs",
+    "directorsReview": "Revue des performances (Directeurs)"
   },
   "common": {
     "logout": "Déconnexion",
@@ -419,5 +420,9 @@
       "user": "Compte",
       "campaign": "Campagne"
     }
+  },
+  "directorsReview": {
+    "title": "Revue des performances individuelles des directeurs {{range}}",
+    "achievement": "Réalisation"
   }
 }

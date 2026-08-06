@@ -14,6 +14,7 @@
     "myProfile": "My profile",
     "myPerformance": "My performance",
     "evaluationCampaigns": "Evaluation campaigns",
+    "directorsReview": "Performance review (Directors)",
     "logs": "Logs"
   },
   "common": {
@@ -419,5 +420,9 @@
       "user": "Account",
       "campaign": "Campaign"
     }
+  },
+  "directorsReview": {
+    "title": "Individual performance review of directors {{range}}",
+    "achievement": "Achievement"
   }
 }
