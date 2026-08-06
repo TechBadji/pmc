@@ -455,10 +455,13 @@ export default function EvaluationsPage() {
                 </Stack>
               </Paper>
 
-              {/* Indices Summary — Aptitudes (bleu) aligné sur le tableau Hard
-                  Skills à gauche, Attitudes (vert) sur le tableau Soft Skills
-                  à droite, comme la ligne de tableaux juste en dessous. */}
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between" sx={{ mb: 1 }}>
+              {/* Indices Summary — même structure à 3 zones que la ligne de
+                  tableaux juste en dessous (Hard Skills flex:1 / photo
+                  170px / Soft Skills flex:1), pour qu'Aptitudes se retrouve
+                  au-dessus du tableau Hard Skills et Attitudes au-dessus,
+                  à gauche, du tableau Soft Skills. */}
+              <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ mb: 1 }}>
+                <Box sx={{ flex: 1 }}>
                 <Paper
                   sx={{
                     width: "fit-content",
@@ -491,6 +494,11 @@ export default function EvaluationsPage() {
                     </Box>
                   </Stack>
                 </Paper>
+                </Box>
+                {selectedMember.avatar_full_body && selectedMember.role === "MANAGER" && (
+                  <Box sx={{ flexShrink: 0, width: { xs: 0, md: 170 } }} />
+                )}
+                <Box sx={{ flex: 1 }}>
                 <Paper
                   sx={{
                     width: "fit-content",
@@ -523,6 +531,7 @@ export default function EvaluationsPage() {
                     </Box>
                   </Stack>
                 </Paper>
+                </Box>
               </Stack>
 
               <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "flex-start" }}>
