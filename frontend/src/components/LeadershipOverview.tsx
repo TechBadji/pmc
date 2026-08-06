@@ -162,7 +162,7 @@ export default function LeadershipOverview({
       </Typography>
 
       <Box sx={{ overflowX: "auto" }}>
-        <Box sx={{ display: "grid", gridTemplateColumns, minWidth: gridMinWidth, fontSize: 13 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns, width: gridMinWidth, mx: "auto", fontSize: 13 }}>
           {/* CEO centré sur les colonnes des directeurs (pas sur toute la
               largeur, décalée par la colonne des intitulés à gauche). */}
           <Box />
@@ -199,7 +199,8 @@ export default function LeadershipOverview({
           sx={{
             display: "grid",
             gridTemplateColumns,
-            minWidth: gridMinWidth,
+            width: gridMinWidth,
+            mx: "auto",
             fontSize: 10.5,
             mt: 1.5,
             border: "1px solid",
