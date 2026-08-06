@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import type { Department, Evaluation, Me, UserRecord } from "@/api/types";
 import { EXECUTIVE_BADGE_COLOR, performanceColors } from "@/theme";
 
-const LABEL_WIDTH = 200;
-const COL_WIDTH = 92;
+const LABEL_WIDTH = 220;
+const COL_WIDTH = 101;
 
 interface PersonNodeProps {
   name: string;
@@ -61,7 +61,7 @@ function PerformanceTooltip({ name, position, evaluation }: { name: string; posi
 }
 
 function PersonNode({ name, position, avatar, evaluation, root }: PersonNodeProps) {
-  const size = root ? 64 : 50;
+  const size = root ? 70 : 55;
   return (
     <Tooltip title={<PerformanceTooltip name={name} position={position} evaluation={evaluation} />} arrow>
       <Stack alignItems="center" spacing={0.5} sx={{ width: "100%", cursor: "default" }}>
@@ -83,7 +83,7 @@ function PersonNode({ name, position, avatar, evaluation, root }: PersonNodeProp
           elevation={0}
           sx={{ px: 1, py: 0.2, border: "1px solid", borderColor: "divider", borderRadius: 1, width: "100%", textAlign: "center" }}
         >
-          <Typography variant="caption" fontWeight={700} noWrap sx={{ fontSize: root ? 13 : 11.5 }}>
+          <Typography variant="caption" fontWeight={700} noWrap sx={{ fontSize: root ? 14.5 : 12.5 }}>
             {name}
           </Typography>
         </Paper>
@@ -101,7 +101,7 @@ function PersonNode({ name, position, avatar, evaluation, root }: PersonNodeProp
             variant="caption"
             fontWeight={600}
             noWrap
-            sx={{ color: root ? "#fff" : "text.secondary", lineHeight: 1.25, display: "block", fontSize: 10 }}
+            sx={{ color: root ? "#fff" : "text.secondary", lineHeight: 1.25, display: "block", fontSize: 11 }}
           >
             {position || "—"}
           </Typography>
@@ -162,16 +162,16 @@ export default function LeadershipOverview({
       </Typography>
 
       <Box sx={{ overflowX: "auto" }}>
-        <Box sx={{ display: "grid", gridTemplateColumns, width: gridMinWidth, mx: "auto", fontSize: 13 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns, width: gridMinWidth, mx: "auto", fontSize: 14.5 }}>
           {/* CEO centré sur les colonnes des directeurs (pas sur toute la
               largeur, décalée par la colonne des intitulés à gauche). */}
           <Box />
-          <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center", width: 116 }}>
+          <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center", width: 128 }}>
             <PersonNode name={ceo.full_name} position={ceo.position} avatar={ceo.avatar} evaluation={lastEvaluationByUser.get(ceo.id)} root />
           </Box>
 
           <Box />
-          <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center", width: 2, height: 14, bgcolor: "divider" }} />
+          <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center", width: 2, height: 15, bgcolor: "divider" }} />
 
           {/* barre de connexion horizontale, alignée sur les colonnes directeurs */}
           <Box />
@@ -201,7 +201,7 @@ export default function LeadershipOverview({
             gridTemplateColumns,
             width: gridMinWidth,
             mx: "auto",
-            fontSize: 10.5,
+            fontSize: 11.5,
             mt: 1.5,
             border: "1px solid",
             borderColor: "divider",
@@ -215,8 +215,8 @@ export default function LeadershipOverview({
               <Box
                 sx={{
                   bgcolor: row.gapBefore ? EXECUTIVE_BADGE_COLOR + "33" : EXECUTIVE_BADGE_COLOR + "1f",
-                  px: 1.25,
-                  py: 0.5,
+                  px: 1.4,
+                  py: 0.55,
                   fontWeight: 700,
                   borderTop: rowIdx === 0 || row.gapBefore ? "none" : "1px solid",
                   borderColor: "divider",
@@ -228,8 +228,8 @@ export default function LeadershipOverview({
                 <Box
                   key={i}
                   sx={{
-                    px: 0.75,
-                    py: 0.5,
+                    px: 0.85,
+                    py: 0.55,
                     textAlign: "center",
                     borderLeft: "1px solid",
                     borderTop: rowIdx === 0 || row.gapBefore ? "none" : "1px solid",
