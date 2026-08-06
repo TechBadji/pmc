@@ -455,8 +455,10 @@ export default function EvaluationsPage() {
                 </Stack>
               </Paper>
 
-              {/* Indices Summary */}
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 1 }}>
+              {/* Indices Summary — Aptitudes (bleu) aligné sur le tableau Hard
+                  Skills à gauche, Attitudes (vert) sur le tableau Soft Skills
+                  à droite, comme la ligne de tableaux juste en dessous. */}
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between" sx={{ mb: 1 }}>
                 <Paper
                   sx={{
                     width: "fit-content",
