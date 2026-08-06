@@ -213,14 +213,13 @@ export default function LeadershipOverview({
         >
           {statRows.map((row, rowIdx) => (
             <Box key={row.labelKey} sx={{ display: "contents" }}>
-              {row.gapBefore && <Box sx={{ gridColumn: "1 / -1", height: 6, bgcolor: "background.paper" }} />}
               <Box
                 sx={{
                   bgcolor: row.gapBefore ? EXECUTIVE_BADGE_COLOR + "33" : EXECUTIVE_BADGE_COLOR + "1f",
                   px: 1.4,
                   py: 0.55,
                   fontWeight: 700,
-                  borderTop: rowIdx === 0 || row.gapBefore ? "none" : "1px solid",
+                  borderTop: rowIdx === 0 ? "none" : "1px solid",
                   borderColor: "divider",
                 }}
               >
@@ -234,7 +233,7 @@ export default function LeadershipOverview({
                     py: 0.55,
                     textAlign: "center",
                     borderLeft: "1px solid",
-                    borderTop: rowIdx === 0 || row.gapBefore ? "none" : "1px solid",
+                    borderTop: rowIdx === 0 ? "none" : "1px solid",
                     borderColor: "divider",
                     fontVariantNumeric: "tabular-nums",
                   }}
