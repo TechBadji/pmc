@@ -161,15 +161,18 @@ export default function LeadershipOverview({
         {t("dashboard.companyAdmin.leadershipTitle")}
       </Typography>
 
-      <Stack alignItems="center">
-        <Box sx={{ width: 116 }}>
-          <PersonNode name={ceo.full_name} position={ceo.position} avatar={ceo.avatar} evaluation={lastEvaluationByUser.get(ceo.id)} root />
-        </Box>
-        <Box sx={{ width: 2, height: 14, bgcolor: "divider" }} />
-      </Stack>
-
       <Box sx={{ overflowX: "auto" }}>
         <Box sx={{ display: "grid", gridTemplateColumns, minWidth: gridMinWidth, fontSize: 13 }}>
+          {/* CEO centré sur les colonnes des directeurs (pas sur toute la
+              largeur, décalée par la colonne des intitulés à gauche). */}
+          <Box />
+          <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center", width: 116 }}>
+            <PersonNode name={ceo.full_name} position={ceo.position} avatar={ceo.avatar} evaluation={lastEvaluationByUser.get(ceo.id)} root />
+          </Box>
+
+          <Box />
+          <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center", width: 2, height: 14, bgcolor: "divider" }} />
+
           {/* barre de connexion horizontale, alignée sur les colonnes directeurs */}
           <Box />
           <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, height: 2, bgcolor: "divider" }} />
