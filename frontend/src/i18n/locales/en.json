@@ -423,6 +423,8 @@
   },
   "directorsReview": {
     "title": "Individual performance review of directors {{range}}",
-    "achievement": "Achievement"
+    "achievement": "Achievement",
+    "period": "Period",
+    "allPeriods": "All years ({{range}})"
   }
 }

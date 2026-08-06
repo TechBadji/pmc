@@ -1,4 +1,4 @@
-import { Avatar, Box, Paper, Stack, Typography } from "@mui/material";
+import { Avatar, Box, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
@@ -110,17 +110,70 @@ export default function DirectorsPerformanceReviewPage() {
     return map;
   }, [directors, evaluations]);
 
-  const yearRange = useMemo(() => {
-    const years = evaluations.map((e) => e.campaign_start_date.slice(0, 4)).sort();
-    if (!years.length) return "";
-    return years[0] === years[years.length - 1] ? years[0] : `${years[0]}-${years[years.length - 1]}`;
-  }, [evaluations]);
+  // Années réellement présentes dans les évaluations — alimente le
+  // sélecteur de période (toute la plage, ou une fenêtre de 2 années
+  // consécutives pour se concentrer sur une évolution récente).
+  const availableYears = useMemo(
+    () => Array.from(new Set(evaluations.map((e) => e.campaign_start_date.slice(0, 4)))).sort(),
+    [evaluations]
+  );
+
+  const periodOptions = useMemo(() => {
+    if (availableYears.length === 0) return [];
+    const rangeLabel = (years: string[]) => (years[0] === years[years.length - 1] ? years[0] : `${years[0]}-${years[years.length - 1]}`);
+    const opts: { id: string; label: string; years: string[] }[] = [
+      { id: "all", label: t("directorsReview.allPeriods", { range: rangeLabel(availableYears) }), years: availableYears },
+    ];
+    for (let i = 0; i < availableYears.length - 1; i++) {
+      const pair = [availableYears[i], availableYears[i + 1]];
+      opts.push({ id: pair.join("-"), label: pair.join(" – "), years: pair });
+    }
+    return opts;
+  }, [availableYears, t]);
+
+  const [selectedPeriodId, setSelectedPeriodId] = useState("all");
+
+  const selectedPeriod = periodOptions.find((p) => p.id === selectedPeriodId) ?? periodOptions[0];
+
+  const filteredPointsByDirector = useMemo(() => {
+    const map = new Map<number, YearPoint[]>();
+    pointsByDirector.forEach((points, id) => {
+      map.set(id, selectedPeriod ? points.filter((p) => selectedPeriod.years.includes(p.year)) : points);
+    });
+    return map;
+  }, [pointsByDirector, selectedPeriod]);
+
+  const titleRange =
+    selectedPeriod && selectedPeriod.years.length
+      ? selectedPeriod.years[0] === selectedPeriod.years[selectedPeriod.years.length - 1]
+        ? selectedPeriod.years[0]
+        : `${selectedPeriod.years[0]}-${selectedPeriod.years[selectedPeriod.years.length - 1]}`
+      : "";
 
   return (
     <Stack spacing={3}>
       <Typography variant="h5" fontWeight={800} textAlign="center" sx={{ color: "primary.main" }}>
-        {t("directorsReview.title", { range: yearRange }).toUpperCase()}
+        {t("directorsReview.title", { range: titleRange }).toUpperCase()}
       </Typography>
+
+      {periodOptions.length > 1 && (
+        <Stack direction="row" justifyContent="center">
+          <TextField
+            select
+            size="small"
+            label={t("directorsReview.period")}
+            value={selectedPeriodId}
+            onChange={(e) => setSelectedPeriodId(e.target.value)}
+            sx={{ minWidth: 220 }}
+          >
+            {periodOptions.map((opt) => (
+              <MenuItem key={opt.id} value={opt.id}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Stack>
+      )}
 
       <Box
         sx={{
@@ -130,7 +183,7 @@ export default function DirectorsPerformanceReviewPage() {
         }}
       >
         {directors.map((d) => (
-          <DirectorPerformanceCard key={d.id} director={d} points={pointsByDirector.get(d.id) ?? []} />
+          <DirectorPerformanceCard key={d.id} director={d} points={filteredPointsByDirector.get(d.id) ?? []} />
         ))}
       </Box>
     </Stack>
