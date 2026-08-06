@@ -5,7 +5,7 @@ import type { Department, Evaluation, Me, UserRecord } from "@/api/types";
 import { EXECUTIVE_BADGE_COLOR, performanceColors } from "@/theme";
 
 const LABEL_WIDTH = 220;
-const COL_WIDTH = 101;
+const COL_WIDTH = 111;
 
 interface PersonNodeProps {
   name: string;
@@ -15,55 +15,57 @@ interface PersonNodeProps {
   root?: boolean;
 }
 
-/** Contenu du hover — performance en cours (Altitude/HSI/SSI) quand une
- * évaluation existe, sinon un simple rappel du poste. */
-function PerformanceTooltip({ name, position, evaluation }: { name: string; position: string; evaluation?: Evaluation }) {
+// sx forcé sur le tooltip MUI pour retirer son chrome gris foncé par défaut
+// et ne laisser paraître que la Paper claire ci-dessous — même traitement
+// que CustomTooltip sur la Matrice ID-3A (survol d'une vignette).
+const TOOLTIP_SLOT_SX = { bgcolor: "transparent", p: 0, m: 0, maxWidth: "none", boxShadow: "none" };
+
+/** Contenu du hover — performance en cours (Altitude/HSI/SSI), même habillage
+ * (Paper claire bordée) que CustomTooltip sur la Matrice ID-3A. */
+function PerformanceTooltip({ name, position, avatar, evaluation }: { name: string; position: string; avatar: string | null; evaluation?: Evaluation }) {
   const { t } = useTranslation();
-  if (!evaluation) {
-    return (
-      <Stack spacing={0.25} sx={{ p: 0.5 }}>
-        <Typography variant="caption" fontWeight={700}>
-          {name}
-        </Typography>
-        <Typography variant="caption" color="inherit" sx={{ opacity: 0.8 }}>
+  return (
+    <Paper elevation={0} sx={{ p: 1.5, minWidth: 200, border: "1px solid", borderColor: "divider" }}>
+      <Stack direction="row" spacing={1.25} alignItems="center">
+        <Avatar src={avatar ?? undefined} sx={{ width: 32, height: 32, fontSize: 14, bgcolor: "primary.main" }}>
+          {name.charAt(0).toUpperCase()}
+        </Avatar>
+        <Box>
+          <Typography variant="subtitle2" fontWeight={700} lineHeight={1.2}>
+            {name}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" display="block">
+            {position}
+          </Typography>
+        </Box>
+      </Stack>
+      {evaluation ? (
+        <>
+          <Typography variant="body2" sx={{ mt: 0.75 }}>
+            {t("evaluationForm.aptitudes")} (HSI): <strong>{Number(evaluation.hsi).toFixed(1)}</strong> ·{" "}
+            {t("evaluationForm.attitudes")} (SSI): <strong>{Number(evaluation.ssi).toFixed(1)}</strong>
+          </Typography>
+          <Typography variant="body2" sx={{ color: performanceColors[evaluation.performance_rating] }}>
+            {t("dashboard.manager.altitude")}: <strong>{evaluation.altitude_percentage}%</strong> —{" "}
+            {t(`common.performance.${evaluation.performance_rating}`)}
+          </Typography>
+        </>
+      ) : (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
           {t("evaluations.notEvaluated")}
         </Typography>
-      </Stack>
-    );
-  }
-  const rating = evaluation.performance_rating;
-  return (
-    <Stack spacing={0.5} sx={{ p: 0.5, minWidth: 150 }}>
-      <Typography variant="caption" fontWeight={700}>
-        {name} — {position}
-      </Typography>
-      <Stack direction="row" justifyContent="space-between">
-        <Typography variant="caption" sx={{ opacity: 0.8 }}>
-          {t("dashboard.manager.altitude")}
-        </Typography>
-        <Typography variant="caption" fontWeight={700} sx={{ color: performanceColors[rating] }}>
-          {evaluation.altitude_percentage}%
-        </Typography>
-      </Stack>
-      <Stack direction="row" justifyContent="space-between">
-        <Typography variant="caption" sx={{ opacity: 0.8 }}>
-          HSI / SSI
-        </Typography>
-        <Typography variant="caption" fontWeight={700}>
-          {evaluation.hsi} / {evaluation.ssi}
-        </Typography>
-      </Stack>
-      <Typography variant="caption" sx={{ color: performanceColors[rating], fontWeight: 700 }}>
-        {t(`common.performance.${rating}`)}
-      </Typography>
-    </Stack>
+      )}
+    </Paper>
   );
 }
 
 function PersonNode({ name, position, avatar, evaluation, root }: PersonNodeProps) {
-  const size = root ? 70 : 55;
+  const size = root ? 70 : 61;
   return (
-    <Tooltip title={<PerformanceTooltip name={name} position={position} evaluation={evaluation} />} arrow>
+    <Tooltip
+      title={<PerformanceTooltip name={name} position={position} avatar={avatar} evaluation={evaluation} />}
+      slotProps={{ tooltip: { sx: TOOLTIP_SLOT_SX } }}
+    >
       <Stack alignItems="center" spacing={0.5} sx={{ width: "100%", cursor: "default" }}>
         <Avatar
           src={avatar ?? undefined}
@@ -83,7 +85,7 @@ function PersonNode({ name, position, avatar, evaluation, root }: PersonNodeProp
           elevation={0}
           sx={{ px: 1, py: 0.2, border: "1px solid", borderColor: "divider", borderRadius: 1, width: "100%", textAlign: "center" }}
         >
-          <Typography variant="caption" fontWeight={700} noWrap sx={{ fontSize: root ? 14.5 : 12.5 }}>
+          <Typography variant="caption" fontWeight={700} noWrap sx={{ fontSize: root ? 14.5 : 13.75 }}>
             {name}
           </Typography>
         </Paper>
@@ -101,7 +103,7 @@ function PersonNode({ name, position, avatar, evaluation, root }: PersonNodeProp
             variant="caption"
             fontWeight={600}
             noWrap
-            sx={{ color: root ? "#fff" : "text.secondary", lineHeight: 1.25, display: "block", fontSize: 11 }}
+            sx={{ color: root ? "#fff" : "text.secondary", lineHeight: 1.25, display: "block", fontSize: root ? 11 : 12 }}
           >
             {position || "—"}
           </Typography>
@@ -161,8 +163,8 @@ export default function LeadershipOverview({
         {t("dashboard.companyAdmin.leadershipTitle")}
       </Typography>
 
-      <Box sx={{ overflowX: "auto" }}>
-        <Box sx={{ display: "grid", gridTemplateColumns, width: gridMinWidth, mx: "auto", fontSize: 14.5 }}>
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", overflowX: "auto" }}>
+        <Box sx={{ display: "grid", gridTemplateColumns, width: `${gridMinWidth}px`, flexShrink: 0, fontSize: 14.5 }}>
           {/* CEO centré sur les colonnes des directeurs (pas sur toute la
               largeur, décalée par la colonne des intitulés à gauche). */}
           <Box />
@@ -199,8 +201,8 @@ export default function LeadershipOverview({
           sx={{
             display: "grid",
             gridTemplateColumns,
-            width: gridMinWidth,
-            mx: "auto",
+            width: `${gridMinWidth}px`,
+            flexShrink: 0,
             fontSize: 11.5,
             mt: 1.5,
             border: "1px solid",
