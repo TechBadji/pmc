@@ -638,6 +638,7 @@ export default function ID3AMatrixPage() {
   const { user } = useAppSelector((s) => s.auth);
   const canFilterLeadership = user?.role === "COMPANY_ADMIN" || user?.role === "SUPER_ADMIN";
   const isManager = user?.role === "MANAGER";
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
 
   const [allEvaluations, setAllEvaluations] = useState<Evaluation[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | "">("");
@@ -963,10 +964,10 @@ export default function ID3AMatrixPage() {
           </Paper>
         ) : (
         <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
-          {/* Échelle des abscisses réduite de 20 % pour la vue Manager —
-              son équipe est plus restreinte, la matrice n'a pas besoin
-              d'autant de largeur que la vue CEO/toute l'entreprise. */}
-          <ResponsiveContainer width={isManager ? "80%" : "100%"} height={480}>
+          {/* Échelle des abscisses réduite de 20 % pour les vues Manager et
+              CEO (Admin Entreprise) — seule la vue Super Admin garde la
+              pleine largeur. */}
+          <ResponsiveContainer width={isManager || isCompanyAdmin ? "80%" : "100%"} height={480}>
             <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
               <Customized component={<MatrixBackground enabled={matrixBackground} />} />
               <CartesianGrid horizontalValues={MINOR_AXIS_TICKS} verticalValues={MINOR_AXIS_TICKS} stroke="#e1e0d9" strokeDasharray="2 3" strokeOpacity={0.6} />
