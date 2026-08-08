@@ -1,41 +1,79 @@
 import FitnessCenterOutlinedIcon from "@mui/icons-material/FitnessCenterOutlined";
 import LinkOffOutlinedIcon from "@mui/icons-material/LinkOffOutlined";
-import { Alert, Avatar, Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Avatar, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import type { Paginated, SkillNote, SkillNoteCategory } from "@/api/types";
 
 const ORDERS = [1, 2, 3, 4, 5];
+const SCORES = [1, 2, 3, 4, 5];
+const STRENGTH_BG = "#3F914215"; // vert clair — même teinte que le bandeau "Strengths"
+const WEAKNESS_BG = "#8B2E2E15"; // rouge clair — même teinte que le bandeau "Weaknesses"
 
-type NoteMap = Record<string, string>;
+interface RowNote {
+  text: string;
+  score: number | null;
+}
+
+type NoteMap = Record<string, RowNote>;
 
 function key(category: SkillNoteCategory, order: number) {
   return `${category}-${order}`;
 }
 
+function isStrength(category: SkillNoteCategory) {
+  return category === "SOFT_STRENGTH" || category === "HARD_STRENGTH";
+}
+
 function Column({
   category,
   notes,
-  onChange,
+  onChangeText,
+  onChangeScore,
 }: {
   category: SkillNoteCategory;
   notes: NoteMap;
-  onChange: (category: SkillNoteCategory, order: number, text: string) => void;
+  onChangeText: (category: SkillNoteCategory, order: number, text: string) => void;
+  onChangeScore: (category: SkillNoteCategory, order: number, score: number | null) => void;
 }) {
+  const { t } = useTranslation();
+  const bg = isStrength(category) ? STRENGTH_BG : WEAKNESS_BG;
   return (
-    <Stack spacing={0.75} sx={{ flex: 1 }}>
-      {ORDERS.map((order) => (
-        <TextField
-          key={order}
-          size="small"
-          fullWidth
-          placeholder={`${order}.`}
-          value={notes[key(category, order)] ?? ""}
-          onChange={(e) => onChange(category, order, e.target.value)}
-          inputProps={{ maxLength: 255 }}
-        />
-      ))}
+    <Stack spacing={0.75} sx={{ flex: 1, bgcolor: bg, borderRadius: 1, p: 0.75 }}>
+      {ORDERS.map((order) => {
+        const row = notes[key(category, order)];
+        return (
+          <Stack key={order} direction="row" spacing={0.5}>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder={`${order}.`}
+              value={row?.text ?? ""}
+              onChange={(e) => onChangeText(category, order, e.target.value)}
+              inputProps={{ maxLength: 255 }}
+              sx={{ bgcolor: "background.paper" }}
+            />
+            <TextField
+              select
+              size="small"
+              value={row?.score ?? ""}
+              onChange={(e) => onChangeScore(category, order, e.target.value === "" ? null : Number(e.target.value))}
+              sx={{ width: 64, bgcolor: "background.paper" }}
+              SelectProps={{ displayEmpty: true }}
+            >
+              <MenuItem value="">
+                <em>{t("strengthsWeaknesses.indexShort")}</em>
+              </MenuItem>
+              {SCORES.map((s) => (
+                <MenuItem key={s} value={s}>
+                  {s}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+        );
+      })}
     </Stack>
   );
 }
@@ -46,14 +84,16 @@ function Section({
   strengthCategory,
   weaknessCategory,
   notes,
-  onChange,
+  onChangeText,
+  onChangeScore,
 }: {
   labelKey: string;
   labelColor: string;
   strengthCategory: SkillNoteCategory;
   weaknessCategory: SkillNoteCategory;
   notes: NoteMap;
-  onChange: (category: SkillNoteCategory, order: number, text: string) => void;
+  onChangeText: (category: SkillNoteCategory, order: number, text: string) => void;
+  onChangeScore: (category: SkillNoteCategory, order: number, score: number | null) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -78,8 +118,8 @@ function Section({
           {t(labelKey)}
         </Typography>
       </Box>
-      <Column category={strengthCategory} notes={notes} onChange={onChange} />
-      <Column category={weaknessCategory} notes={notes} onChange={onChange} />
+      <Column category={strengthCategory} notes={notes} onChangeText={onChangeText} onChangeScore={onChangeScore} />
+      <Column category={weaknessCategory} notes={notes} onChangeText={onChangeText} onChangeScore={onChangeScore} />
     </Stack>
   );
 }
@@ -105,23 +145,29 @@ export default function StrengthsWeaknesses({
       .then((r) => {
         const map: NoteMap = {};
         r.data.results.forEach((n) => {
-          map[key(n.category, n.order)] = n.text;
+          map[key(n.category, n.order)] = { text: n.text, score: n.score };
         });
         setNotes(map);
       });
   }, [evaluationId]);
 
-  function handleChange(category: SkillNoteCategory, order: number, text: string) {
-    setNotes((prev) => ({ ...prev, [key(category, order)]: text }));
+  function handleChangeText(category: SkillNoteCategory, order: number, text: string) {
+    setNotes((prev) => ({ ...prev, [key(category, order)]: { text, score: prev[key(category, order)]?.score ?? null } }));
+    setSaved(false);
+  }
+
+  function handleChangeScore(category: SkillNoteCategory, order: number, score: number | null) {
+    setNotes((prev) => ({ ...prev, [key(category, order)]: { text: prev[key(category, order)]?.text ?? "", score } }));
     setSaved(false);
   }
 
   const payload = useMemo(() => {
     const categories: SkillNoteCategory[] = ["SOFT_STRENGTH", "SOFT_WEAKNESS", "HARD_STRENGTH", "HARD_WEAKNESS"];
-    const list: { category: SkillNoteCategory; order: number; text: string }[] = [];
+    const list: { category: SkillNoteCategory; order: number; text: string; score: number | null }[] = [];
     categories.forEach((category) => {
       ORDERS.forEach((order) => {
-        list.push({ category, order, text: notes[key(category, order)] ?? "" });
+        const row = notes[key(category, order)];
+        list.push({ category, order, text: row?.text ?? "", score: row?.score ?? null });
       });
     });
     return list;
@@ -169,7 +215,8 @@ export default function StrengthsWeaknesses({
             strengthCategory="SOFT_STRENGTH"
             weaknessCategory="SOFT_WEAKNESS"
             notes={notes}
-            onChange={handleChange}
+            onChangeText={handleChangeText}
+            onChangeScore={handleChangeScore}
           />
           <Section
             labelKey="strengthsWeaknesses.hardSkills"
@@ -177,7 +224,8 @@ export default function StrengthsWeaknesses({
             strengthCategory="HARD_STRENGTH"
             weaknessCategory="HARD_WEAKNESS"
             notes={notes}
-            onChange={handleChange}
+            onChangeText={handleChangeText}
+            onChangeScore={handleChangeScore}
           />
         </Stack>
         <Avatar

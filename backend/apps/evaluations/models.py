@@ -209,6 +209,14 @@ class SkillNote(models.Model):
     category = models.CharField("Catégorie", max_length=20, choices=Category.choices)
     order = models.PositiveSmallIntegerField("Position (1-5)")
     text = models.CharField("Texte", max_length=255, blank=True)
+    score = models.DecimalField(
+        "Indice (1-5)",
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
 
     class Meta:
         verbose_name = "Note Forces & Faiblesses"

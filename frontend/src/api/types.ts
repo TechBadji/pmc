@@ -181,6 +181,7 @@ export interface SkillNote {
   category: SkillNoteCategory;
   order: number;
   text: string;
+  score: number | null;
 }
 
 export interface EvaluationCampaign {

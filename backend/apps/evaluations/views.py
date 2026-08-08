@@ -190,7 +190,21 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             order = n.get("order")
             if not isinstance(order, int) or not (1 <= order <= 5):
                 continue
-            cleaned.append(SkillNote(evaluation=evaluation, category=n["category"], order=order, text=(n.get("text") or "")[:255]))
+            score = n.get("score")
+            if score is not None:
+                try:
+                    score = min(5, max(1, float(score)))
+                except (TypeError, ValueError):
+                    score = None
+            cleaned.append(
+                SkillNote(
+                    evaluation=evaluation,
+                    category=n["category"],
+                    order=order,
+                    text=(n.get("text") or "")[:255],
+                    score=score,
+                )
+            )
 
         SkillNote.objects.filter(evaluation=evaluation).delete()
         SkillNote.objects.bulk_create(cleaned)
