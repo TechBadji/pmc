@@ -5,14 +5,21 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.audit import log_event
+from apps.core.models import User
 from apps.core.permissions import (
     CompanyScopedQuerySetMixin,
     IsCompanyAdminOrManager,
     IsSuperAdminOrCompanyAdmin,
 )
+from apps.core.validators import require_same_company
 
-from .models import Evaluation, EvaluationCampaign
-from .serializers import EvaluationCampaignSerializer, EvaluationSerializer, EvaluationWriteSerializer
+from .models import Evaluation, EvaluationCampaign, SkillNote
+from .serializers import (
+    EvaluationCampaignSerializer,
+    EvaluationSerializer,
+    EvaluationWriteSerializer,
+    SkillNoteSerializer,
+)
 
 
 class EvaluationCampaignViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
@@ -130,3 +137,59 @@ class EvaluationViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             # Un manager ne voit que les évaluations de son équipe (+ les siennes).
             qs = qs.filter(user__department__manager=user) | qs.filter(user=user)
         return qs.distinct()
+
+
+class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
+    """Fiche "Forces & Faiblesses" (Hard/Soft Skills) d'un collaborateur —
+    même règles de visibilité que les évaluations : un manager ne voit/édite
+    que sa propre équipe (+ lui-même), un membre ne voit que la sienne."""
+
+    queryset = SkillNote.objects.select_related("user")
+    serializer_class = SkillNoteSerializer
+    company_lookup = "user__company_id"
+    filterset_fields = ["user"]
+
+    def get_permissions(self):
+        if self.action in ("create", "update", "partial_update", "destroy", "bulk_save"):
+            return [IsCompanyAdminOrManager()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.role == user.Role.MEMBER:
+            qs = qs.filter(user=user)
+        elif user.role == user.Role.MANAGER:
+            qs = qs.filter(user__department__manager=user) | qs.filter(user=user)
+        return qs.distinct()
+
+    @action(detail=False, methods=["post"], url_path="bulk-save")
+    def bulk_save(self, request):
+        """Remplace en une fois les 20 lignes (4 catégories × 5) de la fiche
+        d'un collaborateur — même logique que les autres fiches "tout ou
+        rien" de l'app (scores de compétences, critères de cohésion)."""
+        target_user_id = request.data.get("user")
+        notes = request.data.get("notes", [])
+        try:
+            target_user = User.objects.get(pk=target_user_id)
+        except (User.DoesNotExist, TypeError, ValueError):
+            raise ValidationError({"user": "Collaborateur introuvable."})
+        require_same_company(request.user, target_user=target_user)
+
+        actor = request.user
+        if actor.role == actor.Role.MANAGER and target_user.department_id and target_user.department.manager_id != actor.id and target_user.id != actor.id:
+            raise ValidationError({"user": "Ce collaborateur ne fait pas partie de votre équipe."})
+
+        valid_categories = {c.value for c in SkillNote.Category}
+        cleaned = []
+        for n in notes:
+            if n.get("category") not in valid_categories:
+                continue
+            order = n.get("order")
+            if not isinstance(order, int) or not (1 <= order <= 5):
+                continue
+            cleaned.append(SkillNote(user=target_user, category=n["category"], order=order, text=(n.get("text") or "")[:255]))
+
+        SkillNote.objects.filter(user=target_user).delete()
+        SkillNote.objects.bulk_create(cleaned)
+        return Response(SkillNoteSerializer(SkillNote.objects.filter(user=target_user), many=True).data)

@@ -32,6 +32,7 @@ import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Evaluation, Paginated, SkillScore, UserRecord } from "@/api/types";
 import StatCard from "@/components/StatCard";
+import StrengthsWeaknesses from "@/components/StrengthsWeaknesses";
 import { performanceColors } from "@/theme";
 
 function average(values: number[]): number | null {
@@ -587,6 +588,14 @@ export default function EvaluationsPage() {
             </Typography>
           )}
         </Paper>
+      )}
+
+      {selectedMember && (
+        <StrengthsWeaknesses
+          userId={selectedMember.id}
+          userName={selectedMember.full_name || selectedMember.email}
+          avatar={selectedMember.avatar}
+        />
       )}
 
       <Dialog open={!!skillDialog} onClose={() => setSkillDialog(null)} fullWidth maxWidth="xs">

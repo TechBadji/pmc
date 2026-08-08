@@ -4,7 +4,14 @@ from rest_framework import serializers
 from apps.core.validators import require_same_company
 from apps.skills.models import SkillItem
 
-from .models import Evaluation, EvaluationCampaign, EvaluationSkillScore
+from .models import Evaluation, EvaluationCampaign, EvaluationSkillScore, SkillNote
+
+
+class SkillNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SkillNote
+        fields = ["id", "user", "category", "order", "text"]
+        read_only_fields = ["id"]
 
 
 class EvaluationCampaignSerializer(serializers.ModelSerializer):

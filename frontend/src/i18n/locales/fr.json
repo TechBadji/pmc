@@ -426,5 +426,13 @@
     "achievement": "Réalisation",
     "period": "Période",
     "allPeriods": "Toutes les années ({{range}})"
+  },
+  "strengthsWeaknesses": {
+    "title": "{{name}} — Forces & Faiblesses",
+    "strengths": "Forces",
+    "weaknesses": "Faiblesses",
+    "softSkills": "SOFT SKILLS",
+    "hardSkills": "HARD SKILLS",
+    "saved": "Enregistré."
   }
 }

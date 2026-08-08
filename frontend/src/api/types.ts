@@ -173,6 +173,16 @@ export interface Evaluation {
   performance_rating: PerformanceRating;
 }
 
+export type SkillNoteCategory = "SOFT_STRENGTH" | "SOFT_WEAKNESS" | "HARD_STRENGTH" | "HARD_WEAKNESS";
+
+export interface SkillNote {
+  id: number;
+  user: number;
+  category: SkillNoteCategory;
+  order: number;
+  text: string;
+}
+
 export interface EvaluationCampaign {
   id: number;
   company: number;

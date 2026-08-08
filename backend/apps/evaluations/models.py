@@ -186,3 +186,34 @@ class EvaluationSkillScore(models.Model):
 
     def __str__(self):
         return f"{self.skill_item.name}: {self.score}"
+
+
+class SkillNote(models.Model):
+    """Une ligne libre de la fiche "Forces & Faiblesses" (Hard/Soft Skills)
+    d'un collaborateur — remplie par son manager, indépendamment d'une
+    campagne d'évaluation donnée (photo instantanée, pas un historique)."""
+
+    class Category(models.TextChoices):
+        SOFT_STRENGTH = "SOFT_STRENGTH", "Force — Soft Skills"
+        SOFT_WEAKNESS = "SOFT_WEAKNESS", "Faiblesse — Soft Skills"
+        HARD_STRENGTH = "HARD_STRENGTH", "Force — Hard Skills"
+        HARD_WEAKNESS = "HARD_WEAKNESS", "Faiblesse — Hard Skills"
+
+    user = models.ForeignKey(
+        "core.User",
+        verbose_name="Collaborateur concerné",
+        on_delete=models.CASCADE,
+        related_name="skill_notes",
+    )
+    category = models.CharField("Catégorie", max_length=20, choices=Category.choices)
+    order = models.PositiveSmallIntegerField("Position (1-5)")
+    text = models.CharField("Texte", max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = "Note Forces & Faiblesses"
+        verbose_name_plural = "Notes Forces & Faiblesses"
+        unique_together = ("user", "category", "order")
+        ordering = ["category", "order"]
+
+    def __str__(self):
+        return f"{self.user} — {self.get_category_display()} #{self.order}"

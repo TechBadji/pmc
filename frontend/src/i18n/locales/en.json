@@ -426,5 +426,13 @@
     "achievement": "Achievement",
     "period": "Period",
     "allPeriods": "All years ({{range}})"
+  },
+  "strengthsWeaknesses": {
+    "title": "{{name}} — Strengths & Weaknesses",
+    "strengths": "Strengths",
+    "weaknesses": "Weaknesses",
+    "softSkills": "SOFT SKILLS",
+    "hardSkills": "HARD SKILLS",
+    "saved": "Saved."
   }
 }
