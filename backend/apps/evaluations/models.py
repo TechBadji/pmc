@@ -190,8 +190,9 @@ class EvaluationSkillScore(models.Model):
 
 class SkillNote(models.Model):
     """Une ligne libre de la fiche "Forces & Faiblesses" (Hard/Soft Skills)
-    d'un collaborateur — remplie par son manager, indépendamment d'une
-    campagne d'évaluation donnée (photo instantanée, pas un historique)."""
+    d'un collaborateur — rattachée à une évaluation précise (donc à sa
+    campagne), comme EvaluationSkillScore, pour un historique par période
+    plutôt qu'un état unique écrasé à chaque saisie."""
 
     class Category(models.TextChoices):
         SOFT_STRENGTH = "SOFT_STRENGTH", "Force — Soft Skills"
@@ -199,9 +200,9 @@ class SkillNote(models.Model):
         HARD_STRENGTH = "HARD_STRENGTH", "Force — Hard Skills"
         HARD_WEAKNESS = "HARD_WEAKNESS", "Faiblesse — Hard Skills"
 
-    user = models.ForeignKey(
-        "core.User",
-        verbose_name="Collaborateur concerné",
+    evaluation = models.ForeignKey(
+        "evaluations.Evaluation",
+        verbose_name="Évaluation",
         on_delete=models.CASCADE,
         related_name="skill_notes",
     )
@@ -212,8 +213,8 @@ class SkillNote(models.Model):
     class Meta:
         verbose_name = "Note Forces & Faiblesses"
         verbose_name_plural = "Notes Forces & Faiblesses"
-        unique_together = ("user", "category", "order")
+        unique_together = ("evaluation", "category", "order")
         ordering = ["category", "order"]
 
     def __str__(self):
-        return f"{self.user} — {self.get_category_display()} #{self.order}"
+        return f"{self.evaluation} — {self.get_category_display()} #{self.order}"

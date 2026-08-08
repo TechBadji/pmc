@@ -177,7 +177,7 @@ export type SkillNoteCategory = "SOFT_STRENGTH" | "SOFT_WEAKNESS" | "HARD_STRENG
 
 export interface SkillNote {
   id: number;
-  user: number;
+  evaluation: number;
   category: SkillNoteCategory;
   order: number;
   text: string;

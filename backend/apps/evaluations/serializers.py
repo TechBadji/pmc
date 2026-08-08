@@ -10,7 +10,7 @@ from .models import Evaluation, EvaluationCampaign, EvaluationSkillScore, SkillN
 class SkillNoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = SkillNote
-        fields = ["id", "user", "category", "order", "text"]
+        fields = ["id", "evaluation", "category", "order", "text"]
         read_only_fields = ["id"]
 
 

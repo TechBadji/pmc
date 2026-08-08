@@ -85,11 +85,11 @@ function Section({
 }
 
 export default function StrengthsWeaknesses({
-  userId,
+  evaluationId,
   userName,
   avatar,
 }: {
-  userId: number;
+  evaluationId: number;
   userName: string;
   avatar: string | null;
 }) {
@@ -100,14 +100,16 @@ export default function StrengthsWeaknesses({
 
   useEffect(() => {
     setSaved(false);
-    apiClient.get<Paginated<SkillNote>>("/skill-notes/", { params: { user: userId, page_size: 100 } }).then((r) => {
-      const map: NoteMap = {};
-      r.data.results.forEach((n) => {
-        map[key(n.category, n.order)] = n.text;
+    apiClient
+      .get<Paginated<SkillNote>>("/skill-notes/", { params: { evaluation: evaluationId, page_size: 100 } })
+      .then((r) => {
+        const map: NoteMap = {};
+        r.data.results.forEach((n) => {
+          map[key(n.category, n.order)] = n.text;
+        });
+        setNotes(map);
       });
-      setNotes(map);
-    });
-  }, [userId]);
+  }, [evaluationId]);
 
   function handleChange(category: SkillNoteCategory, order: number, text: string) {
     setNotes((prev) => ({ ...prev, [key(category, order)]: text }));
@@ -128,7 +130,7 @@ export default function StrengthsWeaknesses({
   async function handleSave() {
     setSaving(true);
     try {
-      await apiClient.post("/skill-notes/bulk-save/", { user: userId, notes: payload });
+      await apiClient.post("/skill-notes/bulk-save/", { evaluation: evaluationId, notes: payload });
       setSaved(true);
     } finally {
       setSaving(false);

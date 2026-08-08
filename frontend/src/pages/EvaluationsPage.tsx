@@ -590,9 +590,9 @@ export default function EvaluationsPage() {
         </Paper>
       )}
 
-      {selectedMember && (
+      {selectedMember && selectedEvaluation && (
         <StrengthsWeaknesses
-          userId={selectedMember.id}
+          evaluationId={selectedEvaluation.id}
           userName={selectedMember.full_name || selectedMember.email}
           avatar={selectedMember.avatar}
         />
