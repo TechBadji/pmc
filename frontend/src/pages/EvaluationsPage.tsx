@@ -27,7 +27,7 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Evaluation, Paginated, SkillScore, UserRecord } from "@/api/types";
@@ -72,6 +72,7 @@ function DeltaBadge({ current, previous }: { current: number; previous: number |
 export default function EvaluationsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAppSelector((s) => s.auth);
   // Un manager évalue les membres de son équipe ; l'Admin Entreprise évalue
   // ses directeurs (rôle MANAGER) — même page, même parcours, scope différent.
@@ -101,6 +102,16 @@ export default function EvaluationsPage() {
   }
 
   useEffect(load, []);
+
+  // Pré-sélectionne le membre visé par ?user=<id> (ex: clic depuis "Mon
+  // équipe") dès que la liste est chargée.
+  useEffect(() => {
+    const userParam = searchParams.get("user");
+    if (!userParam || members.length === 0) return;
+    const id = Number(userParam);
+    if (members.some((m) => m.id === id)) setSelectedMemberId(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [members, searchParams]);
 
   // Campagnes distinctes disponibles, triées chronologiquement — alimente le
   // sélecteur de période global (remplace l'ancienne colonne "Période" par
@@ -503,9 +514,7 @@ export default function EvaluationsPage() {
                   </Stack>
                 </Paper>
                 </Box>
-                {selectedMember.avatar_full_body && selectedMember.role === "MANAGER" && (
-                  <Box sx={{ flexShrink: 0, width: { xs: 0, md: 110 } }} />
-                )}
+                <Box sx={{ flexShrink: 0, width: { xs: 0, md: 110 } }} />
                 <Box sx={{ flex: 1 }}>
                 <Paper
                   sx={{
@@ -544,24 +553,31 @@ export default function EvaluationsPage() {
 
               <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "flex-start" }}>
                 {renderSkillTable(hardScores, "#2E5AAC", t("evaluationForm.aptitudes"))}
-                {selectedMember.avatar_full_body && selectedMember.role === "MANAGER" && (
-                  <Stack alignItems="center" spacing={0.5} sx={{ flexShrink: 0, width: { xs: "100%", md: 110 }, mx: "auto" }}>
-                    <Paper elevation={0} sx={{ px: 1, py: 0.15, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
-                      <Typography variant="caption" fontWeight={700} noWrap sx={{ fontSize: 11 }}>
-                        {selectedMember.full_name}
-                      </Typography>
-                    </Paper>
-                    <Typography variant="caption" fontWeight={700} textAlign="center" sx={{ color: "text.secondary", fontSize: 9.5 }}>
-                      {selectedMember.position}
+                <Stack alignItems="center" spacing={0.5} sx={{ flexShrink: 0, width: { xs: "100%", md: 110 }, mx: "auto" }}>
+                  <Paper elevation={0} sx={{ px: 1, py: 0.15, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+                    <Typography variant="caption" fontWeight={700} noWrap sx={{ fontSize: 11 }}>
+                      {selectedMember.full_name}
                     </Typography>
+                  </Paper>
+                  <Typography variant="caption" fontWeight={700} textAlign="center" sx={{ color: "text.secondary", fontSize: 9.5 }}>
+                    {selectedMember.position}
+                  </Typography>
+                  {selectedMember.avatar_full_body ? (
                     <Box
                       component="img"
                       src={selectedMember.avatar_full_body}
                       alt={selectedMember.full_name}
                       sx={{ width: "100%", maxWidth: 110, borderRadius: 1, display: "block", mt: 0.5 }}
                     />
-                  </Stack>
-                )}
+                  ) : (
+                    <Avatar
+                      src={selectedMember.avatar ?? undefined}
+                      sx={{ width: 72, height: 72, mt: 0.5, border: "2px solid", borderColor: "divider" }}
+                    >
+                      {(selectedMember.full_name || selectedMember.email).charAt(0).toUpperCase()}
+                    </Avatar>
+                  )}
+                </Stack>
                 {renderSkillTable(softScores, "#3F9142", t("evaluationForm.attitudes"))}
               </Stack>
             </>

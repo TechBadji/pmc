@@ -28,6 +28,7 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, Paginated, UserRecord } from "@/api/types";
@@ -35,6 +36,7 @@ import StatCard from "@/components/StatCard";
 
 export default function TeamsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user } = useAppSelector((s) => s.auth);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [members, setMembers] = useState<UserRecord[]>([]);
@@ -197,7 +199,21 @@ export default function TeamsPage() {
                 </TableHead>
                 <TableBody>
                   {teamMembers.map((m) => (
-                    <TableRow key={m.id}>
+                    <TableRow
+                      key={m.id}
+                      hover
+                      sx={{ cursor: "pointer" }}
+                      onClick={() => navigate(`/evaluations?user=${m.id}`)}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={m.full_name || m.email}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          navigate(`/evaluations?user=${m.id}`);
+                        }
+                      }}
+                    >
                       <TableCell>
                         <Stack direction="row" spacing={1.5} alignItems="center">
                           <Avatar src={m.avatar ?? undefined} sx={{ width: 32, height: 32, fontSize: 14, bgcolor: "primary.main" }}>
@@ -221,12 +237,24 @@ export default function TeamsPage() {
                         {canManage(dept, m) && (
                           <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                             <Tooltip title={t("teams.resetPasswordTooltip")}>
-                              <IconButton size="small" onClick={() => handleResetPassword(m)}>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleResetPassword(m);
+                                }}
+                              >
                                 <LockResetOutlinedIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title={m.is_active ? t("teams.block") : t("teams.unblock")}>
-                              <IconButton size="small" onClick={() => handleToggleActive(m)}>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleActive(m);
+                                }}
+                              >
                                 {m.is_active ? (
                                   <BlockOutlinedIcon fontSize="small" color="error" />
                                 ) : (
