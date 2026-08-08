@@ -24,7 +24,7 @@ function Column({
   onChange: (category: SkillNoteCategory, order: number, text: string) => void;
 }) {
   return (
-    <Stack spacing={0.75} sx={{ flex: 1 }}>
+    <Stack spacing={0.75}>
       {ORDERS.map((order) => (
         <TextField
           key={order}
@@ -40,47 +40,27 @@ function Column({
   );
 }
 
-function Section({
-  labelKey,
-  labelColor,
-  strengthCategory,
-  weaknessCategory,
-  notes,
-  onChange,
-}: {
-  labelKey: string;
-  labelColor: string;
-  strengthCategory: SkillNoteCategory;
-  weaknessCategory: SkillNoteCategory;
-  notes: NoteMap;
-  onChange: (category: SkillNoteCategory, order: number, text: string) => void;
-}) {
+function RowLabel({ labelKey, labelColor }: { labelKey: string; labelColor: string }) {
   const { t } = useTranslation();
   return (
-    <Stack direction="row" spacing={1.5}>
-      <Box
-        sx={{
-          width: 28,
-          bgcolor: labelColor,
-          color: "#fff",
-          borderRadius: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
+    <Box
+      sx={{
+        bgcolor: labelColor,
+        color: "#fff",
+        borderRadius: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Typography
+        variant="caption"
+        fontWeight={700}
+        sx={{ writingMode: "vertical-rl", transform: "rotate(180deg)", letterSpacing: 1, fontSize: 11 }}
       >
-        <Typography
-          variant="caption"
-          fontWeight={700}
-          sx={{ writingMode: "vertical-rl", transform: "rotate(180deg)", letterSpacing: 1, fontSize: 11 }}
-        >
-          {t(labelKey)}
-        </Typography>
-      </Box>
-      <Column category={strengthCategory} notes={notes} onChange={onChange} />
-      <Column category={weaknessCategory} notes={notes} onChange={onChange} />
-    </Stack>
+        {t(labelKey)}
+      </Typography>
+    </Box>
   );
 }
 
@@ -143,57 +123,72 @@ export default function StrengthsWeaknesses({
         </Typography>
       </Paper>
 
-      <Stack direction="row" spacing={1.5} sx={{ mb: 1.5 }}>
-        <Box sx={{ width: 28, flexShrink: 0 }} />
-        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flex: 1, bgcolor: "success.main", color: "#fff", borderRadius: 1, px: 1.5, py: 0.5 }}>
-          <FitnessCenterOutlinedIcon fontSize="small" />
-          <Typography variant="subtitle2" fontWeight={700}>
-            {t("strengthsWeaknesses.strengths")}
-          </Typography>
-        </Stack>
-        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flex: 1, bgcolor: "#8B2E2E", color: "#fff", borderRadius: 1, px: 1.5, py: 0.5 }}>
-          <LinkOffOutlinedIcon fontSize="small" />
-          <Typography variant="subtitle2" fontWeight={700}>
-            {t("strengthsWeaknesses.weaknesses")}
-          </Typography>
-        </Stack>
-      </Stack>
+      {/* Grille 3 colonnes (étiquette / Forces / Faiblesses) × 2 lignes
+          (Soft / Hard) — la photo occupe une cellule à part entière qui
+          couvre les deux colonnes de données et les deux lignes, donc
+          `justifySelf`/`alignSelf: center` la place exactement à
+          équidistance des 4 blocs (jamais décalée par la largeur de la
+          colonne étiquette, contrairement à un centrage en `position:
+          absolute` sur l'ensemble du bloc). */}
+      <Box
+        sx={{
+          position: "relative",
+          display: "grid",
+          gridTemplateColumns: "28px 1fr 1fr",
+          columnGap: 1.5,
+          rowGap: 2,
+        }}
+      >
+        {/* cellule 1×1 volontairement vide — sans elle, l'auto-placement de
+            la grille y glisserait la prochaine étiquette de ligne. */}
+        <Box sx={{ gridColumn: "1 / 2" }} />
+        <Box sx={{ gridColumn: "2 / 3", bgcolor: "success.main", color: "#fff", borderRadius: 1, px: 1.5, py: 0.5 }}>
+          <Stack direction="row" spacing={0.75} alignItems="center" justifyContent="center">
+            <FitnessCenterOutlinedIcon fontSize="small" />
+            <Typography variant="subtitle2" fontWeight={700}>
+              {t("strengthsWeaknesses.strengths")}
+            </Typography>
+          </Stack>
+        </Box>
+        <Box sx={{ gridColumn: "3 / 4", bgcolor: "#8B2E2E", color: "#fff", borderRadius: 1, px: 1.5, py: 0.5 }}>
+          <Stack direction="row" spacing={0.75} alignItems="center" justifyContent="center">
+            <LinkOffOutlinedIcon fontSize="small" />
+            <Typography variant="subtitle2" fontWeight={700}>
+              {t("strengthsWeaknesses.weaknesses")}
+            </Typography>
+          </Stack>
+        </Box>
 
-      <Box sx={{ position: "relative" }}>
-        <Stack spacing={2}>
-          <Section
-            labelKey="strengthsWeaknesses.softSkills"
-            labelColor="#3F9142"
-            strengthCategory="SOFT_STRENGTH"
-            weaknessCategory="SOFT_WEAKNESS"
-            notes={notes}
-            onChange={handleChange}
-          />
-          <Section
-            labelKey="strengthsWeaknesses.hardSkills"
-            labelColor="#2E5AAC"
-            strengthCategory="HARD_STRENGTH"
-            weaknessCategory="HARD_WEAKNESS"
-            notes={notes}
-            onChange={handleChange}
-          />
-        </Stack>
-        <Avatar
-          src={avatar ?? undefined}
+        <RowLabel labelKey="strengthsWeaknesses.softSkills" labelColor="#3F9142" />
+        <Column category="SOFT_STRENGTH" notes={notes} onChange={handleChange} />
+        <Column category="SOFT_WEAKNESS" notes={notes} onChange={handleChange} />
+
+        <RowLabel labelKey="strengthsWeaknesses.hardSkills" labelColor="#2E5AAC" />
+        <Column category="HARD_STRENGTH" notes={notes} onChange={handleChange} />
+        <Column category="HARD_WEAKNESS" notes={notes} onChange={handleChange} />
+
+        <Box
           sx={{
-            width: 56,
-            height: 56,
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            border: "2px solid",
-            borderColor: "background.paper",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+            gridColumn: "2 / 4",
+            gridRow: "2 / 4",
+            justifySelf: "center",
+            alignSelf: "center",
+            zIndex: 1,
           }}
         >
-          {userName.charAt(0).toUpperCase()}
-        </Avatar>
+          <Avatar
+            src={avatar ?? undefined}
+            sx={{
+              width: 56,
+              height: 56,
+              border: "2px solid",
+              borderColor: "background.paper",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+            }}
+          >
+            {userName.charAt(0).toUpperCase()}
+          </Avatar>
+        </Box>
       </Box>
 
       <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={2} sx={{ mt: 2 }}>
