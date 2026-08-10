@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.core.validators import require_same_company
+from apps.core.validators import require_manages_team, require_same_company
 
 from .models import CohesionCriterionScore, TeamCohesionAnalysis, TeamRelationship
 
@@ -47,6 +47,7 @@ class TeamCohesionAnalysisSerializer(serializers.ModelSerializer):
         actor = self.context["request"].user
         team = attrs.get("team", getattr(self.instance, "team", None))
         require_same_company(actor, team=team)
+        require_manages_team(actor, team)
         return attrs
 
     def create(self, validated_data):
@@ -100,4 +101,5 @@ class TeamRelationshipSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {field_name: "Ce membre n'appartient pas à cette équipe."}
                 )
+        require_manages_team(actor, team)
         return attrs

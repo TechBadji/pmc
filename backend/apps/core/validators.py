@@ -21,3 +21,19 @@ def require_same_company(actor, **named_objects):
             errors[field_name] = "Introuvable."
     if errors:
         raise serializers.ValidationError(errors)
+
+
+def require_manages_team(actor, team, target_user=None):
+    """Vérifie qu'un Manager n'agit que sur sa propre équipe (ou sur
+    lui-même si `target_user` est fourni) — aucune restriction pour Company
+    Admin/Super Admin. Complète `require_same_company` (tenant) par la
+    vérification d'appartenance manager↔équipe, jusqu'ici absente de
+    plusieurs serializers d'écriture (Plans d'action, Cohésion, Relations
+    d'équipe) alors que le module Évaluations l'appliquait déjà."""
+    if actor.role != actor.Role.MANAGER:
+        return
+    if target_user is not None and target_user.id == actor.id:
+        return
+    if team is not None and team.manager_id == actor.id:
+        return
+    raise serializers.ValidationError({"team": "Vous ne gérez pas cette équipe."})

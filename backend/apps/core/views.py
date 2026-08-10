@@ -41,6 +41,7 @@ from .validators import require_same_company
 
 class PMCTokenObtainPairView(TokenObtainPairView):
     serializer_class = PMCTokenObtainPairSerializer
+    throttle_scope = "login"
 
 
 class MeView(APIView):
@@ -78,6 +79,7 @@ class ForgotPasswordView(APIView):
     par défaut (123456)."""
 
     permission_classes = [permissions.AllowAny]
+    throttle_scope = "forgot_password"
 
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)

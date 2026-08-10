@@ -4,7 +4,11 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.models import User
-from apps.core.permissions import CompanyScopedQuerySetMixin, IsCompanyAdminOrManager
+from apps.core.permissions import (
+    CompanyScopedQuerySetMixin,
+    IsCompanyAdminOrManager,
+    IsSuperAdminOrCompanyAdmin,
+)
 from apps.core.validators import require_same_company
 
 from .models import ActionPlan
@@ -18,7 +22,13 @@ class ActionPlanViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
     filterset_fields = ["team", "manager", "target_user", "status", "category"]
 
     def get_permissions(self):
-        if self.action in ("create", "update", "partial_update", "destroy", "bulk_save_dev_plan"):
+        # bulk_save_dev_plan remplace en bloc la fiche de développement d'un
+        # manager — réservé au Company Admin/Super Admin (jamais à un pair
+        # Manager, qui n'a aucune légitimité à réécrire la fiche d'un autre
+        # manager), contrairement aux plans d'action d'équipe classiques.
+        if self.action == "bulk_save_dev_plan":
+            return [IsSuperAdminOrCompanyAdmin()]
+        if self.action in ("create", "update", "partial_update", "destroy"):
             return [IsCompanyAdminOrManager()]
         return [permissions.IsAuthenticated()]
 

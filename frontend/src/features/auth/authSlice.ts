@@ -66,9 +66,12 @@ const authSlice = createSlice({
       .addCase(fetchMe.rejected, (state) => {
         // Un échec transitoire (ex: juste après une sauvegarde de profil) ne
         // doit pas déconnecter un utilisateur déjà authentifié : on ne vide
-        // `user` que si aucune session n'était encore chargée.
+        // `user` que si aucune session n'était encore chargée. Le statut
+        // passe à "error" (pas "idle") pour qu'un premier chargement en échec
+        // redirige vers /login au lieu de redéclencher fetchMe en boucle
+        // (ProtectedRoute ne refait l'appel que si status === "idle").
         if (!state.user) {
-          state.status = "idle";
+          state.status = "error";
           state.user = null;
         }
       });

@@ -48,7 +48,9 @@ class CohesionCriterionScore(models.Model):
         related_name="criterion_scores",
     )
     criterion = models.CharField("Critère", max_length=500)
-    score = models.PositiveSmallIntegerField("Note (1-5)")
+    score = models.PositiveSmallIntegerField(
+        "Note (1-5)", validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
     objective_score = models.DecimalField(
         "OCE — Objectif pour ce critère (1-5)",
         max_digits=3,

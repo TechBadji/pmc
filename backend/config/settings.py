@@ -124,6 +124,18 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "config.pagination.PMCPageNumberPagination",
     "PAGE_SIZE": 50,
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.ScopedRateThrottle",
+    ),
+    # Le scope par défaut (aucune classe de throttle appliquée) laisse le
+    # reste de l'API non limité — seules les vues qui déclarent explicitement
+    # `throttle_scope` (login, mot de passe oublié) sont concernées, pour ne
+    # pas casser l'usage normal (rafales de requêtes légitimes) du reste de
+    # l'app.
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "10/min",
+        "forgot_password": "5/min",
+    },
 }
 
 SIMPLE_JWT = {
