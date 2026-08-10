@@ -104,10 +104,15 @@ export default function EvaluationFormPage() {
   const [loadError, setLoadError] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Un Company Admin évalue directement les managers ; les collaborateurs
+  // sont évalués par leur propre manager (même règle que EvaluationsPage,
+  // et désormais également appliquée côté backend).
+  const evaluatedRole = authUser?.role === "COMPANY_ADMIN" ? "MANAGER" : undefined;
+
   useEffect(() => {
     setLoadError(false);
     apiClient
-      .get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } })
+      .get<Paginated<UserRecord>>("/users/", { params: { page_size: 500, ...(evaluatedRole ? { role: evaluatedRole } : {}) } })
       .then((r) => setMembers(r.data.results))
       .catch(() => setLoadError(true));
     if (authUser?.company) {
@@ -118,7 +123,7 @@ export default function EvaluationFormPage() {
         .then((r) => setCampaigns(r.data.results))
         .catch(() => setLoadError(true));
     }
-  }, [authUser?.company]);
+  }, [authUser?.company, evaluatedRole]);
 
   useEffect(() => {
     if (isEdit) {

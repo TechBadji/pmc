@@ -305,6 +305,7 @@
     "noSkillHistory": "Aucun historique pour cette compétence.",
     "tppr": "TPPR — Équipe ≥ 90 %",
     "tospr": "TOSPR — Équipe > 100 %",
+    "completionLabel": "Évalués sur la période",
     "notEvaluated": "Non évalué",
     "rowsPerPage": "Lignes par page",
     "sincePrevious": "vs précédente",

@@ -126,6 +126,14 @@ class EvaluationWriteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"user": "Vous ne pouvez évaluer que les membres de votre équipe."}
                 )
+        # Un Company Admin évalue les directeurs (rôle Manager) ; les
+        # collaborateurs sont évalués par leur propre manager. Sans ce
+        # garde-fou, rien n'empêchait le CEO de noter n'importe qui
+        # directement, contournant silencieusement la hiérarchie.
+        if actor.role == actor.Role.COMPANY_ADMIN and target_user and target_user.role != target_user.Role.MANAGER:
+            raise serializers.ValidationError(
+                {"user": "Vous ne pouvez évaluer directement que les managers. Les collaborateurs sont évalués par leur manager."}
+            )
         skill_scores = attrs.get("skill_scores")
         if skill_scores:
             company_id = target_user.company_id if target_user else getattr(campaign, "company_id", None)

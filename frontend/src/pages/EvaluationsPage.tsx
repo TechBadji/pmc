@@ -1,4 +1,5 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
 import TrendingFlatOutlinedIcon from "@mui/icons-material/TrendingFlatOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
@@ -30,7 +31,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
-import type { Evaluation, Paginated, SkillScore, UserRecord } from "@/api/types";
+import type { Evaluation, EvaluationCampaign, Paginated, SkillScore, UserRecord } from "@/api/types";
 import StatCard from "@/components/StatCard";
 import StrengthsWeaknesses from "@/components/StrengthsWeaknesses";
 import { performanceColors } from "@/theme";
@@ -80,6 +81,7 @@ export default function EvaluationsPage() {
   const evaluatedRole = user?.role === "COMPANY_ADMIN" ? "MANAGER" : "MEMBER";
   const [members, setMembers] = useState<UserRecord[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [campaigns, setCampaigns] = useState<EvaluationCampaign[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | "">("");
   const [skillDialog, setSkillDialog] = useState<{ skillItem: number; name: string; type: "HARD" | "SOFT" } | null>(null);
@@ -92,12 +94,18 @@ export default function EvaluationsPage() {
     Promise.all([
       apiClient.get<Paginated<UserRecord>>("/users/", { params: { page_size: 500, role: evaluatedRole } }),
       apiClient.get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } }),
+      apiClient.get<Paginated<EvaluationCampaign>>("/evaluation-campaigns/", { params: { page_size: 500 } }),
     ])
-      .then(([membersRes, evaluationsRes]) => {
+      .then(([membersRes, evaluationsRes, campaignsRes]) => {
         setMembers(membersRes.data.results);
         setEvaluations(evaluationsRes.data.results);
-        const sorted = [...evaluationsRes.data.results].sort((a, b) => a.campaign_start_date.localeCompare(b.campaign_start_date));
-        if (sorted.length) setSelectedCampaignId((prev) => (prev === "" ? sorted[sorted.length - 1].campaign : prev));
+        setCampaigns(campaignsRes.data.results);
+        // La période par défaut est la campagne la plus récente qui existe
+        // (pas seulement celle qui a déjà des évaluations) — une campagne
+        // fraîchement créée doit être sélectionnable immédiatement, avant
+        // toute saisie.
+        const sorted = [...campaignsRes.data.results].sort((a, b) => a.start_date.localeCompare(b.start_date));
+        if (sorted.length) setSelectedCampaignId((prev) => (prev === "" ? sorted[sorted.length - 1].id : prev));
       })
       .catch(() => setLoadError(true));
   }
@@ -114,14 +122,14 @@ export default function EvaluationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [members, searchParams]);
 
-  // Campagnes distinctes disponibles, triées chronologiquement — alimente le
-  // sélecteur de période global (remplace l'ancienne colonne "Période" par
-  // ligne, qui n'affichait toujours que la dernière évaluation connue).
-  const campaignOptions = useMemo(() => {
-    const byId = new Map<number, { id: number; name: string; start_date: string }>();
-    evaluations.forEach((e) => byId.set(e.campaign, { id: e.campaign, name: e.campaign_name, start_date: e.campaign_start_date }));
-    return Array.from(byId.values()).sort((a, b) => a.start_date.localeCompare(b.start_date));
-  }, [evaluations]);
+  // Campagnes disponibles, triées chronologiquement — alimente le sélecteur
+  // de période global. Source : la vraie liste des campagnes (pas les
+  // évaluations existantes), pour qu'une campagne fraîchement créée soit
+  // immédiatement sélectionnable, avant toute saisie.
+  const campaignOptions = useMemo(
+    () => [...campaigns].sort((a, b) => a.start_date.localeCompare(b.start_date)),
+    [campaigns]
+  );
 
   // Historique complet (trié chronologiquement) par collaborateur — permet de
   // retrouver l'évaluation de n'importe quelle période sélectionnée ainsi que
@@ -160,6 +168,11 @@ export default function EvaluationsPage() {
       tospr: (altitudes.filter((v) => v > 100).length / altitudes.length) * 100,
     };
   }, [evaluationForSelectedCampaign]);
+
+  // Avancement de la saisie pour la période sélectionnée — répond à "me
+  // reste-t-il des personnes à évaluer ?", absent jusqu'ici de cet écran.
+  const evaluatedCount = evaluationForSelectedCampaign.size;
+  const completionPct = members.length > 0 ? Math.round((evaluatedCount / members.length) * 100) : 0;
 
   const pagedMembers = members.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
@@ -279,12 +292,22 @@ export default function EvaluationsPage() {
         </Alert>
       )}
 
-      {teamAverages && (
+      {selectedCampaignId !== "" && members.length > 0 && (
         <Stack direction="row" spacing={2} flexWrap="wrap">
-          <StatCard label="THSI" value={teamAverages.thsi ?? "—"} color="#2E5AAC" />
-          <StatCard label="TSI" value={teamAverages.tsi ?? "—"} color="#3F9142" />
-          <StatCard label={t("evaluations.tppr")} value={`${teamAverages.tppr.toFixed(0)}%`} color="#4caf50" />
-          <StatCard label={t("evaluations.tospr")} value={`${teamAverages.tospr.toFixed(0)}%`} color="#0ca30c" />
+          <StatCard
+            label={t("evaluations.completionLabel")}
+            value={`${evaluatedCount} / ${members.length} (${completionPct}%)`}
+            color={completionPct === 100 ? "#0ca30c" : "#B23FA0"}
+            icon={<GroupsOutlinedIcon />}
+          />
+          {teamAverages && (
+            <>
+              <StatCard label="THSI" value={teamAverages.thsi ?? "—"} color="#2E5AAC" />
+              <StatCard label="TSI" value={teamAverages.tsi ?? "—"} color="#3F9142" />
+              <StatCard label={t("evaluations.tppr")} value={`${teamAverages.tppr.toFixed(0)}%`} color="#4caf50" />
+              <StatCard label={t("evaluations.tospr")} value={`${teamAverages.tospr.toFixed(0)}%`} color="#0ca30c" />
+            </>
+          )}
         </Stack>
       )}
 

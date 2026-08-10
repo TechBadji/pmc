@@ -305,6 +305,7 @@
     "noSkillHistory": "No history for this skill yet.",
     "tppr": "TPPR — Team ≥ 90%",
     "tospr": "TOSPR — Team > 100%",
+    "completionLabel": "Evaluated this period",
     "notEvaluated": "Not evaluated",
     "rowsPerPage": "Rows per page",
     "sincePrevious": "vs previous",
