@@ -1,5 +1,6 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import NavigateNextOutlinedIcon from "@mui/icons-material/NavigateNextOutlined";
 import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
 import TrendingFlatOutlinedIcon from "@mui/icons-material/TrendingFlatOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
@@ -174,7 +175,19 @@ export default function EvaluationsPage() {
   const evaluatedCount = evaluationForSelectedCampaign.size;
   const completionPct = members.length > 0 ? Math.round((evaluatedCount / members.length) * 100) : 0;
 
-  const pagedMembers = members.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  // Non-évalués d'abord sur la période sélectionnée, pour ne pas avoir à
+  // parcourir les pages à la recherche des badges "Non évalué" — tri stable,
+  // l'ordre relatif au sein de chaque groupe est préservé.
+  const sortedMembers = useMemo(() => {
+    if (selectedCampaignId === "") return members;
+    const unevaluated = members.filter((m) => !evaluationForSelectedCampaign.has(m.id));
+    const evaluated = members.filter((m) => evaluationForSelectedCampaign.has(m.id));
+    return [...unevaluated, ...evaluated];
+  }, [members, evaluationForSelectedCampaign, selectedCampaignId]);
+
+  const nextUnevaluated = sortedMembers.find((m) => !evaluationForSelectedCampaign.has(m.id)) ?? null;
+
+  const pagedMembers = sortedMembers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const selectedMember = members.find((m) => m.id === selectedMemberId) ?? null;
   const selectedHistory = selectedMemberId ? historyByMember.get(selectedMemberId) ?? [] : [];
@@ -199,7 +212,8 @@ export default function EvaluationsPage() {
   }, [skillDialog, selectedHistory]);
 
   function handleNewEvaluation(member: UserRecord) {
-    navigate(`/evaluations/new?user=${member.id}`);
+    const campaignParam = selectedCampaignId !== "" ? `&campaign=${selectedCampaignId}` : "";
+    navigate(`/evaluations/new?user=${member.id}${campaignParam}`);
   }
 
   function renderSkillTable(scores: SkillScore[], headerColor: string, title: string) {
@@ -293,13 +307,24 @@ export default function EvaluationsPage() {
       )}
 
       {selectedCampaignId !== "" && members.length > 0 && (
-        <Stack direction="row" spacing={2} flexWrap="wrap">
+        <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="stretch">
           <StatCard
             label={t("evaluations.completionLabel")}
             value={`${evaluatedCount} / ${members.length} (${completionPct}%)`}
             color={completionPct === 100 ? "#0ca30c" : "#B23FA0"}
             icon={<GroupsOutlinedIcon />}
           />
+          {nextUnevaluated && (
+            <Stack justifyContent="center">
+              <Button
+                variant="contained"
+                startIcon={<NavigateNextOutlinedIcon />}
+                onClick={() => handleNewEvaluation(nextUnevaluated)}
+              >
+                {t("evaluations.rateNext", { name: nextUnevaluated.full_name || nextUnevaluated.email })}
+              </Button>
+            </Stack>
+          )}
           {teamAverages && (
             <>
               <StatCard label="THSI" value={teamAverages.thsi ?? "—"} color="#2E5AAC" />

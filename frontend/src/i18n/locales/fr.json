@@ -306,6 +306,7 @@
     "tppr": "TPPR — Équipe ≥ 90 %",
     "tospr": "TOSPR — Équipe > 100 %",
     "completionLabel": "Évalués sur la période",
+    "rateNext": "Noter le suivant : {{name}}",
     "notEvaluated": "Non évalué",
     "rowsPerPage": "Lignes par page",
     "sincePrevious": "vs précédente",
