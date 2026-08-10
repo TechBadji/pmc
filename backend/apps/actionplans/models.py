@@ -46,12 +46,25 @@ class ActionPlan(models.Model):
         "Statut", max_length=20, choices=Status.choices, default=Status.TODO
     )
     due_date = models.DateField("Échéance", null=True, blank=True)
+    responsible = models.CharField("Responsable", max_length=150, blank=True)
+    eval_note = models.CharField("Éval.", max_length=150, blank=True)
+    order = models.PositiveSmallIntegerField(
+        "Position (1-3)",
+        null=True,
+        blank=True,
+        help_text="Renseigné uniquement pour la grille fixe du plan de développement d'un manager (3 lignes par catégorie).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Plan d'action"
         verbose_name_plural = "Plans d'action"
         ordering = ["due_date", "-created_at"]
+        # NULL n'est jamais considéré égal à NULL par Postgres : cette
+        # contrainte ne s'applique donc qu'aux lignes de la grille fixe
+        # (target_user + order renseignés), pas aux plans d'équipe libres
+        # existants (order=NULL) créés depuis la page Plans d'action.
+        unique_together = ("target_user", "category", "order")
 
     def __str__(self):
         return f"{self.priority} — {self.team.name}"

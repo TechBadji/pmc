@@ -253,6 +253,9 @@ export interface ActionPlan {
   cost: string;
   status: "TODO" | "IN_PROGRESS" | "DONE";
   due_date: string | null;
+  responsible: string;
+  eval_note: string;
+  order: number | null;
 }
 
 export interface PasswordResetRequest {

@@ -362,6 +362,22 @@
       "DONE": "Done"
     }
   },
+  "managerDevPlan": {
+    "title": "Development Plan for the Manager",
+    "selectManager": "Choose a manager",
+    "priorityCol": "Skills development priorities",
+    "kpis": "KPIs",
+    "baseline": "Baseline",
+    "target": "Target",
+    "actionsCol": "Actions plan to reinforce manager's performance",
+    "timing": "Timing",
+    "cost": "Cost",
+    "responsible": "Responsible",
+    "eval": "Eval.",
+    "softSkills": "SOFT SKILLS",
+    "hardSkills": "HARD SKILLS",
+    "saved": "Saved."
+  },
   "id3aMatrix": {
     "title": "ID-3A Matrix — Aptitudes × Attitudes",
     "subtitleMatrix": "Performance = f(Aptitudes × Attitudes). Click a point to see the team member's progression and stats.",

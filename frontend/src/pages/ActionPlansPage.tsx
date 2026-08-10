@@ -22,7 +22,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
-import type { ActionPlan, Department, Paginated } from "@/api/types";
+import ManagerDevelopmentPlan from "@/components/ManagerDevelopmentPlan";
+import type { ActionPlan, Department, Paginated, UserRecord } from "@/api/types";
 
 const STATUS_COLOR: Record<ActionPlan["status"], "default" | "info" | "success"> = {
   TODO: "default",
@@ -35,6 +36,8 @@ export default function ActionPlansPage() {
   const { user } = useAppSelector((s) => s.auth);
   const [plans, setPlans] = useState<ActionPlan[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [managers, setManagers] = useState<UserRecord[]>([]);
+  const [selectedManagerId, setSelectedManagerId] = useState<number | "">("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     team: "" as number | "",
@@ -50,6 +53,14 @@ export default function ActionPlansPage() {
   }
 
   useEffect(load, []);
+
+  useEffect(() => {
+    if (user?.role === "COMPANY_ADMIN") {
+      apiClient
+        .get<Paginated<UserRecord>>("/users/", { params: { role: "MANAGER", page_size: 500 } })
+        .then((r) => setManagers(r.data.results));
+    }
+  }, [user?.role]);
 
   async function handleCreate() {
     await apiClient.post("/action-plans/", { ...form, status: "TODO" });
@@ -70,6 +81,31 @@ export default function ActionPlansPage() {
           </Button>
         )}
       </Stack>
+
+      {user?.role === "COMPANY_ADMIN" && (
+        <>
+          <TextField
+            select
+            size="small"
+            label={t("managerDevPlan.selectManager")}
+            value={selectedManagerId}
+            onChange={(e) => setSelectedManagerId(e.target.value === "" ? "" : Number(e.target.value))}
+            sx={{ minWidth: 280 }}
+          >
+            {managers.map((m) => (
+              <MenuItem key={m.id} value={m.id}>
+                {m.full_name || m.email}
+              </MenuItem>
+            ))}
+          </TextField>
+          {selectedManagerId !== "" && (
+            <ManagerDevelopmentPlan
+              managerId={selectedManagerId}
+              managerName={managers.find((m) => m.id === selectedManagerId)?.full_name ?? ""}
+            />
+          )}
+        </>
+      )}
 
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
         <TableContainer>
