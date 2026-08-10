@@ -367,6 +367,7 @@ export default function PersonPerformanceId({
         {selectable.map((p) => (
           <MenuItem key={p.id} value={p.id}>
             {p.full_name || p.email}
+            {p.department_name ? ` — ${p.department_name}` : ""}
           </MenuItem>
         ))}
       </TextField>
