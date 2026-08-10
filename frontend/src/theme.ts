@@ -10,7 +10,7 @@ export const performanceColors = {
   VERY_LOW: "#d03b3b",
   LOW: "#ec835a",
   AVERAGE: "#898781",
-  GOOD: "#4caf50",
+  GOOD: "#81C784",
   OUTSTANDING: "#0ca30c",
 } as const;
 

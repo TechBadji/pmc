@@ -1193,8 +1193,8 @@ export default function ID3AMatrixPage() {
                       size="small"
                       label={t(`common.performance.${e.performance_rating}`)}
                       sx={{
-                        bgcolor: performanceColors[e.performance_rating],
-                        color: "#fff",
+                        bgcolor: performanceColors[e.performance_rating] + "22",
+                        color: performanceColors[e.performance_rating],
                         fontWeight: 600,
                       }}
                     />

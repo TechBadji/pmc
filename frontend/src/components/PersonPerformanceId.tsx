@@ -462,7 +462,7 @@ export default function PersonPerformanceId({
                   <Chip
                     size="small"
                     label={t(`common.performance.${latestEvaluation.performance_rating}`)}
-                    sx={{ bgcolor: performanceColors[latestEvaluation.performance_rating], color: "#fff", fontWeight: 700 }}
+                    sx={{ bgcolor: performanceColors[latestEvaluation.performance_rating] + "22", color: performanceColors[latestEvaluation.performance_rating], fontWeight: 700 }}
                   />
                 </Stack>
               )}
