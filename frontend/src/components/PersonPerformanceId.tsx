@@ -37,6 +37,13 @@ const COMPACT_INPUT_SX = {
   "& .MuiInputBase-input::placeholder": { fontSize: 12 },
 } as const;
 
+// Contribution / Plan de développement personnel : champs réduits d'environ
+// moitié par rapport à COMPACT_INPUT_SX (hauteur et police).
+const EXTRA_COMPACT_INPUT_SX = {
+  "& .MuiInputBase-input": { fontSize: 11, paddingTop: "1px", paddingBottom: "1px" },
+  "& .MuiInputBase-input::placeholder": { fontSize: 11 },
+} as const;
+
 type ListKey =
   | "qualifications"
   | "previous_positions"
@@ -114,17 +121,19 @@ function ListField({
   value,
   rows,
   onChange,
+  dense,
 }: {
   label?: string;
   value: string[];
   rows: number;
   onChange: (v: string[]) => void;
+  dense?: boolean;
 }) {
   const items = padTo(value, rows);
   return (
-    <Stack spacing={0.5} sx={{ flex: 1 }}>
+    <Stack spacing={dense ? 0.25 : 0.5} sx={{ flex: 1 }}>
       {label && (
-        <Typography variant="caption" fontWeight={700} color="text.secondary">
+        <Typography variant="caption" fontWeight={700} color="text.secondary" sx={dense ? { fontSize: 11 } : undefined}>
           {label}
         </Typography>
       )}
@@ -140,7 +149,7 @@ function ListField({
             next[i] = e.target.value;
             onChange(next);
           }}
-          sx={COMPACT_INPUT_SX}
+          sx={dense ? EXTRA_COMPACT_INPUT_SX : COMPACT_INPUT_SX}
         />
       ))}
     </Stack>
@@ -563,26 +572,37 @@ export default function PersonPerformanceId({
             </Stack>
           </Box>
 
-          {/* Ligne 3 : contribution + plan de développement personnel, côte à côte */}
+          {/* Ligne 3 : contribution + plan de développement personnel, côte à côte —
+              chaque section a ses 2 colonnes réellement parallèles (pas une
+              grille 2x2) : brings/expects (ou priorités/actions) empilés dans
+              la même colonne. */}
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
             <Stack spacing={1}>
               <SectionHeader>{t("performanceId.contribution")}</SectionHeader>
-              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-                <ListField label={t("performanceId.bringsToTeam")} value={form.brings_to_team} rows={4} onChange={(v) => setList("brings_to_team", v)} />
-                <ListField label={t("performanceId.bringsToManager")} value={form.brings_to_manager} rows={3} onChange={(v) => setList("brings_to_manager", v)} />
-                <ListField label={t("performanceId.expectsFromTeam")} value={form.expects_from_team} rows={3} onChange={(v) => setList("expects_from_team", v)} />
-                <ListField label={t("performanceId.expectsFromManager")} value={form.expects_from_manager} rows={3} onChange={(v) => setList("expects_from_manager", v)} />
-              </Box>
+              <Stack direction="row" spacing={1.5}>
+                <Stack spacing={1} sx={{ flex: 1 }}>
+                  <ListField dense label={t("performanceId.bringsToTeam")} value={form.brings_to_team} rows={4} onChange={(v) => setList("brings_to_team", v)} />
+                  <ListField dense label={t("performanceId.expectsFromTeam")} value={form.expects_from_team} rows={3} onChange={(v) => setList("expects_from_team", v)} />
+                </Stack>
+                <Stack spacing={1} sx={{ flex: 1 }}>
+                  <ListField dense label={t("performanceId.bringsToManager")} value={form.brings_to_manager} rows={3} onChange={(v) => setList("brings_to_manager", v)} />
+                  <ListField dense label={t("performanceId.expectsFromManager")} value={form.expects_from_manager} rows={3} onChange={(v) => setList("expects_from_manager", v)} />
+                </Stack>
+              </Stack>
             </Stack>
 
             <Stack spacing={1}>
               <SectionHeader>{t("performanceId.personalDevPlan")}</SectionHeader>
-              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-                <ListField label={t("performanceId.priorities")} value={form.dev_priorities} rows={4} onChange={(v) => setList("dev_priorities", v)} />
-                <ListField label={t("performanceId.professionalPerspectives")} value={form.dev_professional_perspectives} rows={4} onChange={(v) => setList("dev_professional_perspectives", v)} />
-                <ListField label={t("performanceId.actionsToSupport")} value={form.dev_actions_support} rows={3} onChange={(v) => setList("dev_actions_support", v)} />
-                <ListField label={t("performanceId.risksObstacles")} value={form.dev_risks_obstacles} rows={3} onChange={(v) => setList("dev_risks_obstacles", v)} />
-              </Box>
+              <Stack direction="row" spacing={1.5}>
+                <Stack spacing={1} sx={{ flex: 1 }}>
+                  <ListField dense label={t("performanceId.priorities")} value={form.dev_priorities} rows={4} onChange={(v) => setList("dev_priorities", v)} />
+                  <ListField dense label={t("performanceId.actionsToSupport")} value={form.dev_actions_support} rows={3} onChange={(v) => setList("dev_actions_support", v)} />
+                </Stack>
+                <Stack spacing={1} sx={{ flex: 1 }}>
+                  <ListField dense label={t("performanceId.professionalPerspectives")} value={form.dev_professional_perspectives} rows={4} onChange={(v) => setList("dev_professional_perspectives", v)} />
+                  <ListField dense label={t("performanceId.risksObstacles")} value={form.dev_risks_obstacles} rows={3} onChange={(v) => setList("dev_risks_obstacles", v)} />
+                </Stack>
+              </Stack>
             </Stack>
           </Box>
 
