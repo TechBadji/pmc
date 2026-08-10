@@ -141,8 +141,8 @@ function ListField({
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
-    <Stack direction="row" spacing={1} alignItems="center">
-      <Typography variant="caption" color="text.secondary" sx={{ minWidth: 150 }}>
+    <Stack spacing={0.25}>
+      <Typography variant="caption" color="text.secondary">
         {label}
       </Typography>
       <TextField size="small" fullWidth value={value} InputProps={{ readOnly: true }} sx={{ bgcolor: "action.hover" }} />
@@ -406,14 +406,14 @@ export default function PersonPerformanceId({
                   <ReadOnlyField label={t("performanceId.yearsInPosition")} value={selectedUser.years_in_current_role != null ? String(selectedUser.years_in_current_role) : "—"} />
                   <ReadOnlyField label={t("performanceId.yearsInCompany")} value={selectedUser.years_in_company != null ? String(selectedUser.years_in_company) : "—"} />
                   <ReadOnlyField label={t("performanceId.totalExperience")} value={selectedUser.total_experience_years != null ? String(selectedUser.total_experience_years) : "—"} />
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="caption" color="text.secondary" sx={{ minWidth: 150 }}>
+                  <Stack spacing={0.25}>
+                    <Typography variant="caption" color="text.secondary">
                       {t("performanceId.gender")}
                     </Typography>
                     <TextField size="small" fullWidth value={form.gender} onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))} />
                   </Stack>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="caption" color="text.secondary" sx={{ minWidth: 150 }}>
+                  <Stack spacing={0.25}>
+                    <Typography variant="caption" color="text.secondary">
                       {t("performanceId.contractType")}
                     </Typography>
                     <TextField size="small" fullWidth value={form.contract_type} onChange={(e) => setForm((f) => ({ ...f, contract_type: e.target.value }))} />
@@ -544,7 +544,7 @@ export default function PersonPerformanceId({
               )}
               <ListField label={t("performanceId.hobbies")} value={form.hobbies} rows={2} onChange={(v) => setList("hobbies", v)} />
               <ListField label={t("performanceId.personalityTraits")} value={form.personality_traits} rows={3} onChange={(v) => setList("personality_traits", v)} />
-              <Stack direction="row" spacing={1} alignItems="center">
+              <Stack spacing={0.25}>
                 <Typography variant="caption" color="text.secondary">
                   {t("performanceId.bonoHat")}
                 </Typography>
