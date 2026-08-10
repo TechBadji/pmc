@@ -8,8 +8,12 @@ import type { Paginated, SkillNote, SkillNoteCategory } from "@/api/types";
 
 const ORDERS = [1, 2, 3, 4, 5];
 const SCORES = [1, 2, 3, 4, 5];
-const STRENGTH_BG = "#3F914215"; // vert clair — même teinte que le bandeau "Strengths"
-const WEAKNESS_BG = "#8B2E2E15"; // rouge clair — même teinte que le bandeau "Weaknesses"
+const CATEGORY_BG: Record<SkillNoteCategory, string> = {
+  SOFT_STRENGTH: "#3F914215", // vert clair — même teinte que le bandeau "Strengths"
+  SOFT_WEAKNESS: "#8B2E2E15", // rouge clair — même teinte que le bandeau "Weaknesses"
+  HARD_STRENGTH: "#2E5AAC15", // bleu clair — même teinte que le libellé "HARD SKILLS"
+  HARD_WEAKNESS: "#D9822B15", // orange clair
+};
 
 interface RowNote {
   text: string;
@@ -20,10 +24,6 @@ type NoteMap = Record<string, RowNote>;
 
 function key(category: SkillNoteCategory, order: number) {
   return `${category}-${order}`;
-}
-
-function isStrength(category: SkillNoteCategory) {
-  return category === "SOFT_STRENGTH" || category === "HARD_STRENGTH";
 }
 
 function Column({
@@ -38,7 +38,7 @@ function Column({
   onChangeScore: (category: SkillNoteCategory, order: number, score: number | null) => void;
 }) {
   const { t } = useTranslation();
-  const bg = isStrength(category) ? STRENGTH_BG : WEAKNESS_BG;
+  const bg = CATEGORY_BG[category];
   return (
     <Stack spacing={0.75} sx={{ flex: 1, bgcolor: bg, borderRadius: 1, p: 0.75 }}>
       {ORDERS.map((order) => {
