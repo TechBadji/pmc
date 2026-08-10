@@ -8,10 +8,12 @@ import {
   Avatar,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Divider,
   IconButton,
+  ListItemText,
   MenuItem,
   Paper,
   Stack,
@@ -50,6 +52,8 @@ const AXIS_TICKS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 // Quadrillage secondaire (pas de 0.25) — lecture plus fine entre les
 // graduations principales de 0.5, sans les dupliquer.
 const MINOR_AXIS_TICKS = [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75];
+
+const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
 
 interface Point {
   userId: number;
@@ -646,6 +650,10 @@ export default function ID3AMatrixPage() {
   const [leadershipOnly, setLeadershipOnly] = useState(true);
   const [directorFilter, setDirectorFilter] = useState<number | "">("");
   const [memberFilter, setMemberFilter] = useState<number | "">("");
+  // Tri/filtre sur le palier de performance — vide = tous les paliers
+  // affichés. Permet ex. d'isoler les plus performants (Bonne +
+  // Exceptionnelle) ou de ne montrer que les performances moyennes.
+  const [ratingFilter, setRatingFilter] = useState<PerformanceRating[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"matrix" | "objectives">("matrix");
   const [matrixBackground, setMatrixBackground] = useState(false);
@@ -706,9 +714,19 @@ export default function ID3AMatrixPage() {
         if (canFilterLeadership && leadershipOnly && e.user_role === "MEMBER") return false;
         if (showDirectorFilter && directorFilter !== "" && e.user !== directorFilter) return false;
         if (showMemberFilter && memberFilter !== "" && e.user !== memberFilter) return false;
+        if (ratingFilter.length > 0 && !ratingFilter.includes(e.performance_rating)) return false;
         return true;
       }),
-    [allEvaluations, leadershipOnly, directorFilter, memberFilter, showDirectorFilter, showMemberFilter, canFilterLeadership]
+    [
+      allEvaluations,
+      leadershipOnly,
+      directorFilter,
+      memberFilter,
+      ratingFilter,
+      showDirectorFilter,
+      showMemberFilter,
+      canFilterLeadership,
+    ]
   );
 
   function filterEvaluations(campaignId: number) {
@@ -937,6 +955,32 @@ export default function ID3AMatrixPage() {
             ))}
           </TextField>
         )}
+        <TextField
+          select
+          label={t("id3aMatrix.performanceFilter")}
+          size="small"
+          value={ratingFilter}
+          onChange={(e) => {
+            const value = e.target.value;
+            setRatingFilter(typeof value === "string" ? (value.split(",") as PerformanceRating[]) : (value as PerformanceRating[]));
+          }}
+          sx={{ minWidth: 220 }}
+          SelectProps={{
+            multiple: true,
+            renderValue: (selected: unknown) => {
+              const values = selected as PerformanceRating[];
+              if (values.length === 0) return t("id3aMatrix.allPerformanceLevels");
+              return values.map((r) => t(`common.performance.${r}`)).join(", ");
+            },
+          }}
+        >
+          {ALL_RATINGS.map((rating) => (
+            <MenuItem key={rating} value={rating}>
+              <Checkbox size="small" checked={ratingFilter.includes(rating)} sx={{ color: performanceColors[rating], "&.Mui-checked": { color: performanceColors[rating] } }} />
+              <ListItemText primary={t(`common.performance.${rating}`)} />
+            </MenuItem>
+          ))}
+        </TextField>
         {viewMode === "matrix" && (
           <IconButton
             size="small"

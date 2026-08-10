@@ -447,6 +447,8 @@
     "allDirectors": "All directors",
     "teamMember": "Team member",
     "allTeamMembers": "Whole team",
+    "performanceFilter": "Filter by performance",
+    "allPerformanceLevels": "All levels",
     "comparisonPosition": "Position in {{period}} (comparison)",
     "trailPositions": "Trajectory across {{count}} periods",
     "quadrantTalents": "Key talents",
