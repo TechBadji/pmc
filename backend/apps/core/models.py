@@ -298,3 +298,52 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"[{self.created_at:%Y-%m-%d %H:%M}] {self.actor_name}: {self.description}"
+
+
+class PerformanceProfile(models.Model):
+    """Fiche "Performances" 360° d'un collaborateur — complète les données
+    déjà calculées ailleurs (HSI/SSI/Altitude via Evaluation, Forces &
+    Faiblesses via SkillNote) avec des informations qualitatives saisies
+    librement (parcours, réalisations, dynamique d'équipe, plan de
+    développement personnel). Une seule fiche vivante par utilisateur, mise
+    à jour au fil de l'eau — pas d'historique par campagne, à la différence
+    des fiches d'évaluation."""
+
+    user = models.OneToOneField(
+        "core.User",
+        verbose_name="Collaborateur",
+        on_delete=models.CASCADE,
+        related_name="performance_profile",
+    )
+    gender = models.CharField("Genre", max_length=20, blank=True)
+    contract_type = models.CharField("Type de contrat", max_length=50, blank=True)
+    qualifications = models.JSONField("Qualifications", default=list, blank=True)
+    previous_positions = models.JSONField("Postes précédents", default=list, blank=True)
+    professional_achievements = models.JSONField("Réalisations professionnelles", default=list, blank=True)
+    personal_achievements = models.JSONField("Réalisations personnelles", default=list, blank=True)
+    vision_aspirations = models.TextField("Vision / Aspirations", blank=True)
+    personal_projects = models.TextField("Projets personnels", blank=True)
+    professional_role_models = models.JSONField("Modèles professionnels", default=list, blank=True)
+    role_models_in_life = models.JSONField("Modèles dans la vie", default=list, blank=True)
+    dislikes = models.JSONField("Ce qu'il/elle n'aime pas", default=list, blank=True)
+    motivates = models.JSONField("Ce qui le/la motive", default=list, blank=True)
+    personality_traits = models.JSONField("Traits de personnalité", default=list, blank=True)
+    hobbies = models.JSONField("Loisirs", default=list, blank=True)
+    bono_hat = models.CharField("Chapeau de Bono", max_length=100, blank=True)
+    brings_to_team = models.JSONField("Apporte à l'équipe", default=list, blank=True)
+    brings_to_manager = models.JSONField("Apporte au manager", default=list, blank=True)
+    expects_from_team = models.JSONField("Attend de l'équipe", default=list, blank=True)
+    expects_from_manager = models.JSONField("Attend du manager", default=list, blank=True)
+    dev_priorities = models.JSONField("Priorités de développement", default=list, blank=True)
+    dev_professional_perspectives = models.JSONField("Perspectives professionnelles", default=list, blank=True)
+    dev_actions_support = models.JSONField("Actions de soutien à la performance", default=list, blank=True)
+    dev_risks_obstacles = models.JSONField("Risques / Obstacles / Incertitudes", default=list, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Fiche de performance 360°"
+        verbose_name_plural = "Fiches de performance 360°"
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"Fiche performance — {self.user}"

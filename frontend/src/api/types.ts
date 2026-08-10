@@ -273,6 +273,45 @@ export interface PasswordResetRequest {
   resolved_by_name: string | null;
 }
 
+export interface TeamRelationship {
+  id: number;
+  team: number;
+  from_user: number;
+  from_user_name: string;
+  to_user: number;
+  to_user_name: string;
+  quality: "EXCELLENT" | "CORRECT" | "DIFFICULT" | "TOXIC";
+}
+
+export interface PerformanceProfile {
+  id: number;
+  user: number;
+  gender: string;
+  contract_type: string;
+  qualifications: string[];
+  previous_positions: string[];
+  professional_achievements: string[];
+  personal_achievements: string[];
+  vision_aspirations: string;
+  personal_projects: string;
+  professional_role_models: string[];
+  role_models_in_life: string[];
+  dislikes: string[];
+  motivates: string[];
+  personality_traits: string[];
+  hobbies: string[];
+  bono_hat: string;
+  brings_to_team: string[];
+  brings_to_manager: string[];
+  expects_from_team: string[];
+  expects_from_manager: string[];
+  dev_priorities: string[];
+  dev_professional_perspectives: string[];
+  dev_actions_support: string[];
+  dev_risks_obstacles: string[];
+  updated_at: string;
+}
+
 export interface AuditLog {
   id: number;
   created_at: string;

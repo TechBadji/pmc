@@ -13,7 +13,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .audit import log_event
 from .constants import DEFAULT_PASSWORD
-from .models import AuditLog, Company, Department, PasswordResetRequest, User
+from .models import AuditLog, Company, Department, PasswordResetRequest, PerformanceProfile, User
 from .permissions import (
     CompanyScopedQuerySetMixin,
     IsCompanyAdminOrManager,
@@ -29,12 +29,14 @@ from .serializers import (
     MeSerializer,
     MeUpdateSerializer,
     PasswordResetRequestSerializer,
+    PerformanceProfileSerializer,
     PMCTokenObtainPairSerializer,
     UserCreateSerializer,
     UserSerializer,
     unique_login_email,
 )
 from .text_utils import make_login, unique_login
+from .validators import require_same_company
 
 
 class PMCTokenObtainPairView(TokenObtainPairView):
@@ -515,3 +517,52 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AuditLogSerializer
     permission_classes = [IsSuperAdmin]
     filterset_fields = ["action"]
+
+
+class PerformanceProfileViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
+    """Fiche "Performances" 360° — même règles de visibilité que les autres
+    fiches individuelles (évaluations, forces & faiblesses) : un manager ne
+    voit/édite que sa propre équipe (+ lui-même), un membre ne voit que la
+    sienne."""
+
+    queryset = PerformanceProfile.objects.select_related("user")
+    serializer_class = PerformanceProfileSerializer
+    company_lookup = "user__company_id"
+    filterset_fields = ["user"]
+
+    def get_permissions(self):
+        if self.action in ("create", "update", "partial_update", "destroy", "save_for_user"):
+            return [IsCompanyAdminOrManager()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.role == user.Role.MANAGER:
+            qs = qs.filter(user__department__manager=user) | qs.filter(user=user)
+        elif user.role == user.Role.MEMBER:
+            qs = qs.filter(user=user)
+        return qs.distinct()
+
+    @action(detail=False, methods=["put"], url_path="save-for-user")
+    def save_for_user(self, request):
+        target_user_id = request.data.get("user")
+        try:
+            target_user = User.objects.select_related("company", "department").get(pk=target_user_id)
+        except (User.DoesNotExist, TypeError, ValueError):
+            raise ValidationError({"user": "Collaborateur introuvable."})
+        require_same_company(request.user, target_user=target_user)
+
+        actor = request.user
+        if actor.role == actor.Role.MANAGER and target_user.id != actor.id:
+            is_own_team_member = (
+                target_user.department_id and target_user.department.manager_id == actor.id
+            )
+            if not is_own_team_member:
+                raise ValidationError({"user": "Ce collaborateur ne fait pas partie de votre équipe."})
+
+        profile, _ = PerformanceProfile.objects.get_or_create(user=target_user)
+        serializer = PerformanceProfileSerializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

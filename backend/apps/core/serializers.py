@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .constants import DEFAULT_DEPARTMENTS, PLAN_FEATURES, DEFAULT_PASSWORD
-from .models import AuditLog, Company, Department, PasswordResetRequest, User
+from .models import AuditLog, Company, Department, PasswordResetRequest, PerformanceProfile, User
 from .text_utils import make_login, slugify_company
 
 
@@ -308,3 +308,20 @@ class AuditLogSerializer(serializers.ModelSerializer):
             "id", "created_at", "actor", "actor_name", "actor_role",
             "company_name", "action", "description",
         ]
+
+
+class PerformanceProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceProfile
+        fields = [
+            "id", "user", "gender", "contract_type",
+            "qualifications", "previous_positions", "professional_achievements",
+            "personal_achievements", "vision_aspirations", "personal_projects",
+            "professional_role_models", "role_models_in_life", "dislikes",
+            "motivates", "personality_traits", "hobbies", "bono_hat",
+            "brings_to_team", "brings_to_manager", "expects_from_team",
+            "expects_from_manager", "dev_priorities",
+            "dev_professional_perspectives", "dev_actions_support",
+            "dev_risks_obstacles", "updated_at",
+        ]
+        read_only_fields = ["id", "user", "updated_at"]

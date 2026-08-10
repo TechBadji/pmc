@@ -18,6 +18,7 @@ import ID3AMatrixPage from "@/pages/ID3AMatrixPage";
 import LogsPage from "@/pages/LogsPage";
 import MyPerformancePage from "@/pages/MyPerformancePage";
 import PasswordResetRequestsPage from "@/pages/PasswordResetRequestsPage";
+import PerformancePage from "@/pages/PerformancePage";
 import ProfilePage from "@/pages/ProfilePage";
 import SkillsAdminPage from "@/pages/SkillsAdminPage";
 import SkillsPage from "@/pages/SkillsPage";
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/evaluations/:id" element={<EvaluationFormPage />} />
           <Route path="/directors-performance-review" element={<DirectorsPerformanceReviewPage />} />
           <Route path="/action-plans" element={<ActionPlansPage />} />
+          <Route path="/performances" element={<PerformancePage />} />
           <Route path="/my-performance" element={<MyPerformancePage />} />
           <Route path="/password-requests" element={<PasswordResetRequestsPage />} />
           <Route path="/logs" element={<LogsPage />} />

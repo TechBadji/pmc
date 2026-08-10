@@ -16,6 +16,7 @@ from apps.core.views import (
     ForgotPasswordView,
     MeView,
     PasswordResetRequestViewSet,
+    PerformanceProfileViewSet,
     PMCTokenObtainPairView,
     UserViewSet,
 )
@@ -37,6 +38,7 @@ router.register("team-relationships", TeamRelationshipViewSet, basename="team-re
 router.register("action-plans", ActionPlanViewSet, basename="action-plan")
 router.register("password-reset-requests", PasswordResetRequestViewSet, basename="password-reset-request")
 router.register("audit-logs", AuditLogViewSet, basename="audit-log")
+router.register("performance-profiles", PerformanceProfileViewSet, basename="performance-profile")
 
 urlpatterns = [
     path("health/", lambda request: HttpResponse("ok"), name="health"),
