@@ -30,6 +30,13 @@ import type {
 const HEADER_ORANGE = "#E08A34"; // orange du logo — même bandeau que le Plan de Développement du Manager
 const CREAM = "#f5efd6";
 
+// Champs compacts : police et hauteur réduites pour tenir la fiche entière
+// sans scroll excessif — appliqué à tous les TextField de cette page.
+const COMPACT_INPUT_SX = {
+  "& .MuiInputBase-input": { fontSize: 12, paddingTop: "4px", paddingBottom: "4px" },
+  "& .MuiInputBase-input::placeholder": { fontSize: 12 },
+} as const;
+
 type ListKey =
   | "qualifications"
   | "previous_positions"
@@ -133,6 +140,7 @@ function ListField({
             next[i] = e.target.value;
             onChange(next);
           }}
+          sx={COMPACT_INPUT_SX}
         />
       ))}
     </Stack>
@@ -145,7 +153,7 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
       <Typography variant="caption" color="text.secondary">
         {label}
       </Typography>
-      <TextField size="small" fullWidth value={value} InputProps={{ readOnly: true }} sx={{ bgcolor: "action.hover" }} />
+      <TextField size="small" value={value} InputProps={{ readOnly: true }} sx={{ bgcolor: "action.hover", width: 160, ...COMPACT_INPUT_SX }} />
     </Stack>
   );
 }
@@ -167,8 +175,8 @@ function SkillNoteReadColumn({ label, color, notes }: { label: string; color: st
         const note = notes.find((n) => n.order === order);
         return (
           <Stack key={order} direction="row" spacing={0.5}>
-            <TextField size="small" fullWidth value={note?.text ?? ""} InputProps={{ readOnly: true }} />
-            <TextField size="small" sx={{ width: 56 }} value={note?.score ?? ""} InputProps={{ readOnly: true }} />
+            <TextField size="small" fullWidth value={note?.text ?? ""} InputProps={{ readOnly: true }} sx={COMPACT_INPUT_SX} />
+            <TextField size="small" sx={{ width: 40, ...COMPACT_INPUT_SX }} value={note?.score ?? ""} InputProps={{ readOnly: true }} />
           </Stack>
         );
       })}
@@ -201,7 +209,7 @@ function RelationshipList({
       </Typography>
       {relationships.map((r) => (
         <Stack key={r.id} direction="row" spacing={0.5} alignItems="center">
-          <TextField size="small" fullWidth value={r.to_user_name} InputProps={{ readOnly: true }} />
+          <TextField size="small" fullWidth value={r.to_user_name} InputProps={{ readOnly: true }} sx={COMPACT_INPUT_SX} />
           <IconButton size="small" onClick={() => onRemove(r.id)}>
             <DeleteOutlineIcon fontSize="small" />
           </IconButton>
@@ -219,6 +227,7 @@ function RelationshipList({
             setPick("");
             onAdd(id);
           }}
+          sx={COMPACT_INPUT_SX}
         >
           {available.map((c) => (
             <MenuItem key={c.id} value={c.id}>
@@ -411,13 +420,13 @@ export default function PersonPerformanceId({
                     <Typography variant="caption" color="text.secondary">
                       {t("performanceId.gender")}
                     </Typography>
-                    <TextField size="small" fullWidth value={form.gender} onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))} />
+                    <TextField size="small" value={form.gender} onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))} sx={{ width: 160, ...COMPACT_INPUT_SX }} />
                   </Stack>
                   <Stack spacing={0.25}>
                     <Typography variant="caption" color="text.secondary">
                       {t("performanceId.contractType")}
                     </Typography>
-                    <TextField size="small" fullWidth value={form.contract_type} onChange={(e) => setForm((f) => ({ ...f, contract_type: e.target.value }))} />
+                    <TextField size="small" value={form.contract_type} onChange={(e) => setForm((f) => ({ ...f, contract_type: e.target.value }))} sx={{ width: 160, ...COMPACT_INPUT_SX }} />
                   </Stack>
                   <ReadOnlyField label={t("performanceId.reportTo")} value={managerOf?.full_name ?? "—"} />
                 </Stack>
@@ -489,9 +498,9 @@ export default function PersonPerformanceId({
             </Stack>
             <Stack spacing={1}>
               <SectionHeader>{t("performanceId.vision")}</SectionHeader>
-              <TextField multiline minRows={6} fullWidth value={form.vision_aspirations} onChange={(e) => setForm((f) => ({ ...f, vision_aspirations: e.target.value }))} sx={{ bgcolor: CREAM }} />
+              <TextField multiline minRows={6} fullWidth value={form.vision_aspirations} onChange={(e) => setForm((f) => ({ ...f, vision_aspirations: e.target.value }))} sx={{ bgcolor: CREAM, ...COMPACT_INPUT_SX }} />
               <SectionHeader>{t("performanceId.personalProjects")}</SectionHeader>
-              <TextField multiline minRows={4} fullWidth value={form.personal_projects} onChange={(e) => setForm((f) => ({ ...f, personal_projects: e.target.value }))} sx={{ bgcolor: CREAM }} />
+              <TextField multiline minRows={4} fullWidth value={form.personal_projects} onChange={(e) => setForm((f) => ({ ...f, personal_projects: e.target.value }))} sx={{ bgcolor: CREAM, ...COMPACT_INPUT_SX }} />
             </Stack>
             <Stack spacing={1}>
               <SectionHeader>{t("performanceId.teamDynamics")}</SectionHeader>
@@ -549,7 +558,7 @@ export default function PersonPerformanceId({
                 <Typography variant="caption" color="text.secondary">
                   {t("performanceId.bonoHat")}
                 </Typography>
-                <TextField size="small" fullWidth value={form.bono_hat} onChange={(e) => setForm((f) => ({ ...f, bono_hat: e.target.value }))} />
+                <TextField size="small" value={form.bono_hat} onChange={(e) => setForm((f) => ({ ...f, bono_hat: e.target.value }))} sx={{ width: 200, ...COMPACT_INPUT_SX }} />
               </Stack>
             </Stack>
           </Box>
