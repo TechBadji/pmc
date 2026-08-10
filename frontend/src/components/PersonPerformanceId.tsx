@@ -563,27 +563,28 @@ export default function PersonPerformanceId({
             </Stack>
           </Box>
 
-          {/* Ligne 3 : contribution */}
-          <Stack spacing={1} sx={{ mb: 2 }}>
-            <SectionHeader>{t("performanceId.contribution")}</SectionHeader>
-            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-              <ListField label={t("performanceId.bringsToTeam")} value={form.brings_to_team} rows={4} onChange={(v) => setList("brings_to_team", v)} />
-              <ListField label={t("performanceId.bringsToManager")} value={form.brings_to_manager} rows={3} onChange={(v) => setList("brings_to_manager", v)} />
-              <ListField label={t("performanceId.expectsFromTeam")} value={form.expects_from_team} rows={3} onChange={(v) => setList("expects_from_team", v)} />
-              <ListField label={t("performanceId.expectsFromManager")} value={form.expects_from_manager} rows={3} onChange={(v) => setList("expects_from_manager", v)} />
-            </Box>
-          </Stack>
+          {/* Ligne 3 : contribution + plan de développement personnel, côte à côte */}
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+            <Stack spacing={1}>
+              <SectionHeader>{t("performanceId.contribution")}</SectionHeader>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
+                <ListField label={t("performanceId.bringsToTeam")} value={form.brings_to_team} rows={4} onChange={(v) => setList("brings_to_team", v)} />
+                <ListField label={t("performanceId.bringsToManager")} value={form.brings_to_manager} rows={3} onChange={(v) => setList("brings_to_manager", v)} />
+                <ListField label={t("performanceId.expectsFromTeam")} value={form.expects_from_team} rows={3} onChange={(v) => setList("expects_from_team", v)} />
+                <ListField label={t("performanceId.expectsFromManager")} value={form.expects_from_manager} rows={3} onChange={(v) => setList("expects_from_manager", v)} />
+              </Box>
+            </Stack>
 
-          {/* Ligne 4 : plan de développement personnel */}
-          <Stack spacing={1}>
-            <SectionHeader>{t("performanceId.personalDevPlan")}</SectionHeader>
-            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-              <ListField label={t("performanceId.priorities")} value={form.dev_priorities} rows={4} onChange={(v) => setList("dev_priorities", v)} />
-              <ListField label={t("performanceId.professionalPerspectives")} value={form.dev_professional_perspectives} rows={4} onChange={(v) => setList("dev_professional_perspectives", v)} />
-              <ListField label={t("performanceId.actionsToSupport")} value={form.dev_actions_support} rows={3} onChange={(v) => setList("dev_actions_support", v)} />
-              <ListField label={t("performanceId.risksObstacles")} value={form.dev_risks_obstacles} rows={3} onChange={(v) => setList("dev_risks_obstacles", v)} />
-            </Box>
-          </Stack>
+            <Stack spacing={1}>
+              <SectionHeader>{t("performanceId.personalDevPlan")}</SectionHeader>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
+                <ListField label={t("performanceId.priorities")} value={form.dev_priorities} rows={4} onChange={(v) => setList("dev_priorities", v)} />
+                <ListField label={t("performanceId.professionalPerspectives")} value={form.dev_professional_perspectives} rows={4} onChange={(v) => setList("dev_professional_perspectives", v)} />
+                <ListField label={t("performanceId.actionsToSupport")} value={form.dev_actions_support} rows={3} onChange={(v) => setList("dev_actions_support", v)} />
+                <ListField label={t("performanceId.risksObstacles")} value={form.dev_risks_obstacles} rows={3} onChange={(v) => setList("dev_risks_obstacles", v)} />
+              </Box>
+            </Stack>
+          </Box>
 
           <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={2} sx={{ mt: 2 }}>
             {saved && (
