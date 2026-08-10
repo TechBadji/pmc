@@ -4,7 +4,8 @@ import { Alert, Avatar, Box, Button, MenuItem, Paper, Stack, TextField, Typograp
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
-import type { Paginated, SkillNote, SkillNoteCategory } from "@/api/types";
+import type { Paginated, PerformanceRating, SkillNote, SkillNoteCategory } from "@/api/types";
+import { performanceColors } from "@/theme";
 
 const ORDERS = [1, 2, 3, 4, 5];
 const SCORES = [1, 2, 3, 4, 5];
@@ -128,10 +129,12 @@ export default function StrengthsWeaknesses({
   evaluationId,
   userName,
   avatar,
+  performanceRating,
 }: {
   evaluationId: number;
   userName: string;
   avatar: string | null;
+  performanceRating: PerformanceRating;
 }) {
   const { t } = useTranslation();
   const [notes, setNotes] = useState<NoteMap>({});
@@ -236,10 +239,18 @@ export default function StrengthsWeaknesses({
             position: "absolute",
             top: "50%",
             left: "50%",
-            transform: "translate(-50%, -50%)",
-            border: "2px solid",
-            borderColor: "background.paper",
+            transform: "translate(-50%, -50%) scale(1)",
+            transformOrigin: "center",
+            border: "3px solid",
+            borderColor: performanceColors[performanceRating],
             boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+            cursor: "pointer",
+            transition: "transform 0.2s ease, box-shadow 0.2s ease",
+            "&:hover": {
+              transform: "translate(-50%, -50%) scale(1.8)",
+              boxShadow: `0 4px 16px rgba(0,0,0,0.35), 0 0 0 3px ${performanceColors[performanceRating]}55`,
+              zIndex: 1,
+            },
           }}
         >
           {userName.charAt(0).toUpperCase()}

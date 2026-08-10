@@ -595,6 +595,7 @@ export default function EvaluationsPage() {
           evaluationId={selectedEvaluation.id}
           userName={selectedMember.full_name || selectedMember.email}
           avatar={selectedMember.avatar}
+          performanceRating={selectedEvaluation.performance_rating}
         />
       )}
 
