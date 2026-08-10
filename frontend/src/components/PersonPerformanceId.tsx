@@ -231,7 +231,14 @@ function RelationshipList({
   );
 }
 
-export default function PersonPerformanceId({ people }: { people: UserRecord[] }) {
+export default function PersonPerformanceId({
+  people,
+  selectablePeople,
+}: {
+  people: UserRecord[];
+  selectablePeople?: UserRecord[];
+}) {
+  const selectable = selectablePeople ?? people;
   const { t } = useTranslation();
   const [selectedId, setSelectedId] = useState<number | "">("");
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -357,7 +364,7 @@ export default function PersonPerformanceId({ people }: { people: UserRecord[] }
         onChange={(e) => setSelectedId(e.target.value === "" ? "" : Number(e.target.value))}
         sx={{ minWidth: 280 }}
       >
-        {people.map((p) => (
+        {selectable.map((p) => (
           <MenuItem key={p.id} value={p.id}>
             {p.full_name || p.email}
           </MenuItem>
