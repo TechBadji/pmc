@@ -39,6 +39,11 @@ import { cohesionColor } from "@/theme";
 const ICE_COLOR = "#2E8FCB";
 const OCE_COLOR = "#eb6834";
 const TIERS = [1, 2, 3, 4, 5];
+/** Bleu clair des entêtes de la fiche (bandeau titre + entêtes du tableau
+ * des critères) — les paliers ne sont plus colorés, la couleur ne sert donc
+ * qu'à marquer l'entête, jamais un niveau. */
+const HEADER_BLUE = "#dbe4ee";
+const HEADER_TEXT = "#243747";
 
 interface CriterionRow {
   criterion: string;
@@ -84,7 +89,8 @@ function ValueBox({ label, value, bg, suffix }: { label: string; value: number |
 }
 
 /** Pastille ovale sélectionnable — une par palier (1 à 5), colorée quand
- * sélectionnée, grise sinon — reprend les boutons de la fiche Excel ID-PMC. */
+ * sélectionnée ; sinon blanche avec un léger pourtour gris, comme la case
+ * TOTAL — reprend les boutons de la fiche Excel ID-PMC. */
 function ScoreOval({ selected, color, onClick, ariaLabel }: { selected: boolean; color: string; onClick: () => void; ariaLabel: string }) {
   return (
     <Box
@@ -97,11 +103,12 @@ function ScoreOval({ selected, color, onClick, ariaLabel }: { selected: boolean;
         width: 40,
         height: 24,
         borderRadius: 12,
-        border: "none",
+        border: "1px solid",
+        borderColor: selected ? color : "divider",
         cursor: "pointer",
-        bgcolor: selected ? color : "#d9d8d2",
+        bgcolor: selected ? color : "background.paper",
         transition: "background-color 0.15s",
-        "&:hover": { bgcolor: selected ? color : "#c3c2ba" },
+        "&:hover": { bgcolor: selected ? color : "action.hover" },
       }}
     />
   );
@@ -234,9 +241,10 @@ export default function CohesionFormPage() {
 
   return (
     <Stack spacing={3} maxWidth={1180}>
-      {/* Bandeau titre — reprend l'entête beige de la fiche ID-PMC de référence. */}
-      <Paper elevation={0} sx={{ py: 1.5, textAlign: "center", bgcolor: "#e8dfc8", border: "1px solid", borderColor: "divider" }}>
-        <Typography variant="h6" fontWeight={700} sx={{ color: "#3a3a2e" }}>
+      {/* Bandeau titre — même bleu clair que l'entête du tableau des critères,
+       * pour que la fiche se lise comme un seul bloc. */}
+      <Paper elevation={0} sx={{ py: 1.5, textAlign: "center", bgcolor: HEADER_BLUE, border: "1px solid", borderColor: "divider" }}>
+        <Typography variant="h6" fontWeight={700} sx={{ color: HEADER_TEXT }}>
           {t("cohesion.title").toUpperCase()}
         </Typography>
       </Paper>
@@ -310,14 +318,14 @@ export default function CohesionFormPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ width: "30%", bgcolor: "#dbe4ee", fontWeight: 700, fontSize: 12 }}>
+                    <TableCell sx={{ width: "30%", bgcolor: HEADER_BLUE, color: HEADER_TEXT, fontWeight: 700, fontSize: 12 }}>
                       {t("cohesion.criterionCol")}
                     </TableCell>
                     {TIERS.map((tier) => (
                       <TableCell
                         key={tier}
                         align="center"
-                        sx={{ bgcolor: cohesionColor(tier), color: "#fff", fontWeight: 700, fontSize: 11, lineHeight: 1.2, minWidth: 72 }}
+                        sx={{ bgcolor: HEADER_BLUE, color: HEADER_TEXT, fontWeight: 700, fontSize: 11, lineHeight: 1.2, minWidth: 72 }}
                       >
                         {t(TIER_LABELS[tier - 1]).toUpperCase()}
                         <br />
@@ -448,7 +456,7 @@ export default function CohesionFormPage() {
                   <Typography variant="subtitle2" sx={{ mb: 1 }}>
                     {t("cohesion.chartTitle")}
                   </Typography>
-                  <ResponsiveContainer width="100%" height={260}>
+                  <ResponsiveContainer width="100%" height={208}>
                     <BarChart data={chartData} margin={{ top: 10, right: 20, bottom: 0, left: 0 }}>
                       <CartesianGrid stroke="#e1e0d9" vertical={false} />
                       <XAxis dataKey="period" tick={{ fill: "#898781", fontSize: 12 }} />

@@ -27,7 +27,7 @@ export default function PerformancePage() {
   return (
     <Stack spacing={3}>
       <Typography variant="h5" fontWeight={700}>
-        {t("nav.performances")}
+        {t("performanceId.pageTitle")}
       </Typography>
       <PersonPerformanceId people={people} selectablePeople={selectablePeople} />
     </Stack>

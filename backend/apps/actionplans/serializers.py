@@ -18,7 +18,8 @@ class ActionPlanSerializer(serializers.ModelSerializer):
             "id", "manager", "manager_name", "team", "team_name",
             "target_user", "target_user_name", "category", "priority",
             "objective", "baseline", "target", "cost", "status",
-            "due_date", "responsible", "eval_note", "order", "created_at",
+            "start_date", "due_date", "responsible", "eval_note",
+            "priority_order", "order", "created_at",
         ]
         # "manager" est toujours l'acteur de la requête (imposé côté vue,
         # jamais saisissable) — voir ActionPlanViewSet.perform_create.
@@ -30,6 +31,7 @@ class ActionPlanSerializer(serializers.ModelSerializer):
         # Développement du Manager les renseigne, via bulk-save-dev-plan).
         extra_kwargs = {
             "target_user": {"required": False},
+            "priority_order": {"required": False},
             "order": {"required": False},
         }
         # ModelSerializer ajoute automatiquement un UniqueTogetherValidator

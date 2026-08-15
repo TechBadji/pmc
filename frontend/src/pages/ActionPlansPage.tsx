@@ -44,6 +44,7 @@ export default function ActionPlansPage() {
     category: "SOFT_SKILLS" as ActionPlan["category"],
     priority: "",
     objective: "",
+    start_date: "",
     due_date: "",
   });
 
@@ -63,9 +64,16 @@ export default function ActionPlansPage() {
   }, [user?.role]);
 
   async function handleCreate() {
-    await apiClient.post("/action-plans/", { ...form, status: "TODO" });
+    // Les dates vides doivent partir en null : "" n'est pas une date valide
+    // pour un DateField côté API.
+    await apiClient.post("/action-plans/", {
+      ...form,
+      start_date: form.start_date || null,
+      due_date: form.due_date || null,
+      status: "TODO",
+    });
     setOpen(false);
-    setForm({ team: "", category: "SOFT_SKILLS", priority: "", objective: "", due_date: "" });
+    setForm({ team: "", category: "SOFT_SKILLS", priority: "", objective: "", start_date: "", due_date: "" });
     load();
   }
 
@@ -90,11 +98,16 @@ export default function ActionPlansPage() {
             label={t("managerDevPlan.selectManager")}
             value={selectedManagerId}
             onChange={(e) => setSelectedManagerId(e.target.value === "" ? "" : Number(e.target.value))}
-            sx={{ minWidth: 280 }}
+            // Même largeur compacte que le sélecteur de la fiche Performance :
+            // sans alignSelf, le Stack l'étire sur toute la page.
+            sx={{ width: 240, alignSelf: "flex-start" }}
           >
             {managers.map((m) => (
+              // Département suffixé au nom, comme le sélecteur de la fiche
+              // Performance : deux managers homonymes restent distinguables.
               <MenuItem key={m.id} value={m.id}>
                 {m.full_name || m.email}
+                {m.department_name ? ` — ${m.department_name}` : ""}
               </MenuItem>
             ))}
           </TextField>
@@ -115,7 +128,8 @@ export default function ActionPlansPage() {
                 <TableCell>{t("actionPlans.priority")}</TableCell>
                 <TableCell>{t("cohesion.team")}</TableCell>
                 <TableCell>{t("actionPlans.category")}</TableCell>
-                <TableCell>{t("actionPlans.dueDate")}</TableCell>
+                <TableCell>{t("actionPlans.startDate")}</TableCell>
+                <TableCell>{t("actionPlans.endDate")}</TableCell>
                 <TableCell>{t("common.status")}</TableCell>
               </TableRow>
             </TableHead>
@@ -132,6 +146,7 @@ export default function ActionPlansPage() {
                   </TableCell>
                   <TableCell>{p.team_name}</TableCell>
                   <TableCell>{p.category === "HARD_SKILLS" ? "Hard Skills" : "Soft Skills"}</TableCell>
+                  <TableCell>{p.start_date ?? "—"}</TableCell>
                   <TableCell>{p.due_date ?? "—"}</TableCell>
                   <TableCell>
                     <Chip size="small" label={t(`actionPlans.status.${p.status}`)} color={STATUS_COLOR[p.status]} />
@@ -146,35 +161,46 @@ export default function ActionPlansPage() {
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>{t("actionPlans.newPlan")}</DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
+          {/* Champs courts (listes, dates) volontairement bornés en largeur :
+           * étirés sur toute la boîte de dialogue, ils déséquilibraient le
+           * formulaire face aux champs texte. */}
+          <Stack spacing={2} alignItems="flex-start" sx={{ mt: 1 }}>
+            <Stack direction="row" spacing={2} flexWrap="wrap">
+              <TextField
+                select
+                size="small"
+                label={t("cohesion.team")}
+                value={form.team}
+                onChange={(e) => setForm({ ...form, team: Number(e.target.value) })}
+                sx={{ width: 240 }}
+              >
+                {departments.map((d) => (
+                  <MenuItem key={d.id} value={d.id}>
+                    {d.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                size="small"
+                label={t("actionPlans.category")}
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value as ActionPlan["category"] })}
+                sx={{ width: 180 }}
+              >
+                <MenuItem value="SOFT_SKILLS">Soft Skills</MenuItem>
+                <MenuItem value="HARD_SKILLS">Hard Skills</MenuItem>
+              </TextField>
+            </Stack>
             <TextField
-              select
-              label={t("cohesion.team")}
-              value={form.team}
-              onChange={(e) => setForm({ ...form, team: Number(e.target.value) })}
-            >
-              {departments.map((d) => (
-                <MenuItem key={d.id} value={d.id}>
-                  {d.name}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label={t("actionPlans.category")}
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value as ActionPlan["category"] })}
-            >
-              <MenuItem value="SOFT_SKILLS">Soft Skills</MenuItem>
-              <MenuItem value="HARD_SKILLS">Hard Skills</MenuItem>
-            </TextField>
-            <TextField
+              size="small"
               label={t("actionPlans.priorityLabel")}
               value={form.priority}
               onChange={(e) => setForm({ ...form, priority: e.target.value })}
               fullWidth
             />
             <TextField
+              size="small"
               label={t("actionPlans.actionToTake")}
               value={form.objective}
               onChange={(e) => setForm({ ...form, objective: e.target.value })}
@@ -182,13 +208,26 @@ export default function ActionPlansPage() {
               minRows={2}
               fullWidth
             />
-            <TextField
-              label={t("actionPlans.dueDate")}
-              type="date"
-              value={form.due_date}
-              onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-              InputLabelProps={{ shrink: true }}
-            />
+            <Stack direction="row" spacing={2} flexWrap="wrap">
+              <TextField
+                size="small"
+                label={t("actionPlans.startDate")}
+                type="date"
+                value={form.start_date}
+                onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                sx={{ width: 180 }}
+              />
+              <TextField
+                size="small"
+                label={t("actionPlans.endDate")}
+                type="date"
+                value={form.due_date}
+                onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                sx={{ width: 180 }}
+              />
+            </Stack>
           </Stack>
         </DialogContent>
         <DialogActions>

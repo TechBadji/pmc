@@ -252,9 +252,13 @@ export interface ActionPlan {
   target: string;
   cost: string;
   status: "TODO" | "IN_PROGRESS" | "DONE";
+  start_date: string | null;
   due_date: string | null;
   responsible: string;
   eval_note: string;
+  /** Numéro de la priorité de développement (1-3) dans la grille du plan de
+   * développement d'un manager ; `order` numérote ses actions. */
+  priority_order: number | null;
   order: number | null;
 }
 

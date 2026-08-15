@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { CartesianGrid, LabelList, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { apiClient } from "@/api/client";
 import { HARD_SKILLS_COLOR, SOFT_SKILLS_COLOR, performanceColors } from "@/theme";
 import type {
@@ -33,14 +33,27 @@ const CREAM = "#f5efd6";
 // Champs compacts : police et hauteur réduites pour tenir la fiche entière
 // sans scroll excessif — appliqué à tous les TextField de cette page.
 const COMPACT_INPUT_SX = {
-  "& .MuiInputBase-input": { fontSize: 12, paddingTop: "4px", paddingBottom: "4px" },
+  // minWidth: 0 — sans ça, la largeur mini d'un <input> vient de son attribut
+  // `size` natif (~180 px) : les colonnes de la grille se calent sur cette
+  // largeur et cessent d'être égales dès que la place manque.
+  "& .MuiInputBase-input": { fontSize: 12, paddingTop: "4px", paddingBottom: "4px", minWidth: 0 },
   "& .MuiInputBase-input::placeholder": { fontSize: 12 },
 } as const;
+
+// Informations professionnelles (Âge, Anciennetés, Genre, Type de contrat,
+// Rattaché à…) : ces champs ne portent qu'un nombre ou un mot, la place
+// récupérée revient à la colonne Qualifications, elle bien plus dense.
+const INFO_FIELD_WIDTH = 100;
+// Largeur de la colonne identité : les champs y font INFO_FIELD_WIDTH, la
+// marge restante allant aux intitulés ("Ancienneté entreprise") pour qu'ils
+// tiennent sur une ligne. Elle est fixe, c'est ce qui permet aux colonnes de
+// champs voisines d'être exactement égales entre elles.
+const IDENTITY_COL_WIDTH = 120;
 
 // Contribution / Plan de développement personnel : champs réduits d'environ
 // moitié par rapport à COMPACT_INPUT_SX (hauteur et police).
 const EXTRA_COMPACT_INPUT_SX = {
-  "& .MuiInputBase-input": { fontSize: 11, paddingTop: "1px", paddingBottom: "1px" },
+  "& .MuiInputBase-input": { fontSize: 11, paddingTop: "1px", paddingBottom: "1px", minWidth: 0 },
   "& .MuiInputBase-input::placeholder": { fontSize: 11 },
 } as const;
 
@@ -122,16 +135,34 @@ function ListField({
   rows,
   onChange,
   dense,
+  multiline,
 }: {
   label?: string;
   value: string[];
   rows: number;
   onChange: (v: string[]) => void;
   dense?: boolean;
+  /** Cases hautes : le texte revient à la ligne et la case grandit avec lui,
+   * au lieu de défiler horizontalement sur une seule ligne. */
+  multiline?: boolean;
 }) {
   const items = padTo(value, rows);
+  const baseSx = dense ? EXTRA_COMPACT_INPUT_SX : COMPACT_INPUT_SX;
+  // Cases multilignes : interligne resserré et pas de hauteur plancher — la
+  // case fait une ligne quand elle est vide ou courte, et ne prend deux
+  // lignes que si le texte les remplit vraiment.
+  const fieldSx = multiline
+    ? { ...baseSx, "& .MuiInputBase-input": { ...baseSx["& .MuiInputBase-input"], lineHeight: 1.2 } }
+    : baseSx;
+
+  function update(index: number, text: string) {
+    const next = [...items];
+    next[index] = text;
+    onChange(next);
+  }
+
   return (
-    <Stack spacing={dense ? 0.25 : 0.5} sx={{ flex: 1 }}>
+    <Stack spacing={dense ? 0.25 : 0.5} sx={{ flex: 1, minWidth: 0 }}>
       {label && (
         <Typography variant="caption" fontWeight={700} color="text.secondary" sx={dense ? { fontSize: 11 } : undefined}>
           {label}
@@ -142,14 +173,11 @@ function ListField({
           key={i}
           size="small"
           fullWidth
+          multiline={multiline}
           value={v}
           placeholder={`${i + 1}.`}
-          onChange={(e) => {
-            const next = [...items];
-            next[i] = e.target.value;
-            onChange(next);
-          }}
-          sx={dense ? EXTRA_COMPACT_INPUT_SX : COMPACT_INPUT_SX}
+          onChange={(e) => update(i, e.target.value)}
+          sx={fieldSx}
         />
       ))}
     </Stack>
@@ -162,7 +190,7 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
       <Typography variant="caption" color="text.secondary">
         {label}
       </Typography>
-      <TextField size="small" value={value} InputProps={{ readOnly: true }} sx={{ bgcolor: "action.hover", width: 160, ...COMPACT_INPUT_SX }} />
+      <TextField size="small" value={value} InputProps={{ readOnly: true }} sx={{ bgcolor: "action.hover", width: INFO_FIELD_WIDTH, ...COMPACT_INPUT_SX }} />
     </Stack>
   );
 }
@@ -380,7 +408,9 @@ export default function PersonPerformanceId({
         label={t("performanceId.selectPerson")}
         value={selectedId}
         onChange={(e) => setSelectedId(e.target.value === "" ? "" : Number(e.target.value))}
-        sx={{ minWidth: 280 }}
+        // Largeur fixe et calée à gauche : sans ça le Stack l'étire sur toute
+        // la fiche, ce qui donne un sélecteur démesuré au-dessus du contenu.
+        sx={{ width: 240, alignSelf: "flex-start" }}
       >
         {selectable.map((p) => (
           <MenuItem key={p.id} value={p.id}>
@@ -398,8 +428,22 @@ export default function PersonPerformanceId({
             </Typography>
           </Paper>
 
-          {/* Ligne 1 : photo + informations professionnelles + réalisations + performance */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "180px 1.6fr 1.6fr 1.2fr", gap: 1.5, mb: 2 }}>
+          {/* Ligne 1 : photo + informations professionnelles + réalisations + performance.
+           * La grille est découpée par CHAMP et non par section : identité à
+           * largeur fixe, puis quatre colonnes égales (Qualifications, les deux
+           * Réalisations, Historique). Les deux sections s'étendent chacune sur
+           * deux colonnes, si bien que le champ Qualifications et les champs de
+           * Réalisations ont exactement la même largeur à toutes les tailles
+           * d'écran — un simple rapport de `fr` entre sections ne pouvait pas
+           * le garantir, la section identité mangeant une largeur fixe. */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: `180px ${IDENTITY_COL_WIDTH}px repeat(4, minmax(0, 1fr))`,
+              gap: 1.5,
+              mb: 2,
+            }}
+          >
             <Stack spacing={1} alignItems="center">
               <Avatar
                 src={selectedUser.avatar ?? undefined}
@@ -417,10 +461,12 @@ export default function PersonPerformanceId({
               </Typography>
             </Stack>
 
-            <Stack spacing={1}>
+            <Stack spacing={1} sx={{ gridColumn: "span 2", minWidth: 0 }}>
               <SectionHeader>{t("performanceId.professionalInfo")}</SectionHeader>
               <Stack direction="row" spacing={1.5}>
-                <Stack spacing={0.5} sx={{ flex: 1 }}>
+                {/* Colonne d'identité calée sur la 2e colonne de la grille :
+                 * Qualifications tombe ainsi exactement sur la 3e. */}
+                <Stack spacing={0.5} sx={{ flex: `0 0 ${IDENTITY_COL_WIDTH}px`, width: IDENTITY_COL_WIDTH }}>
                   <ReadOnlyField label={t("performanceId.age")} value={selectedUser.age != null ? String(selectedUser.age) : "—"} />
                   <ReadOnlyField label={t("performanceId.yearsInPosition")} value={selectedUser.years_in_current_role != null ? String(selectedUser.years_in_current_role) : "—"} />
                   <ReadOnlyField label={t("performanceId.yearsInCompany")} value={selectedUser.years_in_company != null ? String(selectedUser.years_in_company) : "—"} />
@@ -429,28 +475,30 @@ export default function PersonPerformanceId({
                     <Typography variant="caption" color="text.secondary">
                       {t("performanceId.gender")}
                     </Typography>
-                    <TextField size="small" value={form.gender} onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))} sx={{ width: 160, ...COMPACT_INPUT_SX }} />
+                    <TextField size="small" value={form.gender} onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))} sx={{ width: INFO_FIELD_WIDTH, ...COMPACT_INPUT_SX }} />
                   </Stack>
                   <Stack spacing={0.25}>
                     <Typography variant="caption" color="text.secondary">
                       {t("performanceId.contractType")}
                     </Typography>
-                    <TextField size="small" value={form.contract_type} onChange={(e) => setForm((f) => ({ ...f, contract_type: e.target.value }))} sx={{ width: 160, ...COMPACT_INPUT_SX }} />
+                    <TextField size="small" value={form.contract_type} onChange={(e) => setForm((f) => ({ ...f, contract_type: e.target.value }))} sx={{ width: INFO_FIELD_WIDTH, ...COMPACT_INPUT_SX }} />
                   </Stack>
                   <ReadOnlyField label={t("performanceId.reportTo")} value={managerOf?.full_name ?? "—"} />
                 </Stack>
-                <Stack spacing={1} sx={{ flex: 1 }}>
+                <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
                   <ListField label={t("performanceId.qualifications")} value={form.qualifications} rows={5} onChange={(v) => setList("qualifications", v)} />
                   <ListField label={t("performanceId.previousPositions")} value={form.previous_positions} rows={2} onChange={(v) => setList("previous_positions", v)} />
                 </Stack>
               </Stack>
             </Stack>
 
-            <Stack spacing={1}>
+            <Stack spacing={1} sx={{ gridColumn: "span 2", minWidth: 0 }}>
               <SectionHeader>{t("performanceId.achievements")}</SectionHeader>
               <Stack direction="row" spacing={1.5}>
-                <ListField label={t("performanceId.professionalAchievements")} value={form.professional_achievements} rows={5} onChange={(v) => setList("professional_achievements", v)} />
-                <ListField label={t("performanceId.personalAchievements")} value={form.personal_achievements} rows={5} onChange={(v) => setList("personal_achievements", v)} />
+                {/* `dense` : police 11 px et lignes resserrées — la case n'est
+                 * qu'un aperçu, le texte entier s'affiche au survol. */}
+                <ListField label={t("performanceId.professionalAchievements")} value={form.professional_achievements} rows={5} multiline dense onChange={(v) => setList("professional_achievements", v)} />
+                <ListField label={t("performanceId.personalAchievements")} value={form.personal_achievements} rows={5} multiline dense onChange={(v) => setList("personal_achievements", v)} />
               </Stack>
               {latestEvaluation && (
                 <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
@@ -472,11 +520,49 @@ export default function PersonPerformanceId({
               <SectionHeader>{t("performanceId.performanceRecord")}</SectionHeader>
               {history.length > 0 ? (
                 <ResponsiveContainer width="100%" height={160}>
-                  <LineChart data={history} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke="#e1e0d9" />
+                  <LineChart data={history} margin={{ top: 22, right: 16, left: 16, bottom: 0 }}>
+                    <CartesianGrid stroke="#e1e0d9" vertical={false} />
                     <XAxis dataKey="year" tick={{ fill: "#898781", fontSize: 11 }} tickLine={false} />
                     <YAxis hide domain={["dataMin - 20", "dataMax + 20"]} />
-                    <Line type="monotone" dataKey="value" stroke={HEADER_ORANGE} strokeWidth={2.5} dot={{ r: 3, fill: HEADER_ORANGE, strokeWidth: 0 }} isAnimationActive={false} />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke={HEADER_ORANGE}
+                      strokeWidth={2.5}
+                      // Point et étiquette colorés selon le palier de
+                      // performance de l'année : le graphe dit d'un coup d'œil
+                      // le niveau atteint, pas seulement la tendance.
+                      dot={(props: any) => (
+                        <circle
+                          key={`dot-${props.index}`}
+                          cx={props.cx}
+                          cy={props.cy}
+                          r={4}
+                          fill={performanceColors[history[props.index].rating]}
+                          stroke="#fff"
+                          strokeWidth={1.5}
+                        />
+                      )}
+                      activeDot={{ r: 6 }}
+                      isAnimationActive={false}
+                    >
+                      <LabelList
+                        dataKey="value"
+                        content={(props: any) => (
+                          <text
+                            key={`label-${props.index}`}
+                            x={props.x}
+                            y={props.y - 9}
+                            textAnchor="middle"
+                            fontSize={11}
+                            fontWeight={700}
+                            fill={performanceColors[history[props.index].rating]}
+                          >
+                            {props.value}%
+                          </text>
+                        )}
+                      />
+                    </Line>
                   </LineChart>
                 </ResponsiveContainer>
               ) : (

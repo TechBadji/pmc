@@ -45,14 +45,24 @@ class ActionPlan(models.Model):
     status = models.CharField(
         "Statut", max_length=20, choices=Status.choices, default=Status.TODO
     )
-    due_date = models.DateField("Échéance", null=True, blank=True)
+    # L'échéance d'une action se saisit sur deux dates (début / fin) dans la
+    # grille ID-PMC. `due_date` reste la date de fin — c'est elle qui sert de
+    # tri et d'échéance affichée, d'où le nom conservé tel quel.
+    start_date = models.DateField("Date de début", null=True, blank=True)
+    due_date = models.DateField("Date de fin", null=True, blank=True)
     responsible = models.CharField("Responsable", max_length=150, blank=True)
     eval_note = models.CharField("Éval.", max_length=150, blank=True)
-    order = models.PositiveSmallIntegerField(
-        "Position (1-3)",
+    priority_order = models.PositiveSmallIntegerField(
+        "Priorité (1-3)",
         null=True,
         blank=True,
-        help_text="Renseigné uniquement pour la grille fixe du plan de développement d'un manager (3 lignes par catégorie).",
+        help_text="Numéro de la priorité de développement dans la grille du plan de développement (3 par catégorie).",
+    )
+    order = models.PositiveSmallIntegerField(
+        "Position de l'action dans la priorité",
+        null=True,
+        blank=True,
+        help_text="Renseigné uniquement pour la grille du plan de développement d'un manager : une priorité porte autant d'actions que nécessaire, numérotées à partir de 1.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -61,10 +71,12 @@ class ActionPlan(models.Model):
         verbose_name_plural = "Plans d'action"
         ordering = ["due_date", "-created_at"]
         # NULL n'est jamais considéré égal à NULL par Postgres : cette
-        # contrainte ne s'applique donc qu'aux lignes de la grille fixe
-        # (target_user + order renseignés), pas aux plans d'équipe libres
-        # existants (order=NULL) créés depuis la page Plans d'action.
-        unique_together = ("target_user", "category", "order")
+        # contrainte ne s'applique donc qu'aux lignes de la grille du plan de
+        # développement (target_user + priority_order + order renseignés), pas
+        # aux plans d'équipe libres existants (order=NULL) créés depuis la page
+        # Plans d'action. Une priorité peut porter plusieurs actions, d'où
+        # `order` numéroté à l'intérieur de `priority_order`.
+        unique_together = ("target_user", "category", "priority_order", "order")
 
     def __str__(self):
         return f"{self.priority} — {self.team.name}"
