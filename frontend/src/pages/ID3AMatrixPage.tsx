@@ -1168,8 +1168,8 @@ export default function ID3AMatrixPage() {
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             {t("id3aMatrix.progressionTitle")}
           </Typography>
-          <ResponsiveContainer width="100%" height={154}>
-            <AreaChart data={progressionData} margin={{ top: 18, right: 16, left: 0, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={108}>
+            <AreaChart data={progressionData} margin={{ top: 14, right: 16, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="id3a-progression-fill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={PROGRESSION_COLOR} stopOpacity={0.28} />
