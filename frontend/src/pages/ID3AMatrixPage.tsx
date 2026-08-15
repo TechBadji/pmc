@@ -30,10 +30,12 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
   Customized,
-  Line,
-  LineChart,
+  LabelList,
+  ReferenceLine,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -473,6 +475,9 @@ function MatrixQuadrants({ xAxisMap, yAxisMap }: any) {
 
 const NONE_PERIOD = "__none__";
 
+// Bleu du logo — couleur de la courbe de progression de l'Altitude.
+const PROGRESSION_COLOR = "#2E8FCB";
+
 interface ObjectivePair {
   current: Point;
   prev: Point | null;
@@ -820,6 +825,18 @@ export default function ID3AMatrixPage() {
 
   const selectedUserInfo = selectedUserHistory[selectedUserHistory.length - 1];
 
+  // Courbe de progression : le palier est porté par chaque point, pour que
+  // point et étiquette prennent la couleur du niveau atteint sur la période.
+  const progressionData = useMemo(
+    () =>
+      selectedUserHistory.map((e) => ({
+        period: e.campaign_name,
+        altitude: Math.round(Number(e.altitude_percentage)),
+        rating: e.performance_rating,
+      })),
+    [selectedUserHistory]
+  );
+
   function handlePointClick(data: any) {
     const userId = data?.userId ?? data?.payload?.userId;
     if (userId) setSelectedUserId(userId);
@@ -1151,21 +1168,73 @@ export default function ID3AMatrixPage() {
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             {t("id3aMatrix.progressionTitle")}
           </Typography>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={selectedUserHistory.map((e) => ({ period: e.campaign_name, altitude: Number(e.altitude_percentage) }))}>
-              <CartesianGrid stroke="#e1e0d9" />
-              <XAxis dataKey="period" tick={{ fill: "#898781", fontSize: 12 }} />
-              <YAxis tick={{ fill: "#898781", fontSize: 12 }} domain={[0, "dataMax + 15"]} />
+          <ResponsiveContainer width="100%" height={154}>
+            <AreaChart data={progressionData} margin={{ top: 18, right: 16, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="id3a-progression-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={PROGRESSION_COLOR} stopOpacity={0.28} />
+                  <stop offset="100%" stopColor={PROGRESSION_COLOR} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="#e1e0d9" vertical={false} />
+              <XAxis dataKey="period" tick={{ fill: "#898781", fontSize: 11 }} tickLine={false} />
+              <YAxis
+                tick={{ fill: "#898781", fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+                width={38}
+                domain={[0, "dataMax + 15"]}
+                tickFormatter={(v: number) => `${v}%`}
+              />
+              {/* Repère des 100 % : objectifs atteints — c'est la lecture utile
+                * d'une courbe d'Altitude, sinon on ne situe que la tendance. */}
+              <ReferenceLine
+                y={100}
+                stroke={CHART_NEUTRALS.connectorArrow}
+                strokeDasharray="4 4"
+                label={{ value: "100%", position: "right", fill: CHART_NEUTRALS.axisTitle, fontSize: 10, fontWeight: 700 }}
+              />
               <Tooltip formatter={(value: number) => [`${value}%`, t("dashboard.manager.altitude")]} />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="altitude"
-                stroke="#2E8FCB"
-                strokeWidth={2}
-                dot={{ r: 5, fill: "#2E8FCB" }}
+                stroke={PROGRESSION_COLOR}
+                strokeWidth={2.5}
+                fill="url(#id3a-progression-fill)"
                 isAnimationActive={false}
-              />
-            </LineChart>
+                // Point et étiquette à la couleur du palier atteint sur la
+                // période : la courbe dit la tendance, la couleur le niveau.
+                dot={(props: any) => (
+                  <circle
+                    key={`dot-${props.index}`}
+                    cx={props.cx}
+                    cy={props.cy}
+                    r={4.5}
+                    fill={performanceColors[progressionData[props.index].rating]}
+                    stroke="#fff"
+                    strokeWidth={1.5}
+                  />
+                )}
+                activeDot={{ r: 6 }}
+              >
+                <LabelList
+                  dataKey="altitude"
+                  content={(props: any) => (
+                    <text
+                      key={`label-${props.index}`}
+                      x={props.x}
+                      y={props.y - 9}
+                      textAnchor="middle"
+                      fontSize={11}
+                      fontWeight={700}
+                      fill={performanceColors[progressionData[props.index].rating]}
+                    >
+                      {props.value}%
+                    </text>
+                  )}
+                />
+              </Area>
+            </AreaChart>
           </ResponsiveContainer>
 
           <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
