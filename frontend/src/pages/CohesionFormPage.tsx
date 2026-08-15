@@ -39,9 +39,8 @@ import { cohesionColor } from "@/theme";
 const ICE_COLOR = "#2E8FCB";
 const OCE_COLOR = "#eb6834";
 const TIERS = [1, 2, 3, 4, 5];
-/** Bleu clair des entêtes de la fiche (bandeau titre + entêtes du tableau
- * des critères) — les paliers ne sont plus colorés, la couleur ne sert donc
- * qu'à marquer l'entête, jamais un niveau. */
+/** Bleu clair du bandeau titre et de la colonne "Critères de cohésion" — les
+ * entêtes de paliers, eux, gardent la couleur du barème 1-5. */
 const HEADER_BLUE = "#dbe4ee";
 const HEADER_TEXT = "#243747";
 
@@ -321,11 +320,14 @@ export default function CohesionFormPage() {
                     <TableCell sx={{ width: "30%", bgcolor: HEADER_BLUE, color: HEADER_TEXT, fontWeight: 700, fontSize: 12 }}>
                       {t("cohesion.criterionCol")}
                     </TableCell>
+                    {/* Entêtes de paliers à la couleur du barème 1-5 : c'est le
+                     * code couleur de la fiche ID-PMC, repris aussi par la
+                     * pastille sélectionnée de chaque ligne. */}
                     {TIERS.map((tier) => (
                       <TableCell
                         key={tier}
                         align="center"
-                        sx={{ bgcolor: HEADER_BLUE, color: HEADER_TEXT, fontWeight: 700, fontSize: 11, lineHeight: 1.2, minWidth: 72 }}
+                        sx={{ bgcolor: cohesionColor(tier), color: "#fff", fontWeight: 700, fontSize: 11, lineHeight: 1.2, minWidth: 72 }}
                       >
                         {t(TIER_LABELS[tier - 1]).toUpperCase()}
                         <br />
