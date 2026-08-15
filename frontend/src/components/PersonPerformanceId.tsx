@@ -16,11 +16,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CartesianGrid, LabelList, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { apiClient } from "@/api/client";
-import { HARD_SKILLS_COLOR, SOFT_SKILLS_COLOR, performanceColors } from "@/theme";
+import { CHART_NEUTRALS, HARD_SKILLS_COLOR, SOFT_SKILLS_COLOR, performanceColors } from "@/theme";
 import type {
   Evaluation,
   Paginated,
   PerformanceProfile,
+  PerformanceRating,
   SkillNote,
   SkillNoteCategory,
   TeamRelationship,
@@ -181,6 +182,85 @@ function ListField({
         />
       ))}
     </Stack>
+  );
+}
+
+/** Mini-matrice ID-3A d'une personne : Aptitudes (HSI) en X, Attitudes (SSI)
+ * en Y, quadrants et projections sur les axes — même langage visuel que la
+ * page Matrice ID-3A, en version carrée pour la fiche. */
+function Id3aMiniMatrix({ hsi, ssi, altitude, rating }: { hsi: number; ssi: number; altitude: number; rating: PerformanceRating }) {
+  const { t } = useTranslation();
+  const S = 200; // repère carré, mis à l'échelle par le viewBox
+  const ML = 24;
+  const MB = 22;
+  const MT = 10;
+  const MR = 10;
+  const plotW = S - ML - MR;
+  const plotH = S - MT - MB;
+  const x = (v: number) => ML + (v / 5) * plotW;
+  const y = (v: number) => MT + plotH - (v / 5) * plotH;
+  const color = performanceColors[rating];
+  const quadrantLabel = { fontSize: 7, fontWeight: 700, letterSpacing: 0.3, fill: CHART_NEUTRALS.quadrantLabel } as const;
+  const axisLabel = { fontSize: 7, fontWeight: 700, letterSpacing: 0.4, fill: CHART_NEUTRALS.axisTitle } as const;
+
+  return (
+    <svg viewBox={`0 0 ${S} ${S}`} width="100%" style={{ display: "block" }}>
+      <rect x={ML} y={MT} width={plotW} height={plotH} fill="#f3f2ee" />
+
+      {/* Séparateurs de quadrants + intitulés, comme sur la page Matrice. */}
+      <line x1={x(2.5)} y1={y(5)} x2={x(2.5)} y2={y(0)} stroke="#e1e0d9" strokeDasharray="3 3" />
+      <line x1={x(0)} y1={y(2.5)} x2={x(5)} y2={y(2.5)} stroke="#e1e0d9" strokeDasharray="3 3" />
+      <text x={x(0) + 4} y={y(5) + 9} textAnchor="start" style={quadrantLabel}>
+        {t("id3aMatrix.quadrantExperts").toUpperCase()}
+      </text>
+      <text x={x(5) - 4} y={y(5) + 9} textAnchor="end" style={quadrantLabel}>
+        {t("id3aMatrix.quadrantTalents").toUpperCase()}
+      </text>
+      <text x={x(0) + 4} y={y(0) - 5} textAnchor="start" style={quadrantLabel}>
+        {t("id3aMatrix.quadrantWatch").toUpperCase()}
+      </text>
+      <text x={x(5) - 4} y={y(0) - 5} textAnchor="end" style={quadrantLabel}>
+        {t("id3aMatrix.quadrantRelational").toUpperCase()}
+      </text>
+
+      {/* Axes gradués 0-5. */}
+      <line x1={x(0)} y1={y(0)} x2={x(0)} y2={y(5)} stroke={CHART_NEUTRALS.plotAxisLine} />
+      <line x1={x(0)} y1={y(0)} x2={x(5)} y2={y(0)} stroke={CHART_NEUTRALS.plotAxisLine} />
+      {[0, 1, 2, 3, 4, 5].map((v) => (
+        <g key={v}>
+          <line x1={x(v)} y1={y(0)} x2={x(v)} y2={y(0) + 3} stroke={CHART_NEUTRALS.plotAxisLine} />
+          <line x1={x(0) - 3} y1={y(v)} x2={x(0)} y2={y(v)} stroke={CHART_NEUTRALS.plotAxisLine} />
+          <text x={x(v)} y={y(0) + 11} textAnchor="middle" fontSize={7} fill="#898781">
+            {v}
+          </text>
+          <text x={x(0) - 5} y={y(v) + 2.5} textAnchor="end" fontSize={7} fill="#898781">
+            {v}
+          </text>
+        </g>
+      ))}
+      <text x={ML + plotW / 2} y={S - 2} textAnchor="middle" style={axisLabel}>
+        APTITUDES (HSI)
+      </text>
+      <text x={7} y={MT + plotH / 2} textAnchor="middle" transform={`rotate(-90 7 ${MT + plotH / 2})`} style={axisLabel}>
+        ATTITUDES (SSI)
+      </text>
+
+      {/* Position de la personne : projections sur les deux axes, puis le point. */}
+      <line x1={x(hsi)} y1={y(ssi)} x2={x(hsi)} y2={y(0)} stroke={color} strokeDasharray="2 2" />
+      <line x1={x(0)} y1={y(ssi)} x2={x(hsi)} y2={y(ssi)} stroke={color} strokeDasharray="2 2" />
+      <circle cx={x(hsi)} cy={y(ssi)} r={9} fill={color} opacity={0.18} />
+      <circle cx={x(hsi)} cy={y(ssi)} r={5} fill={color} stroke="#fff" strokeWidth={1.5} />
+      <text
+        x={x(hsi) + (hsi > 3.5 ? -8 : 8)}
+        y={y(ssi) - 7}
+        textAnchor={hsi > 3.5 ? "end" : "start"}
+        fontSize={10}
+        fontWeight={700}
+        fill={color}
+      >
+        {altitude}%
+      </text>
+    </svg>
   );
 }
 
@@ -580,7 +660,7 @@ export default function PersonPerformanceId({
           </Box>
 
           {/* Ligne 2 : forces / faiblesses / vision & projets / dynamique d'équipe / ID-3A */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "1.3fr 1.3fr 1fr 2.4fr 1fr", gap: 1.5, mb: 2 }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: "1.3fr 1.3fr 1fr 2.4fr 1.4fr", gap: 1.5, mb: 2 }}>
             <Stack spacing={1}>
               <SectionHeader>{t("performanceId.keyStrengths")}</SectionHeader>
               <SkillNoteReadColumn label={t("managerDevPlan.hardSkills")} color={HARD_SKILLS_COLOR} notes={notesFor("HARD_STRENGTH")} />
@@ -627,25 +707,37 @@ export default function PersonPerformanceId({
             <Stack spacing={1}>
               <SectionHeader>{t("performanceId.id3a")}</SectionHeader>
               {latestEvaluation ? (
-                <Box sx={{ position: "relative", width: "100%", aspectRatio: "1", border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
-                  <Box sx={{ position: "absolute", left: "50%", top: 0, bottom: 0, borderLeft: "1px dashed", borderColor: "divider" }} />
-                  <Box sx={{ position: "absolute", top: "50%", left: 0, right: 0, borderTop: "1px dashed", borderColor: "divider" }} />
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      width: 12,
-                      height: 12,
-                      borderRadius: "50%",
-                      bgcolor: performanceColors[latestEvaluation.performance_rating],
-                      left: `${(Number(latestEvaluation.hsi) / 5) * 100}%`,
-                      bottom: `${(Number(latestEvaluation.ssi) / 5) * 100}%`,
-                      transform: "translate(-50%, 50%)",
-                      boxShadow: "0 0 0 3px rgba(255,255,255,0.6)",
-                    }}
-                  />
-                </Box>
+                <Stack spacing={0.75}>
+                  <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, bgcolor: "background.paper", p: 0.5 }}>
+                    <Id3aMiniMatrix
+                      hsi={Number(latestEvaluation.hsi)}
+                      ssi={Number(latestEvaluation.ssi)}
+                      altitude={Math.round(Number(latestEvaluation.altitude_percentage))}
+                      rating={latestEvaluation.performance_rating}
+                    />
+                  </Box>
+                  <Stack direction="row" spacing={0.5} justifyContent="center" flexWrap="wrap" useFlexGap>
+                    <Chip size="small" label={`HSI ${latestEvaluation.hsi}`} sx={{ bgcolor: HARD_SKILLS_COLOR + "22", color: HARD_SKILLS_COLOR, fontWeight: 700 }} />
+                    <Chip size="small" label={`SSI ${latestEvaluation.ssi}`} sx={{ bgcolor: SOFT_SKILLS_COLOR + "22", color: SOFT_SKILLS_COLOR, fontWeight: 700 }} />
+                  </Stack>
+                </Stack>
               ) : (
-                <Box sx={{ width: "100%", aspectRatio: "1", border: "1px solid", borderColor: "divider" }} />
+                <Box
+                  sx={{
+                    width: "100%",
+                    aspectRatio: "1",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    {t("evaluations.notEvaluated")}
+                  </Typography>
+                </Box>
               )}
               <ListField label={t("performanceId.hobbies")} value={form.hobbies} rows={2} onChange={(v) => setList("hobbies", v)} />
               <ListField label={t("performanceId.personalityTraits")} value={form.personality_traits} rows={3} onChange={(v) => setList("personality_traits", v)} />
