@@ -20,6 +20,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Area, AreaChart, CartesianGrid, LabelList, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { apiClient } from "@/api/client";
+import { useUnsavedChanges } from "@/app/unsavedChanges";
 import { CHART_NEUTRALS, HARD_SKILLS_COLOR, SOFT_SKILLS_COLOR, performanceColors } from "@/theme";
 import type {
   Evaluation,
@@ -540,6 +541,10 @@ export default function PersonPerformanceId({
     await apiClient.delete(`/team-relationships/${id}/`);
     setRelationships((prev) => prev.filter((r) => r.id !== id));
   }
+
+  // Quitter la page (menu, fermeture d'onglet) avec des saisies en cours
+  // déclenche une demande de confirmation, avec enregistrement possible.
+  useUnsavedChanges(dirty, handleSave);
 
   const teamCandidates = selectedUser ? people.filter((p) => p.department === selectedUser.department && p.id !== selectedUser.id) : [];
 

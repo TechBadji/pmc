@@ -69,7 +69,11 @@
       "AVERAGE": "Average (75-89%)",
       "GOOD": "Good (90-100%)",
       "OUTSTANDING": "Outstanding (>100%)"
-    }
+    },
+    "unsavedTitle": "Unsaved changes",
+    "unsavedBody": "You have unsaved changes on this page. Do you want to save them before leaving?",
+    "saveAndLeave": "Save and leave",
+    "leaveWithoutSaving": "Leave without saving"
   },
   "login": {
     "subtitle": "People Management Canvas",

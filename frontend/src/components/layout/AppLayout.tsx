@@ -25,22 +25,30 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Menu,
   MenuItem,
   Toolbar,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import { UnsavedChangesProvider, type UnsavedGuard } from "@/app/unsavedChanges";
 import { logout } from "@/features/auth/authSlice";
 import { NAV_BY_ROLE, type NavItem } from "./navConfig";
 
 const PENDING_RESET_POLL_MS = 20000;
 
 const DRAWER_WIDTH = 260;
+// Chemin sentinelle : une déconnexion en attente de confirmation.
+const LOGOUT_PATH = "__logout__";
 
 const ICONS: Record<NavItem["icon"], React.ReactNode> = {
   dashboard: <DashboardOutlinedIcon />,
@@ -88,13 +96,66 @@ export default function AppLayout() {
 
   function handleLogout() {
     setMenuAnchor(null);
+    // La déconnexion perd les saisies en cours au même titre qu'un changement
+    // de page : elle passe donc par la même confirmation.
+    if (guardRef.current?.dirty) {
+      setPendingPath(LOGOUT_PATH);
+      return;
+    }
     dispatch(logout());
     navigate("/login", { replace: true });
   }
 
   function handleProfile() {
     setMenuAnchor(null);
-    navigate("/profile");
+    requestNavigation("/profile");
+  }
+
+  // Garde "modifications non enregistrées" : la page en cours d'édition se
+  // déclare ici, et tout départ passe par requestNavigation.
+  const guardRef = useRef<UnsavedGuard | null>(null);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const register = useCallback((guard: UnsavedGuard | null) => {
+    guardRef.current = guard;
+  }, []);
+
+  function requestNavigation(path: string) {
+    if (guardRef.current?.dirty) {
+      setPendingPath(path);
+      return;
+    }
+    navigate(path);
+  }
+
+  function goTo(path: string | null) {
+    if (!path) return;
+    if (path === LOGOUT_PATH) {
+      dispatch(logout());
+      navigate("/login", { replace: true });
+      return;
+    }
+    navigate(path);
+  }
+
+  function leaveWithoutSaving() {
+    const path = pendingPath;
+    guardRef.current = null;
+    setPendingPath(null);
+    goTo(path);
+  }
+
+  async function saveThenLeave() {
+    const path = pendingPath;
+    setLeaving(true);
+    try {
+      await guardRef.current?.save?.();
+      guardRef.current = null;
+      setPendingPath(null);
+      goTo(path);
+    } finally {
+      setLeaving(false);
+    }
   }
 
   return (
@@ -118,6 +179,12 @@ export default function AppLayout() {
               component={Link}
               to={item.path}
               selected={location.pathname === item.path}
+              onClick={(e) => {
+                if (guardRef.current?.dirty) {
+                  e.preventDefault();
+                  setPendingPath(item.path);
+                }
+              }}
               sx={{ borderRadius: 2, mb: 0.5 }}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>
@@ -195,8 +262,28 @@ export default function AppLayout() {
           </Toolbar>
         </AppBar>
         <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-          <Outlet />
+          <UnsavedChangesProvider value={{ register }}>
+            <Outlet />
+          </UnsavedChangesProvider>
         </Box>
+
+        <Dialog open={pendingPath !== null} onClose={() => setPendingPath(null)} maxWidth="xs" fullWidth>
+          <DialogTitle>{t("common.unsavedTitle")}</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2">{t("common.unsavedBody")}</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPendingPath(null)} disabled={leaving}>
+              {t("common.cancel")}
+            </Button>
+            <Button color="error" onClick={leaveWithoutSaving} disabled={leaving}>
+              {t("common.leaveWithoutSaving")}
+            </Button>
+            <Button variant="contained" onClick={saveThenLeave} disabled={leaving}>
+              {t("common.saveAndLeave")}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Box>
   );

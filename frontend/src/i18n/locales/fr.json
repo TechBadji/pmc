@@ -69,7 +69,11 @@
       "AVERAGE": "Moyenne (75-89%)",
       "GOOD": "Bonne (90-100%)",
       "OUTSTANDING": "Exceptionnelle (>100%)"
-    }
+    },
+    "unsavedTitle": "Modifications non enregistrées",
+    "unsavedBody": "Vous avez des modifications non enregistrées sur cette page. Voulez-vous les enregistrer avant de partir ?",
+    "saveAndLeave": "Enregistrer et quitter",
+    "leaveWithoutSaving": "Quitter sans enregistrer"
   },
   "login": {
     "subtitle": "People Management Canvas",
