@@ -680,7 +680,7 @@ export default function PersonPerformanceId({
             {/* % de performance : saisi à la main comme sur la feuille, avec
               * l'Altitude calculée en valeur par défaut affichée en repère.
               * HSO/SSIO se placent à droite, sur les deux mêmes lignes. */}
-            <Box sx={{ gridColumn: 5, gridRow: 8, display: "grid", gridTemplateColumns: "1fr 0.55fr", gap: SHEET_GAP }}>
+            <Box sx={{ gridColumn: 5, gridRow: 9, display: "grid", gridTemplateColumns: "1fr 0.55fr", gap: SHEET_GAP }}>
               <Lab bg={CREAM}>{t("performanceId.performancePct")}</Lab>
               <Fld
                 value={form.performance_pct}
@@ -691,7 +691,7 @@ export default function PersonPerformanceId({
                 color={latestEvaluation ? performanceColors[latestEvaluation.performance_rating] : undefined}
               />
             </Box>
-            <Box sx={{ gridColumn: 6, gridRow: 8, display: "grid", gridTemplateColumns: "1fr 46px 54px", gap: SHEET_GAP }}>
+            <Box sx={{ gridColumn: 6, gridRow: 9, display: "grid", gridTemplateColumns: "1fr 46px 54px", gap: SHEET_GAP }}>
               <Box />
               <Lab center bg={HARD_BAND} sx={{ color: "#fff" }}>
                 HSO
@@ -699,7 +699,7 @@ export default function PersonPerformanceId({
               <Fld value={latestEvaluation ? String(latestEvaluation.hso) : "—"} readOnly align="center" bold />
             </Box>
 
-            <Box sx={{ gridColumn: 5, gridRow: 9, display: "grid", gridTemplateColumns: "1fr 0.55fr", gap: SHEET_GAP }}>
+            <Box sx={{ gridColumn: 5, gridRow: 10, display: "grid", gridTemplateColumns: "1fr 0.55fr", gap: SHEET_GAP }}>
               <Lab bg={CREAM}>{t("performanceId.categoryOfPerformer")}</Lab>
               <Box sx={{ border: SHEET_BORDER, bgcolor: FIELD_BG, height: ROW_H, display: "flex", alignItems: "center", px: 0.5 }}>
                 <Select
@@ -730,7 +730,7 @@ export default function PersonPerformanceId({
                 </Select>
               </Box>
             </Box>
-            <Box sx={{ gridColumn: 6, gridRow: 9, display: "grid", gridTemplateColumns: "1fr 46px 54px", gap: SHEET_GAP }}>
+            <Box sx={{ gridColumn: 6, gridRow: 10, display: "grid", gridTemplateColumns: "1fr 46px 54px", gap: SHEET_GAP }}>
               <Box />
               <Lab center bg={SOFT_BAND} sx={{ color: "#fff" }}>
                 SSIO
