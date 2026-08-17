@@ -65,6 +65,8 @@ class EvaluationSerializer(serializers.ModelSerializer):
     campaign_is_closed = serializers.BooleanField(source="campaign.is_closed", read_only=True)
     hsi = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
     ssi = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
+    hso = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
+    ssio = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
     altitude_percentage = serializers.DecimalField(max_digits=5, decimal_places=1, read_only=True)
     performance_rating = serializers.CharField(read_only=True)
 
@@ -79,7 +81,7 @@ class EvaluationSerializer(serializers.ModelSerializer):
             "evaluator", "campaign", "campaign_name", "campaign_start_date",
             "campaign_end_date", "campaign_is_closed",
             "business_objectives_score", "people_objectives_score",
-            "notes", "skill_scores", "hsi", "ssi", "altitude_percentage",
+            "notes", "skill_scores", "hsi", "ssi", "hso", "ssio", "altitude_percentage",
             "performance_rating", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "evaluator", "created_at", "updated_at"]

@@ -315,8 +315,26 @@ class PerformanceProfile(models.Model):
         on_delete=models.CASCADE,
         related_name="performance_profile",
     )
+    class PerformerCategory(models.TextChoices):
+        OUTSTANDING = "OUTSTANDING", "Outstanding performer"
+        GOOD = "GOOD", "Good performer"
+        AVERAGE = "AVERAGE", "Average performer"
+        LOW = "LOW", "Low performer"
+        VERY_LOW = "VERY_LOW", "Very low performer"
+
     gender = models.CharField("Genre", max_length=20, blank=True)
     contract_type = models.CharField("Type de contrat", max_length=50, blank=True)
+    # % de performance et catégorie repris tels quels de la feuille ID-PMC :
+    # saisis à la main, ils ne remplacent pas l'Altitude calculée par
+    # l'évaluation (qui reste la seule source de la matrice et des tableaux de
+    # bord) — l'interface pré-remplit d'ailleurs la valeur calculée.
+    performance_pct = models.CharField("% de performance (saisi)", max_length=20, blank=True)
+    performer_category = models.CharField(
+        "Catégorie de performance (saisie)",
+        max_length=20,
+        choices=PerformerCategory.choices,
+        blank=True,
+    )
     qualifications = models.JSONField("Qualifications", default=list, blank=True)
     previous_positions = models.JSONField("Postes précédents", default=list, blank=True)
     professional_achievements = models.JSONField("Réalisations professionnelles", default=list, blank=True)

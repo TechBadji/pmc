@@ -120,6 +120,30 @@ class Evaluation(models.Model):
         """Soft Skills Index (Attitudes) — moyenne pondérée 1-5."""
         return self._skill_index("SOFT")
 
+    def _objective_index(self, skill_type):
+        """Même moyenne pondérée que `_skill_index`, mais sur les objectifs
+        fixés pour la période — les lignes sans objectif sont ignorées."""
+        scores = self.skill_scores.filter(
+            skill_item__matrix__type=skill_type, objective_score__isnull=False
+        )
+        if not scores.exists():
+            return Decimal("0.0")
+        total_weight = sum((s.skill_item.weight for s in scores), Decimal("0"))
+        if total_weight == 0:
+            return Decimal("0.0")
+        weighted_sum = sum((s.objective_score * s.skill_item.weight for s in scores), Decimal("0"))
+        return round(weighted_sum / total_weight, 2)
+
+    @property
+    def hso(self):
+        """Hard Skills Objective — cible d'Aptitudes de la période."""
+        return self._objective_index("HARD")
+
+    @property
+    def ssio(self):
+        """Soft Skills Index Objective — cible d'Attitudes de la période."""
+        return self._objective_index("SOFT")
+
     @property
     def altitude_percentage(self):
         """Performance globale (Altitude) = moyenne des objectifs business & people."""

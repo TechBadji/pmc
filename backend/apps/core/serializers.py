@@ -315,6 +315,7 @@ class PerformanceProfileSerializer(serializers.ModelSerializer):
         model = PerformanceProfile
         fields = [
             "id", "user", "gender", "contract_type",
+            "performance_pct", "performer_category",
             "qualifications", "previous_positions", "professional_achievements",
             "personal_achievements", "vision_aspirations", "personal_projects",
             "professional_role_models", "role_models_in_life", "dislikes",

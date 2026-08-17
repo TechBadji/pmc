@@ -169,6 +169,8 @@ export interface Evaluation {
   skill_scores: SkillScore[];
   hsi: string;
   ssi: string;
+  hso: string;
+  ssio: string;
   altitude_percentage: string;
   performance_rating: PerformanceRating;
 }
@@ -305,6 +307,8 @@ export interface PerformanceProfile {
   personality_traits: string[];
   hobbies: string[];
   bono_hat: string;
+  performance_pct: string;
+  performer_category: "" | "OUTSTANDING" | "GOOD" | "AVERAGE" | "LOW" | "VERY_LOW";
   brings_to_team: string[];
   brings_to_manager: string[];
   expects_from_team: string[];

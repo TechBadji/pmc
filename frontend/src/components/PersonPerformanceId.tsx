@@ -333,9 +333,14 @@ type ListKey =
   | "dev_actions_support"
   | "dev_risks_obstacles";
 
+type PerformerCategory = "" | "OUTSTANDING" | "GOOD" | "AVERAGE" | "LOW" | "VERY_LOW";
+const PERFORMER_CATEGORIES: Exclude<PerformerCategory, "">[] = ["OUTSTANDING", "GOOD", "AVERAGE", "LOW", "VERY_LOW"];
+
 type ProfileForm = Record<ListKey, string[]> & {
   gender: string;
   contract_type: string;
+  performance_pct: string;
+  performer_category: PerformerCategory;
   vision_aspirations: string;
   personal_projects: string;
   bono_hat: string;
@@ -345,6 +350,8 @@ function emptyForm(): ProfileForm {
   return {
     gender: "",
     contract_type: "",
+    performance_pct: "",
+    performer_category: "",
     vision_aspirations: "",
     personal_projects: "",
     bono_hat: "",
@@ -400,6 +407,8 @@ export default function PersonPerformanceId({
           ? {
               gender: p.gender,
               contract_type: p.contract_type,
+              performance_pct: p.performance_pct,
+              performer_category: p.performer_category,
               vision_aspirations: p.vision_aspirations,
               personal_projects: p.personal_projects,
               bono_hat: p.bono_hat,
@@ -666,12 +675,15 @@ export default function PersonPerformanceId({
             {listCells(form.personal_achievements, 5, 6, 3, (v) => setList("personal_achievements", v))}
 
             {/* Synthèse de performance, sous les réalisations. */}
+            {/* % de performance : saisi à la main comme sur la feuille, avec
+              * l'Altitude calculée en valeur par défaut affichée en repère. */}
             <Lab bg={CREAM} sx={{ gridColumn: 5, gridRow: 8 }}>
               {t("performanceId.performancePct")}
             </Lab>
             <Fld
-              value={latestEvaluation ? `${latestEvaluation.altitude_percentage}%` : "—"}
-              readOnly
+              value={form.performance_pct}
+              onChange={(v) => setForm((f) => ({ ...f, performance_pct: v }))}
+              placeholder={latestEvaluation ? `${latestEvaluation.altitude_percentage}%` : "—"}
               align="center"
               bold
               color={latestEvaluation ? performanceColors[latestEvaluation.performance_rating] : undefined}
@@ -680,18 +692,57 @@ export default function PersonPerformanceId({
             <Lab bg={CREAM} sx={{ gridColumn: 5, gridRow: 9 }}>
               {t("performanceId.categoryOfPerformer")}
             </Lab>
-            <Fld
-              value={latestEvaluation ? t(`common.performance.${latestEvaluation.performance_rating}`) : "—"}
-              readOnly
-              align="center"
-              bold
-              color={latestEvaluation ? performanceColors[latestEvaluation.performance_rating] : undefined}
-              sx={{ gridColumn: 6, gridRow: 9 }}
-            />
-            <Lab center bg={HARD_SKILLS_COLOR} sx={{ gridColumn: 5, gridRow: 10, color: "#fff" }}>
-              HSI
-            </Lab>
-            <Fld value={latestEvaluation ? String(latestEvaluation.hsi) : "—"} readOnly align="center" bold sx={{ gridColumn: 6, gridRow: 10 }} />
+            <Box
+              sx={{
+                gridColumn: 6,
+                gridRow: 9,
+                border: SHEET_BORDER,
+                bgcolor: FIELD_BG,
+                height: ROW_H,
+                display: "flex",
+                alignItems: "center",
+                px: 0.5,
+              }}
+            >
+              <Select
+                value={form.performer_category}
+                displayEmpty
+                variant="standard"
+                disableUnderline
+                fullWidth
+                onChange={(e) => setForm((f) => ({ ...f, performer_category: e.target.value as PerformerCategory }))}
+                renderValue={(v) =>
+                  v ? (
+                    <Typography sx={{ fontSize: 11, fontWeight: 700, color: performanceColors[v as PerformanceRating] }}>
+                      {t(`common.performance.${v}`)}
+                    </Typography>
+                  ) : (
+                    <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                      {latestEvaluation ? t(`common.performance.${latestEvaluation.performance_rating}`) : "—"}
+                    </Typography>
+                  )
+                }
+                sx={{ fontSize: 11, "& .MuiSelect-select": { p: 0 } }}
+              >
+                {PERFORMER_CATEGORIES.map((c) => (
+                  <MenuItem key={c} value={c} sx={{ fontSize: 12, fontWeight: 700, color: performanceColors[c] }}>
+                    {t(`common.performance.${c}`)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+            {/* HSO / SSIO : objectifs d'Aptitudes et d'Attitudes de la période,
+              * moyenne pondérée des objectifs saisis sur chaque compétence. */}
+            <Box sx={{ gridColumn: "5 / 7", gridRow: 10, display: "grid", gridTemplateColumns: "auto 1fr auto 1fr", gap: SHEET_GAP }}>
+              <Lab center bg={HARD_BAND} sx={{ color: "#fff", minWidth: 44 }}>
+                HSO
+              </Lab>
+              <Fld value={latestEvaluation ? String(latestEvaluation.hso) : "—"} readOnly align="center" bold />
+              <Lab center bg={SOFT_BAND} sx={{ color: "#fff", minWidth: 44 }}>
+                SSIO
+              </Lab>
+              <Fld value={latestEvaluation ? String(latestEvaluation.ssio) : "—"} readOnly align="center" bold />
+            </Box>
 
             {/* Graphique d'historique — occupe toute la hauteur du bandeau. */}
             <SubHead sx={{ gridColumn: 7, gridRow: 2 }}>{t("performanceId.performanceGraph")}</SubHead>
