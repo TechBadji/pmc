@@ -1,12 +1,16 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import {
   Alert,
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  LinearProgress,
   MenuItem,
   Paper,
   Stack,
@@ -35,6 +39,20 @@ import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { ActionPlan, Department, Paginated, TeamCohesionAnalysis } from "@/api/types";
 import { cohesionColor } from "@/theme";
+
+type PlanStatus = ActionPlan["status"];
+const PLAN_STATUSES: PlanStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
+// Statuts : gris "à faire", bleu "en cours", vert "terminé" — repris de la
+// page Plans d'action pour que le même statut se lise pareil partout.
+const STATUS_COLOR: Record<PlanStatus, string> = {
+  TODO: "#898781",
+  IN_PROGRESS: "#2E8FCB",
+  DONE: "#2E7D32",
+};
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 const ICE_COLOR = "#2E8FCB";
 const OCE_COLOR = "#eb6834";
@@ -129,7 +147,8 @@ export default function CohesionFormPage() {
   const [provisioning, setProvisioning] = useState(false);
   const [plans, setPlans] = useState<ActionPlan[]>([]);
   const [planDialog, setPlanDialog] = useState(false);
-  const [planForm, setPlanForm] = useState({ priority: "", objective: "", due_date: "" });
+  const [planForm, setPlanForm] = useState({ priority: "", objective: "", due_date: "", responsible: "" });
+  const [planToDelete, setPlanToDelete] = useState<ActionPlan | null>(null);
 
   useEffect(() => {
     apiClient.get<Paginated<Department>>("/departments/", { params: { page_size: 500 } }).then((r) => {
@@ -221,10 +240,52 @@ export default function CohesionFormPage() {
       ...planForm,
     });
     setPlanDialog(false);
-    setPlanForm({ priority: "", objective: "", due_date: "" });
+    setPlanForm({ priority: "", objective: "", due_date: "", responsible: "" });
+    await reloadPlans();
+  }
+
+  async function reloadPlans() {
+    if (!teamId) return;
     const r = await apiClient.get<Paginated<ActionPlan>>("/action-plans/", { params: { team: teamId } });
     setPlans(r.data.results);
   }
+
+  /** Statut modifiable directement dans le tableau : l'écriture est optimiste
+   * puis rejouée depuis l'API, pour que la barre d'avancement suive le clic
+   * sans attendre l'aller-retour réseau. */
+  async function handleStatusChange(plan: ActionPlan, status: PlanStatus) {
+    setPlans((prev) => prev.map((p) => (p.id === plan.id ? { ...p, status } : p)));
+    try {
+      await apiClient.patch(`/action-plans/${plan.id}/`, { status });
+    } finally {
+      await reloadPlans();
+    }
+  }
+
+  async function handleDeletePlan() {
+    if (!planToDelete) return;
+    await apiClient.delete(`/action-plans/${planToDelete.id}/`);
+    setPlanToDelete(null);
+    await reloadPlans();
+  }
+
+  /** Actions de cohésion de l'équipe : les lignes de la grille du Plan de
+   * développement du manager (order renseigné) partagent la même table et le
+   * même département — elles n'ont rien à faire dans ce plan-ci. Les actions
+   * non terminées remontent en tête, puis les échéances les plus proches. */
+  const cohesionPlans = useMemo(() => {
+    const rank: Record<PlanStatus, number> = { TODO: 0, IN_PROGRESS: 1, DONE: 2 };
+    return plans
+      .filter((p) => p.order === null)
+      .sort(
+        (a, b) =>
+          rank[a.status] - rank[b.status] ||
+          (a.due_date ?? "9999-12-31").localeCompare(b.due_date ?? "9999-12-31")
+      );
+  }, [plans]);
+
+  const doneCount = cohesionPlans.filter((p) => p.status === "DONE").length;
+  const overdueCount = cohesionPlans.filter((p) => p.status !== "DONE" && p.due_date !== null && p.due_date < today()).length;
 
   const chartData = useMemo(
     () =>
@@ -494,36 +555,96 @@ export default function CohesionFormPage() {
                 {t("actionPlans.newAction")}
               </Button>
             </Stack>
-            {plans.length === 0 ? (
+            {cohesionPlans.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
                 {t("cohesion.noActionPlan")}
               </Typography>
             ) : (
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>{t("actionPlans.priority")}</TableCell>
-                    <TableCell>{t("actionPlans.dueDate")}</TableCell>
-                    <TableCell>{t("common.status")}</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {plans.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={600}>
-                          {p.priority}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {p.objective}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{p.due_date ?? "—"}</TableCell>
-                      <TableCell>{t(`actionPlans.status.${p.status}`)}</TableCell>
+              <>
+                {/* Avancement du plan : c'est ce qu'on vient chercher en
+                  * premier sur un plan d'action, avant le détail ligne à ligne. */}
+                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.5 }}>
+                  <Box sx={{ flex: 1, minWidth: 120 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={(doneCount / cohesionPlans.length) * 100}
+                      sx={{ height: 8, borderRadius: 4, "& .MuiLinearProgress-bar": { bgcolor: STATUS_COLOR.DONE } }}
+                    />
+                  </Box>
+                  <Typography variant="caption" fontWeight={700} color="text.secondary">
+                    {t("actionPlans.progressDone", { done: doneCount, total: cohesionPlans.length })}
+                  </Typography>
+                  {overdueCount > 0 && (
+                    <Chip size="small" label={`${overdueCount} ${t("actionPlans.overdue").toLowerCase()}`} color="error" variant="outlined" />
+                  )}
+                </Stack>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>{t("actionPlans.priority")}</TableCell>
+                      <TableCell sx={{ width: 130 }}>{t("actionPlans.responsible")}</TableCell>
+                      <TableCell sx={{ width: 130 }}>{t("actionPlans.dueDate")}</TableCell>
+                      <TableCell sx={{ width: 150 }}>{t("common.status")}</TableCell>
+                      <TableCell sx={{ width: 44 }} />
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHead>
+                  <TableBody>
+                    {cohesionPlans.map((p) => {
+                      const overdue = p.status !== "DONE" && p.due_date !== null && p.due_date < today();
+                      return (
+                        <TableRow key={p.id} hover>
+                          <TableCell>
+                            <Typography
+                              variant="body2"
+                              fontWeight={600}
+                              sx={p.status === "DONE" ? { textDecoration: "line-through", color: "text.secondary" } : undefined}
+                            >
+                              {p.priority}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {p.objective}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{p.responsible || "—"}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Typography variant="body2" color={overdue ? "error.main" : undefined} fontWeight={overdue ? 700 : undefined}>
+                                {p.due_date ?? "—"}
+                              </Typography>
+                              {overdue && <Chip size="small" label={t("actionPlans.overdue")} color="error" variant="outlined" />}
+                            </Stack>
+                          </TableCell>
+                          <TableCell>
+                            <TextField
+                              select
+                              size="small"
+                              value={p.status}
+                              onChange={(e) => handleStatusChange(p, e.target.value as PlanStatus)}
+                              sx={{
+                                minWidth: 130,
+                                "& .MuiInputBase-input": { fontSize: 12, fontWeight: 700, color: STATUS_COLOR[p.status], py: 0.5 },
+                              }}
+                            >
+                              {PLAN_STATUSES.map((status) => (
+                                <MenuItem key={status} value={status} sx={{ fontSize: 12, fontWeight: 700, color: STATUS_COLOR[status] }}>
+                                  {t(`actionPlans.status.${status}`)}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          </TableCell>
+                          <TableCell>
+                            <IconButton size="small" aria-label={t("actionPlans.deleteAction")} onClick={() => setPlanToDelete(p)}>
+                              <DeleteOutlineIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </>
             )}
           </Paper>
         </>
@@ -551,6 +672,12 @@ export default function CohesionFormPage() {
               fullWidth
             />
             <TextField
+              label={t("actionPlans.responsible")}
+              value={planForm.responsible}
+              onChange={(e) => setPlanForm({ ...planForm, responsible: e.target.value })}
+              fullWidth
+            />
+            <TextField
               label={t("actionPlans.dueDate")}
               type="date"
               value={planForm.due_date}
@@ -565,6 +692,22 @@ export default function CohesionFormPage() {
           <Button onClick={() => setPlanDialog(false)}>{t("common.cancel")}</Button>
           <Button variant="contained" onClick={handleCreatePlan} disabled={!planForm.priority}>
             {t("common.create")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Suppression confirmée : l'action disparaît définitivement du plan. */}
+      <Dialog open={planToDelete !== null} onClose={() => setPlanToDelete(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>{t("actionPlans.deleteConfirmTitle")}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            {t("actionPlans.deleteConfirmBody", { priority: planToDelete?.priority ?? "" })}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPlanToDelete(null)}>{t("common.cancel")}</Button>
+          <Button color="error" variant="contained" onClick={handleDeletePlan}>
+            {t("common.delete")}
           </Button>
         </DialogActions>
       </Dialog>

@@ -360,6 +360,12 @@
     "newPlan": "Nouveau plan d'action",
     "priorityLabel": "Priorité de développement",
     "actionToTake": "Action à mener",
+    "responsible": "Responsable",
+    "overdue": "En retard",
+    "progressDone": "{{done}}/{{total}} actions terminées",
+    "deleteAction": "Supprimer cette action",
+    "deleteConfirmTitle": "Supprimer l'action ?",
+    "deleteConfirmBody": "L'action « {{priority}} » sera définitivement supprimée du plan.",
     "status": {
       "TODO": "À faire",
       "IN_PROGRESS": "En cours",
