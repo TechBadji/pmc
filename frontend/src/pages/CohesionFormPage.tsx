@@ -458,15 +458,26 @@ export default function CohesionFormPage() {
                   <Typography variant="subtitle2" sx={{ mb: 1 }}>
                     {t("cohesion.chartTitle")}
                   </Typography>
-                  <ResponsiveContainer width="100%" height={146}>
-                    <BarChart data={chartData} margin={{ top: 10, right: 20, bottom: 0, left: 0 }}>
+                  {/* Graphe volontairement plus étroit que la fiche (70 %) et
+                    * plus haut : des barres resserrées se comparent mieux à la
+                    * verticale qu'étalées sur toute la largeur. */}
+                  <ResponsiveContainer width="70%" height={190}>
+                    <BarChart
+                      data={chartData}
+                      margin={{ top: 10, right: 20, bottom: 0, left: 0 }}
+                      // Écart entre les périodes réduit (défaut : 10 %) et
+                      // barres bornées, pour qu'elles ne s'élargissent pas en
+                      // récupérant la place gagnée.
+                      barCategoryGap="5%"
+                      barGap={2}
+                    >
                       <CartesianGrid stroke="#e1e0d9" vertical={false} />
                       <XAxis dataKey="period" tick={{ fill: "#898781", fontSize: 12 }} />
                       <YAxis domain={[0, 5]} tick={{ fill: "#898781", fontSize: 12 }} />
                       <RechartsTooltip />
                       <Legend />
-                      <Bar dataKey={t("cohesion.iceLabel")} fill={ICE_COLOR} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey={t("cohesion.oceLabel")} fill={OCE_COLOR} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey={t("cohesion.iceLabel")} fill={ICE_COLOR} radius={[4, 4, 0, 0]} maxBarSize={26} />
+                      <Bar dataKey={t("cohesion.oceLabel")} fill={OCE_COLOR} radius={[4, 4, 0, 0]} maxBarSize={26} />
                     </BarChart>
                   </ResponsiveContainer>
                 </Paper>
