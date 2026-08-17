@@ -237,8 +237,14 @@ export default function StrengthsWeaknesses({
             width: 56,
             height: 56,
             position: "absolute",
+            // Centré sur la gouttière entre la colonne Forces et la colonne
+            // Faiblesses — et non au milieu du bloc : la bande verticale
+            // "SOFT/HARD SKILLS" (28 px) et son écart (12 px) décalent cette
+            // gouttière de 20 px vers la droite par rapport à 50 %.
+            // Verticalement, 50 % tombe pile sur l'espace entre les deux
+            // sections, qui ont le même nombre de lignes.
             top: "50%",
-            left: "50%",
+            left: "calc(50% + 20px)",
             transform: "translate(-50%, -50%) scale(1)",
             transformOrigin: "center",
             border: "3px solid",
