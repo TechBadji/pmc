@@ -4,15 +4,17 @@ import {
   Avatar,
   Box,
   Button,
-  Chip,
   IconButton,
+  InputBase,
   MenuItem,
   Paper,
+  Select,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useMemo, useState } from "react";
+import type { SxProps, Theme } from "@mui/material";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CartesianGrid, LabelList, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { apiClient } from "@/api/client";
@@ -28,35 +30,288 @@ import type {
   UserRecord,
 } from "@/api/types";
 
+// ---------------------------------------------------------------------------
+// Fiche "ID-PMC Manager Performance ID" — rendue comme la feuille Excel de
+// référence : une grille unique par bandeau, hauteur de ligne constante, et
+// chaque bloc posé sur des lignes de grille explicites. C'est ce qui garantit
+// que les entêtes de toutes les colonnes tombent sur les mêmes lignes : des
+// colonnes empilées indépendamment (Stack) ne peuvent pas s'aligner entre elles.
+// ---------------------------------------------------------------------------
 const HEADER_ORANGE = "#E08A34"; // orange du logo — même bandeau que le Plan de Développement du Manager
 const CREAM = "#f5efd6";
+const ROW_H = 21; // hauteur d'une ligne de la fiche
+const SHEET_GAP = "3px";
+const SHEET_BORDER = "1px solid #aab3c0";
+const FIELD_BG = "#eaeef6"; // bleu très pâle des cases de saisie
+const LABEL_BG = "#f3f2ef"; // gris des intitulés de ligne
+const HARD_BAND = "#8a93c4"; // bandeau "HARD SKILLS" de la feuille
+const SOFT_BAND = "#4caf7d"; // bandeau "SOFT SKILLS" de la feuille
 
-// Champs compacts : police et hauteur réduites pour tenir la fiche entière
-// sans scroll excessif — appliqué à tous les TextField de cette page.
-const COMPACT_INPUT_SX = {
-  // minWidth: 0 — sans ça, la largeur mini d'un <input> vient de son attribut
-  // `size` natif (~180 px) : les colonnes de la grille se calent sur cette
-  // largeur et cessent d'être égales dès que la place manque.
-  "& .MuiInputBase-input": { fontSize: 12, paddingTop: "4px", paddingBottom: "4px", minWidth: 0 },
-  "& .MuiInputBase-input::placeholder": { fontSize: 12 },
-} as const;
+/** Bandeau orange d'une section (PROFESSIONAL INFORMATION, ID-3A…). */
+function Band({ children, sx }: { children: React.ReactNode; sx?: SxProps<Theme> }) {
+  return (
+    <Box
+      sx={{
+        bgcolor: HEADER_ORANGE,
+        color: "#fff",
+        border: SHEET_BORDER,
+        height: ROW_H,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 12,
+        fontWeight: 800,
+        letterSpacing: 0.4,
+        textTransform: "uppercase",
+        ...sx,
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
 
-// Informations professionnelles (Âge, Anciennetés, Genre, Type de contrat,
-// Rattaché à…) : ces champs ne portent qu'un nombre ou un mot, la place
-// récupérée revient à la colonne Qualifications, elle bien plus dense.
-const INFO_FIELD_WIDTH = 100;
-// Largeur de la colonne identité : les champs y font INFO_FIELD_WIDTH, la
-// marge restante allant aux intitulés ("Ancienneté entreprise") pour qu'ils
-// tiennent sur une ligne. Elle est fixe, c'est ce qui permet aux colonnes de
-// champs voisines d'être exactement égales entre elles.
-const IDENTITY_COL_WIDTH = 120;
+/** Intitulé de sous-bloc (QUALIFICATIONS, PRIORITIES…) : encadré, centré. */
+function SubHead({
+  children,
+  right,
+  bg = "#fff",
+  color,
+  sx,
+}: {
+  children: React.ReactNode;
+  right?: React.ReactNode;
+  bg?: string;
+  color?: string;
+  sx?: SxProps<Theme>;
+}) {
+  return (
+    <Box
+      sx={{
+        border: SHEET_BORDER,
+        bgcolor: bg,
+        color,
+        height: ROW_H,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: right ? "space-between" : "center",
+        px: 0.75,
+        fontSize: 11,
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        ...sx,
+      }}
+    >
+      <span>{children}</span>
+      {right && <span>{right}</span>}
+    </Box>
+  );
+}
 
-// Contribution / Plan de développement personnel : champs réduits d'environ
-// moitié par rapport à COMPACT_INPUT_SX (hauteur et police).
-const EXTRA_COMPACT_INPUT_SX = {
-  "& .MuiInputBase-input": { fontSize: 11, paddingTop: "1px", paddingBottom: "1px", minWidth: 0 },
-  "& .MuiInputBase-input::placeholder": { fontSize: 11 },
-} as const;
+/** Étiquette de ligne (Gender, Age…) — cadre gris, texte à gauche. */
+function Lab({
+  children,
+  center,
+  bg = LABEL_BG,
+  sx,
+}: {
+  children: React.ReactNode;
+  center?: boolean;
+  bg?: string;
+  sx?: SxProps<Theme>;
+}) {
+  return (
+    <Box
+      sx={{
+        border: SHEET_BORDER,
+        bgcolor: bg,
+        height: ROW_H,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: center ? "center" : "flex-start",
+        px: 0.75,
+        fontSize: 11,
+        fontWeight: 600,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        ...sx,
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+/** Case de saisie de la fiche — sans habillage MUI, pour coller au tableur. */
+function Fld({
+  value,
+  onChange,
+  placeholder,
+  readOnly,
+  bg = FIELD_BG,
+  align,
+  bold,
+  color,
+  sx,
+}: {
+  value: string;
+  onChange?: (v: string) => void;
+  placeholder?: string;
+  readOnly?: boolean;
+  bg?: string;
+  align?: "center" | "right";
+  bold?: boolean;
+  color?: string;
+  sx?: SxProps<Theme>;
+}) {
+  const locked = readOnly || !onChange;
+  return (
+    <Box sx={{ border: SHEET_BORDER, bgcolor: bg, height: ROW_H, display: "flex", alignItems: "center", px: 0.5, ...sx }}>
+      <InputBase
+        value={value}
+        placeholder={placeholder}
+        readOnly={locked}
+        onChange={(e) => onChange?.(e.target.value)}
+        // Le texte long est tronqué par la case : l'infobulle native évite
+        // d'avoir à faire défiler le champ pour le relire.
+        title={value || undefined}
+        sx={{
+          width: "100%",
+          fontSize: 11,
+          fontWeight: bold ? 700 : 400,
+          color,
+          "& input": { p: 0, textAlign: align ?? "left", cursor: locked ? "default" : "text" },
+        }}
+      />
+    </Box>
+  );
+}
+
+function padTo(value: string[], rows: number): string[] {
+  const arr = [...value];
+  while (arr.length < rows) arr.push("");
+  return arr.slice(0, rows);
+}
+
+/** Suite de cases numérotées d'une même colonne, posées ligne par ligne. */
+function listCells(values: string[], count: number, column: number, startRow: number, onChange: (v: string[]) => void) {
+  const items = padTo(values, count);
+  return items.map((v, i) => (
+    <Fld
+      key={`${column}-${startRow}-${i}`}
+      value={v}
+      placeholder={`${i + 1}.`}
+      onChange={(text) => {
+        const next = [...items];
+        next[i] = text;
+        onChange(next);
+      }}
+      sx={{ gridColumn: column, gridRow: startRow + i }}
+    />
+  ));
+}
+
+const SKILL_ORDERS = [1, 2, 3, 4, 5];
+
+/** Forces/faiblesses : libellé en lecture seule + note SI, sur deux colonnes. */
+function noteCells(notes: SkillNote[], colText: number, colScore: number, startRow: number) {
+  return SKILL_ORDERS.map((order, i) => {
+    const note = notes.find((n) => n.order === order);
+    return (
+      <Fragment key={`${colText}-${startRow}-${order}`}>
+        <Fld value={note?.text ?? ""} readOnly placeholder={`${order}.`} sx={{ gridColumn: colText, gridRow: startRow + i }} />
+        <Fld
+          value={note?.score != null ? String(note.score) : ""}
+          readOnly
+          align="center"
+          sx={{ gridColumn: colScore, gridRow: startRow + i }}
+        />
+      </Fragment>
+    );
+  });
+}
+
+const ID3A_AXIS_MAX = 6; // même échelle que la page Matrice ID-3A
+
+/** Mini-matrice ID-3A d'une personne : Aptitudes (HSI) en X, Attitudes (SSI)
+ * en Y, quadrants et projections sur les axes — même langage visuel que la
+ * page Matrice ID-3A, en version carrée pour la fiche. */
+function Id3aMiniMatrix({ hsi, ssi, altitude, rating }: { hsi: number; ssi: number; altitude: number; rating: PerformanceRating }) {
+  const { t } = useTranslation();
+  const S = 200;
+  const ML = 22;
+  const MB = 20;
+  const MT = 8;
+  const MR = 8;
+  const plotW = S - ML - MR;
+  const plotH = S - MT - MB;
+  const x = (v: number) => ML + (v / ID3A_AXIS_MAX) * plotW;
+  const y = (v: number) => MT + plotH - (v / ID3A_AXIS_MAX) * plotH;
+  const color = performanceColors[rating];
+  const quadrantLabel = { fontSize: 7, fontWeight: 700, letterSpacing: 0.3, fill: CHART_NEUTRALS.quadrantLabel } as const;
+  const axisLabel = { fontSize: 7, fontWeight: 700, letterSpacing: 0.4, fill: CHART_NEUTRALS.axisTitle } as const;
+
+  return (
+    <svg viewBox={`0 0 ${S} ${S}`} width="100%" height="100%" preserveAspectRatio="none" style={{ display: "block" }}>
+      <rect x={ML} y={MT} width={plotW} height={plotH} fill="#f3f2ee" />
+
+      {/* Séparateurs de quadrants : toujours à 2,5, milieu du barème 1-5. */}
+      <line x1={x(2.5)} y1={y(ID3A_AXIS_MAX)} x2={x(2.5)} y2={y(0)} stroke="#e1e0d9" strokeDasharray="3 3" />
+      <line x1={x(0)} y1={y(2.5)} x2={x(ID3A_AXIS_MAX)} y2={y(2.5)} stroke="#e1e0d9" strokeDasharray="3 3" />
+      <text x={x(0) + 4} y={y(ID3A_AXIS_MAX) + 9} textAnchor="start" style={quadrantLabel}>
+        {t("id3aMatrix.quadrantExperts").toUpperCase()}
+      </text>
+      <text x={x(ID3A_AXIS_MAX) - 4} y={y(ID3A_AXIS_MAX) + 9} textAnchor="end" style={quadrantLabel}>
+        {t("id3aMatrix.quadrantTalents").toUpperCase()}
+      </text>
+      <text x={x(0) + 4} y={y(0) - 5} textAnchor="start" style={quadrantLabel}>
+        {t("id3aMatrix.quadrantWatch").toUpperCase()}
+      </text>
+      <text x={x(ID3A_AXIS_MAX) - 4} y={y(0) - 5} textAnchor="end" style={quadrantLabel}>
+        {t("id3aMatrix.quadrantRelational").toUpperCase()}
+      </text>
+
+      {/* Axes gradués 0-6 (marge au-delà du barème 1-5). */}
+      <line x1={x(0)} y1={y(0)} x2={x(0)} y2={y(ID3A_AXIS_MAX)} stroke={CHART_NEUTRALS.plotAxisLine} />
+      <line x1={x(0)} y1={y(0)} x2={x(ID3A_AXIS_MAX)} y2={y(0)} stroke={CHART_NEUTRALS.plotAxisLine} />
+      {[0, 1, 2, 3, 4, 5, 6].map((v) => (
+        <g key={v}>
+          <line x1={x(v)} y1={y(0)} x2={x(v)} y2={y(0) + 3} stroke={CHART_NEUTRALS.plotAxisLine} />
+          <line x1={x(0) - 3} y1={y(v)} x2={x(0)} y2={y(v)} stroke={CHART_NEUTRALS.plotAxisLine} />
+          <text x={x(v)} y={y(0) + 10} textAnchor="middle" fontSize={7} fill="#898781">
+            {v}
+          </text>
+          <text x={x(0) - 4} y={y(v) + 2.5} textAnchor="end" fontSize={7} fill="#898781">
+            {v}
+          </text>
+        </g>
+      ))}
+      <text x={ML + plotW / 2} y={S - 2} textAnchor="middle" style={axisLabel}>
+        APTITUDES (HSI)
+      </text>
+      <text x={7} y={MT + plotH / 2} textAnchor="middle" transform={`rotate(-90 7 ${MT + plotH / 2})`} style={axisLabel}>
+        ATTITUDES (SSI)
+      </text>
+
+      <line x1={x(hsi)} y1={y(ssi)} x2={x(hsi)} y2={y(0)} stroke={color} strokeDasharray="2 2" />
+      <line x1={x(0)} y1={y(ssi)} x2={x(hsi)} y2={y(ssi)} stroke={color} strokeDasharray="2 2" />
+      <circle cx={x(hsi)} cy={y(ssi)} r={9} fill={color} opacity={0.18} />
+      <circle cx={x(hsi)} cy={y(ssi)} r={5} fill={color} stroke="#fff" strokeWidth={1.5} />
+      <text
+        x={x(hsi) + (hsi > ID3A_AXIS_MAX * 0.7 ? -8 : 8)}
+        y={y(ssi) - 7}
+        textAnchor={hsi > ID3A_AXIS_MAX * 0.7 ? "end" : "start"}
+        fontSize={10}
+        fontWeight={700}
+        fill={color}
+      >
+        {altitude}%
+      </text>
+    </svg>
+  );
+}
 
 type ListKey =
   | "qualifications"
@@ -112,253 +367,6 @@ function emptyForm(): ProfileForm {
     dev_actions_support: [],
     dev_risks_obstacles: [],
   };
-}
-
-function padTo(value: string[], rows: number): string[] {
-  const arr = [...value];
-  while (arr.length < rows) arr.push("");
-  return arr.slice(0, rows);
-}
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <Box sx={{ bgcolor: HEADER_ORANGE, color: "#fff", borderRadius: 1, px: 1.5, py: 0.5, textAlign: "center" }}>
-      <Typography variant="subtitle2" fontWeight={700}>
-        {children}
-      </Typography>
-    </Box>
-  );
-}
-
-function ListField({
-  label,
-  value,
-  rows,
-  onChange,
-  dense,
-  multiline,
-}: {
-  label?: string;
-  value: string[];
-  rows: number;
-  onChange: (v: string[]) => void;
-  dense?: boolean;
-  /** Cases hautes : le texte revient à la ligne et la case grandit avec lui,
-   * au lieu de défiler horizontalement sur une seule ligne. */
-  multiline?: boolean;
-}) {
-  const items = padTo(value, rows);
-  const baseSx = dense ? EXTRA_COMPACT_INPUT_SX : COMPACT_INPUT_SX;
-  // Cases multilignes : interligne resserré et pas de hauteur plancher — la
-  // case fait une ligne quand elle est vide ou courte, et ne prend deux
-  // lignes que si le texte les remplit vraiment.
-  const fieldSx = multiline
-    ? { ...baseSx, "& .MuiInputBase-input": { ...baseSx["& .MuiInputBase-input"], lineHeight: 1.2 } }
-    : baseSx;
-
-  function update(index: number, text: string) {
-    const next = [...items];
-    next[index] = text;
-    onChange(next);
-  }
-
-  return (
-    <Stack spacing={dense ? 0.25 : 0.5} sx={{ flex: 1, minWidth: 0 }}>
-      {label && (
-        <Typography variant="caption" fontWeight={700} color="text.secondary" sx={dense ? { fontSize: 11 } : undefined}>
-          {label}
-        </Typography>
-      )}
-      {items.map((v, i) => (
-        <TextField
-          key={i}
-          size="small"
-          fullWidth
-          multiline={multiline}
-          value={v}
-          placeholder={`${i + 1}.`}
-          onChange={(e) => update(i, e.target.value)}
-          sx={fieldSx}
-        />
-      ))}
-    </Stack>
-  );
-}
-
-// Même échelle que la page Matrice ID-3A : graduée jusqu'à 6 pour laisser la
-// place aux performances exceptionnelles au-delà de 5.
-const ID3A_AXIS_MAX = 6;
-
-/** Mini-matrice ID-3A d'une personne : Aptitudes (HSI) en X, Attitudes (SSI)
- * en Y, quadrants et projections sur les axes — même langage visuel que la
- * page Matrice ID-3A, en version carrée pour la fiche. */
-function Id3aMiniMatrix({ hsi, ssi, altitude, rating }: { hsi: number; ssi: number; altitude: number; rating: PerformanceRating }) {
-  const { t } = useTranslation();
-  const S = 200; // repère carré, mis à l'échelle par le viewBox
-  const ML = 24;
-  const MB = 22;
-  const MT = 10;
-  const MR = 10;
-  const plotW = S - ML - MR;
-  const plotH = S - MT - MB;
-  const x = (v: number) => ML + (v / ID3A_AXIS_MAX) * plotW;
-  const y = (v: number) => MT + plotH - (v / ID3A_AXIS_MAX) * plotH;
-  const color = performanceColors[rating];
-  const quadrantLabel = { fontSize: 7, fontWeight: 700, letterSpacing: 0.3, fill: CHART_NEUTRALS.quadrantLabel } as const;
-  const axisLabel = { fontSize: 7, fontWeight: 700, letterSpacing: 0.4, fill: CHART_NEUTRALS.axisTitle } as const;
-
-  return (
-    <svg viewBox={`0 0 ${S} ${S}`} width="100%" style={{ display: "block" }}>
-      <rect x={ML} y={MT} width={plotW} height={plotH} fill="#f3f2ee" />
-
-      {/* Séparateurs de quadrants + intitulés, comme sur la page Matrice. */}
-      <line x1={x(2.5)} y1={y(ID3A_AXIS_MAX)} x2={x(2.5)} y2={y(0)} stroke="#e1e0d9" strokeDasharray="3 3" />
-      <line x1={x(0)} y1={y(2.5)} x2={x(ID3A_AXIS_MAX)} y2={y(2.5)} stroke="#e1e0d9" strokeDasharray="3 3" />
-      <text x={x(0) + 4} y={y(ID3A_AXIS_MAX) + 9} textAnchor="start" style={quadrantLabel}>
-        {t("id3aMatrix.quadrantExperts").toUpperCase()}
-      </text>
-      <text x={x(ID3A_AXIS_MAX) - 4} y={y(ID3A_AXIS_MAX) + 9} textAnchor="end" style={quadrantLabel}>
-        {t("id3aMatrix.quadrantTalents").toUpperCase()}
-      </text>
-      <text x={x(0) + 4} y={y(0) - 5} textAnchor="start" style={quadrantLabel}>
-        {t("id3aMatrix.quadrantWatch").toUpperCase()}
-      </text>
-      <text x={x(ID3A_AXIS_MAX) - 4} y={y(0) - 5} textAnchor="end" style={quadrantLabel}>
-        {t("id3aMatrix.quadrantRelational").toUpperCase()}
-      </text>
-
-      {/* Axes gradués 0-6 (marge au-delà du barème 1-5). */}
-      <line x1={x(0)} y1={y(0)} x2={x(0)} y2={y(ID3A_AXIS_MAX)} stroke={CHART_NEUTRALS.plotAxisLine} />
-      <line x1={x(0)} y1={y(0)} x2={x(ID3A_AXIS_MAX)} y2={y(0)} stroke={CHART_NEUTRALS.plotAxisLine} />
-      {[0, 1, 2, 3, 4, 5, 6].map((v) => (
-        <g key={v}>
-          <line x1={x(v)} y1={y(0)} x2={x(v)} y2={y(0) + 3} stroke={CHART_NEUTRALS.plotAxisLine} />
-          <line x1={x(0) - 3} y1={y(v)} x2={x(0)} y2={y(v)} stroke={CHART_NEUTRALS.plotAxisLine} />
-          <text x={x(v)} y={y(0) + 11} textAnchor="middle" fontSize={7} fill="#898781">
-            {v}
-          </text>
-          <text x={x(0) - 5} y={y(v) + 2.5} textAnchor="end" fontSize={7} fill="#898781">
-            {v}
-          </text>
-        </g>
-      ))}
-      <text x={ML + plotW / 2} y={S - 2} textAnchor="middle" style={axisLabel}>
-        APTITUDES (HSI)
-      </text>
-      <text x={7} y={MT + plotH / 2} textAnchor="middle" transform={`rotate(-90 7 ${MT + plotH / 2})`} style={axisLabel}>
-        ATTITUDES (SSI)
-      </text>
-
-      {/* Position de la personne : projections sur les deux axes, puis le point. */}
-      <line x1={x(hsi)} y1={y(ssi)} x2={x(hsi)} y2={y(0)} stroke={color} strokeDasharray="2 2" />
-      <line x1={x(0)} y1={y(ssi)} x2={x(hsi)} y2={y(ssi)} stroke={color} strokeDasharray="2 2" />
-      <circle cx={x(hsi)} cy={y(ssi)} r={9} fill={color} opacity={0.18} />
-      <circle cx={x(hsi)} cy={y(ssi)} r={5} fill={color} stroke="#fff" strokeWidth={1.5} />
-      <text
-        x={x(hsi) + (hsi > ID3A_AXIS_MAX * 0.7 ? -8 : 8)}
-        y={y(ssi) - 7}
-        textAnchor={hsi > ID3A_AXIS_MAX * 0.7 ? "end" : "start"}
-        fontSize={10}
-        fontWeight={700}
-        fill={color}
-      >
-        {altitude}%
-      </text>
-    </svg>
-  );
-}
-
-function ReadOnlyField({ label, value }: { label: string; value: string }) {
-  return (
-    <Stack spacing={0.25}>
-      <Typography variant="caption" color="text.secondary">
-        {label}
-      </Typography>
-      <TextField size="small" value={value} InputProps={{ readOnly: true }} sx={{ bgcolor: "action.hover", width: INFO_FIELD_WIDTH, ...COMPACT_INPUT_SX }} />
-    </Stack>
-  );
-}
-
-const SKILL_ORDERS = [1, 2, 3, 4, 5];
-
-function SkillNoteReadColumn({ label, color, notes }: { label: string; color: string; notes: SkillNote[] }) {
-  return (
-    <Stack spacing={0.5} sx={{ flex: 1 }}>
-      <Box sx={{ bgcolor: color, color: "#fff", borderRadius: 1, px: 1, py: 0.25, display: "flex", justifyContent: "space-between" }}>
-        <Typography variant="caption" fontWeight={700}>
-          {label}
-        </Typography>
-        <Typography variant="caption" fontWeight={700}>
-          SI
-        </Typography>
-      </Box>
-      {SKILL_ORDERS.map((order) => {
-        const note = notes.find((n) => n.order === order);
-        return (
-          <Stack key={order} direction="row" spacing={0.5}>
-            <TextField size="small" fullWidth value={note?.text ?? ""} InputProps={{ readOnly: true }} sx={COMPACT_INPUT_SX} />
-            <TextField size="small" sx={{ width: 40, ...COMPACT_INPUT_SX }} value={note?.score ?? ""} InputProps={{ readOnly: true }} />
-          </Stack>
-        );
-      })}
-    </Stack>
-  );
-}
-
-function RelationshipList({
-  title,
-  relationships,
-  candidates,
-  onAdd,
-  onRemove,
-}: {
-  title: string;
-  relationships: TeamRelationship[];
-  candidates: UserRecord[];
-  onAdd: (toUserId: number) => void;
-  onRemove: (id: number) => void;
-}) {
-  const { t } = useTranslation();
-  const [pick, setPick] = useState<number | "">("");
-  const usedIds = new Set(relationships.map((r) => r.to_user));
-  const available = candidates.filter((c) => !usedIds.has(c.id));
-
-  return (
-    <Stack spacing={0.5} sx={{ flex: 1 }}>
-      <Typography variant="caption" fontWeight={700} color="text.secondary">
-        {title}
-      </Typography>
-      {relationships.map((r) => (
-        <Stack key={r.id} direction="row" spacing={0.5} alignItems="center">
-          <TextField size="small" fullWidth value={r.to_user_name} InputProps={{ readOnly: true }} sx={COMPACT_INPUT_SX} />
-          <IconButton size="small" onClick={() => onRemove(r.id)}>
-            <DeleteOutlineIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      ))}
-      {available.length > 0 && (
-        <TextField
-          select
-          size="small"
-          fullWidth
-          value={pick}
-          label={t("performanceId.addPerson")}
-          onChange={(e) => {
-            const id = Number(e.target.value);
-            setPick("");
-            onAdd(id);
-          }}
-          sx={COMPACT_INPUT_SX}
-        >
-          {available.map((c) => (
-            <MenuItem key={c.id} value={c.id}>
-              {c.full_name || c.email}
-            </MenuItem>
-          ))}
-        </TextField>
-      )}
-    </Stack>
-  );
 }
 
 export default function PersonPerformanceId({
@@ -484,6 +492,70 @@ export default function PersonPerformanceId({
 
   const teamCandidates = selectedUser ? people.filter((p) => p.department === selectedUser.department && p.id !== selectedUser.id) : [];
 
+  /** Lignes "relation d'équipe" : les relations enregistrées occupent les
+   * premières cases, la suivante propose la liste des collègues, le reste
+   * reste vide — la colonne garde ainsi toujours la même hauteur. */
+  function relationshipCells(quality: "EXCELLENT" | "DIFFICULT", count: number, column: number, startRow: number) {
+    const rows = relationships.filter((r) => r.quality === quality);
+    const used = new Set(rows.map((r) => r.to_user));
+    const available = teamCandidates.filter((c) => !used.has(c.id));
+    return Array.from({ length: count }, (_, i) => {
+      const rel = rows[i];
+      const cellSx = { gridColumn: column, gridRow: startRow + i };
+      if (rel) {
+        return (
+          <Box
+            key={`${quality}-${i}`}
+            sx={{ ...cellSx, border: SHEET_BORDER, bgcolor: FIELD_BG, height: ROW_H, display: "flex", alignItems: "center", px: 0.5, gap: 0.25 }}
+          >
+            <Typography sx={{ fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {rel.to_user_name}
+            </Typography>
+            <IconButton size="small" sx={{ p: 0 }} aria-label={t("common.delete")} onClick={() => removeRelationship(rel.id)}>
+              <DeleteOutlineIcon sx={{ fontSize: 13 }} />
+            </IconButton>
+          </Box>
+        );
+      }
+      if (i === rows.length && available.length > 0) {
+        return (
+          <Box
+            key={`${quality}-${i}`}
+            sx={{ ...cellSx, border: SHEET_BORDER, bgcolor: FIELD_BG, height: ROW_H, display: "flex", alignItems: "center", px: 0.5 }}
+          >
+            <Select
+              value=""
+              displayEmpty
+              variant="standard"
+              disableUnderline
+              fullWidth
+              onChange={(e) => addRelationship(quality, Number(e.target.value))}
+              renderValue={() => (
+                <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{`${i + 1}. ${t("performanceId.addPerson")}`}</Typography>
+              )}
+              sx={{ fontSize: 11, "& .MuiSelect-select": { p: 0 } }}
+            >
+              {available.map((c) => (
+                <MenuItem key={c.id} value={c.id} sx={{ fontSize: 12 }}>
+                  {c.full_name || c.email}
+                </MenuItem>
+              ))}
+            </Select>
+          </Box>
+        );
+      }
+      return <Fld key={`${quality}-${i}`} value="" readOnly placeholder={`${i + 1}.`} sx={cellSx} />;
+    });
+  }
+
+  const gridSx = { display: "grid", gap: SHEET_GAP, gridAutoRows: `${ROW_H}px`, mb: 0.75 } as const;
+  const bigTextSx = {
+    fontSize: 11,
+    alignItems: "flex-start",
+    height: "100%",
+    "& textarea": { height: "100% !important", overflow: "auto !important" },
+  } as const;
+
   return (
     <Stack spacing={2}>
       <TextField
@@ -492,8 +564,6 @@ export default function PersonPerformanceId({
         label={t("performanceId.selectPerson")}
         value={selectedId}
         onChange={(e) => setSelectedId(e.target.value === "" ? "" : Number(e.target.value))}
-        // Largeur fixe et calée à gauche : sans ça le Stack l'étire sur toute
-        // la fiche, ce qui donne un sélecteur démesuré au-dessus du contenu.
         sx={{ width: 240, alignSelf: "flex-start" }}
       >
         {selectable.map((p) => (
@@ -505,129 +575,150 @@ export default function PersonPerformanceId({
       </TextField>
 
       {selectedUser && (
-        <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
-          <Paper elevation={0} sx={{ py: 1, mb: 2, textAlign: "center", bgcolor: CREAM, border: "1px solid", borderColor: "divider" }}>
-            <Typography variant="subtitle1" fontWeight={800} sx={{ color: "primary.main" }}>
-              {t("performanceId.title", { name: selectedUser.full_name || selectedUser.email }).toUpperCase()}
-            </Typography>
-          </Paper>
+        <Paper elevation={0} sx={{ p: 1.5, border: SHEET_BORDER, bgcolor: "#fbfbfa" }}>
+          {/* Bandeau titre + date, comme l'entête de la feuille de référence. */}
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr auto", gap: SHEET_GAP, mb: 0.75, alignItems: "center" }}>
+            <Box sx={{ bgcolor: CREAM, border: SHEET_BORDER, py: 0.5, textAlign: "center" }}>
+              <Typography sx={{ fontSize: 17, fontWeight: 800, color: "primary.main" }}>
+                {t("performanceId.title", { name: selectedUser.full_name || selectedUser.email })}
+              </Typography>
+            </Box>
+            <Lab center bg="#fff" sx={{ minWidth: 92 }}>
+              {latestEvaluation ? latestEvaluation.campaign_start_date : "—"}
+            </Lab>
+          </Box>
 
-          {/* Ligne 1 : photo + informations professionnelles + réalisations + performance.
-           * La grille est découpée par CHAMP et non par section : identité à
-           * largeur fixe, puis quatre colonnes égales (Qualifications, les deux
-           * Réalisations, Historique). Les deux sections s'étendent chacune sur
-           * deux colonnes, si bien que le champ Qualifications et les champs de
-           * Réalisations ont exactement la même largeur à toutes les tailles
-           * d'écran — un simple rapport de `fr` entre sections ne pouvait pas
-           * le garantir, la section identité mangeant une largeur fixe. */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: `180px ${IDENTITY_COL_WIDTH}px repeat(4, minmax(0, 1fr))`,
-              gap: 1.5,
-              mb: 2,
-            }}
-          >
-            <Stack spacing={1} alignItems="center">
+          {/* ----- Bandeau 1 : photo · informations · réalisations · performance ----- */}
+          <Box sx={{ ...gridSx, gridTemplateColumns: "150px 118px 62px 1fr 1fr 1fr 1.15fr" }}>
+            <Box
+              sx={{
+                gridColumn: 1,
+                gridRow: "1 / span 10",
+                border: SHEET_BORDER,
+                bgcolor: "#fff",
+                p: 0.5,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 0.5,
+              }}
+            >
               <Avatar
                 src={selectedUser.avatar ?? undefined}
+                variant="square"
                 sx={{
-                  width: 160,
-                  height: 160,
-                  border: "2px solid",
+                  width: "100%",
+                  height: 150,
+                  border: "1px solid",
                   borderColor: latestEvaluation ? performanceColors[latestEvaluation.performance_rating] : "divider",
                 }}
               >
                 {(selectedUser.full_name || selectedUser.email).charAt(0).toUpperCase()}
               </Avatar>
-              <Typography variant="body2" fontWeight={700}>
-                {selectedUser.full_name}
-              </Typography>
-            </Stack>
+              <Fld value={selectedUser.full_name || selectedUser.email} readOnly bold color="primary.main" sx={{ width: "100%" }} />
+              <Fld value={selectedUser.position || ""} readOnly sx={{ width: "100%" }} />
+            </Box>
 
-            <Stack spacing={1} sx={{ gridColumn: "span 2", minWidth: 0 }}>
-              <SectionHeader>{t("performanceId.professionalInfo")}</SectionHeader>
-              <Stack direction="row" spacing={1.5}>
-                {/* Colonne d'identité calée sur la 2e colonne de la grille :
-                 * Qualifications tombe ainsi exactement sur la 3e. */}
-                <Stack spacing={0.5} sx={{ flex: `0 0 ${IDENTITY_COL_WIDTH}px`, width: IDENTITY_COL_WIDTH }}>
-                  <ReadOnlyField label={t("performanceId.age")} value={selectedUser.age != null ? String(selectedUser.age) : "—"} />
-                  <ReadOnlyField label={t("performanceId.yearsInPosition")} value={selectedUser.years_in_current_role != null ? String(selectedUser.years_in_current_role) : "—"} />
-                  <ReadOnlyField label={t("performanceId.yearsInCompany")} value={selectedUser.years_in_company != null ? String(selectedUser.years_in_company) : "—"} />
-                  <ReadOnlyField label={t("performanceId.totalExperience")} value={selectedUser.total_experience_years != null ? String(selectedUser.total_experience_years) : "—"} />
-                  <Stack spacing={0.25}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t("performanceId.gender")}
-                    </Typography>
-                    <TextField size="small" value={form.gender} onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))} sx={{ width: INFO_FIELD_WIDTH, ...COMPACT_INPUT_SX }} />
-                  </Stack>
-                  <Stack spacing={0.25}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t("performanceId.contractType")}
-                    </Typography>
-                    <TextField size="small" value={form.contract_type} onChange={(e) => setForm((f) => ({ ...f, contract_type: e.target.value }))} sx={{ width: INFO_FIELD_WIDTH, ...COMPACT_INPUT_SX }} />
-                  </Stack>
-                  <ReadOnlyField label={t("performanceId.reportTo")} value={managerOf?.full_name ?? "—"} />
-                </Stack>
-                <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
-                  <ListField label={t("performanceId.qualifications")} value={form.qualifications} rows={5} onChange={(v) => setList("qualifications", v)} />
-                  <ListField label={t("performanceId.previousPositions")} value={form.previous_positions} rows={2} onChange={(v) => setList("previous_positions", v)} />
-                </Stack>
-              </Stack>
-            </Stack>
+            <Band sx={{ gridColumn: "2 / 5", gridRow: 1 }}>{t("performanceId.professionalInfo")}</Band>
+            <Band sx={{ gridColumn: "5 / 7", gridRow: 1 }}>{t("performanceId.achievements")}</Band>
+            <Band sx={{ gridColumn: 7, gridRow: 1 }}>{t("performanceId.performanceRecord")}</Band>
 
-            <Stack spacing={1} sx={{ gridColumn: "span 2", minWidth: 0 }}>
-              <SectionHeader>{t("performanceId.achievements")}</SectionHeader>
-              <Stack direction="row" spacing={1.5}>
-                {/* `dense` : police 11 px et lignes resserrées — la case n'est
-                 * qu'un aperçu, le texte entier s'affiche au survol. */}
-                <ListField label={t("performanceId.professionalAchievements")} value={form.professional_achievements} rows={5} multiline dense onChange={(v) => setList("professional_achievements", v)} />
-                <ListField label={t("performanceId.personalAchievements")} value={form.personal_achievements} rows={5} multiline dense onChange={(v) => setList("personal_achievements", v)} />
-              </Stack>
-              {latestEvaluation && (
-                <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                  <Chip
-                    size="small"
-                    label={`${t("performanceId.performancePct")}: ${latestEvaluation.altitude_percentage}%`}
-                    sx={{ bgcolor: performanceColors[latestEvaluation.performance_rating] + "22", color: performanceColors[latestEvaluation.performance_rating], fontWeight: 700 }}
-                  />
-                  <Chip
-                    size="small"
-                    label={t(`common.performance.${latestEvaluation.performance_rating}`)}
-                    sx={{ bgcolor: performanceColors[latestEvaluation.performance_rating] + "22", color: performanceColors[latestEvaluation.performance_rating], fontWeight: 700 }}
-                  />
-                </Stack>
-              )}
-            </Stack>
+            {/* Colonne identité : intitulé + valeur, une ligne par donnée. */}
+            <Lab sx={{ gridColumn: 2, gridRow: 2 }}>{t("performanceId.gender")}</Lab>
+            <Fld value={form.gender} onChange={(v) => setForm((f) => ({ ...f, gender: v }))} sx={{ gridColumn: 3, gridRow: 2 }} />
+            <Lab sx={{ gridColumn: 2, gridRow: 3 }}>{t("performanceId.age")}</Lab>
+            <Fld value={selectedUser.age != null ? String(selectedUser.age) : "—"} readOnly align="center" sx={{ gridColumn: 3, gridRow: 3 }} />
+            <Lab sx={{ gridColumn: 2, gridRow: 4 }}>{t("performanceId.yearsInPosition")}</Lab>
+            <Fld
+              value={selectedUser.years_in_current_role != null ? String(selectedUser.years_in_current_role) : "—"}
+              readOnly
+              align="center"
+              sx={{ gridColumn: 3, gridRow: 4 }}
+            />
+            <Lab sx={{ gridColumn: 2, gridRow: 5 }}>{t("performanceId.yearsInCompany")}</Lab>
+            <Fld
+              value={selectedUser.years_in_company != null ? String(selectedUser.years_in_company) : "—"}
+              readOnly
+              align="center"
+              sx={{ gridColumn: 3, gridRow: 5 }}
+            />
+            <Lab sx={{ gridColumn: 2, gridRow: 6 }}>{t("performanceId.totalExperience")}</Lab>
+            <Fld
+              value={selectedUser.total_experience_years != null ? String(selectedUser.total_experience_years) : "—"}
+              readOnly
+              align="center"
+              sx={{ gridColumn: 3, gridRow: 6 }}
+            />
+            <Lab sx={{ gridColumn: 2, gridRow: 7 }}>{t("performanceId.contractType")}</Lab>
+            <Fld value={form.contract_type} onChange={(v) => setForm((f) => ({ ...f, contract_type: v }))} sx={{ gridColumn: 3, gridRow: 7 }} />
+            <Lab sx={{ gridColumn: 2, gridRow: 8 }}>{t("performanceId.reportTo")}</Lab>
+            <Fld value={managerOf?.full_name ?? "—"} readOnly sx={{ gridColumn: 3, gridRow: 8 }} />
 
-            <Stack spacing={1}>
-              <SectionHeader>{t("performanceId.performanceRecord")}</SectionHeader>
+            {/* Qualifications puis postes précédents, sur la même colonne. */}
+            <SubHead sx={{ gridColumn: 4, gridRow: 2 }}>{t("performanceId.qualifications")}</SubHead>
+            {listCells(form.qualifications, 5, 4, 3, (v) => setList("qualifications", v))}
+            <SubHead sx={{ gridColumn: 4, gridRow: 8 }}>{t("performanceId.previousPositions")}</SubHead>
+            {listCells(form.previous_positions, 2, 4, 9, (v) => setList("previous_positions", v))}
+
+            <SubHead sx={{ gridColumn: 5, gridRow: 2 }}>{t("performanceId.professionalAchievements")}</SubHead>
+            {listCells(form.professional_achievements, 5, 5, 3, (v) => setList("professional_achievements", v))}
+            <SubHead sx={{ gridColumn: 6, gridRow: 2 }}>{t("performanceId.personalAchievements")}</SubHead>
+            {listCells(form.personal_achievements, 5, 6, 3, (v) => setList("personal_achievements", v))}
+
+            {/* Synthèse de performance, sous les réalisations. */}
+            <Lab bg={CREAM} sx={{ gridColumn: 5, gridRow: 8 }}>
+              {t("performanceId.performancePct")}
+            </Lab>
+            <Fld
+              value={latestEvaluation ? `${latestEvaluation.altitude_percentage}%` : "—"}
+              readOnly
+              align="center"
+              bold
+              color={latestEvaluation ? performanceColors[latestEvaluation.performance_rating] : undefined}
+              sx={{ gridColumn: 6, gridRow: 8 }}
+            />
+            <Lab bg={CREAM} sx={{ gridColumn: 5, gridRow: 9 }}>
+              {t("performanceId.categoryOfPerformer")}
+            </Lab>
+            <Fld
+              value={latestEvaluation ? t(`common.performance.${latestEvaluation.performance_rating}`) : "—"}
+              readOnly
+              align="center"
+              bold
+              color={latestEvaluation ? performanceColors[latestEvaluation.performance_rating] : undefined}
+              sx={{ gridColumn: 6, gridRow: 9 }}
+            />
+            <Lab center bg={HARD_SKILLS_COLOR} sx={{ gridColumn: 5, gridRow: 10, color: "#fff" }}>
+              HSI
+            </Lab>
+            <Fld value={latestEvaluation ? String(latestEvaluation.hsi) : "—"} readOnly align="center" bold sx={{ gridColumn: 6, gridRow: 10 }} />
+
+            {/* Graphique d'historique — occupe toute la hauteur du bandeau. */}
+            <SubHead sx={{ gridColumn: 7, gridRow: 2 }}>{t("performanceId.performanceGraph")}</SubHead>
+            <Box sx={{ gridColumn: 7, gridRow: "3 / span 8", border: SHEET_BORDER, bgcolor: "#fff", p: 0.25 }}>
               {history.length > 0 ? (
-                <ResponsiveContainer width="100%" height={160}>
-                  <LineChart data={history} margin={{ top: 22, right: 16, left: 16, bottom: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={history} margin={{ top: 16, right: 14, left: 6, bottom: 2 }}>
                     <CartesianGrid stroke="#e1e0d9" vertical={false} />
-                    <XAxis dataKey="year" tick={{ fill: "#898781", fontSize: 11 }} tickLine={false} />
+                    <XAxis dataKey="year" tick={{ fill: "#898781", fontSize: 10 }} tickLine={false} axisLine={false} />
                     <YAxis hide domain={["dataMin - 20", "dataMax + 20"]} />
                     <Line
                       type="monotone"
                       dataKey="value"
                       stroke={HEADER_ORANGE}
-                      strokeWidth={2.5}
-                      // Point et étiquette colorés selon le palier de
-                      // performance de l'année : le graphe dit d'un coup d'œil
-                      // le niveau atteint, pas seulement la tendance.
+                      strokeWidth={2}
                       dot={(props: any) => (
                         <circle
                           key={`dot-${props.index}`}
                           cx={props.cx}
                           cy={props.cy}
-                          r={4}
+                          r={3.5}
                           fill={performanceColors[history[props.index].rating]}
                           stroke="#fff"
-                          strokeWidth={1.5}
+                          strokeWidth={1.2}
                         />
                       )}
-                      activeDot={{ r: 6 }}
+                      activeDot={{ r: 5 }}
                       isAnimationActive={false}
                     >
                       <LabelList
@@ -636,9 +727,9 @@ export default function PersonPerformanceId({
                           <text
                             key={`label-${props.index}`}
                             x={props.x}
-                            y={props.y - 9}
+                            y={props.y - 7}
                             textAnchor="middle"
-                            fontSize={11}
+                            fontSize={10}
                             fontWeight={700}
                             fill={performanceColors[history[props.index].rating]}
                           >
@@ -650,145 +741,140 @@ export default function PersonPerformanceId({
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 3 }}>
-                  {t("evaluations.notEvaluated")}
-                </Typography>
-              )}
-              {latestEvaluation && (
-                <Stack direction="row" spacing={1} justifyContent="center">
-                  <Chip size="small" label={`HSI ${latestEvaluation.hsi}`} sx={{ bgcolor: HARD_SKILLS_COLOR + "22", color: HARD_SKILLS_COLOR, fontWeight: 700 }} />
-                  <Chip size="small" label={`SSI ${latestEvaluation.ssi}`} sx={{ bgcolor: SOFT_SKILLS_COLOR + "22", color: SOFT_SKILLS_COLOR, fontWeight: 700 }} />
-                </Stack>
-              )}
-            </Stack>
-          </Box>
-
-          {/* Ligne 2 : forces / faiblesses / vision & projets / dynamique d'équipe / ID-3A */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "1.3fr 1.3fr 1fr 2.4fr 1.4fr", gap: 1.5, mb: 2 }}>
-            <Stack spacing={1}>
-              <SectionHeader>{t("performanceId.keyStrengths")}</SectionHeader>
-              <SkillNoteReadColumn label={t("managerDevPlan.hardSkills")} color={HARD_SKILLS_COLOR} notes={notesFor("HARD_STRENGTH")} />
-              <SkillNoteReadColumn label={t("managerDevPlan.softSkills")} color={SOFT_SKILLS_COLOR} notes={notesFor("SOFT_STRENGTH")} />
-            </Stack>
-            <Stack spacing={1}>
-              <SectionHeader>{t("performanceId.areasOfImprovement")}</SectionHeader>
-              <SkillNoteReadColumn label={t("managerDevPlan.hardSkills")} color={HARD_SKILLS_COLOR} notes={notesFor("HARD_WEAKNESS")} />
-              <SkillNoteReadColumn label={t("managerDevPlan.softSkills")} color={SOFT_SKILLS_COLOR} notes={notesFor("SOFT_WEAKNESS")} />
-            </Stack>
-            <Stack spacing={1}>
-              <SectionHeader>{t("performanceId.vision")}</SectionHeader>
-              <TextField multiline minRows={6} fullWidth value={form.vision_aspirations} onChange={(e) => setForm((f) => ({ ...f, vision_aspirations: e.target.value }))} sx={{ bgcolor: CREAM, ...COMPACT_INPUT_SX }} />
-              <SectionHeader>{t("performanceId.personalProjects")}</SectionHeader>
-              <TextField multiline minRows={4} fullWidth value={form.personal_projects} onChange={(e) => setForm((f) => ({ ...f, personal_projects: e.target.value }))} sx={{ bgcolor: CREAM, ...COMPACT_INPUT_SX }} />
-            </Stack>
-            <Stack spacing={1}>
-              <SectionHeader>{t("performanceId.teamDynamics")}</SectionHeader>
-              <Stack direction="row" spacing={1.5}>
-                <Stack spacing={1.5} sx={{ flex: 1 }}>
-                  <RelationshipList
-                    title={t("performanceId.excellentWith")}
-                    relationships={relationships.filter((r) => r.quality === "EXCELLENT")}
-                    candidates={teamCandidates}
-                    onAdd={(id) => addRelationship("EXCELLENT", id)}
-                    onRemove={removeRelationship}
-                  />
-                  <RelationshipList
-                    title={t("performanceId.difficultWith")}
-                    relationships={relationships.filter((r) => r.quality === "DIFFICULT")}
-                    candidates={teamCandidates}
-                    onAdd={(id) => addRelationship("DIFFICULT", id)}
-                    onRemove={removeRelationship}
-                  />
-                  <ListField label={t("performanceId.dislikes")} value={form.dislikes} rows={4} onChange={(v) => setList("dislikes", v)} />
-                </Stack>
-                <Stack spacing={1.5} sx={{ flex: 1 }}>
-                  <ListField label={t("performanceId.professionalRoleModels")} value={form.professional_role_models} rows={4} onChange={(v) => setList("professional_role_models", v)} />
-                  <ListField label={t("performanceId.roleModelsInLife")} value={form.role_models_in_life} rows={2} onChange={(v) => setList("role_models_in_life", v)} />
-                  <ListField label={t("performanceId.motivates")} value={form.motivates} rows={4} onChange={(v) => setList("motivates", v)} />
-                </Stack>
-              </Stack>
-            </Stack>
-            <Stack spacing={1}>
-              <SectionHeader>{t("performanceId.id3a")}</SectionHeader>
-              {latestEvaluation ? (
-                <Stack spacing={0.75}>
-                  <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, bgcolor: "background.paper", p: 0.5 }}>
-                    <Id3aMiniMatrix
-                      hsi={Number(latestEvaluation.hsi)}
-                      ssi={Number(latestEvaluation.ssi)}
-                      altitude={Math.round(Number(latestEvaluation.altitude_percentage))}
-                      rating={latestEvaluation.performance_rating}
-                    />
-                  </Box>
-                  <Stack direction="row" spacing={0.5} justifyContent="center" flexWrap="wrap" useFlexGap>
-                    <Chip size="small" label={`HSI ${latestEvaluation.hsi}`} sx={{ bgcolor: HARD_SKILLS_COLOR + "22", color: HARD_SKILLS_COLOR, fontWeight: 700 }} />
-                    <Chip size="small" label={`SSI ${latestEvaluation.ssi}`} sx={{ bgcolor: SOFT_SKILLS_COLOR + "22", color: SOFT_SKILLS_COLOR, fontWeight: 700 }} />
-                  </Stack>
-                </Stack>
-              ) : (
-                <Box
-                  sx={{
-                    width: "100%",
-                    aspectRatio: "1",
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
+                <Stack alignItems="center" justifyContent="center" sx={{ height: "100%" }}>
                   <Typography variant="caption" color="text.secondary">
                     {t("evaluations.notEvaluated")}
                   </Typography>
-                </Box>
+                </Stack>
               )}
-              <ListField label={t("performanceId.hobbies")} value={form.hobbies} rows={2} onChange={(v) => setList("hobbies", v)} />
-              <ListField label={t("performanceId.personalityTraits")} value={form.personality_traits} rows={3} onChange={(v) => setList("personality_traits", v)} />
-              <Stack spacing={0.25}>
-                <Typography variant="caption" color="text.secondary">
-                  {t("performanceId.bonoHat")}
-                </Typography>
-                <TextField size="small" value={form.bono_hat} onChange={(e) => setForm((f) => ({ ...f, bono_hat: e.target.value }))} sx={{ width: 200, ...COMPACT_INPUT_SX }} />
-              </Stack>
-            </Stack>
+            </Box>
           </Box>
 
-          {/* Ligne 3 : contribution + plan de développement personnel, côte à côte —
-              chaque section a ses 2 colonnes réellement parallèles (pas une
-              grille 2x2) : brings/expects (ou priorités/actions) empilés dans
-              la même colonne. */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
-            <Stack spacing={1}>
-              <SectionHeader>{t("performanceId.contribution")}</SectionHeader>
-              <Stack direction="row" spacing={1.5}>
-                <Stack spacing={1} sx={{ flex: 1 }}>
-                  <ListField dense label={t("performanceId.bringsToTeam")} value={form.brings_to_team} rows={4} onChange={(v) => setList("brings_to_team", v)} />
-                  <ListField dense label={t("performanceId.expectsFromTeam")} value={form.expects_from_team} rows={3} onChange={(v) => setList("expects_from_team", v)} />
-                </Stack>
-                <Stack spacing={1} sx={{ flex: 1 }}>
-                  <ListField dense label={t("performanceId.bringsToManager")} value={form.brings_to_manager} rows={3} onChange={(v) => setList("brings_to_manager", v)} />
-                  <ListField dense label={t("performanceId.expectsFromManager")} value={form.expects_from_manager} rows={3} onChange={(v) => setList("expects_from_manager", v)} />
-                </Stack>
-              </Stack>
-            </Stack>
+          {/* ----- Bandeau 2 : forces · axes · vision · dynamique · ID-3A ----- */}
+          <Box sx={{ ...gridSx, gridTemplateColumns: "1fr 38px 1fr 38px 0.95fr 1fr 1fr 1.05fr" }}>
+            <Band sx={{ gridColumn: "1 / 3", gridRow: 1 }}>{t("performanceId.keyStrengths")}</Band>
+            <Band sx={{ gridColumn: "3 / 5", gridRow: 1 }}>{t("performanceId.areasOfImprovement")}</Band>
+            <Band sx={{ gridColumn: 5, gridRow: 1 }}>{t("performanceId.vision")}</Band>
+            <Band sx={{ gridColumn: "6 / 8", gridRow: 1 }}>{t("performanceId.teamDynamics")}</Band>
+            <Band sx={{ gridColumn: 8, gridRow: 1 }}>{t("performanceId.id3a")}</Band>
 
-            <Stack spacing={1}>
-              <SectionHeader>{t("performanceId.personalDevPlan")}</SectionHeader>
-              <Stack direction="row" spacing={1.5}>
-                <Stack spacing={1} sx={{ flex: 1 }}>
-                  <ListField dense label={t("performanceId.priorities")} value={form.dev_priorities} rows={4} onChange={(v) => setList("dev_priorities", v)} />
-                  <ListField dense label={t("performanceId.actionsToSupport")} value={form.dev_actions_support} rows={3} onChange={(v) => setList("dev_actions_support", v)} />
+            {/* Forces : hard puis soft, chaque ligne avec sa note SI. */}
+            <SubHead bg={HARD_BAND} color="#fff" right="SI" sx={{ gridColumn: "1 / 3", gridRow: 2 }}>
+              {t("managerDevPlan.hardSkills")}
+            </SubHead>
+            {noteCells(notesFor("HARD_STRENGTH"), 1, 2, 3)}
+            <SubHead bg={SOFT_BAND} color="#fff" right="SI" sx={{ gridColumn: "1 / 3", gridRow: 8 }}>
+              {t("managerDevPlan.softSkills")}
+            </SubHead>
+            {noteCells(notesFor("SOFT_STRENGTH"), 1, 2, 9)}
+            <Lab center bg="#fff" sx={{ gridColumn: 1, gridRow: 14, color: HARD_SKILLS_COLOR }}>
+              {t("performanceId.hardSkillsIndex")}
+            </Lab>
+            <Fld value={latestEvaluation ? String(latestEvaluation.hsi) : "—"} readOnly align="center" bold sx={{ gridColumn: 2, gridRow: 14 }} />
+
+            <SubHead bg={HARD_BAND} color="#fff" right="SI" sx={{ gridColumn: "3 / 5", gridRow: 2 }}>
+              {t("managerDevPlan.hardSkills")}
+            </SubHead>
+            {noteCells(notesFor("HARD_WEAKNESS"), 3, 4, 3)}
+            <SubHead bg={SOFT_BAND} color="#fff" right="SI" sx={{ gridColumn: "3 / 5", gridRow: 8 }}>
+              {t("managerDevPlan.softSkills")}
+            </SubHead>
+            {noteCells(notesFor("SOFT_WEAKNESS"), 3, 4, 9)}
+            <Lab center bg="#fff" sx={{ gridColumn: 3, gridRow: 14, color: SOFT_SKILLS_COLOR }}>
+              {t("performanceId.softSkillsIndex")}
+            </Lab>
+            <Fld value={latestEvaluation ? String(latestEvaluation.ssi) : "—"} readOnly align="center" bold sx={{ gridColumn: 4, gridRow: 14 }} />
+
+            {/* Vision puis projets personnels : deux grandes zones de texte. */}
+            <Box sx={{ gridColumn: 5, gridRow: "2 / span 8", border: SHEET_BORDER, bgcolor: CREAM, p: 0.5 }}>
+              <InputBase
+                multiline
+                fullWidth
+                value={form.vision_aspirations}
+                onChange={(e) => setForm((f) => ({ ...f, vision_aspirations: e.target.value }))}
+                sx={bigTextSx}
+              />
+            </Box>
+            <Band sx={{ gridColumn: 5, gridRow: 10 }}>{t("performanceId.personalProjects")}</Band>
+            <Box sx={{ gridColumn: 5, gridRow: "11 / span 6", border: SHEET_BORDER, bgcolor: CREAM, p: 0.5 }}>
+              <InputBase
+                multiline
+                fullWidth
+                value={form.personal_projects}
+                onChange={(e) => setForm((f) => ({ ...f, personal_projects: e.target.value }))}
+                sx={bigTextSx}
+              />
+            </Box>
+
+            {/* Dynamique d'équipe : relations à gauche, modèles/moteurs à droite. */}
+            <SubHead sx={{ gridColumn: 6, gridRow: 2 }}>{t("performanceId.excellentWith")}</SubHead>
+            {relationshipCells("EXCELLENT", 5, 6, 3)}
+            <SubHead sx={{ gridColumn: 6, gridRow: 8 }}>{t("performanceId.difficultWith")}</SubHead>
+            {relationshipCells("DIFFICULT", 3, 6, 9)}
+            <SubHead sx={{ gridColumn: 6, gridRow: 12 }}>{t("performanceId.dislikes")}</SubHead>
+            {listCells(form.dislikes, 4, 6, 13, (v) => setList("dislikes", v))}
+
+            <SubHead sx={{ gridColumn: 7, gridRow: 2 }}>{t("performanceId.professionalRoleModels")}</SubHead>
+            {listCells(form.professional_role_models, 4, 7, 3, (v) => setList("professional_role_models", v))}
+            <SubHead sx={{ gridColumn: 7, gridRow: 7 }}>{t("performanceId.roleModelsInLife")}</SubHead>
+            {listCells(form.role_models_in_life, 4, 7, 8, (v) => setList("role_models_in_life", v))}
+            <SubHead sx={{ gridColumn: 7, gridRow: 12 }}>{t("performanceId.motivates")}</SubHead>
+            {listCells(form.motivates, 4, 7, 13, (v) => setList("motivates", v))}
+
+            {/* ID-3A : la matrice, puis loisirs, traits et chapeau de Bono. */}
+            <Box sx={{ gridColumn: 8, gridRow: "2 / span 8", border: SHEET_BORDER, bgcolor: "#fff", p: 0.25 }}>
+              {latestEvaluation ? (
+                <Id3aMiniMatrix
+                  hsi={Number(latestEvaluation.hsi)}
+                  ssi={Number(latestEvaluation.ssi)}
+                  altitude={Math.round(Number(latestEvaluation.altitude_percentage))}
+                  rating={latestEvaluation.performance_rating}
+                />
+              ) : (
+                <Stack alignItems="center" justifyContent="center" sx={{ height: "100%" }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t("evaluations.notEvaluated")}
+                  </Typography>
                 </Stack>
-                <Stack spacing={1} sx={{ flex: 1 }}>
-                  <ListField dense label={t("performanceId.professionalPerspectives")} value={form.dev_professional_perspectives} rows={4} onChange={(v) => setList("dev_professional_perspectives", v)} />
-                  <ListField dense label={t("performanceId.risksObstacles")} value={form.dev_risks_obstacles} rows={3} onChange={(v) => setList("dev_risks_obstacles", v)} />
-                </Stack>
-              </Stack>
-            </Stack>
+              )}
+            </Box>
+            <SubHead sx={{ gridColumn: 8, gridRow: 10 }}>{t("performanceId.hobbies")}</SubHead>
+            {listCells(form.hobbies, 2, 8, 11, (v) => setList("hobbies", v))}
+            <SubHead sx={{ gridColumn: 8, gridRow: 13 }}>{t("performanceId.personalityTraits")}</SubHead>
+            {listCells(form.personality_traits, 3, 8, 14, (v) => setList("personality_traits", v))}
+            <Box sx={{ gridColumn: 8, gridRow: 17, display: "grid", gridTemplateColumns: "auto 1fr", gap: SHEET_GAP }}>
+              <Lab>{t("performanceId.bonoHat")}</Lab>
+              <Fld value={form.bono_hat} onChange={(v) => setForm((f) => ({ ...f, bono_hat: v }))} />
+            </Box>
           </Box>
 
-          <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={2} sx={{ mt: 2 }}>
+          {/* ----- Bandeau 3 : contribution · plan de développement personnel ----- */}
+          <Box sx={{ ...gridSx, gridTemplateColumns: "1fr 1fr 1fr 1fr", mb: 0 }}>
+            <Band sx={{ gridColumn: "1 / 3", gridRow: 1 }}>{t("performanceId.contribution")}</Band>
+            <Band sx={{ gridColumn: "3 / 5", gridRow: 1 }}>{t("performanceId.personalDevPlan")}</Band>
+
+            <SubHead sx={{ gridColumn: 1, gridRow: 2 }}>{t("performanceId.bringsToTeam")}</SubHead>
+            {listCells(form.brings_to_team, 4, 1, 3, (v) => setList("brings_to_team", v))}
+            <SubHead sx={{ gridColumn: 1, gridRow: 7 }}>{t("performanceId.expectsFromTeam")}</SubHead>
+            {listCells(form.expects_from_team, 3, 1, 8, (v) => setList("expects_from_team", v))}
+
+            <SubHead sx={{ gridColumn: 2, gridRow: 2 }}>{t("performanceId.bringsToManager")}</SubHead>
+            {listCells(form.brings_to_manager, 4, 2, 3, (v) => setList("brings_to_manager", v))}
+            <SubHead sx={{ gridColumn: 2, gridRow: 7 }}>{t("performanceId.expectsFromManager")}</SubHead>
+            {listCells(form.expects_from_manager, 3, 2, 8, (v) => setList("expects_from_manager", v))}
+
+            <SubHead sx={{ gridColumn: 3, gridRow: 2 }}>{t("performanceId.priorities")}</SubHead>
+            {listCells(form.dev_priorities, 4, 3, 3, (v) => setList("dev_priorities", v))}
+            <SubHead sx={{ gridColumn: 3, gridRow: 7 }}>{t("performanceId.actionsToSupport")}</SubHead>
+            {listCells(form.dev_actions_support, 3, 3, 8, (v) => setList("dev_actions_support", v))}
+
+            <SubHead sx={{ gridColumn: 4, gridRow: 2 }}>{t("performanceId.professionalPerspectives")}</SubHead>
+            {listCells(form.dev_professional_perspectives, 4, 4, 3, (v) => setList("dev_professional_perspectives", v))}
+            <SubHead sx={{ gridColumn: 4, gridRow: 7 }}>{t("performanceId.risksObstacles")}</SubHead>
+            {listCells(form.dev_risks_obstacles, 3, 4, 8, (v) => setList("dev_risks_obstacles", v))}
+          </Box>
+
+          <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={2} sx={{ mt: 1.5 }}>
             {saved && (
               <Alert severity="success" sx={{ py: 0 }}>
                 {t("performanceId.saved")}
