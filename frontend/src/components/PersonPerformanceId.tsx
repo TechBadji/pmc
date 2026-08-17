@@ -808,30 +808,42 @@ export default function PersonPerformanceId({
               {t("managerDevPlan.hardSkills")}
             </SubHead>
             {noteCells(notesFor("HARD_STRENGTH"), 1, 2, 3)}
-            <SubHead bg={SOFT_BAND} color="#fff" right="SI" sx={{ gridColumn: "1 / 3", gridRow: 8 }}>
+            <SubHead bg={SOFT_BAND} color="#fff" right="SI" sx={{ gridColumn: "1 / 3", gridRow: 9 }}>
               {t("managerDevPlan.softSkills")}
             </SubHead>
-            {noteCells(notesFor("SOFT_STRENGTH"), 1, 2, 9)}
-            <Lab center bg="#fff" sx={{ gridColumn: 1, gridRow: 14, color: HARD_SKILLS_COLOR }}>
+            {noteCells(notesFor("SOFT_STRENGTH"), 1, 2, 10)}
+            <Lab center bg="#fff" sx={{ gridColumn: 1, gridRow: "15 / span 2", color: HARD_SKILLS_COLOR, height: "auto" }}>
               {t("performanceId.hardSkillsIndex")}
             </Lab>
-            <Fld value={latestEvaluation ? String(latestEvaluation.hsi) : "—"} readOnly align="center" bold sx={{ gridColumn: 2, gridRow: 14 }} />
+            <Fld
+              value={latestEvaluation ? String(latestEvaluation.hsi) : "—"}
+              readOnly
+              align="center"
+              bold
+              sx={{ gridColumn: 2, gridRow: "15 / span 2", height: "auto" }}
+            />
 
             <SubHead bg={HARD_BAND} color="#fff" right="SI" sx={{ gridColumn: "3 / 5", gridRow: 2 }}>
               {t("managerDevPlan.hardSkills")}
             </SubHead>
             {noteCells(notesFor("HARD_WEAKNESS"), 3, 4, 3)}
-            <SubHead bg={SOFT_BAND} color="#fff" right="SI" sx={{ gridColumn: "3 / 5", gridRow: 8 }}>
+            <SubHead bg={SOFT_BAND} color="#fff" right="SI" sx={{ gridColumn: "3 / 5", gridRow: 9 }}>
               {t("managerDevPlan.softSkills")}
             </SubHead>
-            {noteCells(notesFor("SOFT_WEAKNESS"), 3, 4, 9)}
-            <Lab center bg="#fff" sx={{ gridColumn: 3, gridRow: 14, color: SOFT_SKILLS_COLOR }}>
+            {noteCells(notesFor("SOFT_WEAKNESS"), 3, 4, 10)}
+            <Lab center bg="#fff" sx={{ gridColumn: 3, gridRow: "15 / span 2", color: SOFT_SKILLS_COLOR, height: "auto" }}>
               {t("performanceId.softSkillsIndex")}
             </Lab>
-            <Fld value={latestEvaluation ? String(latestEvaluation.ssi) : "—"} readOnly align="center" bold sx={{ gridColumn: 4, gridRow: 14 }} />
+            <Fld
+              value={latestEvaluation ? String(latestEvaluation.ssi) : "—"}
+              readOnly
+              align="center"
+              bold
+              sx={{ gridColumn: 4, gridRow: "15 / span 2", height: "auto" }}
+            />
 
             {/* Vision puis projets personnels : deux grandes zones de texte. */}
-            <Box sx={{ gridColumn: 5, gridRow: "2 / span 8", border: SHEET_BORDER, bgcolor: CREAM, p: 0.5 }}>
+            <Box sx={{ gridColumn: 5, gridRow: "2 / span 7", border: SHEET_BORDER, bgcolor: CREAM, p: 0.5 }}>
               <InputBase
                 multiline
                 fullWidth
@@ -840,8 +852,8 @@ export default function PersonPerformanceId({
                 sx={bigTextSx}
               />
             </Box>
-            <Band sx={{ gridColumn: 5, gridRow: 10 }}>{t("performanceId.personalProjects")}</Band>
-            <Box sx={{ gridColumn: 5, gridRow: "11 / span 6", border: SHEET_BORDER, bgcolor: CREAM, p: 0.5 }}>
+            <Band sx={{ gridColumn: 5, gridRow: 9 }}>{t("performanceId.personalProjects")}</Band>
+            <Box sx={{ gridColumn: 5, gridRow: "10 / span 7", border: SHEET_BORDER, bgcolor: CREAM, p: 0.5 }}>
               <InputBase
                 multiline
                 fullWidth
@@ -867,7 +879,7 @@ export default function PersonPerformanceId({
             {listCells(form.motivates, 4, 7, 13, (v) => setList("motivates", v))}
 
             {/* ID-3A : la matrice, puis loisirs, traits et chapeau de Bono. */}
-            <Box sx={{ gridColumn: 8, gridRow: "2 / span 8", border: SHEET_BORDER, bgcolor: "#fff", p: 0.25 }}>
+            <Box sx={{ gridColumn: 8, gridRow: "2 / span 7", border: SHEET_BORDER, bgcolor: "#fff", p: 0.25 }}>
               {latestEvaluation ? (
                 <Id3aMiniMatrix
                   hsi={Number(latestEvaluation.hsi)}
@@ -883,11 +895,11 @@ export default function PersonPerformanceId({
                 </Stack>
               )}
             </Box>
-            <SubHead sx={{ gridColumn: 8, gridRow: 10 }}>{t("performanceId.hobbies")}</SubHead>
-            {listCells(form.hobbies, 2, 8, 11, (v) => setList("hobbies", v))}
-            <SubHead sx={{ gridColumn: 8, gridRow: 13 }}>{t("performanceId.personalityTraits")}</SubHead>
-            {listCells(form.personality_traits, 3, 8, 14, (v) => setList("personality_traits", v))}
-            <Box sx={{ gridColumn: 8, gridRow: 17, display: "grid", gridTemplateColumns: "auto 1fr", gap: SHEET_GAP }}>
+            <SubHead sx={{ gridColumn: 8, gridRow: 9 }}>{t("performanceId.hobbies")}</SubHead>
+            {listCells(form.hobbies, 2, 8, 10, (v) => setList("hobbies", v))}
+            <SubHead sx={{ gridColumn: 8, gridRow: 12 }}>{t("performanceId.personalityTraits")}</SubHead>
+            {listCells(form.personality_traits, 3, 8, 13, (v) => setList("personality_traits", v))}
+            <Box sx={{ gridColumn: 8, gridRow: 16, display: "grid", gridTemplateColumns: "auto 1fr", gap: SHEET_GAP }}>
               <Lab>{t("performanceId.bonoHat")}</Lab>
               <Fld value={form.bono_hat} onChange={(v) => setForm((f) => ({ ...f, bono_hat: v }))} />
             </Box>
