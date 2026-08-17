@@ -230,7 +230,15 @@
     "block": "Bloquer",
     "unblock": "Débloquer",
     "addMember": "Ajouter un membre",
-    "temporaryPassword": "Mot de passe temporaire"
+    "temporaryPassword": "Mot de passe temporaire",
+    "removeFromTeam": "Retirer de l'équipe",
+    "removeConfirmTitle": "Retirer ce membre de l'équipe ?",
+    "removeConfirmBody": "{{name}} ne figurera plus dans l'équipe {{team}}. Le compte et son historique d'évaluations sont conservés : un administrateur pourra le réaffecter à une autre équipe.",
+    "removedMessage": "{{name}} a été retiré(e) de l'équipe.",
+    "unassignedTitle": "Membres sans équipe",
+    "unassignedHint": "Ces personnes ont été retirées d'une équipe. Choisissez une équipe pour les réaffecter.",
+    "assignToTeam": "Affecter à une équipe",
+    "assignedMessage": "{{name}} a été affecté(e) à l'équipe {{team}}."
   },
   "skills": {
     "competency": "Compétence",

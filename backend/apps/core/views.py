@@ -397,6 +397,16 @@ class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         new_role = serializer.validated_data.get("role", target.role)
         if new_role != target.role and new_role not in self._assignable_roles(actor):
             raise PermissionDenied("Vous ne pouvez pas attribuer ce rôle.")
+        # Un manager peut retirer un membre de son équipe (department=None),
+        # jamais le transférer dans une autre équipe : seul un Company Admin
+        # réaffecte. Sans ce garde-fou, "retirer de l'équipe" côté UI ouvrirait
+        # aussi la porte à un déplacement vers n'importe quel département.
+        if actor.role == User.Role.MANAGER and "department" in serializer.validated_data:
+            new_department = serializer.validated_data["department"]
+            if new_department is not None and new_department.manager_id != actor.id:
+                raise PermissionDenied(
+                    "Un manager ne peut affecter un membre qu'à son propre département."
+                )
         updated = serializer.save()
         if updated.role != previous_role:
             log_event(

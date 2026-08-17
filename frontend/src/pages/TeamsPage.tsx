@@ -3,6 +3,7 @@ import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
+import PersonRemoveOutlinedIcon from "@mui/icons-material/PersonRemoveOutlined";
 import {
   Accordion,
   AccordionDetails,
@@ -16,6 +17,8 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  MenuItem,
+  Paper,
   Stack,
   Table,
   TableBody,
@@ -53,6 +56,7 @@ export default function TeamsPage() {
     position: "",
   });
   const [loadError, setLoadError] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{ member: UserRecord; dept: Department } | null>(null);
 
   function load() {
     setLoadError(false);
@@ -111,6 +115,12 @@ export default function TeamsPage() {
   }
 
   const canCreateDepartment = user?.role === "COMPANY_ADMIN";
+  // Comptes de l'entreprise détachés de toute équipe (le CEO lui-même n'a pas
+  // de département : on ne garde que les rôles affectables à une équipe).
+  const unassignedMembers = useMemo(
+    () => members.filter((m) => m.department === null && (m.role === "MEMBER" || m.role === "MANAGER")),
+    [members]
+  );
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   function canManage(dept: Department, member: UserRecord) {
@@ -125,6 +135,25 @@ export default function TeamsPage() {
     setActionMessage(
       t("passwordRequests.resolvedMessage", { name: member.full_name || member.email })
     );
+    load();
+  }
+
+  /** Retrait d'équipe : on détache le membre (department/manager à null) au
+   * lieu de supprimer son compte — l'historique d'évaluations reste rattaché à
+   * la personne, et un Company Admin peut la réaffecter depuis la section
+   * "Membres sans équipe" plus bas. */
+  async function handleRemoveFromTeam() {
+    if (!memberToRemove) return;
+    const { member } = memberToRemove;
+    await apiClient.patch(`/users/${member.id}/`, { department: null, manager: null });
+    setMemberToRemove(null);
+    setActionMessage(t("teams.removedMessage", { name: member.full_name || member.email }));
+    load();
+  }
+
+  async function handleAssignToTeam(member: UserRecord, dept: Department) {
+    await apiClient.patch(`/users/${member.id}/`, { department: dept.id, manager: dept.manager });
+    setActionMessage(t("teams.assignedMessage", { name: member.full_name || member.email, team: dept.name }));
     load();
   }
 
@@ -256,6 +285,18 @@ export default function TeamsPage() {
                                 <LockResetOutlinedIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
+                            <Tooltip title={t("teams.removeFromTeam")}>
+                              <IconButton
+                                size="small"
+                                aria-label={t("teams.removeFromTeam")}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMemberToRemove({ member: m, dept });
+                                }}
+                              >
+                                <PersonRemoveOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                             <Tooltip title={m.is_active ? t("teams.block") : t("teams.unblock")}>
                               <IconButton
                                 size="small"
@@ -292,6 +333,82 @@ export default function TeamsPage() {
           </Accordion>
         );
       })}
+
+      {/* Contrepartie du retrait : sans cet écran, un membre détaché
+        * n'apparaîtrait plus nulle part et serait impossible à réaffecter. */}
+      {canCreateDepartment && unassignedMembers.length > 0 && (
+        <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
+          <Typography variant="subtitle1" fontWeight={700}>
+            {t("teams.unassignedTitle")}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {t("teams.unassignedHint")}
+          </Typography>
+          <Table size="small" sx={{ mt: 1 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>{t("companies.name")}</TableCell>
+                <TableCell>{t("common.position")}</TableCell>
+                <TableCell>{t("common.role")}</TableCell>
+                <TableCell sx={{ width: 240 }}>{t("teams.assignToTeam")}</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {unassignedMembers.map((m) => (
+                <TableRow key={m.id} hover>
+                  <TableCell>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Avatar src={m.avatar ?? undefined} sx={{ width: 32, height: 32, fontSize: 14, bgcolor: "primary.main" }}>
+                        {(m.full_name || m.email).charAt(0).toUpperCase()}
+                      </Avatar>
+                      <span>{m.full_name || m.email}</span>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>{m.position}</TableCell>
+                  <TableCell>{t(`common.roles.${m.role}`)}</TableCell>
+                  <TableCell>
+                    <TextField
+                      select
+                      size="small"
+                      fullWidth
+                      value=""
+                      label={t("teams.assignToTeam")}
+                      onChange={(e) => {
+                        const dept = departments.find((d) => d.id === Number(e.target.value));
+                        if (dept) handleAssignToTeam(m, dept);
+                      }}
+                    >
+                      {departments.map((d) => (
+                        <MenuItem key={d.id} value={d.id}>
+                          {d.name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Paper>
+      )}
+
+      <Dialog open={memberToRemove !== null} onClose={() => setMemberToRemove(null)} fullWidth maxWidth="xs">
+        <DialogTitle>{t("teams.removeConfirmTitle")}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            {t("teams.removeConfirmBody", {
+              name: memberToRemove?.member.full_name || memberToRemove?.member.email || "",
+              team: memberToRemove?.dept.name ?? "",
+            })}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMemberToRemove(null)}>{t("common.cancel")}</Button>
+          <Button color="error" variant="contained" onClick={handleRemoveFromTeam}>
+            {t("teams.removeFromTeam")}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={deptDialog} onClose={() => setDeptDialog(false)} fullWidth maxWidth="xs">
         <DialogTitle>{t("departments.newDepartment")}</DialogTitle>

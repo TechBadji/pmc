@@ -230,7 +230,15 @@
     "block": "Block",
     "unblock": "Unblock",
     "addMember": "Add a member",
-    "temporaryPassword": "Temporary password"
+    "temporaryPassword": "Temporary password",
+    "removeFromTeam": "Remove from team",
+    "removeConfirmTitle": "Remove this member from the team?",
+    "removeConfirmBody": "{{name}} will no longer appear in the {{team}} team. The account and its evaluation history are kept: an administrator can reassign them to another team.",
+    "removedMessage": "{{name}} was removed from the team.",
+    "unassignedTitle": "Members without a team",
+    "unassignedHint": "These people were removed from a team. Pick a team to reassign them.",
+    "assignToTeam": "Assign to a team",
+    "assignedMessage": "{{name}} was assigned to the {{team}} team."
   },
   "skills": {
     "competency": "Competency",
