@@ -458,7 +458,7 @@ export default function CohesionFormPage() {
                   <Typography variant="subtitle2" sx={{ mb: 1 }}>
                     {t("cohesion.chartTitle")}
                   </Typography>
-                  <ResponsiveContainer width="100%" height={208}>
+                  <ResponsiveContainer width="100%" height={146}>
                     <BarChart data={chartData} margin={{ top: 10, right: 20, bottom: 0, left: 0 }}>
                       <CartesianGrid stroke="#e1e0d9" vertical={false} />
                       <XAxis dataKey="period" tick={{ fill: "#898781", fontSize: 12 }} />
