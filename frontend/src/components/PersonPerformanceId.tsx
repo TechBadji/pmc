@@ -812,7 +812,7 @@ export default function PersonPerformanceId({
               {t("managerDevPlan.softSkills")}
             </SubHead>
             {noteCells(notesFor("SOFT_STRENGTH"), 1, 2, 10)}
-            <Lab center bg="#fff" sx={{ gridColumn: 1, gridRow: "15 / span 2", color: HARD_SKILLS_COLOR, height: "auto" }}>
+            <Lab center bg="#fff" sx={{ gridColumn: 1, gridRow: 16, color: HARD_SKILLS_COLOR }}>
               {t("performanceId.hardSkillsIndex")}
             </Lab>
             <Fld
@@ -820,7 +820,7 @@ export default function PersonPerformanceId({
               readOnly
               align="center"
               bold
-              sx={{ gridColumn: 2, gridRow: "15 / span 2", height: "auto" }}
+              sx={{ gridColumn: 2, gridRow: 16 }}
             />
 
             <SubHead bg={HARD_BAND} color="#fff" right="SI" sx={{ gridColumn: "3 / 5", gridRow: 2 }}>
@@ -831,7 +831,7 @@ export default function PersonPerformanceId({
               {t("managerDevPlan.softSkills")}
             </SubHead>
             {noteCells(notesFor("SOFT_WEAKNESS"), 3, 4, 10)}
-            <Lab center bg="#fff" sx={{ gridColumn: 3, gridRow: "15 / span 2", color: SOFT_SKILLS_COLOR, height: "auto" }}>
+            <Lab center bg="#fff" sx={{ gridColumn: 3, gridRow: 16, color: SOFT_SKILLS_COLOR }}>
               {t("performanceId.softSkillsIndex")}
             </Lab>
             <Fld
@@ -839,7 +839,7 @@ export default function PersonPerformanceId({
               readOnly
               align="center"
               bold
-              sx={{ gridColumn: 4, gridRow: "15 / span 2", height: "auto" }}
+              sx={{ gridColumn: 4, gridRow: 16 }}
             />
 
             {/* Vision puis projets personnels : deux grandes zones de texte. */}
