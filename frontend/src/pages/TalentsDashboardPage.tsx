@@ -303,6 +303,10 @@ export default function TalentsDashboardPage() {
         </Paper>
       ) : view === "boxes" ? (
         <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
+          {/* Intitulé du schéma, repris tel quel du support ID-PMC. */}
+          <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 1.5, textAlign: "center", color: "primary.main" }}>
+            {t("talents.boxesTitle")}
+          </Typography>
           {/* Bande verticale "Taux de progression" + les 3 lignes de la 9 Box,
             * de la progression la plus forte (en haut) à la régression. */}
           <Box sx={{ display: "grid", gridTemplateColumns: "34px 150px repeat(3, 1fr)", gap: 1 }}>
@@ -388,6 +392,9 @@ export default function TalentsDashboardPage() {
         </Paper>
       ) : (
         <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
+          <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 1, textAlign: "center", color: "primary.main" }}>
+            {t("talents.trajectoryTitle")}
+          </Typography>
           <ResponsiveContainer width="100%" height={460}>
             <ScatterChart margin={{ top: 20, right: 40, bottom: 30, left: 10 }}>
               <CartesianGrid stroke="#e1e0d9" />

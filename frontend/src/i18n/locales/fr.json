@@ -540,6 +540,8 @@
   },
   "talents": {
     "title": "Tableau de bord des talents",
+    "boxesTitle": "ID-PMC 9 Box Performance Trajectory matrix",
+    "trajectoryTitle": "ID-PMC ID-TPD Talents Performance Dashboard",
     "viewBoxes": "9 Box",
     "viewTrajectory": "Trajectoire",
     "performance": "Performance",
