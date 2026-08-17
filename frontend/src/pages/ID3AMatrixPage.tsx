@@ -50,10 +50,15 @@ import type { Evaluation, Paginated, PerformanceRating } from "@/api/types";
 import StatCard from "@/components/StatCard";
 import { CHART_NEUTRALS, performanceColors } from "@/theme";
 
-const AXIS_TICKS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+// Axes gradués jusqu'à 6 : le barème ID-3A va de 1 à 5, mais une performance
+// exceptionnelle peut se situer au-delà de 5 — sans cette marge, un point à
+// 5,5 serait collé au bord du repère, voire hors cadre. La frontière des
+// quadrants reste à 2,5, milieu du barème et non de l'axe.
+const AXIS_MAX = 6;
+const AXIS_TICKS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
 // Quadrillage secondaire (pas de 0.25) — lecture plus fine entre les
 // graduations principales de 0.5, sans les dupliquer.
-const MINOR_AXIS_TICKS = [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75];
+const MINOR_AXIS_TICKS = [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25, 5.75];
 
 const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
 
@@ -128,8 +133,8 @@ function declutterPoints(points: Point[]): Point[] {
     if (!moved) break;
   }
   adjusted.forEach((p) => {
-    p.x = Math.min(5, Math.max(0, p.x));
-    p.y = Math.min(5, Math.max(0, p.y));
+    p.x = Math.min(AXIS_MAX, Math.max(0, p.x));
+    p.y = Math.min(AXIS_MAX, Math.max(0, p.y));
   });
   return adjusted;
 }
@@ -421,9 +426,9 @@ function MatrixBackground({ xAxisMap, yAxisMap, enabled }: any) {
   const yAxis = yAxisMap?.[0];
   if (!xAxis || !yAxis) return null;
   const x0 = xAxis.scale(0);
-  const x5 = xAxis.scale(5);
+  const x5 = xAxis.scale(AXIS_MAX);
   const y0 = yAxis.scale(0);
-  const y5 = yAxis.scale(5);
+  const y5 = yAxis.scale(AXIS_MAX);
   return (
     <rect
       x={Math.min(x0, x5)}
@@ -441,10 +446,10 @@ function MatrixQuadrants({ xAxisMap, yAxisMap }: any) {
   const yAxis = yAxisMap?.[0];
   if (!xAxis || !yAxis) return null;
   const x0 = xAxis.scale(0);
-  const x5 = xAxis.scale(5);
+  const x5 = xAxis.scale(AXIS_MAX);
   const xMid = xAxis.scale(2.5);
   const y0 = yAxis.scale(0);
-  const y5 = yAxis.scale(5);
+  const y5 = yAxis.scale(AXIS_MAX);
   const yMid = yAxis.scale(2.5);
   const labelStyle = {
     fontSize: 10,
@@ -496,8 +501,8 @@ function ObjectiveMiniChart({ current, prev }: ObjectivePair) {
   const MR = 10;
   const plotW = W - ML - MR;
   const plotH = H - MT - MB;
-  const sx = (v: number) => ML + (v / 5) * plotW;
-  const sy = (v: number) => MT + plotH - (v / 5) * plotH;
+  const sx = (v: number) => ML + (v / AXIS_MAX) * plotW;
+  const sy = (v: number) => MT + plotH - (v / AXIS_MAX) * plotH;
   const color = performanceColors[current.rating];
 
   return (
@@ -505,10 +510,10 @@ function ObjectiveMiniChart({ current, prev }: ObjectivePair) {
       {/* axes */}
       <line x1={ML} y1={MT} x2={ML} y2={MT + plotH} stroke={CHART_NEUTRALS.plotAxisLine} strokeWidth={1} />
       <line x1={ML} y1={MT + plotH} x2={ML + plotW} y2={MT + plotH} stroke={CHART_NEUTRALS.plotAxisLine} strokeWidth={1} />
-      <text x={ML - 4} y={MT + 4} textAnchor="end" fontSize={8} fill="#898781">5</text>
+      <text x={ML - 4} y={MT + 4} textAnchor="end" fontSize={8} fill="#898781">{AXIS_MAX}</text>
       <text x={ML - 4} y={MT + plotH} textAnchor="end" fontSize={8} fill="#898781">0</text>
       <text x={ML} y={H - 2} textAnchor="start" fontSize={8} fill="#898781">0</text>
-      <text x={ML + plotW} y={H - 2} textAnchor="end" fontSize={8} fill="#898781">5</text>
+      <text x={ML + plotW} y={H - 2} textAnchor="end" fontSize={8} fill="#898781">{AXIS_MAX}</text>
 
       {prev && (
         <g>
@@ -1037,7 +1042,7 @@ export default function ID3AMatrixPage() {
                 type="number"
                 dataKey="x"
                 name="Attitudes (Soft Skills)"
-                domain={[0, 5]}
+                domain={[0, AXIS_MAX]}
                 ticks={AXIS_TICKS}
                 tick={{ fill: "#898781", fontSize: 12 }}
                 label={{ value: "ATTITUDE (SOFT SKILLS)", position: "insideBottom", offset: -10, fill: CHART_NEUTRALS.axisTitle }}
@@ -1046,7 +1051,7 @@ export default function ID3AMatrixPage() {
                 type="number"
                 dataKey="y"
                 name="Aptitudes (Hard Skills)"
-                domain={[0, 5]}
+                domain={[0, AXIS_MAX]}
                 ticks={AXIS_TICKS}
                 tick={{ fill: "#898781", fontSize: 12 }}
                 label={{ value: "APTITUDES (HARD SKILLS)", angle: -90, position: "insideLeft", fill: CHART_NEUTRALS.axisTitle }}

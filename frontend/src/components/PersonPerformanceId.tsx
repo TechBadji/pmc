@@ -185,6 +185,10 @@ function ListField({
   );
 }
 
+// Même échelle que la page Matrice ID-3A : graduée jusqu'à 6 pour laisser la
+// place aux performances exceptionnelles au-delà de 5.
+const ID3A_AXIS_MAX = 6;
+
 /** Mini-matrice ID-3A d'une personne : Aptitudes (HSI) en X, Attitudes (SSI)
  * en Y, quadrants et projections sur les axes — même langage visuel que la
  * page Matrice ID-3A, en version carrée pour la fiche. */
@@ -197,8 +201,8 @@ function Id3aMiniMatrix({ hsi, ssi, altitude, rating }: { hsi: number; ssi: numb
   const MR = 10;
   const plotW = S - ML - MR;
   const plotH = S - MT - MB;
-  const x = (v: number) => ML + (v / 5) * plotW;
-  const y = (v: number) => MT + plotH - (v / 5) * plotH;
+  const x = (v: number) => ML + (v / ID3A_AXIS_MAX) * plotW;
+  const y = (v: number) => MT + plotH - (v / ID3A_AXIS_MAX) * plotH;
   const color = performanceColors[rating];
   const quadrantLabel = { fontSize: 7, fontWeight: 700, letterSpacing: 0.3, fill: CHART_NEUTRALS.quadrantLabel } as const;
   const axisLabel = { fontSize: 7, fontWeight: 700, letterSpacing: 0.4, fill: CHART_NEUTRALS.axisTitle } as const;
@@ -208,25 +212,25 @@ function Id3aMiniMatrix({ hsi, ssi, altitude, rating }: { hsi: number; ssi: numb
       <rect x={ML} y={MT} width={plotW} height={plotH} fill="#f3f2ee" />
 
       {/* Séparateurs de quadrants + intitulés, comme sur la page Matrice. */}
-      <line x1={x(2.5)} y1={y(5)} x2={x(2.5)} y2={y(0)} stroke="#e1e0d9" strokeDasharray="3 3" />
-      <line x1={x(0)} y1={y(2.5)} x2={x(5)} y2={y(2.5)} stroke="#e1e0d9" strokeDasharray="3 3" />
-      <text x={x(0) + 4} y={y(5) + 9} textAnchor="start" style={quadrantLabel}>
+      <line x1={x(2.5)} y1={y(ID3A_AXIS_MAX)} x2={x(2.5)} y2={y(0)} stroke="#e1e0d9" strokeDasharray="3 3" />
+      <line x1={x(0)} y1={y(2.5)} x2={x(ID3A_AXIS_MAX)} y2={y(2.5)} stroke="#e1e0d9" strokeDasharray="3 3" />
+      <text x={x(0) + 4} y={y(ID3A_AXIS_MAX) + 9} textAnchor="start" style={quadrantLabel}>
         {t("id3aMatrix.quadrantExperts").toUpperCase()}
       </text>
-      <text x={x(5) - 4} y={y(5) + 9} textAnchor="end" style={quadrantLabel}>
+      <text x={x(ID3A_AXIS_MAX) - 4} y={y(ID3A_AXIS_MAX) + 9} textAnchor="end" style={quadrantLabel}>
         {t("id3aMatrix.quadrantTalents").toUpperCase()}
       </text>
       <text x={x(0) + 4} y={y(0) - 5} textAnchor="start" style={quadrantLabel}>
         {t("id3aMatrix.quadrantWatch").toUpperCase()}
       </text>
-      <text x={x(5) - 4} y={y(0) - 5} textAnchor="end" style={quadrantLabel}>
+      <text x={x(ID3A_AXIS_MAX) - 4} y={y(0) - 5} textAnchor="end" style={quadrantLabel}>
         {t("id3aMatrix.quadrantRelational").toUpperCase()}
       </text>
 
-      {/* Axes gradués 0-5. */}
-      <line x1={x(0)} y1={y(0)} x2={x(0)} y2={y(5)} stroke={CHART_NEUTRALS.plotAxisLine} />
-      <line x1={x(0)} y1={y(0)} x2={x(5)} y2={y(0)} stroke={CHART_NEUTRALS.plotAxisLine} />
-      {[0, 1, 2, 3, 4, 5].map((v) => (
+      {/* Axes gradués 0-6 (marge au-delà du barème 1-5). */}
+      <line x1={x(0)} y1={y(0)} x2={x(0)} y2={y(ID3A_AXIS_MAX)} stroke={CHART_NEUTRALS.plotAxisLine} />
+      <line x1={x(0)} y1={y(0)} x2={x(ID3A_AXIS_MAX)} y2={y(0)} stroke={CHART_NEUTRALS.plotAxisLine} />
+      {[0, 1, 2, 3, 4, 5, 6].map((v) => (
         <g key={v}>
           <line x1={x(v)} y1={y(0)} x2={x(v)} y2={y(0) + 3} stroke={CHART_NEUTRALS.plotAxisLine} />
           <line x1={x(0) - 3} y1={y(v)} x2={x(0)} y2={y(v)} stroke={CHART_NEUTRALS.plotAxisLine} />
@@ -251,9 +255,9 @@ function Id3aMiniMatrix({ hsi, ssi, altitude, rating }: { hsi: number; ssi: numb
       <circle cx={x(hsi)} cy={y(ssi)} r={9} fill={color} opacity={0.18} />
       <circle cx={x(hsi)} cy={y(ssi)} r={5} fill={color} stroke="#fff" strokeWidth={1.5} />
       <text
-        x={x(hsi) + (hsi > 3.5 ? -8 : 8)}
+        x={x(hsi) + (hsi > ID3A_AXIS_MAX * 0.7 ? -8 : 8)}
         y={y(ssi) - 7}
-        textAnchor={hsi > 3.5 ? "end" : "start"}
+        textAnchor={hsi > ID3A_AXIS_MAX * 0.7 ? "end" : "start"}
         fontSize={10}
         fontWeight={700}
         fill={color}
