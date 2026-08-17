@@ -16,7 +16,7 @@ import {
 import type { SxProps, Theme } from "@mui/material";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CartesianGrid, LabelList, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, LabelList, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { apiClient } from "@/api/client";
 import { CHART_NEUTRALS, HARD_SKILLS_COLOR, SOFT_SKILLS_COLOR, performanceColors } from "@/theme";
 import type {
@@ -453,6 +453,13 @@ export default function PersonPerformanceId({
         .sort((a, b) => a.year.localeCompare(b.year)),
     [evaluations]
   );
+  // Domaine calé pour toujours montrer le repère des 100 %, et écart avec la
+  // période précédente affiché sous la courbe.
+  const values = history.map((h) => h.value);
+  const yDomainMin = Math.min(100, ...(values.length ? values : [100])) - 15;
+  const yDomainMax = Math.max(100, ...(values.length ? values : [100])) + 15;
+  const historyTrend = history.length > 1 ? history[history.length - 1].value - history[history.length - 2].value : null;
+
   const latestEvaluation = evaluations.length
     ? [...evaluations].sort((a, b) => a.campaign_start_date.localeCompare(b.campaign_start_date))[evaluations.length - 1]
     : null;
@@ -733,53 +740,113 @@ export default function PersonPerformanceId({
               <Fld value={latestEvaluation ? String(latestEvaluation.ssio) : "—"} readOnly align="center" bold />
             </Box>
 
-            {/* Graphique d'historique — occupe toute la hauteur du bandeau. */}
+            {/* Graphe de performance : lisible par un lecteur non initié —
+              * repère des 100 % (objectifs atteints), valeur de chaque période
+              * en % colorée selon le palier, et lecture de la tendance en
+              * toutes lettres sous la courbe. */}
             <SubHead sx={{ gridColumn: 7, gridRow: 2 }}>{t("performanceId.performanceGraph")}</SubHead>
-            <Box sx={{ gridColumn: 7, gridRow: "3 / span 8", border: SHEET_BORDER, bgcolor: "#fff", p: 0.25 }}>
+            <Box
+              sx={{
+                gridColumn: 7,
+                gridRow: "3 / span 8",
+                border: SHEET_BORDER,
+                bgcolor: "#fff",
+                p: 0.25,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               {history.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={history} margin={{ top: 16, right: 14, left: 6, bottom: 2 }}>
-                    <CartesianGrid stroke="#e1e0d9" vertical={false} />
-                    <XAxis dataKey="year" tick={{ fill: "#898781", fontSize: 10 }} tickLine={false} axisLine={false} />
-                    <YAxis hide domain={["dataMin - 20", "dataMax + 20"]} />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke={HEADER_ORANGE}
-                      strokeWidth={2}
-                      dot={(props: any) => (
-                        <circle
-                          key={`dot-${props.index}`}
-                          cx={props.cx}
-                          cy={props.cy}
-                          r={3.5}
-                          fill={performanceColors[history[props.index].rating]}
-                          stroke="#fff"
-                          strokeWidth={1.2}
+                <>
+                  <Box sx={{ flex: 1, minHeight: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={history} margin={{ top: 18, right: 30, left: 8, bottom: 2 }}>
+                        <defs>
+                          <linearGradient id="perf-history-fill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={HEADER_ORANGE} stopOpacity={0.3} />
+                            <stop offset="100%" stopColor={HEADER_ORANGE} stopOpacity={0.02} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid stroke="#eceae3" vertical={false} />
+                        <XAxis dataKey="year" tick={{ fill: "#898781", fontSize: 10 }} tickLine={false} axisLine={false} />
+                        {/* Le domaine englobe toujours 100 : sans ça, le repère
+                          * d'objectif disparaîtrait dès qu'une personne reste
+                          * durablement au-dessus ou en dessous. */}
+                        <YAxis hide domain={[yDomainMin, yDomainMax]} />
+                        <ReferenceLine
+                          y={100}
+                          stroke={CHART_NEUTRALS.connectorArrow}
+                          strokeDasharray="4 4"
+                          label={{
+                            value: t("performanceId.objectiveLine"),
+                            position: "right",
+                            fill: CHART_NEUTRALS.axisTitle,
+                            fontSize: 9,
+                            fontWeight: 700,
+                          }}
                         />
-                      )}
-                      activeDot={{ r: 5 }}
-                      isAnimationActive={false}
-                    >
-                      <LabelList
-                        dataKey="value"
-                        content={(props: any) => (
-                          <text
-                            key={`label-${props.index}`}
-                            x={props.x}
-                            y={props.y - 7}
-                            textAnchor="middle"
-                            fontSize={10}
-                            fontWeight={700}
-                            fill={performanceColors[history[props.index].rating]}
-                          >
-                            {props.value}%
-                          </text>
-                        )}
-                      />
-                    </Line>
-                  </LineChart>
-                </ResponsiveContainer>
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke={HEADER_ORANGE}
+                          strokeWidth={2.2}
+                          fill="url(#perf-history-fill)"
+                          isAnimationActive={false}
+                          dot={(props: any) => {
+                            const point = history[props.index];
+                            const isLast = props.index === history.length - 1;
+                            return (
+                              <circle
+                                key={`dot-${props.index}`}
+                                cx={props.cx}
+                                cy={props.cy}
+                                r={isLast ? 5 : 3.5}
+                                fill={performanceColors[point.rating]}
+                                stroke="#fff"
+                                strokeWidth={isLast ? 2 : 1.2}
+                              />
+                            );
+                          }}
+                          activeDot={{ r: 6 }}
+                        >
+                          <LabelList
+                            dataKey="value"
+                            content={(props: any) => (
+                              <text
+                                key={`label-${props.index}`}
+                                x={props.x}
+                                y={props.y - 8}
+                                textAnchor="middle"
+                                fontSize={10}
+                                fontWeight={700}
+                                fill={performanceColors[history[props.index].rating]}
+                                // Liseré blanc : la valeur reste lisible même
+                                // quand elle passe sur la grille ou l'aire.
+                                stroke="#fff"
+                                strokeWidth={2.5}
+                                paintOrder="stroke"
+                              >
+                                {props.value}%
+                              </text>
+                            )}
+                          />
+                        </Area>
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </Box>
+                  {/* Lecture en clair de la dernière période : niveau atteint
+                    * et évolution, pour un lecteur qui découvre la fiche. */}
+                  <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center" sx={{ pb: 0.25, flexWrap: "wrap" }}>
+                    <Typography sx={{ fontSize: 10, fontWeight: 700, color: performanceColors[history[history.length - 1].rating] }}>
+                      {history[history.length - 1].value}% — {t(`common.performance.${history[history.length - 1].rating}`)}
+                    </Typography>
+                    {historyTrend !== null && (
+                      <Typography sx={{ fontSize: 10, color: historyTrend >= 0 ? "success.main" : "error.main", fontWeight: 700 }}>
+                        {historyTrend >= 0 ? "▲" : "▼"} {Math.abs(historyTrend)} {t("performanceId.pointsVsPrevious")}
+                      </Typography>
+                    )}
+                  </Stack>
+                </>
               ) : (
                 <Stack alignItems="center" justifyContent="center" sx={{ height: "100%" }}>
                   <Typography variant="caption" color="text.secondary">

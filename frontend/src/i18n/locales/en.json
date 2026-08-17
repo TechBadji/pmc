@@ -422,6 +422,8 @@
     "performancePct": "% of performance",
     "performanceRecord": "Performance record",
     "performanceGraph": "Performance graph",
+    "objectiveLine": "Target 100%",
+    "pointsVsPrevious": "pts vs previous period",
     "categoryOfPerformer": "Category of performer",
     "hardSkillsIndex": "Hard skills index",
     "softSkillsIndex": "Soft skills index",
