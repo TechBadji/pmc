@@ -176,7 +176,16 @@ export default function TeamsPage() {
       {departments.map((dept) => {
         const teamMembers = members.filter((m) => m.department === dept.id);
         return (
-          <Accordion key={dept.id} elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
+          // Côté manager, l'API ne renvoie que son propre département :
+          // "Mon équipe" s'ouvre donc directement sur la liste des membres, au
+          // lieu d'imposer un clic sur un unique bandeau. Même chose dès qu'il
+          // n'y a qu'un département à afficher.
+          <Accordion
+            key={dept.id}
+            elevation={0}
+            defaultExpanded={user?.role === "MANAGER" || departments.length === 1}
+            sx={{ border: "1px solid", borderColor: "divider" }}
+          >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Stack direction="row" spacing={2} alignItems="center" sx={{ width: "100%" }}>
                 <Typography fontWeight={600}>{dept.name}</Typography>
