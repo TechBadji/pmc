@@ -453,7 +453,9 @@
     "professionalPerspectives": "Professional perspectives",
     "actionsToSupport": "Actions to support her/his performance",
     "risksObstacles": "Risks / Obstacles / Uncertainties",
-    "saved": "Saved."
+    "saved": "Saved.",
+    "print": "Print the sheet",
+    "unsavedChanges": "Unsaved changes"
   },
   "id3aMatrix": {
     "title": "ID-3A Matrix — Aptitudes × Attitudes",

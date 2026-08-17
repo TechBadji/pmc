@@ -1,9 +1,11 @@
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import {
   Alert,
   Avatar,
   Box,
   Button,
+  GlobalStyles,
   IconButton,
   InputBase,
   MenuItem,
@@ -41,9 +43,11 @@ const HEADER_ORANGE = "#E08A34"; // orange du logo — même bandeau que le Plan
 const CREAM = "#f5efd6";
 const ROW_H = 21; // hauteur d'une ligne de la fiche
 const SHEET_GAP = "3px";
-const SHEET_BORDER = "1px solid #aab3c0";
+const SHEET_BORDER = "1px solid #b6bdc9";
 const FIELD_BG = "#eaeef6"; // bleu très pâle des cases de saisie
+const READONLY_BG = "#f5f6f8"; // gris neutre : donnée calculée, non modifiable
 const LABEL_BG = "#f3f2ef"; // gris des intitulés de ligne
+const CELL_RADIUS = "2px";
 const HARD_BAND = "#8a93c4"; // bandeau "HARD SKILLS" de la feuille
 const SOFT_BAND = "#4caf7d"; // bandeau "SOFT SKILLS" de la feuille
 
@@ -55,6 +59,7 @@ function Band({ children, sx }: { children: React.ReactNode; sx?: SxProps<Theme>
         bgcolor: HEADER_ORANGE,
         color: "#fff",
         border: SHEET_BORDER,
+        borderRadius: CELL_RADIUS,
         height: ROW_H,
         display: "flex",
         alignItems: "center",
@@ -89,6 +94,7 @@ function SubHead({
     <Box
       sx={{
         border: SHEET_BORDER,
+        borderRadius: CELL_RADIUS,
         bgcolor: bg,
         color,
         height: ROW_H,
@@ -98,6 +104,7 @@ function SubHead({
         px: 0.75,
         fontSize: 11,
         fontWeight: 700,
+        letterSpacing: 0.2,
         whiteSpace: "nowrap",
         overflow: "hidden",
         ...sx,
@@ -125,6 +132,7 @@ function Lab({
     <Box
       sx={{
         border: SHEET_BORDER,
+        borderRadius: CELL_RADIUS,
         bgcolor: bg,
         height: ROW_H,
         display: "flex",
@@ -168,7 +176,23 @@ function Fld({
 }) {
   const locked = readOnly || !onChange;
   return (
-    <Box sx={{ border: SHEET_BORDER, bgcolor: bg, height: ROW_H, display: "flex", alignItems: "center", px: 0.5, ...sx }}>
+    <Box
+      sx={{
+        border: SHEET_BORDER,
+        borderRadius: CELL_RADIUS,
+        // Une case grise ne se saisit pas, une case bleue si : la distinction
+        // évite de chercher à écrire dans une valeur calculée.
+        bgcolor: locked && bg === FIELD_BG ? READONLY_BG : bg,
+        height: ROW_H,
+        display: "flex",
+        alignItems: "center",
+        px: 0.5,
+        transition: "border-color 0.12s, box-shadow 0.12s",
+        ...(locked ? {} : { "&:hover": { borderColor: "primary.light" } }),
+        "&:focus-within": { borderColor: "primary.main", boxShadow: "0 0 0 1px rgba(46,143,203,0.45)" },
+        ...sx,
+      }}
+    >
       <InputBase
         value={value}
         placeholder={placeholder}
@@ -392,6 +416,7 @@ export default function PersonPerformanceId({
   const [form, setForm] = useState<ProfileForm>(emptyForm());
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   const selectedUser = people.find((p) => p.id === selectedId) ?? null;
   const managerOf = selectedUser?.manager != null ? people.find((p) => p.id === selectedUser.manager) : null;
@@ -399,6 +424,7 @@ export default function PersonPerformanceId({
   useEffect(() => {
     if (selectedId === "") return;
     setSaved(false);
+    setDirty(false);
     apiClient.get<Paginated<Evaluation>>("/evaluations/", { params: { user: selectedId, page_size: 500 } }).then((r) => setEvaluations(r.data.results));
     apiClient.get<Paginated<PerformanceProfile>>("/performance-profiles/", { params: { user: selectedId } }).then((r) => {
       const p = r.data.results[0];
@@ -478,9 +504,17 @@ export default function PersonPerformanceId({
     return skillNotes.filter((n) => n.category === category);
   }
 
-  function setList(key: ListKey, value: string[]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+  /** Toute modification passe par ici : le bandeau d'enregistrement peut
+   * ainsi signaler des changements en attente et n'activer le bouton que
+   * lorsqu'il y a réellement quelque chose à enregistrer. */
+  function patchForm(patch: Partial<ProfileForm>) {
+    setForm((prev) => ({ ...prev, ...patch }));
     setSaved(false);
+    setDirty(true);
+  }
+
+  function setList(key: ListKey, value: string[]) {
+    patchForm({ [key]: value } as Partial<ProfileForm>);
   }
 
   async function handleSave() {
@@ -489,6 +523,7 @@ export default function PersonPerformanceId({
     try {
       await apiClient.put("/performance-profiles/save-for-user/", { user: selectedId, ...form });
       setSaved(true);
+      setDirty(false);
     } finally {
       setSaving(false);
     }
@@ -574,21 +609,41 @@ export default function PersonPerformanceId({
 
   return (
     <Stack spacing={2}>
-      <TextField
-        select
-        size="small"
-        label={t("performanceId.selectPerson")}
-        value={selectedId}
-        onChange={(e) => setSelectedId(e.target.value === "" ? "" : Number(e.target.value))}
-        sx={{ width: 240, alignSelf: "flex-start" }}
-      >
-        {selectable.map((p) => (
-          <MenuItem key={p.id} value={p.id}>
-            {p.full_name || p.email}
-            {p.department_name ? ` — ${p.department_name}` : ""}
-          </MenuItem>
-        ))}
-      </TextField>
+      {/* Impression : la fiche est faite pour être remise au client, on masque
+        * donc le cadre de l'application et on force les aplats de couleur, que
+        * les navigateurs suppriment par défaut à l'impression. */}
+      <GlobalStyles
+        styles={{
+          "@media print": {
+            "@page": { size: "A4 landscape", margin: "8mm" },
+            ".MuiDrawer-root, .MuiAppBar-root, .pmc-no-print": { display: "none !important" },
+            "main.MuiBox-root": { padding: "0 !important" },
+            "*": { WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" },
+          },
+        }}
+      />
+      <Stack direction="row" spacing={1.5} alignItems="center" className="pmc-no-print">
+        <TextField
+          select
+          size="small"
+          label={t("performanceId.selectPerson")}
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value === "" ? "" : Number(e.target.value))}
+          sx={{ width: 240 }}
+        >
+          {selectable.map((p) => (
+            <MenuItem key={p.id} value={p.id}>
+              {p.full_name || p.email}
+              {p.department_name ? ` — ${p.department_name}` : ""}
+            </MenuItem>
+          ))}
+        </TextField>
+        {selectedUser && (
+          <Button size="small" startIcon={<PrintOutlinedIcon />} onClick={() => window.print()}>
+            {t("performanceId.print")}
+          </Button>
+        )}
+      </Stack>
 
       {selectedUser && (
         <Paper elevation={0} sx={{ p: 1.5, border: SHEET_BORDER, bgcolor: "#fbfbfa" }}>
@@ -636,7 +691,7 @@ export default function PersonPerformanceId({
 
             {/* Colonne identité : intitulé + valeur, une ligne par donnée. */}
             <Lab sx={{ gridColumn: 2, gridRow: 2 }}>{t("performanceId.gender")}</Lab>
-            <Fld value={form.gender} onChange={(v) => setForm((f) => ({ ...f, gender: v }))} sx={{ gridColumn: 3, gridRow: 2 }} />
+            <Fld value={form.gender} onChange={(v) => patchForm({ gender: v })} sx={{ gridColumn: 3, gridRow: 2 }} />
             <Lab sx={{ gridColumn: 2, gridRow: 3 }}>{t("performanceId.age")}</Lab>
             <Fld value={selectedUser.age != null ? String(selectedUser.age) : "—"} readOnly align="center" sx={{ gridColumn: 3, gridRow: 3 }} />
             <Lab sx={{ gridColumn: 2, gridRow: 4 }}>{t("performanceId.yearsInPosition")}</Lab>
@@ -661,7 +716,7 @@ export default function PersonPerformanceId({
               sx={{ gridColumn: 3, gridRow: 6 }}
             />
             <Lab sx={{ gridColumn: 2, gridRow: 7 }}>{t("performanceId.contractType")}</Lab>
-            <Fld value={form.contract_type} onChange={(v) => setForm((f) => ({ ...f, contract_type: v }))} sx={{ gridColumn: 3, gridRow: 7 }} />
+            <Fld value={form.contract_type} onChange={(v) => patchForm({ contract_type: v })} sx={{ gridColumn: 3, gridRow: 7 }} />
             <Box sx={{ gridColumn: "2 / 4", gridRow: 8, display: "grid", gridTemplateColumns: "auto 1fr", gap: SHEET_GAP }}>
               <Lab>{t("performanceId.reportTo")}</Lab>
               <Fld value={managerOf?.full_name ?? "—"} readOnly />
@@ -686,7 +741,7 @@ export default function PersonPerformanceId({
               <Lab bg={CREAM}>{t("performanceId.performancePct")}</Lab>
               <Fld
                 value={form.performance_pct}
-                onChange={(v) => setForm((f) => ({ ...f, performance_pct: v }))}
+                onChange={(v) => patchForm({ performance_pct: v })}
                 placeholder={latestEvaluation ? `${latestEvaluation.altitude_percentage}%` : "—"}
                 align="center"
                 bold
@@ -710,7 +765,7 @@ export default function PersonPerformanceId({
                   variant="standard"
                   disableUnderline
                   fullWidth
-                  onChange={(e) => setForm((f) => ({ ...f, performer_category: e.target.value as PerformerCategory }))}
+                  onChange={(e) => patchForm({ performer_category: e.target.value as PerformerCategory })}
                   renderValue={(v) =>
                     v ? (
                       <Typography sx={{ fontSize: 11, fontWeight: 700, color: performanceColors[v as PerformanceRating] }}>
@@ -910,7 +965,7 @@ export default function PersonPerformanceId({
                 multiline
                 fullWidth
                 value={form.vision_aspirations}
-                onChange={(e) => setForm((f) => ({ ...f, vision_aspirations: e.target.value }))}
+                onChange={(e) => patchForm({ vision_aspirations: e.target.value })}
                 sx={bigTextSx}
               />
             </Box>
@@ -920,7 +975,7 @@ export default function PersonPerformanceId({
                 multiline
                 fullWidth
                 value={form.personal_projects}
-                onChange={(e) => setForm((f) => ({ ...f, personal_projects: e.target.value }))}
+                onChange={(e) => patchForm({ personal_projects: e.target.value })}
                 sx={bigTextSx}
               />
             </Box>
@@ -963,7 +1018,7 @@ export default function PersonPerformanceId({
             {listCells(form.personality_traits, 3, 8, 13, (v) => setList("personality_traits", v))}
             <Box sx={{ gridColumn: 8, gridRow: 16, display: "grid", gridTemplateColumns: "auto 1fr", gap: SHEET_GAP }}>
               <Lab>{t("performanceId.bonoHat")}</Lab>
-              <Fld value={form.bono_hat} onChange={(v) => setForm((f) => ({ ...f, bono_hat: v }))} />
+              <Fld value={form.bono_hat} onChange={(v) => patchForm({ bono_hat: v })} />
             </Box>
           </Box>
 
@@ -993,13 +1048,30 @@ export default function PersonPerformanceId({
             {listCells(form.dev_risks_obstacles, 3, 4, 8, (v) => setList("dev_risks_obstacles", v))}
           </Box>
 
-          <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={2} sx={{ mt: 1.5 }}>
-            {saved && (
-              <Alert severity="success" sx={{ py: 0 }}>
-                {t("performanceId.saved")}
-              </Alert>
+          <Stack
+            direction="row"
+            justifyContent="flex-end"
+            alignItems="center"
+            spacing={1.5}
+            className="pmc-no-print"
+            sx={{
+              mt: 1.5,
+              pt: 1,
+              borderTop: "1px solid",
+              borderColor: "divider",
+              position: "sticky",
+              bottom: 0,
+              bgcolor: "#fbfbfa",
+              zIndex: 1,
+            }}
+          >
+            {saved && <Alert severity="success" sx={{ py: 0 }}>{t("performanceId.saved")}</Alert>}
+            {dirty && (
+              <Typography sx={{ fontSize: 12, color: "warning.main", fontWeight: 700 }}>
+                {t("performanceId.unsavedChanges")}
+              </Typography>
             )}
-            <Button variant="contained" onClick={handleSave} disabled={saving}>
+            <Button variant="contained" onClick={handleSave} disabled={saving || !dirty}>
               {t("common.save")}
             </Button>
           </Stack>

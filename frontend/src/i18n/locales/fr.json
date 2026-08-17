@@ -453,7 +453,9 @@
     "professionalPerspectives": "Perspectives professionnelles",
     "actionsToSupport": "Actions pour soutenir sa performance",
     "risksObstacles": "Risques / Obstacles / Incertitudes",
-    "saved": "Enregistré."
+    "saved": "Enregistré.",
+    "print": "Imprimer la fiche",
+    "unsavedChanges": "Modifications non enregistrées"
   },
   "id3aMatrix": {
     "title": "Matrice ID-3A — Aptitudes × Attitudes",
