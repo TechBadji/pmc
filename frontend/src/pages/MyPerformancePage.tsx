@@ -20,7 +20,7 @@ export default function MyPerformancePage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5" fontWeight={700}>
+      <Typography variant="h5" fontWeight={700} className="pmc-no-print">
         {t("myPerformance.greeting", { name: user?.full_name || user?.email })}
       </Typography>
       <Typography variant="body2" color="text.secondary">

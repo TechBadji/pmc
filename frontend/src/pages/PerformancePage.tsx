@@ -26,7 +26,7 @@ export default function PerformancePage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5" fontWeight={700}>
+      <Typography variant="h5" fontWeight={700} className="pmc-no-print">
         {t("performanceId.pageTitle")}
       </Typography>
       <PersonPerformanceId people={people} selectablePeople={selectablePeople} />
