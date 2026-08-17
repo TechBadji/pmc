@@ -585,16 +585,11 @@ export default function PersonPerformanceId({
 
       {selectedUser && (
         <Paper elevation={0} sx={{ p: 1.5, border: SHEET_BORDER, bgcolor: "#fbfbfa" }}>
-          {/* Bandeau titre + date, comme l'entête de la feuille de référence. */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr auto", gap: SHEET_GAP, mb: 0.75, alignItems: "center" }}>
-            <Box sx={{ bgcolor: CREAM, border: SHEET_BORDER, py: 0.5, textAlign: "center" }}>
-              <Typography sx={{ fontSize: 17, fontWeight: 800, color: "primary.main" }}>
-                {t("performanceId.title", { name: selectedUser.full_name || selectedUser.email })}
-              </Typography>
-            </Box>
-            <Lab center bg="#fff" sx={{ minWidth: 92 }}>
-              {latestEvaluation ? latestEvaluation.campaign_start_date : "—"}
-            </Lab>
+          {/* Bandeau titre, comme l'entête de la feuille de référence. */}
+          <Box sx={{ bgcolor: CREAM, border: SHEET_BORDER, py: 0.5, mb: 0.75, textAlign: "center" }}>
+            <Typography sx={{ fontSize: 17, fontWeight: 800, color: "primary.main" }}>
+              {t("performanceId.title", { name: selectedUser.full_name || selectedUser.email })}
+            </Typography>
           </Box>
 
           {/* ----- Bandeau 1 : photo · informations · réalisations · performance ----- */}
