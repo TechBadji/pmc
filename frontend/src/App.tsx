@@ -21,6 +21,7 @@ import PasswordResetRequestsPage from "@/pages/PasswordResetRequestsPage";
 import PerformancePage from "@/pages/PerformancePage";
 import ProfilePage from "@/pages/ProfilePage";
 import SkillsAdminPage from "@/pages/SkillsAdminPage";
+import TalentsDashboardPage from "@/pages/TalentsDashboardPage";
 import SkillsPage from "@/pages/SkillsPage";
 import TeamsPage from "@/pages/TeamsPage";
 
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/skills" element={<SkillsPage />} />
           <Route path="/cohesion" element={<CohesionFormPage />} />
           <Route path="/id3a-matrix" element={<ID3AMatrixPage />} />
+          <Route path="/talents-dashboard" element={<TalentsDashboardPage />} />
           <Route path="/evaluation-campaigns" element={<EvaluationCampaignsPage />} />
           <Route path="/evaluations" element={<EvaluationsPage />} />
           <Route path="/evaluations/new" element={<EvaluationFormPage />} />

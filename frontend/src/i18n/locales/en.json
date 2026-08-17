@@ -7,6 +7,7 @@
     "passwordRequests": "Password requests",
     "teams": "Teams",
     "id3aMatrix": "ID-3A Matrix",
+    "talentsDashboard": "Talents dashboard",
     "actionPlans": "Action plans",
     "myTeam": "My team",
     "cohesion": "Team cohesion",
@@ -536,5 +537,74 @@
     "hardSkills": "HARD SKILLS",
     "indexShort": "Idx.",
     "saved": "Saved."
+  },
+  "talents": {
+    "title": "Talents dashboard",
+    "viewBoxes": "9 Box",
+    "viewTrajectory": "Trajectory",
+    "performance": "Performance",
+    "progression": "Progression",
+    "points": "pts",
+    "allDepartments": "All departments",
+    "performanceAxis": "PERFORMANCE %",
+    "performanceAxisShort": "PERFORMANCE % / OBJECTIVES",
+    "progressionAxis": "PROGRESSION RATE",
+    "progressionAxisShort": "+/- vs previous period (pts)",
+    "noData": "No one evaluated in this period has enough history to compute a progression.",
+    "firstEvaluation": "{{count}} person evaluated for the first time: progression cannot be computed",
+    "firstEvaluation_other": "{{count}} people evaluated for the first time: progression cannot be computed",
+    "legend": "Performance = Altitude for the selected period. Progression = point difference with that person's previous period.",
+    "kpiEvaluated": "Talents placed",
+    "kpiImproving": "Improving",
+    "kpiLeaders": "Driving leaders",
+    "kpiAtRisk": "At risk",
+    "perfBand": {
+      "low": "Very low / Low (0-74%)",
+      "mid": "Average (75-89%)",
+      "high": "High / Very high (90-100%) and +100%"
+    },
+    "progressBand": {
+      "regression": "Regression / Flat (-% to 0%)",
+      "moderate": "Moderate (1-5 pts)",
+      "strong": "High / Very high (+6 pts)"
+    },
+    "box": {
+      "02": {
+        "title": "Promising turnaround",
+        "advice": "Support and secure the progression"
+      },
+      "12": {
+        "title": "Accelerating talent",
+        "advice": "Develop and give more responsibility"
+      },
+      "22": {
+        "title": "Driving leader",
+        "advice": "Recognise, retain and widen the impact"
+      },
+      "01": {
+        "title": "Progress to consolidate",
+        "advice": "Close support"
+      },
+      "11": {
+        "title": "Developing contributor",
+        "advice": "Targeted progression plan"
+      },
+      "21": {
+        "title": "Solid performer",
+        "advice": "Maintain, challenge and prepare succession"
+      },
+      "00": {
+        "title": "Critical situation",
+        "advice": "In-depth diagnosis and quick decision"
+      },
+      "10": {
+        "title": "Manager at risk",
+        "advice": "Recovery plan and close follow-up"
+      },
+      "20": {
+        "title": "High performer slowing down",
+        "advice": "Prevent burnout or decline"
+      }
+    }
   }
 }

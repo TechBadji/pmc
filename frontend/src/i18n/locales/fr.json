@@ -7,6 +7,7 @@
     "passwordRequests": "Demandes de mdp",
     "teams": "Équipes",
     "id3aMatrix": "Matrice ID-3A",
+    "talentsDashboard": "Tableau de bord des talents",
     "actionPlans": "Plans d'action",
     "myTeam": "Mon équipe",
     "cohesion": "Cohésion d'équipe",
@@ -536,5 +537,74 @@
     "hardSkills": "HARD SKILLS",
     "indexShort": "Ind.",
     "saved": "Enregistré."
+  },
+  "talents": {
+    "title": "Tableau de bord des talents",
+    "viewBoxes": "9 Box",
+    "viewTrajectory": "Trajectoire",
+    "performance": "Performance",
+    "progression": "Progression",
+    "points": "pts",
+    "allDepartments": "Tous les départements",
+    "performanceAxis": "PERFORMANCE %",
+    "performanceAxisShort": "PERFORMANCE % / OBJECTIFS",
+    "progressionAxis": "TAUX DE PROGRESSION",
+    "progressionAxisShort": "+/- vs période précédente (pts)",
+    "noData": "Aucune personne évaluée sur cette période avec un historique permettant de calculer une progression.",
+    "firstEvaluation": "{{count}} personne évaluée pour la première fois : progression non calculable",
+    "firstEvaluation_other": "{{count}} personnes évaluées pour la première fois : progression non calculable",
+    "legend": "Performance = Altitude de la période choisie. Progression = écart en points avec la période précédente de la même personne.",
+    "kpiEvaluated": "Talents positionnés",
+    "kpiImproving": "En progression",
+    "kpiLeaders": "Leaders moteurs",
+    "kpiAtRisk": "À risque",
+    "perfBand": {
+      "low": "Très faible / Faible (0-74%)",
+      "mid": "Moyen (75-89%)",
+      "high": "Élevé / Très élevé (90-100%) et +100%"
+    },
+    "progressBand": {
+      "regression": "Régression / Nulle (-% à 0%)",
+      "moderate": "Moyen (1-5 pts)",
+      "strong": "Élevé / Très élevé (+6 pts)"
+    },
+    "box": {
+      "02": {
+        "title": "Redressement prometteur",
+        "advice": "Soutenir et sécuriser la progression"
+      },
+      "12": {
+        "title": "Talent en accélération",
+        "advice": "Développer et responsabiliser davantage"
+      },
+      "22": {
+        "title": "Leader moteur",
+        "advice": "Reconnaître, fidéliser et élargir l'impact"
+      },
+      "01": {
+        "title": "Progrès à consolider",
+        "advice": "Accompagnement rapproché"
+      },
+      "11": {
+        "title": "Contributeur en développement",
+        "advice": "Plan ciblé de progression"
+      },
+      "21": {
+        "title": "Performeur solide",
+        "advice": "Maintenir, challenger et préparer la relève"
+      },
+      "00": {
+        "title": "Situation critique",
+        "advice": "Diagnostic profond et décision rapide"
+      },
+      "10": {
+        "title": "Manager à risque",
+        "advice": "Plan de redressement et suivi rapproché"
+      },
+      "20": {
+        "title": "Haut performeur en décélération",
+        "advice": "Prévenir l'essoufflement ou le déclin"
+      }
+    }
   }
 }
