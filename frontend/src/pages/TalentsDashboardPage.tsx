@@ -148,6 +148,11 @@ export default function TalentsDashboardPage() {
       if (departmentFilter && evaluation.user_department !== departmentFilter) return;
       const previous = index > 0 ? Number(sorted[index - 1].altitude_percentage) : null;
       const performance = Number(evaluation.altitude_percentage);
+      // Progression relative : écart rapporté à la performance précédente,
+      // comme le prévoit le support (paliers exprimés en %). Une période
+      // précédente à 0 % rendrait le rapport infini : pas de progression.
+      const progression =
+        previous === null || previous === 0 ? null : Math.round(((performance - previous) / previous) * 1000) / 10;
       result.push({
         userId: evaluation.user,
         name: evaluation.user_name,
@@ -155,7 +160,7 @@ export default function TalentsDashboardPage() {
         department: evaluation.user_department,
         avatar: evaluation.user_avatar,
         performance,
-        progression: previous === null ? null : Math.round((performance - previous) * 10) / 10,
+        progression,
         rating: evaluation.performance_rating,
         previousPerformance: previous,
       });
@@ -190,7 +195,7 @@ export default function TalentsDashboardPage() {
             {t("talents.performance")}: {p.performance}%
             <br />
             {t("talents.progression")}: {delta >= 0 ? "+" : ""}
-            {delta} {t("talents.points")}
+            {delta}%
             {p.previousPerformance !== null && ` (${p.previousPerformance}% → ${p.performance}%)`}
           </Box>
         }
@@ -208,7 +213,7 @@ export default function TalentsDashboardPage() {
             </Typography>
             <Typography sx={{ fontSize: 10, lineHeight: 1.1, color: delta >= 0 ? "success.main" : "error.main", fontWeight: 700 }}>
               {p.performance}% · {delta >= 0 ? "+" : ""}
-              {delta}
+              {delta}%
             </Typography>
           </Box>
         </Stack>
@@ -401,6 +406,7 @@ export default function TalentsDashboardPage() {
                 domain={[-20, 20]}
                 ticks={[-20, -15, -10, -5, 0, 5, 10, 15, 20]}
                 tick={{ fill: "#898781", fontSize: 11 }}
+                tickFormatter={(v: number) => `${v > 0 ? "+" : ""}${v}%`}
                 label={{ value: t("talents.progressionAxisShort"), angle: -90, position: "insideLeft", fill: CHART_NEUTRALS.axisTitle }}
               />
               <ZAxis type="number" dataKey="z" range={[140, 140]} />
@@ -425,7 +431,7 @@ export default function TalentsDashboardPage() {
                       </Typography>
                       <Typography variant="body2" sx={{ color: performanceColors[p.rating] }}>
                         {p.performance}% · {delta >= 0 ? "+" : ""}
-                        {delta} {t("talents.points")}
+                        {delta}%
                       </Typography>
                     </Paper>
                   );
@@ -453,7 +459,7 @@ export default function TalentsDashboardPage() {
                       )}
                       <text x={cx + 23} y={cy + 4} fontSize={11} fontWeight={700} fill={(p.progression as number) >= 0 ? "#2e7d32" : "#c62828"}>
                         {p.performance}% ({(p.progression as number) >= 0 ? "+" : ""}
-                        {p.progression})
+                        {p.progression}%)
                       </text>
                     </g>
                   );

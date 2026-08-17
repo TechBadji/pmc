@@ -544,16 +544,15 @@
     "viewTrajectory": "Trajectory",
     "performance": "Performance",
     "progression": "Progression",
-    "points": "pts",
     "allDepartments": "All departments",
     "performanceAxis": "PERFORMANCE %",
     "performanceAxisShort": "PERFORMANCE % / OBJECTIVES",
     "progressionAxis": "PROGRESSION RATE",
-    "progressionAxisShort": "+/- vs previous period (pts)",
+    "progressionAxisShort": "+/- % vs previous period",
     "noData": "No one evaluated in this period has enough history to compute a progression.",
     "firstEvaluation": "{{count}} person evaluated for the first time: progression cannot be computed",
     "firstEvaluation_other": "{{count}} people evaluated for the first time: progression cannot be computed",
-    "legend": "Performance = Altitude for the selected period. Progression = point difference with that person's previous period.",
+    "legend": "Performance = Altitude for the selected period. Progression = relative change (%) against that person's previous period.",
     "kpiEvaluated": "Talents placed",
     "kpiImproving": "Improving",
     "kpiLeaders": "Driving leaders",
@@ -565,8 +564,8 @@
     },
     "progressBand": {
       "regression": "Regression / Flat (-% to 0%)",
-      "moderate": "Moderate (1-5 pts)",
-      "strong": "High / Very high (+6 pts)"
+      "moderate": "Moderate (1-5%)",
+      "strong": "High / Very high (+6%)"
     },
     "box": {
       "02": {

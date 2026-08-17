@@ -544,16 +544,15 @@
     "viewTrajectory": "Trajectoire",
     "performance": "Performance",
     "progression": "Progression",
-    "points": "pts",
     "allDepartments": "Tous les départements",
     "performanceAxis": "PERFORMANCE %",
     "performanceAxisShort": "PERFORMANCE % / OBJECTIFS",
     "progressionAxis": "TAUX DE PROGRESSION",
-    "progressionAxisShort": "+/- vs période précédente (pts)",
+    "progressionAxisShort": "+/- % vs période précédente",
     "noData": "Aucune personne évaluée sur cette période avec un historique permettant de calculer une progression.",
     "firstEvaluation": "{{count}} personne évaluée pour la première fois : progression non calculable",
     "firstEvaluation_other": "{{count}} personnes évaluées pour la première fois : progression non calculable",
-    "legend": "Performance = Altitude de la période choisie. Progression = écart en points avec la période précédente de la même personne.",
+    "legend": "Performance = Altitude de la période choisie. Progression = écart relatif (%) par rapport à la période précédente de la même personne.",
     "kpiEvaluated": "Talents positionnés",
     "kpiImproving": "En progression",
     "kpiLeaders": "Leaders moteurs",
@@ -565,8 +564,8 @@
     },
     "progressBand": {
       "regression": "Régression / Nulle (-% à 0%)",
-      "moderate": "Moyen (1-5 pts)",
-      "strong": "Élevé / Très élevé (+6 pts)"
+      "moderate": "Moyen (1-5%)",
+      "strong": "Élevé / Très élevé (+6%)"
     },
     "box": {
       "02": {
