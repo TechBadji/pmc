@@ -83,11 +83,10 @@ const AXIS_BAR_HEIGHT = 32;
 // descend encore de 40 % de sa hauteur, sans jamais passer sous le bloc
 // graphique — au-delà il pendrait dans le vide, sous la barre d'abscisse.
 const AXIS_BAND_SHIFT = Math.round(AXIS_BAND_HEIGHT * 0.4);
-const AXIS_BAND_TOP =
-  CHART_HEIGHT - CHART_MARGIN.bottom + MARKER_ROW_OFFSET - AXIS_BAND_HEIGHT + AXIS_BAND_SHIFT;
-// La descente est appliquée en entier ; c'est la hauteur qui cède, pour que la
-// base du bandeau reste sur le bas du bloc graphique au lieu de pendre dessous.
-const AXIS_BAND_VISIBLE_HEIGHT = Math.min(AXIS_BAND_HEIGHT, CHART_HEIGHT + AXIS_BAR_HEIGHT - AXIS_BAND_TOP);
+const AXIS_BAND_TOP = Math.min(
+  CHART_HEIGHT - CHART_MARGIN.bottom + MARKER_ROW_OFFSET - AXIS_BAND_HEIGHT + AXIS_BAND_SHIFT,
+  CHART_HEIGHT + AXIS_BAR_HEIGHT - AXIS_BAND_HEIGHT
+);
 
 const PROGRESS_BANDS = [
   { key: "regression", max: 0 },
@@ -467,7 +466,7 @@ export default function TalentsDashboardPage() {
                 // (hors marges haute et basse) : le centrer sur le bloc entier
                 // le décalait vers le bas, la marge basse portant les pastilles
                 // et les intitulés de paliers.
-                height: AXIS_BAND_VISIBLE_HEIGHT,
+                height: AXIS_BAND_HEIGHT,
                 mt: `${AXIS_BAND_TOP}px`,
                 alignSelf: "flex-start",
                 flexShrink: 0,
