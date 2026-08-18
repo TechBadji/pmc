@@ -360,9 +360,9 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
         rx={26}
         ry={26}
         fill={tint}
-        stroke="#8aa4c8"
-        strokeWidth={1.5}
-        strokeDasharray="1 5"
+        stroke="#3a5a8c"
+        strokeWidth={3}
+        strokeDasharray="1 6"
         strokeLinecap="round"
       />
     );
@@ -740,7 +740,7 @@ export default function TalentsDashboardPage() {
             <ScatterChart margin={TRAJECTORY_MARGIN}>
               {/* Quadrillage en carrés, puis le cadre dessiné à la main :
                 * quadrants arrondis, axes fléchés se croisant à 90 % et 0 %. */}
-              <CartesianGrid stroke="#e2eaf6" />
+              <CartesianGrid stroke="#a9c0dc" strokeWidth={1} />
               <Customized component={<TrajectoryFrame />} />
               <XAxis
                 type="number"
