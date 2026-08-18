@@ -378,23 +378,27 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
       <defs>
         {/* markerUnits="userSpaceOnUse" : sinon la flèche est multipliée par
             l'épaisseur du trait (6) et déborde largement de l'axe. */}
+        {/* markerWidth = longueur de la pointe le long de l'axe,
+            markerHeight = son envergure : 18 px pour un trait de 6, la pointe
+            se voit. refX place le sommet sur l'extrémité de la ligne, donc la
+            flèche est dessinée EN DEÇÀ du point d'arrivée, jamais au-delà. */}
         <marker
           id="tpd-arrow"
           markerUnits="userSpaceOnUse"
-          markerWidth="16"
-          markerHeight="12"
+          markerWidth="15"
+          markerHeight="18"
           refX="15"
-          refY="6"
+          refY="9"
           orient="auto"
         >
-          <path d="M0,0 L16,6 L0,12 Z" fill={AXIS_BLUE} />
+          <path d="M0,0 L15,9 L0,18 Z" fill={AXIS_BLUE} />
         </marker>
       </defs>
       {/* Axes épais fléchés, croisés sur l'origine du support (90 % / 0 %). */}
       <line
         x1={X(TRAJECTORY_X[0])}
         y1={Y(0)}
-        x2={X(TRAJECTORY_X[1]) + 26}
+        x2={X(TRAJECTORY_X[1])}
         y2={Y(0)}
         stroke={AXIS_BLUE}
         strokeWidth={6}
@@ -404,7 +408,7 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
         x1={X(TRAJECTORY_ORIGIN_X)}
         y1={Y(TRAJECTORY_Y[0])}
         x2={X(TRAJECTORY_ORIGIN_X)}
-        y2={Y(TRAJECTORY_Y[1]) - 22}
+        y2={Y(TRAJECTORY_Y[1])}
         stroke={AXIS_BLUE}
         strokeWidth={6}
         markerEnd="url(#tpd-arrow)"
