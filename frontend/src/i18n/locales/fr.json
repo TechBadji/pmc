@@ -608,6 +608,11 @@
       }
     },
     "trajectoryXAxis": "PERFORMANCE/OBJECTIFS",
-    "trajectoryYAxis": "+/- vs N-1"
+    "trajectoryYAxis": "+/- vs N-1",
+    "fromPeriod": "Progression depuis",
+    "fromPeriodHint": "Point de départ du tracé",
+    "person": "Collaborateur suivi",
+    "allPeople": "Tous les collaborateurs",
+    "trailHint": "Tracé de progression de {{name}} : chaque point est une période, la couleur donne le palier atteint."
   }
 }

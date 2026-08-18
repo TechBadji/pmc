@@ -1,8 +1,10 @@
 import {
   Alert,
   Box,
+  Checkbox,
   Button,
   CircularProgress,
+  ListItemText,
   MenuItem,
   Paper,
   Stack,
@@ -27,7 +29,7 @@ import {
 } from "recharts";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
-import type { Evaluation, Paginated } from "@/api/types";
+import type { Evaluation, Paginated, PerformanceRating } from "@/api/types";
 import StatCard from "@/components/StatCard";
 import { CHART_NEUTRALS, performanceColors } from "@/theme";
 
@@ -57,6 +59,7 @@ interface TalentPoint {
   progression: number | null;
   rating: Evaluation["performance_rating"];
   previousPerformance: number | null;
+  campaignName?: string;
 }
 
 /** Paliers de performance (abscisse) et de progression (ordonnée). */
@@ -65,6 +68,8 @@ const PERF_BANDS = [
   { key: "mid", max: 89.999 },
   { key: "high", max: Infinity },
 ] as const;
+
+const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
 
 const CHART_HEIGHT = 520;
 // Marges du repère : la marge gauche n'a besoin que de la place des pastilles
@@ -452,6 +457,81 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
   );
 }
 
+
+/** Tracé de progression d'une personne : segments reliant ses positions
+ * successives, colorés par le palier atteint à l'arrivée, avec une flèche de
+ * sens et le nom de la période à chaque étape. Utilisé tel quel par les deux
+ * vues, seules les coordonnées changent. */
+function TrailLayer({ xAxisMap, yAxisMap, trail, toX, toY }: any) {
+  const xAxis = xAxisMap?.[0];
+  const yAxis = yAxisMap?.[0];
+  if (!xAxis || !yAxis || !trail || trail.length === 0) return null;
+  const X = (p: TalentPoint) => xAxis.scale(toX(p));
+  const Y = (p: TalentPoint) => yAxis.scale(toY(p));
+
+  return (
+    <g>
+      <defs>
+        {trail.slice(1).map((p: TalentPoint, i: number) => (
+          <marker
+            key={`m-${i}`}
+            id={`trail-arrow-${i}`}
+            markerUnits="userSpaceOnUse"
+            markerWidth="11"
+            markerHeight="11"
+            refX="10"
+            refY="5.5"
+            orient="auto"
+          >
+            <path d="M0,0 L11,5.5 L0,11 Z" fill={performanceColors[p.rating]} />
+          </marker>
+        ))}
+      </defs>
+      {trail.slice(1).map((p: TalentPoint, i: number) => {
+        const from = trail[i];
+        return (
+          <line
+            key={`s-${i}`}
+            x1={X(from)}
+            y1={Y(from)}
+            x2={X(p)}
+            y2={Y(p)}
+            stroke={performanceColors[p.rating]}
+            strokeWidth={2.5}
+            strokeDasharray="6 4"
+            markerEnd={`url(#trail-arrow-${i})`}
+            opacity={0.85}
+          />
+        );
+      })}
+      {trail.map((p: TalentPoint, i: number) => (
+        <g key={`p-${i}`}>
+          {/* Étapes précédentes en petits jalons ; la position courante est
+              dessinée par la vignette photo, on ne la double pas. */}
+          {i < trail.length - 1 && (
+            <>
+              <circle cx={X(p)} cy={Y(p)} r={7} fill="#fff" stroke={performanceColors[p.rating]} strokeWidth={3} />
+              <text
+                x={X(p)}
+                y={Y(p) - 12}
+                textAnchor="middle"
+                fontSize={10}
+                fontWeight={700}
+                fill={performanceColors[p.rating]}
+                stroke={CHART_NEUTRALS.halo}
+                strokeWidth={3}
+                paintOrder="stroke"
+              >
+                {p.campaignName} · {p.performance}%
+              </text>
+            </>
+          )}
+        </g>
+      ))}
+    </g>
+  );
+}
+
 /** Infobulle commune aux deux vues. */
 function TalentTooltip({ active, payload }: any) {
   const { t } = useTranslation();
@@ -485,6 +565,11 @@ export default function TalentsDashboardPage() {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [campaignId, setCampaignId] = useState<number | "">("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
+  // Période de départ du tracé de progression, palier(s) retenus et personne
+  // suivie individuellement.
+  const [fromCampaignId, setFromCampaignId] = useState<number | "">("");
+  const [ratingFilter, setRatingFilter] = useState<PerformanceRating[]>([]);
+  const [personFilter, setPersonFilter] = useState<number | "">("");
   const [view, setView] = useState<"boxes" | "trajectory">("boxes");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -497,7 +582,10 @@ export default function TalentsDashboardPage() {
       .then((r) => {
         setEvaluations(r.data.results);
         const sorted = [...r.data.results].sort((a, b) => a.campaign_start_date.localeCompare(b.campaign_start_date));
-        if (sorted.length) setCampaignId(sorted[sorted.length - 1].campaign);
+        if (sorted.length) {
+          setCampaignId(sorted[sorted.length - 1].campaign);
+          setFromCampaignId(sorted[0].campaign);
+        }
       })
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
@@ -553,8 +641,52 @@ export default function TalentsDashboardPage() {
         previousPerformance: previous,
       });
     });
-    return result.sort((a, b) => b.performance - a.performance);
-  }, [evaluations, campaigns, campaignId, departmentFilter]);
+    return result
+      .filter((p) => (ratingFilter.length === 0 || ratingFilter.includes(p.rating)) && (personFilter === "" || p.userId === personFilter))
+      .sort((a, b) => b.performance - a.performance);
+  }, [evaluations, campaigns, campaignId, departmentFilter, ratingFilter, personFilter]);
+
+  const people = useMemo(() => {
+    const byId = new Map<number, string>();
+    evaluations.forEach((e) => byId.set(e.user, e.user_name));
+    return Array.from(byId.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [evaluations]);
+
+  /** Tracé de progression d'une personne : ses positions successives entre la
+   * période de départ et la période affichée, dans l'ordre chronologique. Une
+   * période sans progression calculable (première évaluation) est ignorée :
+   * elle n'a pas d'ordonnée. */
+  const trail = useMemo<TalentPoint[]>(() => {
+    if (personFilter === "" || campaignId === "" || fromCampaignId === "") return [];
+    const from = campaigns.find((c) => c.id === fromCampaignId);
+    const to = campaigns.find((c) => c.id === campaignId);
+    if (!from || !to) return [];
+    const own = evaluations
+      .filter((e) => e.user === personFilter)
+      .sort((a, b) => a.campaign_start_date.localeCompare(b.campaign_start_date));
+    const result: TalentPoint[] = [];
+    own.forEach((e, index) => {
+      if (e.campaign_start_date < from.start_date || e.campaign_start_date > to.start_date) return;
+      const previous = index > 0 ? Number(own[index - 1].altitude_percentage) : null;
+      const performance = Number(e.altitude_percentage);
+      if (previous === null || previous === 0) return;
+      result.push({
+        userId: e.user,
+        name: e.user_name,
+        position: e.user_position,
+        department: e.user_department,
+        avatar: e.user_avatar,
+        performance,
+        progression: Math.round(((performance - previous) / previous) * 1000) / 10,
+        rating: e.performance_rating,
+        previousPerformance: previous,
+        campaignName: e.campaign_name,
+      });
+    });
+    return result;
+  }, [evaluations, campaigns, personFilter, campaignId, fromCampaignId]);
 
   const placed = points.filter((p) => p.progression !== null);
   const unrated = points.filter((p) => p.progression === null);
@@ -622,6 +754,67 @@ export default function TalentsDashboardPage() {
           <ToggleButton value="boxes">{t("talents.viewBoxes")}</ToggleButton>
           <ToggleButton value="trajectory">{t("talents.viewTrajectory")}</ToggleButton>
         </ToggleButtonGroup>
+
+        <TextField
+          select
+          size="small"
+          label={t("talents.fromPeriod")}
+          value={fromCampaignId}
+          onChange={(e) => setFromCampaignId(Number(e.target.value))}
+          helperText={t("talents.fromPeriodHint")}
+          sx={{ minWidth: 200 }}
+        >
+          {campaigns.map((c) => (
+            <MenuItem key={c.id} value={c.id}>
+              {c.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          size="small"
+          label={t("id3aMatrix.performanceFilter")}
+          value={ratingFilter}
+          onChange={(e) => {
+            const value = e.target.value;
+            setRatingFilter(typeof value === "string" ? (value.split(",") as PerformanceRating[]) : (value as PerformanceRating[]));
+          }}
+          sx={{ minWidth: 210 }}
+          SelectProps={{
+            multiple: true,
+            renderValue: (selected: unknown) => {
+              const values = selected as PerformanceRating[];
+              if (values.length === 0) return t("id3aMatrix.allPerformanceLevels");
+              return values.map((r) => t(`common.performance.${r}`)).join(", ");
+            },
+          }}
+        >
+          {ALL_RATINGS.map((rating) => (
+            <MenuItem key={rating} value={rating}>
+              <Checkbox
+                size="small"
+                checked={ratingFilter.includes(rating)}
+                sx={{ color: performanceColors[rating], "&.Mui-checked": { color: performanceColors[rating] } }}
+              />
+              <ListItemText primary={t(`common.performance.${rating}`)} />
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          size="small"
+          label={t("talents.person")}
+          value={personFilter}
+          onChange={(e) => setPersonFilter(e.target.value === "" ? "" : Number(e.target.value))}
+          sx={{ minWidth: 210 }}
+        >
+          <MenuItem value="">{t("talents.allPeople")}</MenuItem>
+          {people.map((p) => (
+            <MenuItem key={p.id} value={p.id}>
+              {p.name}
+            </MenuItem>
+          ))}
+        </TextField>
 
         {departments.length > 1 && (
           <TextField
@@ -714,6 +907,11 @@ export default function TalentsDashboardPage() {
               <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <ScatterChart margin={CHART_MARGIN}>
                   <Customized component={<NineBoxFrame />} />
+                  <Customized
+                    component={
+                      <TrailLayer trail={trail} toX={(p: TalentPoint) => xPos(p.performance)} toY={(p: TalentPoint) => yPos(p.progression as number)} />
+                    }
+                  />
                   {/* width/height à 0 : sans graduations, Recharts réserve
                     * quand même la taille par défaut de ses axes (60 px à
                     * gauche, 30 px en bas) — c'est ce vide qui éloignait le
@@ -746,6 +944,15 @@ export default function TalentsDashboardPage() {
                 * quadrants arrondis, axes fléchés se croisant à 90 % et 0 %. */}
               <CartesianGrid stroke="#a9c0dc" strokeWidth={1} />
               <Customized component={<TrajectoryFrame />} />
+              <Customized
+                component={
+                  <TrailLayer
+                    trail={trail}
+                    toX={(p: TalentPoint) => Math.min(TRAJECTORY_X[1] - TRAJECTORY_X_INSET, Math.max(TRAJECTORY_X[0] + TRAJECTORY_X_INSET, p.performance))}
+                    toY={(p: TalentPoint) => Math.min(TRAJECTORY_Y[1] - TRAJECTORY_Y_INSET, Math.max(TRAJECTORY_Y[0] + TRAJECTORY_Y_INSET, p.progression as number))}
+                  />
+                }
+              />
               <XAxis
                 type="number"
                 dataKey="x"
@@ -776,6 +983,12 @@ export default function TalentsDashboardPage() {
             </ScatterChart>
           </ResponsiveContainer>
         </Paper>
+      )}
+
+      {trail.length > 1 && (
+        <Alert severity="info" icon={false}>
+          {t("talents.trailHint", { name: trail[0].name })}
+        </Alert>
       )}
 
       {/* Sur les données réelles, la majorité des collaborateurs n'a qu'une

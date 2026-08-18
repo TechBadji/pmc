@@ -608,6 +608,11 @@
       }
     },
     "trajectoryXAxis": "PERFORMANCE/OBJECTIVES",
-    "trajectoryYAxis": "+/- vs N-1"
+    "trajectoryYAxis": "+/- vs N-1",
+    "fromPeriod": "Progression from",
+    "fromPeriodHint": "Starting point of the trail",
+    "person": "Tracked person",
+    "allPeople": "All people",
+    "trailHint": "{{name}}'s progression trail: each point is a period, the colour shows the level reached."
   }
 }
