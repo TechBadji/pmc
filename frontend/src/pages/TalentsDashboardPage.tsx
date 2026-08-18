@@ -713,31 +713,17 @@ export default function TalentsDashboardPage() {
         {t("talents.title")}
       </Typography>
 
-      <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-        <TextField
-          select
-          size="small"
-          label={t("common.period")}
-          value={campaignId}
-          onChange={(e) => setCampaignId(Number(e.target.value))}
-          sx={{ minWidth: 220 }}
-        >
-          {campaigns.map((c) => (
-            <MenuItem key={c.id} value={c.id}>
-              {c.name}
-            </MenuItem>
-          ))}
-        </TextField>
-        {/* Sélecteur de vue placé avec les filtres, en aplat coloré : c'est la
-          * bascule la plus structurante de la page, elle ne doit pas se
-          * confondre avec un bouton secondaire. */}
+      {/* Barre de commandes, dans l'ordre de lecture : la vue d'abord, puis la
+        * période observée et sa comparaison, enfin les filtres du plus large
+        * (performance, département) au plus fin (collaborateur). */}
+      <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="flex-start">
         <ToggleButtonGroup
           size="small"
           exclusive
           value={view}
           onChange={(_, v) => v && setView(v)}
           sx={{
-            alignSelf: "center",
+            height: 40,
             "& .MuiToggleButton-root": {
               px: 2,
               fontWeight: 700,
@@ -758,11 +744,10 @@ export default function TalentsDashboardPage() {
         <TextField
           select
           size="small"
-          label={t("talents.fromPeriod")}
-          value={fromCampaignId}
-          onChange={(e) => setFromCampaignId(Number(e.target.value))}
-          helperText={t("talents.fromPeriodHint")}
-          sx={{ minWidth: 200 }}
+          label={t("common.period")}
+          value={campaignId}
+          onChange={(e) => setCampaignId(Number(e.target.value))}
+          sx={{ minWidth: 190 }}
         >
           {campaigns.map((c) => (
             <MenuItem key={c.id} value={c.id}>
@@ -770,6 +755,22 @@ export default function TalentsDashboardPage() {
             </MenuItem>
           ))}
         </TextField>
+
+        <TextField
+          select
+          size="small"
+          label={t("talents.fromPeriod")}
+          value={fromCampaignId}
+          onChange={(e) => setFromCampaignId(Number(e.target.value))}
+          sx={{ minWidth: 190 }}
+        >
+          {campaigns.map((c) => (
+            <MenuItem key={c.id} value={c.id}>
+              {c.name}
+            </MenuItem>
+          ))}
+        </TextField>
+
         <TextField
           select
           size="small"
@@ -779,7 +780,7 @@ export default function TalentsDashboardPage() {
             const value = e.target.value;
             setRatingFilter(typeof value === "string" ? (value.split(",") as PerformanceRating[]) : (value as PerformanceRating[]));
           }}
-          sx={{ minWidth: 210 }}
+          sx={{ minWidth: 200 }}
           SelectProps={{
             multiple: true,
             renderValue: (selected: unknown) => {
@@ -800,21 +801,6 @@ export default function TalentsDashboardPage() {
             </MenuItem>
           ))}
         </TextField>
-        <TextField
-          select
-          size="small"
-          label={t("talents.person")}
-          value={personFilter}
-          onChange={(e) => setPersonFilter(e.target.value === "" ? "" : Number(e.target.value))}
-          sx={{ minWidth: 210 }}
-        >
-          <MenuItem value="">{t("talents.allPeople")}</MenuItem>
-          {people.map((p) => (
-            <MenuItem key={p.id} value={p.id}>
-              {p.name}
-            </MenuItem>
-          ))}
-        </TextField>
 
         {departments.length > 1 && (
           <TextField
@@ -823,7 +809,7 @@ export default function TalentsDashboardPage() {
             label={t("common.department")}
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
-            sx={{ minWidth: 220 }}
+            sx={{ minWidth: 190 }}
           >
             <MenuItem value="">{t("talents.allDepartments")}</MenuItem>
             {departments.map((d) => (
@@ -833,6 +819,22 @@ export default function TalentsDashboardPage() {
             ))}
           </TextField>
         )}
+
+        <TextField
+          select
+          size="small"
+          label={t("talents.person")}
+          value={personFilter}
+          onChange={(e) => setPersonFilter(e.target.value === "" ? "" : Number(e.target.value))}
+          sx={{ minWidth: 190 }}
+        >
+          <MenuItem value="">{t("talents.allPeople")}</MenuItem>
+          {people.map((p) => (
+            <MenuItem key={p.id} value={p.id}>
+              {p.name}
+            </MenuItem>
+          ))}
+        </TextField>
       </Stack>
 
       {loadError && (
