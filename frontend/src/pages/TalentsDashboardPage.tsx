@@ -314,11 +314,15 @@ function TalentDot({ cx, cy, payload, flip }: any) {
 // Repère du support : performance de 50 à 120 % en abscisse, écart avec la
 // période précédente de -20 à +20 % en ordonnée, les deux axes se croisant à
 // 90 % / 0 % — et non dans un coin.
-const TRAJECTORY_HEIGHT = 560;
+const TRAJECTORY_HEIGHT = Math.round(560 * 1.3);
 const TRAJECTORY_MARGIN = { top: 30, right: 60, bottom: 30, left: 40 };
 const TRAJECTORY_X: [number, number] = [50, 120];
 const TRAJECTORY_Y: [number, number] = [-20, 20];
 const TRAJECTORY_ORIGIN_X = 90;
+// Marges de sécurité : une vignette posée sur la graduation extrême sortirait
+// du repère de la moitié de sa photo. Exprimées dans l'unité de chaque axe.
+const TRAJECTORY_X_INSET = 2; // ~2 points de performance
+const TRAJECTORY_Y_INSET = 1.5; // ~1,5 point d'écart
 const AXIS_BLUE = "#2E5AAC";
 
 function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
@@ -365,8 +369,18 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
       {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], TRAJECTORY_Y[0], 0, "br")}
 
       <defs>
-        <marker id="tpd-arrow" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto">
-          <path d="M0,0 L9,4.5 L0,9 Z" fill={AXIS_BLUE} />
+        {/* markerUnits="userSpaceOnUse" : sinon la flèche est multipliée par
+            l'épaisseur du trait (6) et déborde largement de l'axe. */}
+        <marker
+          id="tpd-arrow"
+          markerUnits="userSpaceOnUse"
+          markerWidth="16"
+          markerHeight="12"
+          refX="15"
+          refY="6"
+          orient="auto"
+        >
+          <path d="M0,0 L16,6 L0,12 Z" fill={AXIS_BLUE} />
         </marker>
       </defs>
       {/* Axes épais fléchés, croisés sur l'origine du support (90 % / 0 %). */}
@@ -542,7 +556,12 @@ export default function TalentsDashboardPage() {
     return { improving, atRisk, leaders, total: placed.length };
   }, [placed]);
 
-  const scatterData = placed.map((p) => ({ ...p, x: p.performance, y: p.progression as number, z: 200 }));
+  const scatterData = placed.map((p) => ({
+    ...p,
+    x: Math.min(TRAJECTORY_X[1] - TRAJECTORY_X_INSET, Math.max(TRAJECTORY_X[0] + TRAJECTORY_X_INSET, p.performance)),
+    y: Math.min(TRAJECTORY_Y[1] - TRAJECTORY_Y_INSET, Math.max(TRAJECTORY_Y[0] + TRAJECTORY_Y_INSET, p.progression as number)),
+    z: 200,
+  }));
   const boxData = placed.map((p) => ({ ...p, x: xPos(p.performance), y: yPos(p.progression as number), z: 200 }));
 
   return (
