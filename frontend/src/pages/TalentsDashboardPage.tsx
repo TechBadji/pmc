@@ -222,6 +222,7 @@ function TalentDot({ cx, cy, payload, flip }: any) {
   const ringWidth = r * 0.24;
   const photoR = r - ringWidth;
   const clipId = `talent-photo-${p.userId}`;
+  const shadowId = `talent-shadow-${p.userId}`;
   // Près du bord droit, l'écart s'écrit à gauche du point : à droite il
   // sortirait du cadre.
   const labelLeft = flip ?? p.x > 2.5;
@@ -240,10 +241,14 @@ function TalentDot({ cx, cy, payload, flip }: any) {
         <clipPath id={clipId}>
           <circle cx={cx} cy={cy} r={photoR} />
         </clipPath>
+        {/* Ombre douce : la vignette se détache du fond et du quadrillage. */}
+        <filter id={shadowId} x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy={hovered ? 3 : 1.5} stdDeviation={hovered ? 3 : 1.5} floodColor="#1f3a63" floodOpacity="0.28" />
+        </filter>
       </defs>
       {/* Halo dessiné à l'extérieur de l'anneau, pour détacher la vignette de
           la grille sans entamer la couleur du palier. */}
-      <circle cx={cx} cy={cy} r={r + 1.5} fill={CHART_NEUTRALS.halo} style={{ transition: DOT_TRANSITION }} />
+      <circle cx={cx} cy={cy} r={r + 1.5} fill={CHART_NEUTRALS.halo} filter={`url(#${shadowId})`} style={{ transition: DOT_TRANSITION }} />
       <circle cx={cx} cy={cy} r={r} fill={color} style={{ transition: DOT_TRANSITION }} />
       {p.avatar ? (
         <image
@@ -332,13 +337,15 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
   if (!xAxis || !yAxis) return null;
   const X = (v: number) => xAxis.scale(v);
   const Y = (v: number) => yAxis.scale(v);
-  const tickText = { fontSize: 11, fontWeight: 700, fill: "#1f3a63" } as const;
+  const tickText = { fontSize: 10.5, fontWeight: 700, fill: "#5b7aa8", letterSpacing: 0.2 } as const;
   const xTicks = [50, 55, 60, 65, 70, 75, 80, 85, 95, 100, 105, 110, 115, 120];
   const yTicks = [20, 15, 10, 5, -5, -10, -15, -20];
   const inset = 10;
 
-  /** Un quadrant : rectangle à coins arrondis, en pointillés. */
-  function quadrant(x1: number, x2: number, y1: number, y2: number, key: string) {
+  /** Un quadrant : rectangle à coins arrondis, en pointillés, sur un aplat
+   * très pâle qui dit son sens — vert en haut à droite (performants qui
+   * progressent), rouge en bas à gauche (en difficulté et en recul). */
+  function quadrant(x1: number, x2: number, y1: number, y2: number, key: string, tint: string) {
     const left = Math.min(X(x1), X(x2)) + inset;
     const right = Math.max(X(x1), X(x2)) - inset;
     const top = Math.min(Y(y1), Y(y2)) + inset;
@@ -352,8 +359,8 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
         height={Math.max(0, bottom - top)}
         rx={26}
         ry={26}
-        fill="none"
-        stroke="#1f3a63"
+        fill={tint}
+        stroke="#8aa4c8"
         strokeWidth={1.5}
         strokeDasharray="1 5"
         strokeLinecap="round"
@@ -363,10 +370,10 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
 
   return (
     <g>
-      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, 0, TRAJECTORY_Y[1], "tl")}
-      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], 0, TRAJECTORY_Y[1], "tr")}
-      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[0], 0, "bl")}
-      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], TRAJECTORY_Y[0], 0, "br")}
+      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, 0, TRAJECTORY_Y[1], "tl", "#eef4fd")}
+      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], 0, TRAJECTORY_Y[1], "tr", "#ecf8ee")}
+      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[0], 0, "bl", "#fdeeec")}
+      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], TRAJECTORY_Y[0], 0, "br", "#fdf6e9")}
 
       <defs>
         {/* markerUnits="userSpaceOnUse" : sinon la flèche est multipliée par
@@ -416,20 +423,20 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
       ))}
 
       {/* Origine mise en avant, comme sur la planche : 90 % sur fond vert. */}
-      <rect x={X(TRAJECTORY_ORIGIN_X) - 24} y={Y(0) + 10} width={48} height={18} fill="#9ef2b6" />
+      <rect x={X(TRAJECTORY_ORIGIN_X) - 24} y={Y(0) + 10} width={48} height={18} rx={5} fill="#8fe8a8" />
       <text x={X(TRAJECTORY_ORIGIN_X)} y={Y(0) + 23} textAnchor="middle" style={tickText}>
         {TRAJECTORY_ORIGIN_X}%
       </text>
 
       {/* Intitulés des axes sur fond jaune, comme sur la planche. */}
       <g transform={`translate(${X(TRAJECTORY_ORIGIN_X) - 34}, ${Y(TRAJECTORY_Y[1]) + 6})`}>
-        <rect x={0} y={0} width={18} height={92} fill="#ffef62" />
+        <rect x={0} y={0} width={18} height={92} rx={5} fill="#ffe86b" />
         <text x={9} y={46} textAnchor="middle" transform="rotate(-90 9 46)" style={tickText}>
           {t("talents.trajectoryYAxis")}
         </text>
       </g>
       <g transform={`translate(${X(TRAJECTORY_X[1]) - 4}, ${Y(0) - 40})`}>
-        <rect x={0} y={0} width={150} height={30} fill="#ffef62" />
+        <rect x={0} y={0} width={150} height={30} rx={5} fill="#ffe86b" />
         <text x={6} y={13} style={{ ...tickText, fontSize: 10 }}>
           %
         </text>
@@ -733,7 +740,7 @@ export default function TalentsDashboardPage() {
             <ScatterChart margin={TRAJECTORY_MARGIN}>
               {/* Quadrillage en carrés, puis le cadre dessiné à la main :
                 * quadrants arrondis, axes fléchés se croisant à 90 % et 0 %. */}
-              <CartesianGrid stroke="#c9d6ea" />
+              <CartesianGrid stroke="#e2eaf6" />
               <Customized component={<TrajectoryFrame />} />
               <XAxis
                 type="number"
