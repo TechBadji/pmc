@@ -1,6 +1,5 @@
 import {
   Alert,
-  Avatar,
   Box,
   Button,
   CircularProgress,
@@ -17,6 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CartesianGrid,
+  Customized,
   ReferenceLine,
   ResponsiveContainer,
   Scatter,
@@ -73,22 +73,164 @@ const PROGRESS_BANDS = [
   { key: "strong", max: Infinity },
 ] as const;
 
-function perfBand(value: number) {
-  return PERF_BANDS.findIndex((b) => value <= b.max);
+
+/** Position sur l'échelle 1-5 du support : chaque palier occupe une colonne
+ * (ou une ligne) de largeur égale, et la personne se place *à l'intérieur* de
+ * son palier au prorata de sa valeur réelle — d'où un vrai nuage de points, et
+ * non une simple case d'appartenance. */
+function xPos(performance: number) {
+  if (performance < 75) return 1 + (Math.max(0, performance) / 75) * 2; // 1 → 3
+  if (performance < 90) return 3 + (performance - 75) / 15; // 3 → 4
+  return 4 + Math.min(1, (performance - 90) / 30); // 4 → 5 (90 % → 120 %)
 }
 
-function progressBand(value: number) {
-  return PROGRESS_BANDS.findIndex((b) => value <= b.max);
+function yPos(progression: number) {
+  if (progression <= 0) return 3 + Math.max(-20, progression) / 20; // 2 → 3
+  if (progression < 6) return 3 + progression / 6; // 3 → 4
+  return 4 + Math.min(1, (progression - 6) / 14); // 4 → 5
 }
 
-/** Teinte de fond d'une case : verte en haut à droite, rouge en bas à gauche —
- * repère de lecture immédiat, la 9 Box du support restant en blanc. */
-function boxTint(col: number, row: number) {
-  const score = col + row; // 0 (bas gauche) → 4 (haut droite)
-  if (score >= 3) return "#e8f5e9";
-  if (score === 2) return "#f6f8ec";
-  if (score === 1) return "#fff6e5";
-  return "#fdecea";
+/** Cadre de la 9 Box dessiné dans le repère : séparateurs pointillés, repères
+ * chiffrés de l'échelle 1-5, intitulés des paliers et nom de chaque case. */
+function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
+  const { t } = useTranslation();
+  const xAxis = xAxisMap?.[0];
+  const yAxis = yAxisMap?.[0];
+  if (!xAxis || !yAxis) return null;
+  const X = (v: number) => xAxis.scale(v);
+  const Y = (v: number) => yAxis.scale(v);
+  const cellLabel = { fontSize: 10, fontWeight: 700, fill: CHART_NEUTRALS.quadrantLabel } as const;
+  const bandLabel = { fontSize: 11, fontWeight: 700, fill: "#5b8ac6" } as const;
+  const xEdges = [1, 3, 4, 5];
+  const yEdges = [3, 4, 5];
+
+  function marker(cx: number, cy: number, value: number) {
+    return (
+      <g key={`m-${value}-${cx}-${cy}`}>
+        <circle cx={cx} cy={cy} r={14} fill="#4a7ebb" />
+        <text x={cx} y={cy + 5} textAnchor="middle" fontSize={14} fontWeight={800} fill="#fff">
+          {value}
+        </text>
+      </g>
+    );
+  }
+
+  return (
+    <g>
+      {/* Grille des 9 cases */}
+      {xEdges.map((v) => (
+        <line key={`vx-${v}`} x1={X(v)} y1={Y(5)} x2={X(v)} y2={Y(2)} stroke="#9fb3d1" strokeDasharray="3 3" />
+      ))}
+      {[2, 3, 4, 5].map((v) => (
+        <line key={`hy-${v}`} x1={X(1)} y1={Y(v)} x2={X(5)} y2={Y(v)} stroke="#9fb3d1" strokeDasharray="3 3" />
+      ))}
+
+      {/* Intitulé de chaque case, en filigrane */}
+      {[0, 1, 2].map((col) =>
+        [0, 1, 2].map((row) => (
+          <text
+            key={`c-${col}-${row}`}
+            x={X([1, 3, 4][col]) + 8}
+            y={Y([3, 4, 5][row]) + 14}
+            textAnchor="start"
+            style={cellLabel}
+          >
+            {t(`talents.box.${col}${row}.title`).toUpperCase()}
+          </text>
+        ))
+      )}
+
+      {/* Repères chiffrés de l'échelle 1-5 */}
+      {xEdges.map((v) => marker(X(v), Y(2) + 30, v))}
+      {yEdges.map((v) => marker(X(1) - 30, Y(v), v))}
+
+      {/* Paliers de performance sous l'axe, paliers de progression à gauche */}
+      {[
+        { at: 2, key: PERF_BANDS[0].key },
+        { at: 3.5, key: PERF_BANDS[1].key },
+        { at: 4.5, key: PERF_BANDS[2].key },
+      ].map((b) => (
+        <text key={b.key} x={X(b.at)} y={Y(2) + 34} textAnchor="middle" style={bandLabel}>
+          {t(`talents.perfBand.${b.key}`)}
+        </text>
+      ))}
+      {[
+        { at: 2.5, key: PROGRESS_BANDS[0].key },
+        { at: 3.5, key: PROGRESS_BANDS[1].key },
+        { at: 4.5, key: PROGRESS_BANDS[2].key },
+      ].map((b) => (
+        <text
+          key={b.key}
+          x={X(1) - 56}
+          y={Y(b.at)}
+          textAnchor="middle"
+          transform={`rotate(-90 ${X(1) - 56} ${Y(b.at)})`}
+          style={bandLabel}
+        >
+          {t(`talents.progressBand.${b.key}`)}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+/** Point d'une personne : photo cerclée de la couleur de son palier de
+ * performance, écart relatif affiché à côté. */
+function TalentDot({ cx, cy, payload }: any) {
+  const p: TalentPoint = payload;
+  const delta = p.progression as number;
+  const color = performanceColors[p.rating];
+  const clipId = `talent-photo-${p.userId}`;
+  return (
+    <g>
+      <defs>
+        <clipPath id={clipId}>
+          <circle cx={cx} cy={cy} r={17} />
+        </clipPath>
+      </defs>
+      <circle cx={cx} cy={cy} r={21} fill={color} />
+      <circle cx={cx} cy={cy} r={17} fill="#fff" />
+      {p.avatar && (
+        <image href={p.avatar} x={cx - 17} y={cy - 17} width={34} height={34} clipPath={`url(#${clipId})`} preserveAspectRatio="xMidYMid slice" />
+      )}
+      {!p.avatar && (
+        <text x={cx} y={cy + 5} textAnchor="middle" fontSize={14} fontWeight={700} fill={color}>
+          {p.name.charAt(0).toUpperCase()}
+        </text>
+      )}
+      <text x={cx + 25} y={cy + 4} fontSize={12} fontWeight={800} fill={delta >= 0 ? "#2e7d32" : "#c62828"}>
+        {delta >= 0 ? "+" : ""}
+        {delta}%
+      </text>
+    </g>
+  );
+}
+
+/** Infobulle commune aux deux vues. */
+function TalentTooltip({ active, payload }: any) {
+  const { t } = useTranslation();
+  if (!active || !payload?.length) return null;
+  const p: TalentPoint = payload[0].payload;
+  const delta = p.progression as number;
+  return (
+    <Paper elevation={0} sx={{ p: 1.25, border: "1px solid", borderColor: "divider" }}>
+      <Typography variant="subtitle2" fontWeight={700}>
+        {p.name}
+      </Typography>
+      <Typography variant="caption" color="text.secondary" display="block">
+        {p.position}
+        {p.department ? ` · ${p.department}` : ""}
+      </Typography>
+      <Typography variant="body2" sx={{ color: performanceColors[p.rating] }}>
+        {t("talents.performance")} : {p.performance}%
+      </Typography>
+      <Typography variant="body2" sx={{ color: delta >= 0 ? "success.main" : "error.main" }}>
+        {t("talents.progression")} : {delta >= 0 ? "+" : ""}
+        {delta}%
+        {p.previousPerformance !== null && ` (${p.previousPerformance}% → ${p.performance}%)`}
+      </Typography>
+    </Paper>
+  );
 }
 
 export default function TalentsDashboardPage() {
@@ -179,49 +321,8 @@ export default function TalentsDashboardPage() {
     return { improving, atRisk, leaders, total: placed.length };
   }, [placed]);
 
-  function peopleIn(col: number, row: number) {
-    return placed.filter((p) => perfBand(p.performance) === col && progressBand(p.progression as number) === row);
-  }
-
-  function PersonChip({ p }: { p: TalentPoint }) {
-    const delta = p.progression as number;
-    return (
-      <Tooltip
-        title={
-          <Box sx={{ fontSize: 12 }}>
-            <strong>{p.name}</strong>
-            {p.position ? ` — ${p.position}` : ""}
-            <br />
-            {t("talents.performance")}: {p.performance}%
-            <br />
-            {t("talents.progression")}: {delta >= 0 ? "+" : ""}
-            {delta}%
-            {p.previousPerformance !== null && ` (${p.previousPerformance}% → ${p.performance}%)`}
-          </Box>
-        }
-      >
-        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ maxWidth: "100%" }}>
-          <Avatar
-            src={p.avatar ?? undefined}
-            sx={{ width: 28, height: 28, fontSize: 12, border: "2px solid", borderColor: performanceColors[p.rating] }}
-          >
-            {p.name.charAt(0).toUpperCase()}
-          </Avatar>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1.1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {p.name}
-            </Typography>
-            <Typography sx={{ fontSize: 10, lineHeight: 1.1, color: delta >= 0 ? "success.main" : "error.main", fontWeight: 700 }}>
-              {p.performance}% · {delta >= 0 ? "+" : ""}
-              {delta}%
-            </Typography>
-          </Box>
-        </Stack>
-      </Tooltip>
-    );
-  }
-
   const scatterData = placed.map((p) => ({ ...p, x: p.performance, y: p.progression as number, z: 200 }));
+  const boxData = placed.map((p) => ({ ...p, x: xPos(p.performance), y: yPos(p.progression as number), z: 200 }));
 
   return (
     <Stack spacing={3}>
@@ -307,12 +408,12 @@ export default function TalentsDashboardPage() {
           <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 1.5, textAlign: "center", color: "primary.main" }}>
             {t("talents.boxesTitle")}
           </Typography>
-          {/* Bande verticale "Taux de progression" + les 3 lignes de la 9 Box,
-            * de la progression la plus forte (en haut) à la régression. */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "34px 150px repeat(3, 1fr)", gap: 1 }}>
+          {/* Bande "TAUX DE PROGRESSION" à gauche, repère au centre, bande
+            * "PERFORMANCE %" en bas — comme la planche du support. */}
+          <Stack direction="row" spacing={1}>
             <Box
               sx={{
-                gridRow: "1 / span 3",
+                width: 34,
                 bgcolor: "#12275c",
                 color: "#fff",
                 borderRadius: 1,
@@ -329,66 +430,24 @@ export default function TalentsDashboardPage() {
                 {t("talents.progressionAxis")}
               </Typography>
             </Box>
-
-            {[2, 1, 0].map((row) => (
-              <Box key={row} sx={{ display: "contents" }}>
-                <Box sx={{ display: "flex", alignItems: "center", px: 0.5 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#2E5AAC" }}>
-                    {t(`talents.progressBand.${PROGRESS_BANDS[row].key}`)}
-                  </Typography>
-                </Box>
-                {[0, 1, 2].map((col) => {
-                  const people = peopleIn(col, row);
-                  return (
-                    <Paper
-                      key={col}
-                      elevation={0}
-                      sx={{
-                        p: 1,
-                        minHeight: 150,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        bgcolor: boxTint(col, row),
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 0.75,
-                      }}
-                    >
-                      <Box>
-                        <Typography sx={{ fontSize: 11.5, fontWeight: 800 }}>
-                          {t(`talents.box.${col}${row}.title`)}
-                        </Typography>
-                        <Typography sx={{ fontSize: 10.5, color: "text.secondary", lineHeight: 1.25 }}>
-                          {t(`talents.box.${col}${row}.advice`)}
-                        </Typography>
-                      </Box>
-                      <Stack spacing={0.5} sx={{ mt: "auto" }}>
-                        {people.map((p) => (
-                          <PersonChip key={p.userId} p={p} />
-                        ))}
-                      </Stack>
-                    </Paper>
-                  );
-                })}
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <ResponsiveContainer width="100%" height={520}>
+                <ScatterChart margin={{ top: 20, right: 40, bottom: 60, left: 130 }}>
+                  <Customized component={<NineBoxFrame />} />
+                  <XAxis type="number" dataKey="x" domain={[1, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} />
+                  <YAxis type="number" dataKey="y" domain={[2, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} />
+                  <ZAxis type="number" dataKey="z" range={[160, 160]} />
+                  <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} content={<TalentTooltip />} />
+                  <Scatter data={boxData} shape={(props: any) => <TalentDot {...props} />} isAnimationActive={false} />
+                </ScatterChart>
+              </ResponsiveContainer>
+              <Box sx={{ bgcolor: "#3F9142", color: "#fff", borderRadius: 1, textAlign: "center", py: 0.5, mt: 0.5 }}>
+                <Typography variant="caption" fontWeight={700} sx={{ letterSpacing: 1 }}>
+                  {t("talents.performanceAxis")}
+                </Typography>
               </Box>
-            ))}
-
-            {/* Intitulés des paliers de performance, sous les colonnes. */}
-            <Box />
-            <Box />
-            {[0, 1, 2].map((col) => (
-              <Typography key={col} sx={{ fontSize: 11, fontWeight: 700, color: "#2E5AAC", textAlign: "center", pt: 0.5 }}>
-                {t(`talents.perfBand.${PERF_BANDS[col].key}`)}
-              </Typography>
-            ))}
-            <Box />
-            <Box />
-            <Box sx={{ gridColumn: "3 / span 3", bgcolor: "#3F9142", color: "#fff", borderRadius: 1, textAlign: "center", py: 0.5 }}>
-              <Typography variant="caption" fontWeight={700} sx={{ letterSpacing: 1 }}>
-                {t("talents.performanceAxis")}
-              </Typography>
             </Box>
-          </Box>
+          </Stack>
         </Paper>
       ) : (
         <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
@@ -421,29 +480,7 @@ export default function TalentsDashboardPage() {
                 * progression nulle. */}
               <ReferenceLine x={90} stroke="#2E5AAC" strokeWidth={2} />
               <ReferenceLine y={0} stroke="#2E5AAC" strokeWidth={2} />
-              <RechartsTooltip
-                cursor={{ strokeDasharray: "3 3" }}
-                content={({ active, payload }: any) => {
-                  if (!active || !payload?.length) return null;
-                  const p: TalentPoint = payload[0].payload;
-                  const delta = p.progression as number;
-                  return (
-                    <Paper elevation={0} sx={{ p: 1.25, border: "1px solid", borderColor: "divider" }}>
-                      <Typography variant="subtitle2" fontWeight={700}>
-                        {p.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        {p.position}
-                        {p.department ? ` · ${p.department}` : ""}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: performanceColors[p.rating] }}>
-                        {p.performance}% · {delta >= 0 ? "+" : ""}
-                        {delta}%
-                      </Typography>
-                    </Paper>
-                  );
-                }}
-              />
+              <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} content={<TalentTooltip />} />
               <Scatter
                 data={scatterData}
                 shape={(props: any) => {
