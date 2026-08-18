@@ -610,7 +610,7 @@
     "trajectoryXAxis": "PERFORMANCE/OBJECTIFS",
     "trajectoryYAxis": "+/- vs N-1",
     "fromPeriod": "Comparer à",
-    "person": "Collaborateur",
+    "person": "Tous les collaborateurs",
     "allPeople": "Tous les collaborateurs",
     "trailHint": "Tracé de progression de {{name}} : chaque point est une période, la couleur donne le palier atteint."
   }

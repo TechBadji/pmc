@@ -610,7 +610,7 @@
     "trajectoryXAxis": "PERFORMANCE/OBJECTIVES",
     "trajectoryYAxis": "+/- vs N-1",
     "fromPeriod": "Compare to",
-    "person": "Person",
+    "person": "All people",
     "allPeople": "All people",
     "trailHint": "{{name}}'s progression trail: each point is a period, the colour shows the level reached."
   }
