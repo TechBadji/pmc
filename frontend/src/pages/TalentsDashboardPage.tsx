@@ -76,6 +76,8 @@ const AXIS_BAND_HEIGHT = Math.round(CHART_HEIGHT * 0.7);
 // Décalage des pastilles chiffrées sous l'axe des abscisses, et de celles de
 // l'ordonnée par rapport au bord gauche du tracé — au plus près des axes.
 const MARKER_ROW_OFFSET = 24;
+// Transitions du survol des vignettes — mêmes durées que la matrice ID-3A.
+const DOT_TRANSITION = "r 0.15s ease, width 0.15s ease, height 0.15s ease, x 0.15s ease, y 0.15s ease, font-size 0.15s ease";
 const MARKER_SIDE_OFFSET = 22;
 // Le bandeau "TAUX DE PROGRESSION" descend jusqu'à la rangée des pastilles :
 // son bas s'aligne sur la pastille 1, point de départ des deux axes. Le centrer
@@ -207,39 +209,99 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
 }
 
 /** Point d'une personne : photo cerclée de la couleur de son palier de
- * performance, écart relatif affiché à côté. */
+ * performance, écart relatif affiché à côté. La vignette grossit au survol,
+ * comme sur la matrice ID-3A, pour mettre le visage en avant et faire passer
+ * le point au-dessus de ses voisins. */
 function TalentDot({ cx, cy, payload }: any) {
+  const [hovered, setHovered] = useState(false);
   const p: TalentPoint & { x: number } = payload;
+  const delta = p.progression as number;
+  const color = performanceColors[p.rating];
+  const baseR = 17;
+  const r = hovered ? baseR + 18 : baseR;
+  // Anneau proportionnel au rayon : agrandi, il resterait sinon un filet.
+  const ringWidth = r * 0.24;
+  const photoR = r - ringWidth;
+  const clipId = `talent-photo-${p.userId}`;
   // Près du bord droit, l'écart s'écrit à gauche du point : à droite il
   // sortirait du cadre.
   const labelLeft = p.x > 2.5;
-  const delta = p.progression as number;
-  const color = performanceColors[p.rating];
-  const clipId = `talent-photo-${p.userId}`;
   return (
-    <g>
+    <g
+      style={{ cursor: "pointer" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      tabIndex={0}
+      role="img"
+      aria-label={`${p.name} — ${p.performance}% — ${delta >= 0 ? "+" : ""}${delta}%`}
+    >
       <defs>
+        {/* Pas de transition sur le clip-path : animé, il peut faire
+            apparaître la photo non découpée dans certains navigateurs. */}
         <clipPath id={clipId}>
-          <circle cx={cx} cy={cy} r={17} />
+          <circle cx={cx} cy={cy} r={photoR} />
         </clipPath>
       </defs>
-      <circle cx={cx} cy={cy} r={21} fill={color} />
-      <circle cx={cx} cy={cy} r={17} fill="#fff" />
-      {p.avatar && (
-        <image href={p.avatar} x={cx - 17} y={cy - 17} width={34} height={34} clipPath={`url(#${clipId})`} preserveAspectRatio="xMidYMid slice" />
+      {/* Halo dessiné à l'extérieur de l'anneau, pour détacher la vignette de
+          la grille sans entamer la couleur du palier. */}
+      <circle cx={cx} cy={cy} r={r + 1.5} fill={CHART_NEUTRALS.halo} style={{ transition: DOT_TRANSITION }} />
+      <circle cx={cx} cy={cy} r={r} fill={color} style={{ transition: DOT_TRANSITION }} />
+      {p.avatar ? (
+        <image
+          href={p.avatar}
+          x={cx - photoR}
+          y={cy - photoR}
+          width={photoR * 2}
+          height={photoR * 2}
+          clipPath={`url(#${clipId})`}
+          preserveAspectRatio="xMidYMid slice"
+          style={{ transition: DOT_TRANSITION }}
+        />
+      ) : (
+        <>
+          <circle cx={cx} cy={cy} r={photoR} fill="#fff" style={{ transition: DOT_TRANSITION }} />
+          <text
+            x={cx}
+            y={cy}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize={hovered ? 24 : 14}
+            fontWeight={700}
+            fill={color}
+            style={{ transition: "font-size 0.15s ease" }}
+          >
+            {p.name.charAt(0).toUpperCase()}
+          </text>
+        </>
       )}
-      {!p.avatar && (
-        <text x={cx} y={cy + 5} textAnchor="middle" fontSize={14} fontWeight={700} fill={color}>
-          {p.name.charAt(0).toUpperCase()}
+      {/* Performance au-dessus de la vignette au survol : l'infobulle donne le
+          détail, mais le chiffre reste lisible sans attendre son ouverture. */}
+      {hovered && (
+        <text
+          x={cx}
+          y={cy - r - 6}
+          textAnchor="middle"
+          fontSize={13}
+          fontWeight={700}
+          fill={color}
+          stroke={CHART_NEUTRALS.halo}
+          strokeWidth={3}
+          paintOrder="stroke"
+        >
+          {p.performance}%
         </text>
       )}
       <text
-        x={labelLeft ? cx - 25 : cx + 25}
+        x={labelLeft ? cx - r - 8 : cx + r + 8}
         y={cy + 4}
         textAnchor={labelLeft ? "end" : "start"}
-        fontSize={12}
+        fontSize={hovered ? 14 : 12}
         fontWeight={800}
         fill={delta >= 0 ? "#2e7d32" : "#c62828"}
+        stroke={CHART_NEUTRALS.halo}
+        strokeWidth={3}
+        paintOrder="stroke"
+        style={{ transition: DOT_TRANSITION }}
       >
         {delta >= 0 ? "+" : ""}
         {delta}%
