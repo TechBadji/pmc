@@ -99,71 +99,76 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
   if (!xAxis || !yAxis) return null;
   const X = (v: number) => xAxis.scale(v);
   const Y = (v: number) => yAxis.scale(v);
-  const bandLabel = { fontSize: 12, fontWeight: 700, fill: "#5b8ac6" } as const;
-  const grid = { stroke: "#8fa8cc", strokeDasharray: "2 3", strokeWidth: 1 } as const;
+  const cellLabel = { fontSize: 10, fontWeight: 700, fill: CHART_NEUTRALS.quadrantLabel } as const;
+  const bandLabel = { fontSize: 11, fontWeight: 700, fill: "#5b8ac6" } as const;
+  const xEdges = [1, 3, 4, 5];
+  const yEdges = [3, 4, 5];
 
-  /** Pastille chiffrée de l'échelle 1-5, posée sur les séparateurs. */
   function marker(cx: number, cy: number, value: number) {
     return (
-      <g key={`m-${value}-${Math.round(cx)}-${Math.round(cy)}`}>
-        <circle cx={cx} cy={cy} r={17} fill="#4a7ebb" />
-        <text x={cx} y={cy + 6} textAnchor="middle" fontSize={17} fontWeight={800} fill="#fff">
+      <g key={`m-${value}-${cx}-${cy}`}>
+        <circle cx={cx} cy={cy} r={14} fill="#4a7ebb" />
+        <text x={cx} y={cy + 5} textAnchor="middle" fontSize={14} fontWeight={800} fill="#fff">
           {value}
         </text>
       </g>
     );
   }
 
-  /** Intitulé de palier : coupé en deux lignes quand il est long, comme sur la
-   * planche ("Très Faible/Faible" / "(0-49%) & (50-74%)"). */
-  function wrapped(label: string, x: number, y: number, rotate?: number) {
-    const cut = label.length > 24 ? label.lastIndexOf(" ", Math.floor(label.length / 2) + 6) : -1;
-    const lines = cut > 0 ? [label.slice(0, cut), label.slice(cut + 1)] : [label];
-    return (
-      <text
-        x={x}
-        y={y - (lines.length - 1) * 7}
-        textAnchor="middle"
-        style={bandLabel}
-        transform={rotate ? `rotate(${rotate} ${x} ${y})` : undefined}
-      >
-        {lines.map((line, i) => (
-          <tspan key={i} x={x} dy={i === 0 ? 0 : 15}>
-            {line}
-          </tspan>
-        ))}
-      </text>
-    );
-  }
-
   return (
     <g>
-      {/* Cadre et séparateurs des 9 cases, en pointillés. */}
-      {[1, 3, 4, 5].map((v) => (
-        <line key={`vx-${v}`} x1={X(v)} y1={Y(5)} x2={X(v)} y2={Y(2)} {...grid} />
+      {/* Grille des 9 cases */}
+      {xEdges.map((v) => (
+        <line key={`vx-${v}`} x1={X(v)} y1={Y(5)} x2={X(v)} y2={Y(2)} stroke="#9fb3d1" strokeDasharray="3 3" />
       ))}
       {[2, 3, 4, 5].map((v) => (
-        <line key={`hy-${v}`} x1={X(1)} y1={Y(v)} x2={X(5)} y2={Y(v)} {...grid} />
+        <line key={`hy-${v}`} x1={X(1)} y1={Y(v)} x2={X(5)} y2={Y(v)} stroke="#9fb3d1" strokeDasharray="3 3" />
       ))}
 
-      {/* Repères chiffrés : 1-3-4-5 en abscisse, 3-4-5 en ordonnée. */}
-      {[1, 3, 4, 5].map((v) => marker(X(v), Y(2) + 34, v))}
-      {[3, 4, 5].map((v) => marker(X(1) - 34, Y(v), v))}
+      {/* Intitulé de chaque case, en filigrane */}
+      {[0, 1, 2].map((col) =>
+        [0, 1, 2].map((row) => (
+          <text
+            key={`c-${col}-${row}`}
+            x={X([1, 3, 4][col]) + 8}
+            y={Y([3, 4, 5][row]) + 14}
+            textAnchor="start"
+            style={cellLabel}
+          >
+            {t(`talents.box.${col}${row}.title`).toUpperCase()}
+          </text>
+        ))
+      )}
 
-      {/* Intitulés des paliers : sous l'abscisse, et à gauche à la verticale. */}
+      {/* Repères chiffrés de l'échelle 1-5 */}
+      {xEdges.map((v) => marker(X(v), Y(2) + 30, v))}
+      {yEdges.map((v) => marker(X(1) - 30, Y(v), v))}
+
+      {/* Paliers de performance sous l'axe, paliers de progression à gauche */}
       {[
         { at: 2, key: PERF_BANDS[0].key },
         { at: 3.5, key: PERF_BANDS[1].key },
         { at: 4.5, key: PERF_BANDS[2].key },
       ].map((b) => (
-        <g key={b.key}>{wrapped(t(`talents.perfBand.${b.key}`), X(b.at), Y(2) + 40)}</g>
+        <text key={b.key} x={X(b.at)} y={Y(2) + 34} textAnchor="middle" style={bandLabel}>
+          {t(`talents.perfBand.${b.key}`)}
+        </text>
       ))}
       {[
         { at: 2.5, key: PROGRESS_BANDS[0].key },
         { at: 3.5, key: PROGRESS_BANDS[1].key },
         { at: 4.5, key: PROGRESS_BANDS[2].key },
       ].map((b) => (
-        <g key={b.key}>{wrapped(t(`talents.progressBand.${b.key}`), X(1) - 72, Y(b.at), -90)}</g>
+        <text
+          key={b.key}
+          x={X(1) - 56}
+          y={Y(b.at)}
+          textAnchor="middle"
+          transform={`rotate(-90 ${X(1) - 56} ${Y(b.at)})`}
+          style={bandLabel}
+        >
+          {t(`talents.progressBand.${b.key}`)}
+        </text>
       ))}
     </g>
   );
@@ -172,37 +177,28 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
 /** Point d'une personne : photo cerclée de la couleur de son palier de
  * performance, écart relatif affiché à côté. */
 function TalentDot({ cx, cy, payload }: any) {
-  const p: TalentPoint & { x: number } = payload;
+  const p: TalentPoint = payload;
   const delta = p.progression as number;
   const color = performanceColors[p.rating];
   const clipId = `talent-photo-${p.userId}`;
-  // Près du bord droit, l'écart se replie à gauche du point pour ne pas sortir
-  // du cadre — c'est aussi ce que fait la planche de référence.
-  const labelLeft = p.x > 4.55;
   return (
     <g>
       <defs>
         <clipPath id={clipId}>
-          <circle cx={cx} cy={cy} r={22} />
+          <circle cx={cx} cy={cy} r={17} />
         </clipPath>
       </defs>
-      <circle cx={cx} cy={cy} r={28} fill={color} />
-      <circle cx={cx} cy={cy} r={22} fill="#fff" />
-      {p.avatar ? (
-        <image href={p.avatar} x={cx - 22} y={cy - 22} width={44} height={44} clipPath={`url(#${clipId})`} preserveAspectRatio="xMidYMid slice" />
-      ) : (
-        <text x={cx} y={cy + 7} textAnchor="middle" fontSize={18} fontWeight={700} fill={color}>
+      <circle cx={cx} cy={cy} r={21} fill={color} />
+      <circle cx={cx} cy={cy} r={17} fill="#fff" />
+      {p.avatar && (
+        <image href={p.avatar} x={cx - 17} y={cy - 17} width={34} height={34} clipPath={`url(#${clipId})`} preserveAspectRatio="xMidYMid slice" />
+      )}
+      {!p.avatar && (
+        <text x={cx} y={cy + 5} textAnchor="middle" fontSize={14} fontWeight={700} fill={color}>
           {p.name.charAt(0).toUpperCase()}
         </text>
       )}
-      <text
-        x={labelLeft ? cx - 34 : cx + 34}
-        y={cy + 5}
-        textAnchor={labelLeft ? "end" : "start"}
-        fontSize={14}
-        fontWeight={800}
-        fill={delta >= 0 ? "#2e7d32" : "#c62828"}
-      >
+      <text x={cx + 25} y={cy + 4} fontSize={12} fontWeight={800} fill={delta >= 0 ? "#2e7d32" : "#c62828"}>
         {delta >= 0 ? "+" : ""}
         {delta}%
       </text>
@@ -414,21 +410,16 @@ export default function TalentsDashboardPage() {
           </Typography>
           {/* Bande "TAUX DE PROGRESSION" à gauche, repère au centre, bande
             * "PERFORMANCE %" en bas — comme la planche du support. */}
-          <Stack direction="row" spacing={1} alignItems="flex-start">
+          <Stack direction="row" spacing={1}>
             <Box
               sx={{
-                width: 40,
-                // Hauteur du tracé seul (le graphe réserve 70 px en bas pour
-                // les repères et les intitulés de paliers).
-                height: 520 - 70,
-                mt: "20px",
+                width: 34,
                 bgcolor: "#12275c",
                 color: "#fff",
                 borderRadius: 1,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                flexShrink: 0,
               }}
             >
               <Typography
@@ -441,7 +432,7 @@ export default function TalentsDashboardPage() {
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <ResponsiveContainer width="100%" height={520}>
-                <ScatterChart margin={{ top: 20, right: 50, bottom: 70, left: 140 }}>
+                <ScatterChart margin={{ top: 20, right: 40, bottom: 60, left: 130 }}>
                   <Customized component={<NineBoxFrame />} />
                   <XAxis type="number" dataKey="x" domain={[1, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} />
                   <YAxis type="number" dataKey="y" domain={[2, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} />
@@ -450,19 +441,8 @@ export default function TalentsDashboardPage() {
                   <Scatter data={boxData} shape={(props: any) => <TalentDot {...props} />} isAnimationActive={false} />
                 </ScatterChart>
               </ResponsiveContainer>
-              <Box
-                sx={{
-                  bgcolor: "#3F9142",
-                  color: "#fff",
-                  borderRadius: 1,
-                  textAlign: "center",
-                  py: 0.5,
-                  mt: 0.5,
-                  width: "50%",
-                  mx: "auto",
-                }}
-              >
-                <Typography variant="subtitle2" fontWeight={800} sx={{ letterSpacing: 1 }}>
+              <Box sx={{ bgcolor: "#3F9142", color: "#fff", borderRadius: 1, textAlign: "center", py: 0.5, mt: 0.5 }}>
+                <Typography variant="caption" fontWeight={700} sx={{ letterSpacing: 1 }}>
                   {t("talents.performanceAxis")}
                 </Typography>
               </Box>
