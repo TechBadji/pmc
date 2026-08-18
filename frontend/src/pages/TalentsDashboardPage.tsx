@@ -73,13 +73,15 @@ const CHART_HEIGHT = 520;
 // d'autant le bandeau bleu de l'axe des ordonnées.
 const CHART_MARGIN = { top: 20, right: 40, bottom: 60, left: 92 };
 const AXIS_BAND_HEIGHT = Math.round(CHART_HEIGHT * 0.7);
-// Décalage des pastilles chiffrées sous l'axe des abscisses.
-const MARKER_ROW_OFFSET = 30;
-// Le bandeau "TAUX DE PROGRESSION" se centre sur l'étendue de l'ordonnée telle
-// qu'on la lit : de la pastille 5 (haut du tracé) à la pastille 1 (rangée des
-// pastilles, sous le tracé) — et non sur la seule zone de tracé.
-const AXIS_BAND_TOP =
-  (CHART_MARGIN.top + CHART_HEIGHT - CHART_MARGIN.bottom + MARKER_ROW_OFFSET) / 2 - AXIS_BAND_HEIGHT / 2;
+// Décalage des pastilles chiffrées sous l'axe des abscisses, et de celles de
+// l'ordonnée par rapport au bord gauche du tracé — au plus près des axes.
+const MARKER_ROW_OFFSET = 24;
+const MARKER_SIDE_OFFSET = 22;
+// Hauteur de la barre "PERFORMANCE %" sous le repère (marge + padding + texte).
+const AXIS_BAR_HEIGHT = 32;
+// Le bandeau "TAUX DE PROGRESSION" se centre sur tout le bloc graphique, barre
+// d'abscisse comprise : c'est le rectangle que l'oeil compare.
+const AXIS_BAND_TOP = (CHART_HEIGHT + AXIS_BAR_HEIGHT) / 2 - AXIS_BAND_HEIGHT / 2;
 
 const PROGRESS_BANDS = [
   { key: "regression", max: 0 },
@@ -173,7 +175,7 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
 
       {/* Repères chiffrés de l'échelle 1-5 */}
       {xMarkers.map((label, i) => marker(X(edges[i]), Y(0) + MARKER_ROW_OFFSET, label))}
-      {yMarkers.map((label, i) => marker(X(0) - 26, Y(i + 1), label))}
+      {yMarkers.map((label, i) => marker(X(0) - MARKER_SIDE_OFFSET, Y(i + 1), label))}
 
       {/* Paliers de performance sous l'axe, paliers de progression à gauche */}
       {[
@@ -181,7 +183,7 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
         { at: 1.5, key: PERF_BANDS[1].key },
         { at: 2.5, key: PERF_BANDS[2].key },
       ].map((b) => (
-        <text key={b.key} x={X(b.at)} y={Y(0) + 34} textAnchor="middle" style={bandLabel}>
+        <text key={b.key} x={X(b.at)} y={Y(0) + 30} textAnchor="middle" style={bandLabel}>
           {t(`talents.perfBand.${b.key}`)}
         </text>
       ))}
@@ -192,10 +194,10 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
       ].map((b) => (
         <text
           key={b.key}
-          x={X(0) - 58}
+          x={X(0) - 50}
           y={Y(b.at)}
           textAnchor="middle"
-          transform={`rotate(-90 ${X(0) - 58} ${Y(b.at)})`}
+          transform={`rotate(-90 ${X(0) - 50} ${Y(b.at)})`}
           style={bandLabel}
         >
           {t(`talents.progressBand.${b.key}`)}
