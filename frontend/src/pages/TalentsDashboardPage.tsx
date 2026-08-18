@@ -67,6 +67,8 @@ const PERF_BANDS = [
   { key: "high", max: Infinity },
 ] as const;
 
+const CHART_HEIGHT = 520;
+
 const PROGRESS_BANDS = [
   { key: "regression", max: 0 },
   { key: "moderate", max: 5.999 },
@@ -414,6 +416,12 @@ export default function TalentsDashboardPage() {
             <Box
               sx={{
                 width: 34,
+                // Bandeau raccourci de 30 % par rapport à la hauteur du graphe
+                // et centré verticalement, au lieu d'être étiré sur toute la
+                // hauteur du bloc.
+                height: Math.round(CHART_HEIGHT * 0.7),
+                alignSelf: "center",
+                flexShrink: 0,
                 bgcolor: "#12275c",
                 color: "#fff",
                 borderRadius: 1,
@@ -431,7 +439,7 @@ export default function TalentsDashboardPage() {
               </Typography>
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <ResponsiveContainer width="100%" height={520}>
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <ScatterChart margin={{ top: 20, right: 40, bottom: 60, left: 130 }}>
                   <Customized component={<NineBoxFrame />} />
                   <XAxis type="number" dataKey="x" domain={[1, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} />
