@@ -68,6 +68,12 @@ const PERF_BANDS = [
 ] as const;
 
 const CHART_HEIGHT = 520;
+// Marges du repère : la marge gauche n'a besoin que de la place des pastilles
+// chiffrées et des intitulés de paliers à la verticale — la réduire rapproche
+// d'autant le bandeau bleu de l'axe des ordonnées.
+const CHART_MARGIN = { top: 20, right: 40, bottom: 60, left: 92 };
+const PLOT_HEIGHT = CHART_HEIGHT - CHART_MARGIN.top - CHART_MARGIN.bottom;
+const AXIS_BAND_HEIGHT = Math.round(CHART_HEIGHT * 0.7);
 
 const PROGRESS_BANDS = [
   { key: "regression", max: 0 },
@@ -144,7 +150,7 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
 
       {/* Repères chiffrés de l'échelle 1-5 */}
       {xEdges.map((v) => marker(X(v), Y(2) + 30, v))}
-      {yEdges.map((v) => marker(X(1) - 30, Y(v), v))}
+      {yEdges.map((v) => marker(X(1) - 26, Y(v), v))}
 
       {/* Paliers de performance sous l'axe, paliers de progression à gauche */}
       {[
@@ -163,10 +169,10 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
       ].map((b) => (
         <text
           key={b.key}
-          x={X(1) - 56}
+          x={X(1) - 58}
           y={Y(b.at)}
           textAnchor="middle"
-          transform={`rotate(-90 ${X(1) - 56} ${Y(b.at)})`}
+          transform={`rotate(-90 ${X(1) - 58} ${Y(b.at)})`}
           style={bandLabel}
         >
           {t(`talents.progressBand.${b.key}`)}
@@ -412,15 +418,17 @@ export default function TalentsDashboardPage() {
           </Typography>
           {/* Bande "TAUX DE PROGRESSION" à gauche, repère au centre, bande
             * "PERFORMANCE %" en bas — comme la planche du support. */}
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={0.5}>
             <Box
               sx={{
                 width: 34,
-                // Bandeau raccourci de 30 % par rapport à la hauteur du graphe
-                // et centré verticalement, au lieu d'être étiré sur toute la
-                // hauteur du bloc.
-                height: Math.round(CHART_HEIGHT * 0.7),
-                alignSelf: "center",
+                // Bandeau raccourci de 30 %, et centré sur la ZONE DE TRACÉ
+                // (hors marges haute et basse) : le centrer sur le bloc entier
+                // le décalait vers le bas, la marge basse portant les pastilles
+                // et les intitulés de paliers.
+                height: AXIS_BAND_HEIGHT,
+                mt: `${CHART_MARGIN.top + (PLOT_HEIGHT - AXIS_BAND_HEIGHT) / 2}px`,
+                alignSelf: "flex-start",
                 flexShrink: 0,
                 bgcolor: "#12275c",
                 color: "#fff",
@@ -440,7 +448,7 @@ export default function TalentsDashboardPage() {
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-                <ScatterChart margin={{ top: 20, right: 40, bottom: 60, left: 130 }}>
+                <ScatterChart margin={CHART_MARGIN}>
                   <Customized component={<NineBoxFrame />} />
                   <XAxis type="number" dataKey="x" domain={[1, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} />
                   <YAxis type="number" dataKey="y" domain={[2, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} />
