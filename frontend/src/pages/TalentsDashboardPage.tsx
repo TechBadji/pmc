@@ -77,11 +77,10 @@ const AXIS_BAND_HEIGHT = Math.round(CHART_HEIGHT * 0.7);
 // l'ordonnée par rapport au bord gauche du tracé — au plus près des axes.
 const MARKER_ROW_OFFSET = 24;
 const MARKER_SIDE_OFFSET = 22;
-// Hauteur de la barre "PERFORMANCE %" sous le repère (marge + padding + texte).
-const AXIS_BAR_HEIGHT = 32;
-// Le bandeau "TAUX DE PROGRESSION" se centre sur tout le bloc graphique, barre
-// d'abscisse comprise : c'est le rectangle que l'oeil compare.
-const AXIS_BAND_TOP = (CHART_HEIGHT + AXIS_BAR_HEIGHT) / 2 - AXIS_BAND_HEIGHT / 2;
+// Le bandeau "TAUX DE PROGRESSION" descend jusqu'à la rangée des pastilles :
+// son bas s'aligne sur la pastille 1, point de départ des deux axes. Le centrer
+// sur le bloc le laissait visuellement trop haut.
+const AXIS_BAND_TOP = CHART_HEIGHT - CHART_MARGIN.bottom + MARKER_ROW_OFFSET - AXIS_BAND_HEIGHT;
 
 const PROGRESS_BANDS = [
   { key: "regression", max: 0 },
