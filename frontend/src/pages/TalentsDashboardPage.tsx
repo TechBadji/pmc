@@ -450,14 +450,20 @@ export default function TalentsDashboardPage() {
               <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <ScatterChart margin={CHART_MARGIN}>
                   <Customized component={<NineBoxFrame />} />
-                  <XAxis type="number" dataKey="x" domain={[1, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} />
-                  <YAxis type="number" dataKey="y" domain={[2, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} />
+                  {/* width/height à 0 : sans graduations, Recharts réserve
+                    * quand même la taille par défaut de ses axes (60 px à
+                    * gauche, 30 px en bas) — c'est ce vide qui éloignait le
+                    * bandeau et le repère. Les marges suffisent aux pastilles
+                    * et aux intitulés de paliers, que nous dessinons nous-mêmes. */}
+                  <XAxis type="number" dataKey="x" domain={[1, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} height={0} />
+                  <YAxis type="number" dataKey="y" domain={[2, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} width={0} />
                   <ZAxis type="number" dataKey="z" range={[160, 160]} />
                   <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} content={<TalentTooltip />} />
                   <Scatter data={boxData} shape={(props: any) => <TalentDot {...props} />} isAnimationActive={false} />
                 </ScatterChart>
               </ResponsiveContainer>
-              <Box sx={{ bgcolor: "#3F9142", color: "#fff", borderRadius: 1, textAlign: "center", py: 0.5, mt: 0.5 }}>
+              {/* Barre d'abscisse réduite de moitié et centrée sur le repère. */}
+              <Box sx={{ bgcolor: "#3F9142", color: "#fff", borderRadius: 1, textAlign: "center", py: 0.5, mt: 0.5, width: "50%", mx: "auto" }}>
                 <Typography variant="caption" fontWeight={700} sx={{ letterSpacing: 1 }}>
                   {t("talents.performanceAxis")}
                 </Typography>
