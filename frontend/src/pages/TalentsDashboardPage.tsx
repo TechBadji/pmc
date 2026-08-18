@@ -82,20 +82,36 @@ const PROGRESS_BANDS = [
 ] as const;
 
 
-/** Position sur l'échelle 1-5 du support : chaque palier occupe une colonne
- * (ou une ligne) de largeur égale, et la personne se place *à l'intérieur* de
- * son palier au prorata de sa valeur réelle — d'où un vrai nuage de points, et
- * non une simple case d'appartenance. */
+/** Position dans le repère : chaque palier occupe exactement UNE unité, si
+ * bien que les trois colonnes (et les trois lignes) ont la même largeur — la
+ * personne se place à l'intérieur de son palier au prorata de sa valeur.
+ * Les bornes gardent la vignette entière dans le cadre : un point posé sur
+ * l'arête déborderait de la moitié de sa photo. */
+const X_INSET = 0.1; // ~30 px sur un tracé de 900 px de large
+const Y_INSET = 0.2; // ~29 px sur un tracé de 440 px de haut
+
+function clamp(value: number, inset: number) {
+  return Math.min(3 - inset, Math.max(inset, value));
+}
+
 function xPos(performance: number) {
-  if (performance < 75) return 1 + (Math.max(0, performance) / 75) * 2; // 1 → 3
-  if (performance < 90) return 3 + (performance - 75) / 15; // 3 → 4
-  return 4 + Math.min(1, (performance - 90) / 30); // 4 → 5 (90 % → 120 %)
+  const raw =
+    performance < 75
+      ? Math.max(0, performance) / 75 // 0 → 1
+      : performance < 90
+        ? 1 + (performance - 75) / 15 // 1 → 2
+        : 2 + Math.min(1, (performance - 90) / 30); // 2 → 3 (90 % → 120 %)
+  return clamp(raw, X_INSET);
 }
 
 function yPos(progression: number) {
-  if (progression <= 0) return 3 + Math.max(-20, progression) / 20; // 2 → 3
-  if (progression < 6) return 3 + progression / 6; // 3 → 4
-  return 4 + Math.min(1, (progression - 6) / 14); // 4 → 5
+  const raw =
+    progression <= 0
+      ? 1 + Math.max(-20, progression) / 20 // 0 → 1
+      : progression < 6
+        ? 1 + progression / 6 // 1 → 2
+        : 2 + Math.min(1, (progression - 6) / 14); // 2 → 3
+  return clamp(raw, Y_INSET);
 }
 
 /** Cadre de la 9 Box dessiné dans le repère : séparateurs pointillés, repères
@@ -109,8 +125,9 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
   const Y = (v: number) => yAxis.scale(v);
   const cellLabel = { fontSize: 10, fontWeight: 700, fill: CHART_NEUTRALS.quadrantLabel } as const;
   const bandLabel = { fontSize: 11, fontWeight: 700, fill: "#5b8ac6" } as const;
-  const xEdges = [1, 3, 4, 5];
-  const yEdges = [3, 4, 5];
+  const edges = [0, 1, 2, 3];
+  const xMarkers = [1, 3, 4, 5]; // numéros du support, aux arêtes des colonnes
+  const yMarkers = [3, 4, 5]; // idem, aux arêtes des lignes (hors bas du repère)
 
   function marker(cx: number, cy: number, value: number) {
     return (
@@ -126,11 +143,11 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
   return (
     <g>
       {/* Grille des 9 cases */}
-      {xEdges.map((v) => (
-        <line key={`vx-${v}`} x1={X(v)} y1={Y(5)} x2={X(v)} y2={Y(2)} stroke="#9fb3d1" strokeDasharray="3 3" />
+      {edges.map((v) => (
+        <line key={`vx-${v}`} x1={X(v)} y1={Y(3)} x2={X(v)} y2={Y(0)} stroke="#9fb3d1" strokeDasharray="3 3" />
       ))}
-      {[2, 3, 4, 5].map((v) => (
-        <line key={`hy-${v}`} x1={X(1)} y1={Y(v)} x2={X(5)} y2={Y(v)} stroke="#9fb3d1" strokeDasharray="3 3" />
+      {edges.map((v) => (
+        <line key={`hy-${v}`} x1={X(0)} y1={Y(v)} x2={X(3)} y2={Y(v)} stroke="#9fb3d1" strokeDasharray="3 3" />
       ))}
 
       {/* Intitulé de chaque case, en filigrane */}
@@ -138,8 +155,8 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
         [0, 1, 2].map((row) => (
           <text
             key={`c-${col}-${row}`}
-            x={X([1, 3, 4][col]) + 8}
-            y={Y([3, 4, 5][row]) + 14}
+            x={X(col) + 8}
+            y={Y(row + 1) + 14}
             textAnchor="start"
             style={cellLabel}
           >
@@ -149,30 +166,30 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
       )}
 
       {/* Repères chiffrés de l'échelle 1-5 */}
-      {xEdges.map((v) => marker(X(v), Y(2) + 30, v))}
-      {yEdges.map((v) => marker(X(1) - 26, Y(v), v))}
+      {xMarkers.map((label, i) => marker(X(edges[i]), Y(0) + 30, label))}
+      {yMarkers.map((label, i) => marker(X(0) - 26, Y(i + 1), label))}
 
       {/* Paliers de performance sous l'axe, paliers de progression à gauche */}
       {[
-        { at: 2, key: PERF_BANDS[0].key },
-        { at: 3.5, key: PERF_BANDS[1].key },
-        { at: 4.5, key: PERF_BANDS[2].key },
+        { at: 0.5, key: PERF_BANDS[0].key },
+        { at: 1.5, key: PERF_BANDS[1].key },
+        { at: 2.5, key: PERF_BANDS[2].key },
       ].map((b) => (
-        <text key={b.key} x={X(b.at)} y={Y(2) + 34} textAnchor="middle" style={bandLabel}>
+        <text key={b.key} x={X(b.at)} y={Y(0) + 34} textAnchor="middle" style={bandLabel}>
           {t(`talents.perfBand.${b.key}`)}
         </text>
       ))}
       {[
-        { at: 2.5, key: PROGRESS_BANDS[0].key },
-        { at: 3.5, key: PROGRESS_BANDS[1].key },
-        { at: 4.5, key: PROGRESS_BANDS[2].key },
+        { at: 0.5, key: PROGRESS_BANDS[0].key },
+        { at: 1.5, key: PROGRESS_BANDS[1].key },
+        { at: 2.5, key: PROGRESS_BANDS[2].key },
       ].map((b) => (
         <text
           key={b.key}
-          x={X(1) - 58}
+          x={X(0) - 58}
           y={Y(b.at)}
           textAnchor="middle"
-          transform={`rotate(-90 ${X(1) - 58} ${Y(b.at)})`}
+          transform={`rotate(-90 ${X(0) - 58} ${Y(b.at)})`}
           style={bandLabel}
         >
           {t(`talents.progressBand.${b.key}`)}
@@ -185,7 +202,10 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
 /** Point d'une personne : photo cerclée de la couleur de son palier de
  * performance, écart relatif affiché à côté. */
 function TalentDot({ cx, cy, payload }: any) {
-  const p: TalentPoint = payload;
+  const p: TalentPoint & { x: number } = payload;
+  // Près du bord droit, l'écart s'écrit à gauche du point : à droite il
+  // sortirait du cadre.
+  const labelLeft = p.x > 2.5;
   const delta = p.progression as number;
   const color = performanceColors[p.rating];
   const clipId = `talent-photo-${p.userId}`;
@@ -206,7 +226,14 @@ function TalentDot({ cx, cy, payload }: any) {
           {p.name.charAt(0).toUpperCase()}
         </text>
       )}
-      <text x={cx + 25} y={cy + 4} fontSize={12} fontWeight={800} fill={delta >= 0 ? "#2e7d32" : "#c62828"}>
+      <text
+        x={labelLeft ? cx - 25 : cx + 25}
+        y={cy + 4}
+        textAnchor={labelLeft ? "end" : "start"}
+        fontSize={12}
+        fontWeight={800}
+        fill={delta >= 0 ? "#2e7d32" : "#c62828"}
+      >
         {delta >= 0 ? "+" : ""}
         {delta}%
       </text>
@@ -455,8 +482,8 @@ export default function TalentsDashboardPage() {
                     * gauche, 30 px en bas) — c'est ce vide qui éloignait le
                     * bandeau et le repère. Les marges suffisent aux pastilles
                     * et aux intitulés de paliers, que nous dessinons nous-mêmes. */}
-                  <XAxis type="number" dataKey="x" domain={[1, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} height={0} />
-                  <YAxis type="number" dataKey="y" domain={[2, 5]} ticks={[]} tickLine={false} axisLine={false} tick={false} width={0} />
+                  <XAxis type="number" dataKey="x" domain={[0, 3]} ticks={[]} tickLine={false} axisLine={false} tick={false} height={0} />
+                  <YAxis type="number" dataKey="y" domain={[0, 3]} ticks={[]} tickLine={false} axisLine={false} tick={false} width={0} />
                   <ZAxis type="number" dataKey="z" range={[160, 160]} />
                   <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} content={<TalentTooltip />} />
                   <Scatter data={boxData} shape={(props: any) => <TalentDot {...props} />} isAnimationActive={false} />
