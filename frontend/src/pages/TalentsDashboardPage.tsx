@@ -72,8 +72,14 @@ const CHART_HEIGHT = 520;
 // chiffrées et des intitulés de paliers à la verticale — la réduire rapproche
 // d'autant le bandeau bleu de l'axe des ordonnées.
 const CHART_MARGIN = { top: 20, right: 40, bottom: 60, left: 92 };
-const PLOT_HEIGHT = CHART_HEIGHT - CHART_MARGIN.top - CHART_MARGIN.bottom;
 const AXIS_BAND_HEIGHT = Math.round(CHART_HEIGHT * 0.7);
+// Décalage des pastilles chiffrées sous l'axe des abscisses.
+const MARKER_ROW_OFFSET = 30;
+// Le bandeau "TAUX DE PROGRESSION" se centre sur l'étendue de l'ordonnée telle
+// qu'on la lit : de la pastille 5 (haut du tracé) à la pastille 1 (rangée des
+// pastilles, sous le tracé) — et non sur la seule zone de tracé.
+const AXIS_BAND_TOP =
+  (CHART_MARGIN.top + CHART_HEIGHT - CHART_MARGIN.bottom + MARKER_ROW_OFFSET) / 2 - AXIS_BAND_HEIGHT / 2;
 
 const PROGRESS_BANDS = [
   { key: "regression", max: 0 },
@@ -166,7 +172,7 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
       )}
 
       {/* Repères chiffrés de l'échelle 1-5 */}
-      {xMarkers.map((label, i) => marker(X(edges[i]), Y(0) + 30, label))}
+      {xMarkers.map((label, i) => marker(X(edges[i]), Y(0) + MARKER_ROW_OFFSET, label))}
       {yMarkers.map((label, i) => marker(X(0) - 26, Y(i + 1), label))}
 
       {/* Paliers de performance sous l'axe, paliers de progression à gauche */}
@@ -454,7 +460,7 @@ export default function TalentsDashboardPage() {
                 // le décalait vers le bas, la marge basse portant les pastilles
                 // et les intitulés de paliers.
                 height: AXIS_BAND_HEIGHT,
-                mt: `${CHART_MARGIN.top + (PLOT_HEIGHT - AXIS_BAND_HEIGHT) / 2}px`,
+                mt: `${AXIS_BAND_TOP}px`,
                 alignSelf: "flex-start",
                 flexShrink: 0,
                 bgcolor: "#12275c",
