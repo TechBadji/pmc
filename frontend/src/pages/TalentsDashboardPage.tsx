@@ -17,7 +17,6 @@ import { useTranslation } from "react-i18next";
 import {
   CartesianGrid,
   Customized,
-  ReferenceLine,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -212,7 +211,7 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
  * performance, écart relatif affiché à côté. La vignette grossit au survol,
  * comme sur la matrice ID-3A, pour mettre le visage en avant et faire passer
  * le point au-dessus de ses voisins. */
-function TalentDot({ cx, cy, payload }: any) {
+function TalentDot({ cx, cy, payload, flip }: any) {
   const [hovered, setHovered] = useState(false);
   const p: TalentPoint & { x: number } = payload;
   const delta = p.progression as number;
@@ -225,7 +224,7 @@ function TalentDot({ cx, cy, payload }: any) {
   const clipId = `talent-photo-${p.userId}`;
   // Près du bord droit, l'écart s'écrit à gauche du point : à droite il
   // sortirait du cadre.
-  const labelLeft = p.x > 2.5;
+  const labelLeft = flip ?? p.x > 2.5;
   return (
     <g
       style={{ cursor: "pointer" }}
@@ -306,6 +305,124 @@ function TalentDot({ cx, cy, payload }: any) {
         {delta >= 0 ? "+" : ""}
         {delta}%
       </text>
+    </g>
+  );
+}
+
+
+// --- Vue "Trajectoire" ---------------------------------------------------
+// Repère du support : performance de 50 à 120 % en abscisse, écart avec la
+// période précédente de -20 à +20 % en ordonnée, les deux axes se croisant à
+// 90 % / 0 % — et non dans un coin.
+const TRAJECTORY_HEIGHT = 560;
+const TRAJECTORY_MARGIN = { top: 30, right: 60, bottom: 30, left: 40 };
+const TRAJECTORY_X: [number, number] = [50, 120];
+const TRAJECTORY_Y: [number, number] = [-20, 20];
+const TRAJECTORY_ORIGIN_X = 90;
+const AXIS_BLUE = "#2E5AAC";
+
+function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
+  const { t } = useTranslation();
+  const xAxis = xAxisMap?.[0];
+  const yAxis = yAxisMap?.[0];
+  if (!xAxis || !yAxis) return null;
+  const X = (v: number) => xAxis.scale(v);
+  const Y = (v: number) => yAxis.scale(v);
+  const tickText = { fontSize: 11, fontWeight: 700, fill: "#1f3a63" } as const;
+  const xTicks = [50, 55, 60, 65, 70, 75, 80, 85, 95, 100, 105, 110, 115, 120];
+  const yTicks = [20, 15, 10, 5, -5, -10, -15, -20];
+  const inset = 10;
+
+  /** Un quadrant : rectangle à coins arrondis, en pointillés. */
+  function quadrant(x1: number, x2: number, y1: number, y2: number, key: string) {
+    const left = Math.min(X(x1), X(x2)) + inset;
+    const right = Math.max(X(x1), X(x2)) - inset;
+    const top = Math.min(Y(y1), Y(y2)) + inset;
+    const bottom = Math.max(Y(y1), Y(y2)) - inset;
+    return (
+      <rect
+        key={key}
+        x={left}
+        y={top}
+        width={Math.max(0, right - left)}
+        height={Math.max(0, bottom - top)}
+        rx={26}
+        ry={26}
+        fill="none"
+        stroke="#1f3a63"
+        strokeWidth={1.5}
+        strokeDasharray="1 5"
+        strokeLinecap="round"
+      />
+    );
+  }
+
+  return (
+    <g>
+      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, 0, TRAJECTORY_Y[1], "tl")}
+      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], 0, TRAJECTORY_Y[1], "tr")}
+      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[0], 0, "bl")}
+      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], TRAJECTORY_Y[0], 0, "br")}
+
+      <defs>
+        <marker id="tpd-arrow" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 Z" fill={AXIS_BLUE} />
+        </marker>
+      </defs>
+      {/* Axes épais fléchés, croisés sur l'origine du support (90 % / 0 %). */}
+      <line
+        x1={X(TRAJECTORY_X[0])}
+        y1={Y(0)}
+        x2={X(TRAJECTORY_X[1]) + 26}
+        y2={Y(0)}
+        stroke={AXIS_BLUE}
+        strokeWidth={6}
+        markerEnd="url(#tpd-arrow)"
+      />
+      <line
+        x1={X(TRAJECTORY_ORIGIN_X)}
+        y1={Y(TRAJECTORY_Y[0])}
+        x2={X(TRAJECTORY_ORIGIN_X)}
+        y2={Y(TRAJECTORY_Y[1]) - 22}
+        stroke={AXIS_BLUE}
+        strokeWidth={6}
+        markerEnd="url(#tpd-arrow)"
+      />
+
+      {/* Graduations : sous l'axe horizontal, à droite de l'axe vertical. */}
+      {xTicks.map((v) => (
+        <text key={`xt-${v}`} x={X(v)} y={Y(0) + 22} textAnchor="middle" style={tickText}>
+          {v}%
+        </text>
+      ))}
+      {yTicks.map((v) => (
+        <text key={`yt-${v}`} x={X(TRAJECTORY_ORIGIN_X) + 14} y={Y(v) + 4} textAnchor="start" style={tickText}>
+          {v > 0 ? `+${v}%` : `- ${Math.abs(v)}%`}
+        </text>
+      ))}
+
+      {/* Origine mise en avant, comme sur la planche : 90 % sur fond vert. */}
+      <rect x={X(TRAJECTORY_ORIGIN_X) - 24} y={Y(0) + 10} width={48} height={18} fill="#9ef2b6" />
+      <text x={X(TRAJECTORY_ORIGIN_X)} y={Y(0) + 23} textAnchor="middle" style={tickText}>
+        {TRAJECTORY_ORIGIN_X}%
+      </text>
+
+      {/* Intitulés des axes sur fond jaune, comme sur la planche. */}
+      <g transform={`translate(${X(TRAJECTORY_ORIGIN_X) - 34}, ${Y(TRAJECTORY_Y[1]) + 6})`}>
+        <rect x={0} y={0} width={18} height={92} fill="#ffef62" />
+        <text x={9} y={46} textAnchor="middle" transform="rotate(-90 9 46)" style={tickText}>
+          {t("talents.trajectoryYAxis")}
+        </text>
+      </g>
+      <g transform={`translate(${X(TRAJECTORY_X[1]) - 4}, ${Y(0) - 40})`}>
+        <rect x={0} y={0} width={150} height={30} fill="#ffef62" />
+        <text x={6} y={13} style={{ ...tickText, fontSize: 10 }}>
+          %
+        </text>
+        <text x={6} y={25} style={{ ...tickText, fontSize: 10 }}>
+          {t("talents.trajectoryXAxis")}
+        </text>
+      </g>
     </g>
   );
 }
@@ -430,15 +547,9 @@ export default function TalentsDashboardPage() {
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-        <Typography variant="h5" fontWeight={700}>
-          {t("talents.title")}
-        </Typography>
-        <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, v) => v && setView(v)}>
-          <ToggleButton value="boxes">{t("talents.viewBoxes")}</ToggleButton>
-          <ToggleButton value="trajectory">{t("talents.viewTrajectory")}</ToggleButton>
-        </ToggleButtonGroup>
-      </Stack>
+      <Typography variant="h5" fontWeight={700}>
+        {t("talents.title")}
+      </Typography>
 
       <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
         <TextField
@@ -455,6 +566,33 @@ export default function TalentsDashboardPage() {
             </MenuItem>
           ))}
         </TextField>
+        {/* Sélecteur de vue placé avec les filtres, en aplat coloré : c'est la
+          * bascule la plus structurante de la page, elle ne doit pas se
+          * confondre avec un bouton secondaire. */}
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={view}
+          onChange={(_, v) => v && setView(v)}
+          sx={{
+            alignSelf: "center",
+            "& .MuiToggleButton-root": {
+              px: 2,
+              fontWeight: 700,
+              borderColor: "primary.main",
+              color: "primary.main",
+            },
+            "& .Mui-selected": {
+              bgcolor: "primary.main",
+              color: "#fff !important",
+              "&:hover": { bgcolor: "primary.dark" },
+            },
+          }}
+        >
+          <ToggleButton value="boxes">{t("talents.viewBoxes")}</ToggleButton>
+          <ToggleButton value="trajectory">{t("talents.viewTrajectory")}</ToggleButton>
+        </ToggleButtonGroup>
+
         {departments.length > 1 && (
           <TextField
             select
@@ -572,60 +710,38 @@ export default function TalentsDashboardPage() {
           <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 1, textAlign: "center", color: "primary.main" }}>
             {t("talents.trajectoryTitle")}
           </Typography>
-          <ResponsiveContainer width="100%" height={460}>
-            <ScatterChart margin={{ top: 20, right: 40, bottom: 30, left: 10 }}>
-              <CartesianGrid stroke="#e1e0d9" />
+          <ResponsiveContainer width="100%" height={TRAJECTORY_HEIGHT}>
+            <ScatterChart margin={TRAJECTORY_MARGIN}>
+              {/* Quadrillage en carrés, puis le cadre dessiné à la main :
+                * quadrants arrondis, axes fléchés se croisant à 90 % et 0 %. */}
+              <CartesianGrid stroke="#c9d6ea" />
+              <Customized component={<TrajectoryFrame />} />
               <XAxis
                 type="number"
                 dataKey="x"
-                domain={[50, 120]}
-                ticks={[50, 60, 70, 80, 90, 100, 110, 120]}
-                tick={{ fill: "#898781", fontSize: 11 }}
-                tickFormatter={(v: number) => `${v}%`}
-                label={{ value: t("talents.performanceAxisShort"), position: "insideBottom", offset: -14, fill: CHART_NEUTRALS.axisTitle }}
+                domain={[TRAJECTORY_X[0], TRAJECTORY_X[1]]}
+                ticks={[]}
+                tick={false}
+                tickLine={false}
+                axisLine={false}
+                height={0}
               />
               <YAxis
                 type="number"
                 dataKey="y"
-                domain={[-20, 20]}
-                ticks={[-20, -15, -10, -5, 0, 5, 10, 15, 20]}
-                tick={{ fill: "#898781", fontSize: 11 }}
-                tickFormatter={(v: number) => `${v > 0 ? "+" : ""}${v}%`}
-                label={{ value: t("talents.progressionAxisShort"), angle: -90, position: "insideLeft", fill: CHART_NEUTRALS.axisTitle }}
+                domain={[TRAJECTORY_Y[0], TRAJECTORY_Y[1]]}
+                ticks={[]}
+                tick={false}
+                tickLine={false}
+                axisLine={false}
+                width={0}
               />
-              <ZAxis type="number" dataKey="z" range={[140, 140]} />
-              {/* Séparateurs du support ID-PMC : 90 % de performance et
-                * progression nulle. */}
-              <ReferenceLine x={90} stroke="#2E5AAC" strokeWidth={2} />
-              <ReferenceLine y={0} stroke="#2E5AAC" strokeWidth={2} />
+              <ZAxis type="number" dataKey="z" range={[160, 160]} />
               <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} content={<TalentTooltip />} />
               <Scatter
                 data={scatterData}
-                shape={(props: any) => {
-                  const { cx, cy, payload } = props;
-                  const p: TalentPoint = payload;
-                  const color = performanceColors[p.rating];
-                  const clipId = `talent-clip-${p.userId}`;
-                  return (
-                    <g key={p.userId}>
-                      <defs>
-                        <clipPath id={clipId}>
-                          <circle cx={cx} cy={cy} r={16} />
-                        </clipPath>
-                      </defs>
-                      <circle cx={cx} cy={cy} r={19} fill={color} />
-                      {p.avatar ? (
-                        <image href={p.avatar} x={cx - 16} y={cy - 16} width={32} height={32} clipPath={`url(#${clipId})`} preserveAspectRatio="xMidYMid slice" />
-                      ) : (
-                        <circle cx={cx} cy={cy} r={16} fill="#fff" />
-                      )}
-                      <text x={cx + 23} y={cy + 4} fontSize={11} fontWeight={700} fill={(p.progression as number) >= 0 ? "#2e7d32" : "#c62828"}>
-                        {p.performance}% ({(p.progression as number) >= 0 ? "+" : ""}
-                        {p.progression}%)
-                      </text>
-                    </g>
-                  );
-                }}
+                isAnimationActive={false}
+                shape={(props: any) => <TalentDot {...props} flip={props.payload.x > TRAJECTORY_X[1] - 12} />}
               />
             </ScatterChart>
           </ResponsiveContainer>

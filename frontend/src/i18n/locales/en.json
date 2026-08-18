@@ -541,7 +541,7 @@
   "talents": {
     "title": "Talents dashboard",
     "boxesTitle": "ID-PMC 9 Box Performance Trajectory matrix",
-    "trajectoryTitle": "ID-PMC ID-TPD Talents Performance Dashboard",
+    "trajectoryTitle": "Talents Performance Dashboard",
     "viewBoxes": "9 Box",
     "viewTrajectory": "Trajectory",
     "performance": "Performance",
@@ -606,6 +606,8 @@
         "title": "High performer slowing down",
         "advice": "Prevent burnout or decline"
       }
-    }
+    },
+    "trajectoryXAxis": "PERFORMANCE/OBJECTIVES",
+    "trajectoryYAxis": "+/- vs N-1"
   }
 }
