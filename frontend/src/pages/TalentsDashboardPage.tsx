@@ -1085,7 +1085,13 @@ export default function TalentsDashboardPage() {
                 // le décalait vers le bas, la marge basse portant les pastilles
                 // et les intitulés de paliers.
                 height: AXIS_BAND_HEIGHT,
-                mt: `${AXIS_BAND_TOP}px`,
+                // Décalage par `top` et non par `mt` : MUI Stack impose
+                // `margin: 0` à TOUS ses enfants directs, avec un sélecteur plus
+                // spécifique que le nôtre. Toute marge posée ici était donc
+                // écrasée et le bandeau restait collé en haut, quelle que soit
+                // la valeur calculée.
+                position: "relative",
+                top: `${AXIS_BAND_TOP}px`,
                 alignSelf: "flex-start",
                 flexShrink: 0,
                 bgcolor: "#12275c",
