@@ -90,14 +90,14 @@ const MARKER_ROW_OFFSET = 24;
 // Transitions du survol des vignettes — mêmes durées que la matrice ID-3A.
 const DOT_TRANSITION = "r 0.15s ease, width 0.15s ease, height 0.15s ease, x 0.15s ease, y 0.15s ease, font-size 0.15s ease";
 const MARKER_SIDE_OFFSET = 22;
-// Le bandeau "TAUX DE PROGRESSION" se centre sur le tableau en pointillés
-// lui-même — c'est-à-dire la zone de tracé, hors marges : ni la rangée des
-// pastilles chiffrées ni la barre "PERFORMANCE %" n'entrent dans le calcul.
 const PLOT_HEIGHT = CHART_HEIGHT - CHART_MARGIN.top - CHART_MARGIN.bottom;
-// Descendu de 30 px sous ce centrage, pour l'équilibre visuel avec la barre
-// "PERFORMANCE %" et la rangée des pastilles, qui occupent le bas du bloc.
-const AXIS_BAND_NUDGE = 130;
-const AXIS_BAND_TOP = CHART_MARGIN.top + (PLOT_HEIGHT - AXIS_BAND_HEIGHT) / 2 + AXIS_BAND_NUDGE;
+const PLOT_BOTTOM = CHART_HEIGHT - CHART_MARGIN.bottom;
+// Le bandeau "TAUX DE PROGRESSION" se centre entre les pastilles 3 et 4 de
+// l'ordonnée, qui marquent les deux séparations de rangées : la 3 au tiers du
+// tableau, la 4 aux deux tiers. Leur milieu tombe donc au centre du tableau.
+const MARKER_3_Y = PLOT_BOTTOM - PLOT_HEIGHT / 3;
+const MARKER_4_Y = PLOT_BOTTOM - (PLOT_HEIGHT * 2) / 3;
+const AXIS_BAND_TOP = (MARKER_3_Y + MARKER_4_Y) / 2 - AXIS_BAND_HEIGHT / 2;
 
 const PROGRESS_BANDS = [
   { key: "regression", max: 0 },
