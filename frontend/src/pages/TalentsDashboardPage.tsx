@@ -588,15 +588,20 @@ function TrailLayer({ xAxisMap, yAxisMap, trail, toX, toY }: any) {
 // et les collaborateurs y sont posés debout, en pied. Les silhouettes ne
 // subissent pas la projection : seul le SOL est incliné, sinon les personnes
 // paraîtraient couchées.
+// Le cadre est dimensionné pour que TOUTE silhouette tienne dedans : la plus
+// haute (progression maximale) a les pieds sur le bord éloigné du plan et son
+// corps remonte de `figureHeight` — il faut donc au moins cette hauteur libre
+// au-dessus du plan, plus la place du titre. Idem en largeur pour la personne
+// la plus à droite et son étiquette.
 const TPD3D = {
-  width: 1500,
-  height: 780,
-  nearY: 700, // bord bas du plan
+  width: 1660,
+  height: 940,
+  nearY: 840, // bord bas du plan
   depth: 430, // profondeur projetée du plan
-  nearHalfWidth: 700,
+  nearHalfWidth: 730,
   farRatio: 0.9, // resserrement du bord éloigné
   shiftX: 55, // décalage du fond vers la droite
-  figureHeight: 190, // hauteur d'une silhouette au premier plan
+  figureHeight: 195, // hauteur d'une silhouette au premier plan
 };
 
 /** Projette une position du repère (x en %, y en points) sur le plan incliné. */
@@ -746,6 +751,8 @@ function TpdPerspective({
           const width = height * 0.42;
           const image = fullBodyById.get(p.userId) ?? p.avatar;
           const delta = p.progression as number;
+          // Près du bord droit, l'étiquette passe à gauche de la silhouette.
+          const labelLeft = p.performance > TRAJECTORY_X[1] - 10;
           return (
             <g key={p.userId}>
               <ellipse cx={at.x} cy={at.y} rx={width * 0.38} ry={width * 0.12} fill="#1f3a63" opacity={0.16} />
@@ -754,12 +761,20 @@ function TpdPerspective({
               ) : (
                 <circle cx={at.x} cy={at.y - height / 2} r={width / 2} fill={performanceColors[p.rating]} />
               )}
-              <text x={at.x + width / 2 + 6} y={at.y - height + 14} fontSize={15} fontWeight={800} fill={performanceColors[p.rating]}>
+              <text
+                x={labelLeft ? at.x - width / 2 - 6 : at.x + width / 2 + 6}
+                y={at.y - height + 14}
+                textAnchor={labelLeft ? "end" : "start"}
+                fontSize={15}
+                fontWeight={800}
+                fill={performanceColors[p.rating]}
+              >
                 {p.performance}%
               </text>
               <text
-                x={at.x + width / 2 + 6}
+                x={labelLeft ? at.x - width / 2 - 6 : at.x + width / 2 + 6}
                 y={at.y - height + 32}
+                textAnchor={labelLeft ? "end" : "start"}
                 fontSize={15}
                 fontWeight={800}
                 fill={delta >= 0 ? "#2e7d32" : "#c62828"}
