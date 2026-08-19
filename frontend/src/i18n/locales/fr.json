@@ -625,6 +625,9 @@
     "errorPersonNoPoint": "{{name}} n'a pas de position sur « {{period}} » : soit il n'y a pas d'évaluation pour cette période, soit c'est sa première évaluation et la progression n'est pas calculable. Choisissez une autre période.",
     "errorTrailTooShort": "Une seule position connue pour {{name}} sur cette plage : choisissez une période de comparaison plus ancienne pour voir un tracé.",
     "errorRatingEmpty": "Aucun collaborateur ne correspond aux paliers de performance sélectionnés sur cette période. Élargissez le filtre ou changez de période.",
-    "errorDepartmentEmpty": "Aucun collaborateur positionné pour le département « {{department}} » sur cette période. Choisissez un autre département ou une autre période."
+    "errorDepartmentEmpty": "Aucun collaborateur positionné pour le département « {{department}} » sur cette période. Choisissez un autre département ou une autre période.",
+    "sinceBaseline": "depuis {{period}}",
+    "legendRange": "Performance = Altitude de la période affichée. Progression = marge relative entre {{from}} et {{to}}, calculée sur toute la plage et non d'une période à l'autre.",
+    "errorNoBaseline": "Personne n'a d'évaluation sur « {{period}} » : la progression ne peut pas être calculée depuis cette période. Choisissez-en une autre."
   }
 }

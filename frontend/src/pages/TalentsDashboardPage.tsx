@@ -59,6 +59,8 @@ interface TalentPoint {
   progression: number | null;
   rating: Evaluation["performance_rating"];
   previousPerformance: number | null;
+  /** Période servant de référence au calcul de la progression. */
+  baselineName?: string;
   isDirector: boolean;
   campaignName?: string;
 }
@@ -605,8 +607,8 @@ function TrailLayer({ xAxisMap, yAxisMap, trail, toX, toY }: any) {
             {/* Au survol : le détail chiffré de l'étape, écart en points ET en
                 pourcentage relatif, recalculés depuis la période précédente. */}
             {isHovered && (
-              <g transform={`translate(${X(p) + 14}, ${Y(p) - 62})`}>
-                <rect x={0} y={0} width={186} height={58} rx={4} fill="#fff" stroke={color} strokeWidth={1.5} opacity={0.98} />
+              <g transform={`translate(${X(p) + 14}, ${Y(p) - 76})`}>
+                <rect x={0} y={0} width={196} height={72} rx={4} fill="#fff" stroke={color} strokeWidth={1.5} opacity={0.98} />
                 <text x={9} y={17} fontSize={11} fontWeight={800} fill="#12275c">
                   {p.campaignName}
                 </text>
@@ -617,6 +619,11 @@ function TrailLayer({ xAxisMap, yAxisMap, trail, toX, toY }: any) {
                   {points !== null ? `${points >= 0 ? "+" : ""}${points} pts` : "—"} ({delta >= 0 ? "+" : ""}
                   {delta}%)
                 </text>
+                {p.baselineName && (
+                  <text x={9} y={63} fontSize={9.5} fill="#5b7aa8">
+                    {t("talents.sinceBaseline", { period: p.baselineName })}
+                  </text>
+                )}
               </g>
             )}
           </g>
@@ -649,6 +656,11 @@ function TalentTooltip({ active, payload }: any) {
         {delta}%
         {p.previousPerformance !== null && ` (${p.previousPerformance}% → ${p.performance}%)`}
       </Typography>
+      {p.baselineName && (
+        <Typography variant="caption" color="text.secondary">
+          {t("talents.sinceBaseline", { period: p.baselineName })}
+        </Typography>
+      )}
     </Paper>
   );
 }
@@ -699,8 +711,10 @@ export default function TalentsDashboardPage() {
     [evaluations]
   );
 
-  /** Point par personne évaluée sur la campagne choisie, avec l'écart en
-   * points par rapport à sa campagne précédente. */
+  /** Point par personne évaluée sur la campagne choisie. La progression se
+   * mesure depuis la période de comparaison quand elle est renseignée — c'est
+   * alors la marge sur toute la plage, de l'année de départ à l'année de fin —
+   * et, à défaut, depuis la période immédiatement précédente. */
   const points = useMemo<TalentPoint[]>(() => {
     if (campaignId === "") return [];
     const current = campaigns.find((c) => c.id === campaignId);
@@ -717,11 +731,17 @@ export default function TalentsDashboardPage() {
       if (index === -1) return;
       const evaluation = sorted[index];
       if (departmentFilter && evaluation.user_department !== departmentFilter) return;
-      const previous = index > 0 ? Number(sorted[index - 1].altitude_percentage) : null;
+      const baselineEvaluation =
+        fromCampaignId === ""
+          ? index > 0
+            ? sorted[index - 1]
+            : null
+          : sorted.find((e) => e.campaign === fromCampaignId) ?? null;
+      const previous = baselineEvaluation ? Number(baselineEvaluation.altitude_percentage) : null;
       const performance = Number(evaluation.altitude_percentage);
-      // Progression relative : écart rapporté à la performance précédente,
-      // comme le prévoit le support (paliers exprimés en %). Une période
-      // précédente à 0 % rendrait le rapport infini : pas de progression.
+      // Progression relative : écart rapporté à la performance de référence,
+      // comme le prévoit le support (paliers exprimés en %). Une référence à
+      // 0 % rendrait le rapport infini : pas de progression.
       const progression =
         previous === null || previous === 0 ? null : Math.round(((performance - previous) / previous) * 1000) / 10;
       result.push({
@@ -734,6 +754,7 @@ export default function TalentsDashboardPage() {
         progression,
         rating: evaluation.performance_rating,
         previousPerformance: previous,
+        baselineName: baselineEvaluation?.campaign_name,
         isDirector: evaluation.user_role !== "MEMBER",
       });
     });
@@ -745,7 +766,7 @@ export default function TalentsDashboardPage() {
             (personFilter === DIRECTORS_ONLY ? p.isDirector : p.userId === personFilter))
       )
       .sort((a, b) => b.performance - a.performance);
-  }, [evaluations, campaigns, campaignId, departmentFilter, ratingFilter, personFilter]);
+  }, [evaluations, campaigns, campaignId, fromCampaignId, departmentFilter, ratingFilter, personFilter]);
 
   const people = useMemo(() => {
     const byId = new Map<number, string>();
@@ -782,12 +803,17 @@ export default function TalentsDashboardPage() {
     const own = evaluations
       .filter((e) => e.user === personFilter)
       .sort((a, b) => a.campaign_start_date.localeCompare(b.campaign_start_date));
+    // Référence unique : la performance de l'année de départ. Chaque étape du
+    // tracé exprime donc la marge cumulée depuis cette année, cohérente avec
+    // l'axe des ordonnées, au lieu du seul écart avec l'année précédente.
+    const baselineEvaluation = own.find((e) => e.campaign === fromCampaignId);
+    const baseline = baselineEvaluation ? Number(baselineEvaluation.altitude_percentage) : null;
+    if (baseline === null || baseline === 0) return [];
     const result: TalentPoint[] = [];
-    own.forEach((e, index) => {
-      if (e.campaign_start_date < from.start_date || e.campaign_start_date > to.start_date) return;
-      const previous = index > 0 ? Number(own[index - 1].altitude_percentage) : null;
+    own.forEach((e) => {
+      if (e.campaign_start_date <= from.start_date || e.campaign_start_date > to.start_date) return;
+      const previous = baseline;
       const performance = Number(e.altitude_percentage);
-      if (previous === null || previous === 0) return;
       result.push({
         userId: e.user,
         name: e.user_name,
@@ -798,6 +824,7 @@ export default function TalentsDashboardPage() {
         progression: Math.round(((performance - previous) / previous) * 1000) / 10,
         rating: e.performance_rating,
         previousPerformance: previous,
+        baselineName: baselineEvaluation?.campaign_name,
         isDirector: e.user_role !== "MEMBER",
         campaignName: e.campaign_name,
       });
@@ -836,6 +863,9 @@ export default function TalentsDashboardPage() {
     if (personFilter !== "" && personFilter !== DIRECTORS_ONLY && from && trail.length < 2) {
       return { severity: "info", text: t("talents.errorTrailTooShort", { name: personName }) };
     }
+    if (from && points.length === 0 && placed.length === 0) {
+      return { severity: "warning", text: t("talents.errorNoBaseline", { period: from.name }) };
+    }
     if (ratingFilter.length > 0 && placed.length === 0) {
       return { severity: "warning", text: t("talents.errorRatingEmpty") };
     }
@@ -843,7 +873,7 @@ export default function TalentsDashboardPage() {
       return { severity: "warning", text: t("talents.errorDepartmentEmpty", { department: departmentFilter }) };
     }
     return null;
-  }, [campaigns, campaignId, fromCampaignId, personFilter, people, placed.length, trail.length, ratingFilter, departmentFilter, t]);
+  }, [campaigns, campaignId, fromCampaignId, personFilter, people, points.length, placed.length, trail.length, ratingFilter, departmentFilter, t]);
 
   const scatterData = placed.map((p) => ({
     ...p,
@@ -1173,7 +1203,7 @@ export default function TalentsDashboardPage() {
 
       {user?.role === "COMPANY_ADMIN" && placed.length > 0 && (
         <Typography variant="caption" color="text.secondary">
-          {t("talents.legend")}
+          {fromCampaignId === "" ? t("talents.legend") : t("talents.legendRange", { from: campaigns.find((c) => c.id === fromCampaignId)?.name ?? "", to: campaigns.find((c) => c.id === campaignId)?.name ?? "" })}
         </Typography>
       )}
     </Stack>
