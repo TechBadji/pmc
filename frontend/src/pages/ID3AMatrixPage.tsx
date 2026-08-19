@@ -740,7 +740,9 @@ export default function ID3AMatrixPage() {
   const scopedEvaluations = useMemo(
     () =>
       allEvaluations.filter((e) => {
-        if (canFilterLeadership && leadershipOnly && e.user_role === "MEMBER") return false;
+        // Un département choisi l'emporte sur la vue "équipe dirigeante" :
+        // sinon le filtre écarterait justement les membres du département.
+        if (!departmentFilter && canFilterLeadership && leadershipOnly && e.user_role === "MEMBER") return false;
         if (showDirectorFilter && directorFilter !== "" && e.user !== directorFilter) return false;
         if (memberFilter !== "" && e.user !== memberFilter) return false;
         if (departmentFilter && e.user_department !== departmentFilter) return false;
@@ -985,7 +987,13 @@ export default function ID3AMatrixPage() {
             label={t("common.department")}
             size="small"
             value={departmentFilter}
-            onChange={(e) => setDepartmentFilter(e.target.value)}
+            onChange={(e) => {
+              setDepartmentFilter(e.target.value);
+              if (e.target.value) {
+                setLeadershipOnly(false);
+                setDirectorFilter("");
+              }
+            }}
             sx={{ minWidth: 190 }}
           >
             <MenuItem value="">{t("id3aMatrix.allDepartments")}</MenuItem>
