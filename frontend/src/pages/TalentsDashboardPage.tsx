@@ -97,10 +97,10 @@ const PLOT_BOTTOM = CHART_HEIGHT - CHART_MARGIN.bottom;
 // tableau, la 4 aux deux tiers. Leur milieu tombe donc au centre du tableau.
 const MARKER_3_Y = PLOT_BOTTOM - PLOT_HEIGHT / 3;
 const MARKER_4_Y = PLOT_BOTTOM - (PLOT_HEIGHT * 2) / 3;
-// Descente sous ce centrage, exprimée en fraction de la hauteur du bandeau :
-// un quart au départ, moins 20 % puis 10 % de remontée — soit -5 % net, donc
-// le bandeau finit légèrement AU-DESSUS du centre des pastilles 3 et 4.
-const AXIS_BAND_DROP = 0.25 - 0.2 - 0.1;
+// Décalage sous le centrage, en fraction de la hauteur du bandeau. Les
+// ajustements successifs (+25 %, -20 %, -10 %, +5 %) s'annulent : le bandeau
+// est finalement centré pile entre les pastilles 3 et 4.
+const AXIS_BAND_DROP = 0;
 const AXIS_BAND_TOP = (MARKER_3_Y + MARKER_4_Y) / 2 - AXIS_BAND_HEIGHT / 2 + AXIS_BAND_HEIGHT * AXIS_BAND_DROP;
 
 const PROGRESS_BANDS = [
