@@ -94,7 +94,10 @@ const MARKER_SIDE_OFFSET = 22;
 // lui-même — c'est-à-dire la zone de tracé, hors marges : ni la rangée des
 // pastilles chiffrées ni la barre "PERFORMANCE %" n'entrent dans le calcul.
 const PLOT_HEIGHT = CHART_HEIGHT - CHART_MARGIN.top - CHART_MARGIN.bottom;
-const AXIS_BAND_TOP = CHART_MARGIN.top + (PLOT_HEIGHT - AXIS_BAND_HEIGHT) / 2;
+// Descendu de 30 px sous ce centrage, pour l'équilibre visuel avec la barre
+// "PERFORMANCE %" et la rangée des pastilles, qui occupent le bas du bloc.
+const AXIS_BAND_NUDGE = 30;
+const AXIS_BAND_TOP = CHART_MARGIN.top + (PLOT_HEIGHT - AXIS_BAND_HEIGHT) / 2 + AXIS_BAND_NUDGE;
 
 const PROGRESS_BANDS = [
   { key: "regression", max: 0 },
