@@ -83,21 +83,22 @@ const CHART_HEIGHT = 520;
 // chiffrées et des intitulés de paliers à la verticale — la réduire rapproche
 // d'autant le bandeau bleu de l'axe des ordonnées.
 const CHART_MARGIN = { top: 20, right: 40, bottom: 60, left: 92 };
-const AXIS_BAND_HEIGHT = Math.round(CHART_HEIGHT * 0.7);
+// Le bandeau accompagne la rangée du bas : il se centre sur l'intitulé
+// "Régression / Nulle" (milieu de cette rangée) et sa hauteur est bornée pour
+// ne pas dépasser le bas du tableau en pointillés.
 // Décalage des pastilles chiffrées sous l'axe des abscisses, et de celles de
 // l'ordonnée par rapport au bord gauche du tracé — au plus près des axes.
 const MARKER_ROW_OFFSET = 24;
 // Transitions du survol des vignettes — mêmes durées que la matrice ID-3A.
 const DOT_TRANSITION = "r 0.15s ease, width 0.15s ease, height 0.15s ease, x 0.15s ease, y 0.15s ease, font-size 0.15s ease";
 const MARKER_SIDE_OFFSET = 22;
-// Le bandeau "TAUX DE PROGRESSION" se centre sur le tableau en pointillés
-// lui-même — c'est-à-dire la zone de tracé, hors marges : ni la rangée des
-// pastilles chiffrées ni la barre "PERFORMANCE %" n'entrent dans le calcul.
 const PLOT_HEIGHT = CHART_HEIGHT - CHART_MARGIN.top - CHART_MARGIN.bottom;
-// Descendu de 30 px sous ce centrage, pour l'équilibre visuel avec la barre
-// "PERFORMANCE %" et la rangée des pastilles, qui occupent le bas du bloc.
-const AXIS_BAND_NUDGE = 30;
-const AXIS_BAND_TOP = CHART_MARGIN.top + (PLOT_HEIGHT - AXIS_BAND_HEIGHT) / 2 + AXIS_BAND_NUDGE;
+// Centre de la rangée du bas, là où est écrit "Régression / Nulle" : la zone de
+// tracé couvre 3 rangées, la première occupe donc le tiers inférieur.
+const REGRESSION_ROW_CENTER = CHART_HEIGHT - CHART_MARGIN.bottom - PLOT_HEIGHT / 6;
+const PLOT_BOTTOM = CHART_HEIGHT - CHART_MARGIN.bottom;
+const AXIS_BAND_HEIGHT = Math.floor((PLOT_BOTTOM - REGRESSION_ROW_CENTER) * 2);
+const AXIS_BAND_TOP = REGRESSION_ROW_CENTER - AXIS_BAND_HEIGHT / 2;
 
 const PROGRESS_BANDS = [
   { key: "regression", max: 0 },
