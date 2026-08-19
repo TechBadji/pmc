@@ -463,6 +463,26 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
  * successives, colorés par le palier atteint à l'arrivée, avec une flèche de
  * sens et le nom de la période à chaque étape. Utilisé tel quel par les deux
  * vues, seules les coordonnées changent. */
+/** Recule chaque extrémité d'un segment le long de sa direction, du rayon du
+ * point qu'elle touche : la flèche s'arrête juste avant la vignette au lieu de
+ * pointer son centre, où elle serait cachée dessous. */
+function shrinkLine(x1: number, y1: number, x2: number, y2: number, startR: number, endR: number) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  return {
+    x1: x1 + (dx / dist) * startR,
+    y1: y1 + (dy / dist) * startR,
+    x2: x2 - (dx / dist) * endR,
+    y2: y2 - (dy / dist) * endR,
+  };
+}
+
+// Rayons des points du tracé : jalon d'étape, et vignette photo de la position
+// courante (anneau compris), plus un écart de respiration.
+const TRAIL_STEP_RADIUS = 11;
+const TRAIL_CURRENT_RADIUS = 26;
+
 function TrailLayer({ xAxisMap, yAxisMap, trail, toX, toY }: any) {
   const xAxis = xAxisMap?.[0];
   const yAxis = yAxisMap?.[0];
@@ -490,13 +510,24 @@ function TrailLayer({ xAxisMap, yAxisMap, trail, toX, toY }: any) {
       </defs>
       {trail.slice(1).map((p: TalentPoint, i: number) => {
         const from = trail[i];
+        // La dernière étape aboutit sur la vignette photo, bien plus grande
+        // qu'un jalon : le recul doit suivre.
+        const isLast = i === trail.length - 2;
+        const segment = shrinkLine(
+          X(from),
+          Y(from),
+          X(p),
+          Y(p),
+          TRAIL_STEP_RADIUS,
+          isLast ? TRAIL_CURRENT_RADIUS : TRAIL_STEP_RADIUS
+        );
         return (
           <line
             key={`s-${i}`}
-            x1={X(from)}
-            y1={Y(from)}
-            x2={X(p)}
-            y2={Y(p)}
+            x1={segment.x1}
+            y1={segment.y1}
+            x2={segment.x2}
+            y2={segment.y2}
             stroke={performanceColors[p.rating]}
             strokeWidth={2.5}
             strokeDasharray="6 4"
