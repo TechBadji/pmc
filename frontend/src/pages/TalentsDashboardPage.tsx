@@ -18,7 +18,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  CartesianGrid,
   Customized,
   ResponsiveContainer,
   Scatter,
@@ -350,13 +349,16 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
   const Y = (v: number) => yAxis.scale(v);
   const tickText = { fontSize: 10.5, fontWeight: 700, fill: "#5b7aa8", letterSpacing: 0.2 } as const;
   const xTicks = [50, 55, 60, 65, 70, 75, 80, 85, 95, 100, 105, 110, 115, 120];
+  // Carreaux : tous les 5 % en abscisse, tous les 5 points en ordonnée.
+  const gridX = Array.from({ length: 15 }, (_, i) => 50 + i * 5);
+  const gridY = Array.from({ length: 9 }, (_, i) => -20 + i * 5);
   const yTicks = [20, 15, 10, 5, -5, -10, -15, -20];
   const inset = 10;
 
   /** Un quadrant : rectangle à coins arrondis, en pointillés, sur un aplat
    * très pâle qui dit son sens — vert en haut à droite (performants qui
    * progressent), rouge en bas à gauche (en difficulté et en recul). */
-  function quadrant(x1: number, x2: number, y1: number, y2: number, key: string, tint: string) {
+  function quadrant(x1: number, x2: number, y1: number, y2: number, key: string, tint: string, mode: "fill" | "stroke") {
     const left = Math.min(X(x1), X(x2)) + inset;
     const right = Math.max(X(x1), X(x2)) - inset;
     const top = Math.min(Y(y1), Y(y2)) + inset;
@@ -370,8 +372,8 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
         height={Math.max(0, bottom - top)}
         rx={26}
         ry={26}
-        fill={tint}
-        stroke="#3a5a8c"
+        fill={mode === "fill" ? tint : "none"}
+        stroke={mode === "stroke" ? "#3a5a8c" : "none"}
         strokeWidth={3}
         strokeDasharray="1 6"
         strokeLinecap="round"
@@ -381,10 +383,28 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
 
   return (
     <g>
-      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, 0, TRAJECTORY_Y[1], "tl", "#eef4fd")}
-      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], 0, TRAJECTORY_Y[1], "tr", "#ecf8ee")}
-      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[0], 0, "bl", "#fdeeec")}
-      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], TRAJECTORY_Y[0], 0, "br", "#fdf6e9")}
+      {/* 1. Aplats des quadrants */}
+      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, 0, TRAJECTORY_Y[1], "tl-f", "#eef4fd", "fill")}
+      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], 0, TRAJECTORY_Y[1], "tr-f", "#ecf8ee", "fill")}
+      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[0], 0, "bl-f", "#fdeeec", "fill")}
+      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], TRAJECTORY_Y[0], 0, "br-f", "#fdf6e9", "fill")}
+
+      {/* 2. Quadrillage régulier, dessiné par-dessus les aplats : un pas de 5 %
+        * en abscisse et de 5 points en ordonnée, soit des carreaux réguliers.
+        * Tracé ici plutôt que par CartesianGrid, dont les lignes suivent les
+        * graduations de l'axe — or les nôtres sont dessinées à la main. */}
+      {gridX.map((v) => (
+        <line key={`gx-${v}`} x1={X(v)} y1={Y(TRAJECTORY_Y[0])} x2={X(v)} y2={Y(TRAJECTORY_Y[1])} stroke="#cfdcee" strokeWidth={1} />
+      ))}
+      {gridY.map((v) => (
+        <line key={`gy-${v}`} x1={X(TRAJECTORY_X[0])} y1={Y(v)} x2={X(TRAJECTORY_X[1])} y2={Y(v)} stroke="#cfdcee" strokeWidth={1} />
+      ))}
+
+      {/* 3. Contours des quadrants, au-dessus du quadrillage */}
+      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, 0, TRAJECTORY_Y[1], "tl-s", "", "stroke")}
+      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], 0, TRAJECTORY_Y[1], "tr-s", "", "stroke")}
+      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[0], 0, "bl-s", "", "stroke")}
+      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], TRAJECTORY_Y[0], 0, "br-s", "", "stroke")}
 
       {/* Axes : la ligne s'arrête AVANT la pointe, dessinée à la main en
         * triangle plein. Un marqueur SVG se superposait au trait de 6 px et
@@ -1027,7 +1047,6 @@ export default function TalentsDashboardPage() {
             <ScatterChart margin={TRAJECTORY_MARGIN}>
               {/* Quadrillage en carrés, puis le cadre dessiné à la main :
                 * quadrants arrondis, axes fléchés se croisant à 90 % et 0 %. */}
-              <CartesianGrid stroke="#a9c0dc" strokeWidth={1} />
               <Customized component={<TrajectoryFrame />} />
               <Customized
                 component={
