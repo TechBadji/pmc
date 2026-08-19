@@ -330,6 +330,10 @@ const TRAJECTORY_MARGIN = { top: 30, right: 60, bottom: 30, left: 40 };
 const TRAJECTORY_X: [number, number] = [50, 120];
 const TRAJECTORY_Y: [number, number] = [-20, 20];
 const TRAJECTORY_ORIGIN_X = 90;
+// Dépassement des axes au-delà de la dernière graduation : la pointe se pose
+// dans la marge, comme sur la planche, au lieu d'être rentrée dans le tracé.
+// 20 px tiennent dans les marges (60 à droite, 30 en haut) sans être rognés.
+const AXIS_OVERSHOOT = 20;
 // Marges de sécurité : une vignette posée sur la graduation extrême sortirait
 // du repère de la moitié de sa photo. Exprimées dans l'unité de chaque axe.
 const TRAJECTORY_X_INSET = 2; // ~2 points de performance
@@ -404,7 +408,7 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
       <line
         x1={X(TRAJECTORY_X[0])}
         y1={Y(0)}
-        x2={X(TRAJECTORY_X[1])}
+        x2={X(TRAJECTORY_X[1]) + AXIS_OVERSHOOT}
         y2={Y(0)}
         stroke={AXIS_BLUE}
         strokeWidth={6}
@@ -414,7 +418,7 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
         x1={X(TRAJECTORY_ORIGIN_X)}
         y1={Y(TRAJECTORY_Y[0])}
         x2={X(TRAJECTORY_ORIGIN_X)}
-        y2={Y(TRAJECTORY_Y[1])}
+        y2={Y(TRAJECTORY_Y[1]) - AXIS_OVERSHOOT}
         stroke={AXIS_BLUE}
         strokeWidth={6}
         markerEnd="url(#tpd-arrow)"
