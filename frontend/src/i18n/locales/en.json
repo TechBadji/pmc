@@ -618,6 +618,7 @@
     "chooseFromPeriod": "Choose a period",
     "person": "All people",
     "allPeople": "All people",
+    "directorsOnly": "All directors",
     "trailHint": "{{name}}'s progression trail: each point is a period, the colour shows the level reached.",
     "errorComparePeriod": "The comparison period must come before “{{period}}”. Pick an earlier period, or go back to “Choose a period” to compare nothing.",
     "errorCompareNoPerson": "The progression trail is shown for one person at a time: pick someone in the “All people” list.",

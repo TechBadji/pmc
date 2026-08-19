@@ -59,6 +59,7 @@ interface TalentPoint {
   progression: number | null;
   rating: Evaluation["performance_rating"];
   previousPerformance: number | null;
+  isDirector: boolean;
   campaignName?: string;
 }
 
@@ -68,6 +69,10 @@ const PERF_BANDS = [
   { key: "mid", max: 89.999 },
   { key: "high", max: Infinity },
 ] as const;
+
+// Valeur sentinelle du sélecteur de collaborateur : filtrer sur les seuls
+// directeurs de département (tout rôle autre que membre d'équipe).
+const DIRECTORS_ONLY = "__directors__";
 
 const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
 
@@ -619,7 +624,9 @@ export default function TalentsDashboardPage() {
   // suivie individuellement.
   const [fromCampaignId, setFromCampaignId] = useState<number | "">("");
   const [ratingFilter, setRatingFilter] = useState<PerformanceRating[]>([]);
-  const [personFilter, setPersonFilter] = useState<number | "">("");
+  // "" = tout le monde, DIRECTORS_ONLY = les seuls directeurs de département,
+  // un identifiant = un collaborateur suivi individuellement.
+  const [personFilter, setPersonFilter] = useState<number | "" | typeof DIRECTORS_ONLY>("");
   const [view, setView] = useState<"boxes" | "trajectory">("boxes");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -688,10 +695,16 @@ export default function TalentsDashboardPage() {
         progression,
         rating: evaluation.performance_rating,
         previousPerformance: previous,
+        isDirector: evaluation.user_role !== "MEMBER",
       });
     });
     return result
-      .filter((p) => (ratingFilter.length === 0 || ratingFilter.includes(p.rating)) && (personFilter === "" || p.userId === personFilter))
+      .filter(
+        (p) =>
+          (ratingFilter.length === 0 || ratingFilter.includes(p.rating)) &&
+          (personFilter === "" ||
+            (personFilter === DIRECTORS_ONLY ? p.isDirector : p.userId === personFilter))
+      )
       .sort((a, b) => b.performance - a.performance);
   }, [evaluations, campaigns, campaignId, departmentFilter, ratingFilter, personFilter]);
 
@@ -723,7 +736,7 @@ export default function TalentsDashboardPage() {
    * période sans progression calculable (première évaluation) est ignorée :
    * elle n'a pas d'ordonnée. */
   const trail = useMemo<TalentPoint[]>(() => {
-    if (personFilter === "" || campaignId === "" || fromCampaignId === "") return [];
+    if (personFilter === "" || personFilter === DIRECTORS_ONLY || campaignId === "" || fromCampaignId === "") return [];
     const from = campaigns.find((c) => c.id === fromCampaignId);
     const to = campaigns.find((c) => c.id === campaignId);
     if (!from || !to) return [];
@@ -746,6 +759,7 @@ export default function TalentsDashboardPage() {
         progression: Math.round(((performance - previous) / previous) * 1000) / 10,
         rating: e.performance_rating,
         previousPerformance: previous,
+        isDirector: e.user_role !== "MEMBER",
         campaignName: e.campaign_name,
       });
     });
@@ -774,13 +788,13 @@ export default function TalentsDashboardPage() {
     if (from && current && from.start_date >= current.start_date) {
       return { severity: "warning", text: t("talents.errorComparePeriod", { period: current.name }) };
     }
-    if (from && personFilter === "") {
+    if (from && (personFilter === "" || personFilter === DIRECTORS_ONLY)) {
       return { severity: "info", text: t("talents.errorCompareNoPerson") };
     }
-    if (personFilter !== "" && placed.length === 0) {
+    if (personFilter !== "" && personFilter !== DIRECTORS_ONLY && placed.length === 0) {
       return { severity: "warning", text: t("talents.errorPersonNoPoint", { name: personName, period: current?.name ?? "" }) };
     }
-    if (personFilter !== "" && from && trail.length < 2) {
+    if (personFilter !== "" && personFilter !== DIRECTORS_ONLY && from && trail.length < 2) {
       return { severity: "info", text: t("talents.errorTrailTooShort", { name: personName }) };
     }
     if (ratingFilter.length > 0 && placed.length === 0) {
@@ -919,10 +933,17 @@ export default function TalentsDashboardPage() {
           size="small"
           label={t("talents.person")}
           value={personFilter}
-          onChange={(e) => setPersonFilter(e.target.value === "" ? "" : Number(e.target.value))}
+          onChange={(e) =>
+            setPersonFilter(
+              e.target.value === "" ? "" : e.target.value === DIRECTORS_ONLY ? DIRECTORS_ONLY : Number(e.target.value)
+            )
+          }
           sx={{ minWidth: 190 }}
         >
           <MenuItem value="">{t("talents.allPeople")}</MenuItem>
+          <MenuItem value={DIRECTORS_ONLY} sx={{ fontWeight: 700 }}>
+            {t("talents.directorsOnly")}
+          </MenuItem>
           {peopleByDepartment.flatMap((group) => [
             <ListSubheader key={`h-${group.department}`} sx={{ fontWeight: 700, lineHeight: 2 }}>
               {group.department || t("id3aMatrix.noDepartment")}
