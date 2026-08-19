@@ -307,6 +307,11 @@ function shrinkLine(x1: number, y1: number, x2: number, y2: number, startR: numb
 }
 
 const DOT_RADIUS = { full: 19, dimmed: 15 };
+// Écart entre la pointe d'une flèche et la vignette qu'elle vise. À 3 px, la
+// pointe affleurait le halo (rayon + 1,5) et paraissait toucher la photo ; 8 px
+// laissent la flèche s'arrêter visiblement avant, comme sur le tracé du
+// tableau de bord des talents.
+const ARROW_GAP = 8;
 
 /** Flèches reliant, pour chaque personne présente dans les deux périodes, sa
  * position de comparaison à sa position actuelle sur la matrice — rendu via
@@ -343,8 +348,8 @@ function MatrixConnectors({ xAxisMap, yAxisMap, currentPoints, comparePoints }: 
           yAxis.scale(older.y),
           xAxis.scale(newer.x),
           yAxis.scale(newer.y),
-          olderR + 3,
-          newerR + 3
+          olderR + ARROW_GAP,
+          newerR + ARROW_GAP
         );
         return (
           <line
@@ -392,8 +397,8 @@ function MatrixTrail({ xAxisMap, yAxisMap, trail }: any) {
           yAxis.scale(prev.y),
           xAxis.scale(p.x),
           yAxis.scale(p.y),
-          DOT_RADIUS.dimmed + 3,
-          pR + 3
+          DOT_RADIUS.dimmed + ARROW_GAP,
+          pR + ARROW_GAP
         );
         return (
           <line
