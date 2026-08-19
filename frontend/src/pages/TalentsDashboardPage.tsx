@@ -594,19 +594,15 @@ function TrailLayer({ xAxisMap, yAxisMap, trail, toX, toY }: any) {
 // au-dessus du plan, plus la place du titre. Idem en largeur pour la personne
 // la plus à droite et son étiquette.
 const TPD3D = {
-  width: 1900,
-  height: 1120,
-  nearY: 1010, // bord bas du plan
-  depth: 560, // profondeur projetée du plan
-  nearHalfWidth: 860,
+  width: 1660,
+  height: 940,
+  nearY: 840, // bord bas du plan
+  depth: 430, // profondeur projetée du plan
+  nearHalfWidth: 730,
   farRatio: 0.9, // resserrement du bord éloigné
-  shiftX: 60, // décalage du fond vers la droite
-  figureHeight: 260, // hauteur d'une silhouette au premier plan
+  shiftX: 55, // décalage du fond vers la droite
+  figureHeight: 195, // hauteur d'une silhouette au premier plan
 };
-// Écart minimal entre deux silhouettes voisines : en dessous, elles se
-// masquent l'une l'autre. Elles sont alors écartées horizontalement, sans
-// changer de profondeur — leur ligne de progression reste donc lisible.
-const FIGURE_MIN_GAP = 78;
 
 /** Projette une position du repère (x en %, y en points) sur le plan incliné. */
 function projectTpd(xPercent: number, yProgress: number) {
@@ -668,39 +664,9 @@ function TpdPerspective({
   // recouvre celles du fond, comme sur une photo de groupe.
   const ordered = [...points].sort((a, b) => (b.progression as number) - (a.progression as number));
 
-  /** Positions projetées, écartées horizontalement quand deux personnes se
-   * superposent : avec plusieurs dizaines d'évaluations, des collaborateurs
-   * de performance voisine tombent au même endroit et se cachent. */
-  const placedFigures = (() => {
-    const rows = ordered.map((p) => ({ point: p, at: projectTpd(p.performance, p.progression as number) }));
-    for (let pass = 0; pass < 30; pass++) {
-      let moved = false;
-      for (let i = 0; i < rows.length; i++) {
-        for (let j = i + 1; j < rows.length; j++) {
-          const a = rows[i].at;
-          const b = rows[j].at;
-          if (Math.abs(a.y - b.y) > 60) continue; // rangées différentes
-          const gap = b.x - a.x;
-          if (Math.abs(gap) >= FIGURE_MIN_GAP) continue;
-          const push = (FIGURE_MIN_GAP - Math.abs(gap)) / 2;
-          const direction = gap >= 0 ? 1 : -1;
-          a.x -= push * direction;
-          b.x += push * direction;
-          moved = true;
-        }
-      }
-      if (!moved) break;
-    }
-    return rows;
-  })();
-
   return (
     <Box sx={{ width: "100%", overflowX: "auto" }}>
-      <svg viewBox={`0 0 ${TPD3D.width} ${TPD3D.height}`} width="100%" style={{ display: "block", minWidth: 900 }}>
-        <style>{`
-          .pmc-figure { transition: transform 0.15s ease; transform-box: fill-box; transform-origin: bottom center; cursor: pointer; }
-          .pmc-figure:hover { transform: scale(1.12); }
-        `}</style>
+      <svg viewBox={`0 0 ${TPD3D.width} ${TPD3D.height}`} width="100%" style={{ display: "block" }}>
         <text x={TPD3D.width / 2} y={30} textAnchor="middle" fontSize={26} fontWeight={800} fill="#12275c">
           {t("talents.trajectoryTitle").toUpperCase()}
         </text>
@@ -778,7 +744,8 @@ function TpdPerspective({
 
         {/* Silhouettes debout : ancrées par les pieds sur leur position, et
             d'autant plus petites qu'elles sont loin. */}
-        {placedFigures.map(({ point: p, at }) => {
+        {ordered.map((p) => {
+          const at = projectTpd(p.performance, p.progression as number);
           const scale = 1 - 0.3 * at.depth;
           const height = TPD3D.figureHeight * scale;
           const width = height * 0.42;
@@ -786,35 +753,13 @@ function TpdPerspective({
           const delta = p.progression as number;
           // Près du bord droit, l'étiquette passe à gauche de la silhouette.
           const labelLeft = p.performance > TRAJECTORY_X[1] - 10;
-          const color = performanceColors[p.rating];
           return (
-            <g key={p.userId} className="pmc-figure">
-              {/* Socle coloré au palier de performance : il détache la
-                  silhouette du quadrillage et donne le niveau sans lire
-                  l'étiquette. */}
-              <ellipse cx={at.x} cy={at.y + 4} rx={width * 0.46} ry={width * 0.15} fill="#1f3a63" opacity={0.14} />
-              <ellipse
-                cx={at.x}
-                cy={at.y}
-                rx={width * 0.44}
-                ry={width * 0.14}
-                fill="none"
-                stroke={color}
-                strokeWidth={3.5}
-                opacity={0.9}
-              />
+            <g key={p.userId}>
+              <ellipse cx={at.x} cy={at.y} rx={width * 0.38} ry={width * 0.12} fill="#1f3a63" opacity={0.16} />
               {image ? (
-                <image
-                  href={image}
-                  x={at.x - width / 2}
-                  y={at.y - height}
-                  width={width}
-                  height={height}
-                  preserveAspectRatio="xMidYMax meet"
-                  style={{ filter: "drop-shadow(0 4px 6px rgba(31,58,99,0.35))" }}
-                />
+                <image href={image} x={at.x - width / 2} y={at.y - height} width={width} height={height} preserveAspectRatio="xMidYMax meet" />
               ) : (
-                <circle cx={at.x} cy={at.y - height / 2} r={width / 2} fill={color} />
+                <circle cx={at.x} cy={at.y - height / 2} r={width / 2} fill={performanceColors[p.rating]} />
               )}
               <text
                 x={labelLeft ? at.x - width / 2 - 6 : at.x + width / 2 + 6}
