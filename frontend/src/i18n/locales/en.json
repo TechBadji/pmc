@@ -610,8 +610,15 @@
     "trajectoryXAxis": "PERFORMANCE/OBJECTIVES",
     "trajectoryYAxis": "+/- vs N-1",
     "fromPeriod": "Compare to",
+    "chooseFromPeriod": "Choose a period",
     "person": "All people",
     "allPeople": "All people",
-    "trailHint": "{{name}}'s progression trail: each point is a period, the colour shows the level reached."
+    "trailHint": "{{name}}'s progression trail: each point is a period, the colour shows the level reached.",
+    "errorComparePeriod": "The comparison period must come before “{{period}}”. Pick an earlier period, or go back to “Choose a period” to compare nothing.",
+    "errorCompareNoPerson": "The progression trail is shown for one person at a time: pick someone in the “All people” list.",
+    "errorPersonNoPoint": "{{name}} has no position for “{{period}}”: either there is no evaluation for that period, or it is their first one and progression cannot be computed. Pick another period.",
+    "errorTrailTooShort": "Only one known position for {{name}} in this range: pick an earlier comparison period to see a trail.",
+    "errorRatingEmpty": "No one matches the selected performance levels for this period. Widen the filter or change period.",
+    "errorDepartmentEmpty": "No one placed for the “{{department}}” department in this period. Pick another department or period."
   }
 }

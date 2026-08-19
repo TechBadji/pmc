@@ -582,10 +582,9 @@ export default function TalentsDashboardPage() {
       .then((r) => {
         setEvaluations(r.data.results);
         const sorted = [...r.data.results].sort((a, b) => a.campaign_start_date.localeCompare(b.campaign_start_date));
-        if (sorted.length) {
-          setCampaignId(sorted[sorted.length - 1].campaign);
-          setFromCampaignId(sorted[0].campaign);
-        }
+        // La période de comparaison reste vide tant qu'elle n'est pas choisie :
+        // sans elle, la page montre la seule photographie de la période.
+        if (sorted.length) setCampaignId(sorted[sorted.length - 1].campaign);
       })
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
@@ -699,6 +698,35 @@ export default function TalentsDashboardPage() {
     return { improving, atRisk, leaders, total: placed.length };
   }, [placed]);
 
+  /** Combinaisons de filtres qui ne peuvent rien produire : plutôt qu'un
+   * graphe vide sans explication, on dit ce qui cloche et la marche à suivre.
+   * L'ordre compte : on signale la cause la plus en amont d'abord. */
+  const guidance = useMemo<{ severity: "warning" | "info"; text: string } | null>(() => {
+    const current = campaigns.find((c) => c.id === campaignId);
+    const from = campaigns.find((c) => c.id === fromCampaignId);
+    const personName = people.find((p) => p.id === personFilter)?.name ?? "";
+
+    if (from && current && from.start_date >= current.start_date) {
+      return { severity: "warning", text: t("talents.errorComparePeriod", { period: current.name }) };
+    }
+    if (from && personFilter === "") {
+      return { severity: "info", text: t("talents.errorCompareNoPerson") };
+    }
+    if (personFilter !== "" && placed.length === 0) {
+      return { severity: "warning", text: t("talents.errorPersonNoPoint", { name: personName, period: current?.name ?? "" }) };
+    }
+    if (personFilter !== "" && from && trail.length < 2) {
+      return { severity: "info", text: t("talents.errorTrailTooShort", { name: personName }) };
+    }
+    if (ratingFilter.length > 0 && placed.length === 0) {
+      return { severity: "warning", text: t("talents.errorRatingEmpty") };
+    }
+    if (departmentFilter && placed.length === 0) {
+      return { severity: "warning", text: t("talents.errorDepartmentEmpty", { department: departmentFilter }) };
+    }
+    return null;
+  }, [campaigns, campaignId, fromCampaignId, personFilter, people, placed.length, trail.length, ratingFilter, departmentFilter, t]);
+
   const scatterData = placed.map((p) => ({
     ...p,
     x: Math.min(TRAJECTORY_X[1] - TRAJECTORY_X_INSET, Math.max(TRAJECTORY_X[0] + TRAJECTORY_X_INSET, p.performance)),
@@ -761,9 +789,10 @@ export default function TalentsDashboardPage() {
           size="small"
           label={t("talents.fromPeriod")}
           value={fromCampaignId}
-          onChange={(e) => setFromCampaignId(Number(e.target.value))}
+          onChange={(e) => setFromCampaignId(e.target.value === "" ? "" : Number(e.target.value))}
           sx={{ minWidth: 190 }}
         >
+          <MenuItem value="">{t("talents.chooseFromPeriod")}</MenuItem>
           {campaigns.map((c) => (
             <MenuItem key={c.id} value={c.id}>
               {c.name}
@@ -836,6 +865,10 @@ export default function TalentsDashboardPage() {
           ))}
         </TextField>
       </Stack>
+
+      {guidance && (
+        <Alert severity={guidance.severity}>{guidance.text}</Alert>
+      )}
 
       {loadError && (
         <Alert
