@@ -467,7 +467,7 @@
   },
   "id3aMatrix": {
     "title": "ID-3A Matrix — Aptitudes × Attitudes",
-    "subtitleMatrix": "Performance = f(Aptitudes × Attitudes). Click a point to see the team member's progression and stats.",
+    "subtitleMatrix": "Performance = f(Aptitudes × Attitudes). Click a photo to see the person's progression and statistics.",
     "subtitleObjectives": "Objective comparison: previous position (grey) vs selected period, for each leader and each employee.",
     "matrixTab": "Matrix",
     "objectivesTab": "Objectives",
