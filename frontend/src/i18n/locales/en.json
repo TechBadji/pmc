@@ -492,11 +492,13 @@
     "quadrantWatch": "Watch zone",
     "noData": "No data for this period/selection.",
     "loadError": "Could not load evaluations. Check your connection and try again.",
-    "clickHint": "Click to see detailed progression",
+    "clickHint": "Click a photo to see the person's progression and statistics.",
     "perfShort": "Perf.",
     "progressionTitle": "Performance progression (Altitude %) by period",
     "detailByPeriod": "Detail by period",
-    "tier": "Tier"
+    "tier": "Tier",
+    "allDepartments": "All departments",
+    "noDepartment": "No department"
   },
   "myPerformance": {
     "greeting": "Hello {{name}}",

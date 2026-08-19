@@ -492,11 +492,13 @@
     "quadrantWatch": "Zone de vigilance",
     "noData": "Aucune donnée pour cette période/sélection.",
     "loadError": "Impossible de charger les évaluations. Vérifiez votre connexion et réessayez.",
-    "clickHint": "Cliquer pour voir la progression détaillée",
+    "clickHint": "Cliquez sur la vignette photo pour voir la progression et les statistiques du collaborateur.",
     "perfShort": "Perf.",
     "progressionTitle": "Progression de la performance (Altitude %) par période",
     "detailByPeriod": "Détail par période",
-    "tier": "Palier"
+    "tier": "Palier",
+    "allDepartments": "Tous les départements",
+    "noDepartment": "Sans département"
   },
   "myPerformance": {
     "greeting": "Bonjour {{name}}",

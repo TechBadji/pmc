@@ -14,6 +14,7 @@ import {
   Divider,
   IconButton,
   ListItemText,
+  ListSubheader,
   MenuItem,
   Paper,
   Stack,
@@ -660,6 +661,7 @@ export default function ID3AMatrixPage() {
   const [leadershipOnly, setLeadershipOnly] = useState(true);
   const [directorFilter, setDirectorFilter] = useState<number | "">("");
   const [memberFilter, setMemberFilter] = useState<number | "">("");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("");
   // Tri/filtre sur le palier de performance — vide = tous les paliers
   // affichés. Permet ex. d'isoler les plus performants (Bonne +
   // Exceptionnelle) ou de ne montrer que les performances moyennes.
@@ -708,22 +710,40 @@ export default function ID3AMatrixPage() {
   }, [allEvaluations]);
 
   const showDirectorFilter = canFilterLeadership && leadershipOnly;
-  const showMemberFilter = isManager;
 
-  const teamMembers = useMemo(() => {
-    const byId = new Map<number, string>();
-    allEvaluations.forEach((e) => byId.set(e.user, e.user_name));
-    return Array.from(byId.entries())
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+  /** Collaborateurs évalués, regroupés par département puis triés par nom :
+   * dans une entreprise de plusieurs dizaines de personnes, une liste à plat
+   * oblige à connaître le nom exact avant de chercher. */
+  const peopleByDepartment = useMemo(() => {
+    const byId = new Map<number, { id: number; name: string; department: string }>();
+    allEvaluations.forEach((e) =>
+      byId.set(e.user, { id: e.user, name: e.user_name, department: e.user_department ?? "" })
+    );
+    const groups = new Map<string, { id: number; name: string }[]>();
+    Array.from(byId.values()).forEach((p) => {
+      if (!groups.has(p.department)) groups.set(p.department, []);
+      groups.get(p.department)!.push({ id: p.id, name: p.name });
+    });
+    return Array.from(groups.entries())
+      .map(([department, members]) => ({
+        department,
+        members: members.sort((a, b) => a.name.localeCompare(b.name)),
+      }))
+      .sort((a, b) => a.department.localeCompare(b.department));
   }, [allEvaluations]);
+
+  const departmentOptions = useMemo(
+    () => peopleByDepartment.map((g) => g.department).filter(Boolean),
+    [peopleByDepartment]
+  );
 
   const scopedEvaluations = useMemo(
     () =>
       allEvaluations.filter((e) => {
         if (canFilterLeadership && leadershipOnly && e.user_role === "MEMBER") return false;
         if (showDirectorFilter && directorFilter !== "" && e.user !== directorFilter) return false;
-        if (showMemberFilter && memberFilter !== "" && e.user !== memberFilter) return false;
+        if (memberFilter !== "" && e.user !== memberFilter) return false;
+        if (departmentFilter && e.user_department !== departmentFilter) return false;
         if (ratingFilter.length > 0 && !ratingFilter.includes(e.performance_rating)) return false;
         return true;
       }),
@@ -732,9 +752,9 @@ export default function ID3AMatrixPage() {
       leadershipOnly,
       directorFilter,
       memberFilter,
+      departmentFilter,
       ratingFilter,
       showDirectorFilter,
-      showMemberFilter,
       canFilterLeadership,
     ]
   );
@@ -767,11 +787,7 @@ export default function ID3AMatrixPage() {
   // période de comparaison est choisie, on affiche sa trajectoire complète
   // (une vignette par année couverte) plutôt qu'un simple avant/après.
   const singlePersonId =
-    showDirectorFilter && directorFilter !== ""
-      ? directorFilter
-      : showMemberFilter && memberFilter !== ""
-        ? memberFilter
-        : null;
+    memberFilter !== "" ? memberFilter : showDirectorFilter && directorFilter !== "" ? directorFilter : null;
 
   const personTrail = useMemo(() => {
     if (!singlePersonId || compareCampaignId === NONE_PERIOD || !selectedCampaignId) return [];
@@ -886,48 +902,15 @@ export default function ID3AMatrixPage() {
       ) : (
         !loadError && (
       <>
+      {/* Barre de commandes, dans l'ordre de lecture : la vue, le périmètre,
+        * les deux périodes, puis les filtres du plus large (directeur,
+        * département) au plus fin (collaborateur, palier). */}
       <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
-        <ToggleButtonGroup
-          size="small"
-          exclusive
-          value={viewMode}
-          onChange={(_, v) => v && setViewMode(v)}
-        >
+        <ToggleButtonGroup size="small" exclusive value={viewMode} onChange={(_, v) => v && setViewMode(v)}>
           <ToggleButton value="matrix">{t("id3aMatrix.matrixTab")}</ToggleButton>
           <ToggleButton value="objectives">{t("id3aMatrix.objectivesTab")}</ToggleButton>
         </ToggleButtonGroup>
-        <TextField
-          select
-          label={viewMode === "matrix" ? t("common.period") : t("id3aMatrix.targetPeriod")}
-          size="small"
-          value={selectedCampaignId}
-          onChange={(e) => setSelectedCampaignId(Number(e.target.value))}
-          sx={{ minWidth: 160 }}
-        >
-          {campaignOptions.map((c) => (
-            <MenuItem key={c.id} value={c.id}>
-              {c.name}
-            </MenuItem>
-          ))}
-        </TextField>
-        <TextField
-          select
-          label={t("id3aMatrix.compareWith")}
-          size="small"
-          value={compareCampaignId}
-          onChange={(e) => setCompareCampaignId(e.target.value === NONE_PERIOD ? NONE_PERIOD : Number(e.target.value))}
-          sx={{ minWidth: 200 }}
-          helperText={viewMode === "objectives" && compareCampaignId === NONE_PERIOD ? t("id3aMatrix.autoPrevious") : " "}
-        >
-          <MenuItem value={NONE_PERIOD}>{t("id3aMatrix.none")}</MenuItem>
-          {campaignOptions
-            .filter((c) => c.id !== selectedCampaignId)
-            .map((c) => (
-              <MenuItem key={c.id} value={c.id}>
-                {c.name}
-              </MenuItem>
-            ))}
-        </TextField>
+
         {canFilterLeadership && (
           <ToggleButtonGroup
             size="small"
@@ -943,6 +926,41 @@ export default function ID3AMatrixPage() {
             <ToggleButton value="all">{t("id3aMatrix.wholeCompany")}</ToggleButton>
           </ToggleButtonGroup>
         )}
+
+        <TextField
+          select
+          label={viewMode === "matrix" ? t("common.period") : t("id3aMatrix.targetPeriod")}
+          size="small"
+          value={selectedCampaignId}
+          onChange={(e) => setSelectedCampaignId(Number(e.target.value))}
+          sx={{ minWidth: 160 }}
+        >
+          {campaignOptions.map((c) => (
+            <MenuItem key={c.id} value={c.id}>
+              {c.name}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          label={t("id3aMatrix.compareWith")}
+          size="small"
+          value={compareCampaignId}
+          onChange={(e) => setCompareCampaignId(e.target.value === NONE_PERIOD ? NONE_PERIOD : Number(e.target.value))}
+          sx={{ minWidth: 190 }}
+          helperText={viewMode === "objectives" && compareCampaignId === NONE_PERIOD ? t("id3aMatrix.autoPrevious") : " "}
+        >
+          <MenuItem value={NONE_PERIOD}>{t("id3aMatrix.none")}</MenuItem>
+          {campaignOptions
+            .filter((c) => c.id !== selectedCampaignId)
+            .map((c) => (
+              <MenuItem key={c.id} value={c.id}>
+                {c.name}
+              </MenuItem>
+            ))}
+        </TextField>
+
         {showDirectorFilter && (
           <TextField
             select
@@ -950,7 +968,7 @@ export default function ID3AMatrixPage() {
             size="small"
             value={directorFilter}
             onChange={(e) => setDirectorFilter(e.target.value === "" ? "" : Number(e.target.value))}
-            sx={{ minWidth: 200 }}
+            sx={{ minWidth: 190 }}
           >
             <MenuItem value="">{t("id3aMatrix.allDirectors")}</MenuItem>
             {directors.map((d) => (
@@ -960,23 +978,48 @@ export default function ID3AMatrixPage() {
             ))}
           </TextField>
         )}
-        {showMemberFilter && (
+
+        {departmentOptions.length > 1 && (
           <TextField
             select
-            label={t("id3aMatrix.teamMember")}
+            label={t("common.department")}
             size="small"
-            value={memberFilter}
-            onChange={(e) => setMemberFilter(e.target.value === "" ? "" : Number(e.target.value))}
-            sx={{ minWidth: 200 }}
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            sx={{ minWidth: 190 }}
           >
-            <MenuItem value="">{t("id3aMatrix.allTeamMembers")}</MenuItem>
-            {teamMembers.map((m) => (
-              <MenuItem key={m.id} value={m.id}>
-                {m.name}
+            <MenuItem value="">{t("id3aMatrix.allDepartments")}</MenuItem>
+            {departmentOptions.map((d) => (
+              <MenuItem key={d} value={d}>
+                {d}
               </MenuItem>
             ))}
           </TextField>
         )}
+
+        {/* Collaborateurs groupés par département : l'entête de groupe évite
+          * de parcourir une liste à plat de plusieurs dizaines de noms. */}
+        <TextField
+          select
+          label={t("id3aMatrix.allTeamMembers")}
+          size="small"
+          value={memberFilter}
+          onChange={(e) => setMemberFilter(e.target.value === "" ? "" : Number(e.target.value))}
+          sx={{ minWidth: 210 }}
+        >
+          <MenuItem value="">{t("id3aMatrix.allTeamMembers")}</MenuItem>
+          {peopleByDepartment.flatMap((group) => [
+            <ListSubheader key={`h-${group.department}`} sx={{ fontWeight: 700, lineHeight: 2 }}>
+              {group.department || t("id3aMatrix.noDepartment")}
+            </ListSubheader>,
+            ...group.members.map((m) => (
+              <MenuItem key={m.id} value={m.id} sx={{ pl: 3 }}>
+                {m.name}
+              </MenuItem>
+            )),
+          ])}
+        </TextField>
+
         <TextField
           select
           label={t("id3aMatrix.performanceFilter")}
@@ -986,7 +1029,7 @@ export default function ID3AMatrixPage() {
             const value = e.target.value;
             setRatingFilter(typeof value === "string" ? (value.split(",") as PerformanceRating[]) : (value as PerformanceRating[]));
           }}
-          sx={{ minWidth: 220 }}
+          sx={{ minWidth: 200 }}
           SelectProps={{
             multiple: true,
             renderValue: (selected: unknown) => {

@@ -5,6 +5,7 @@ import {
   Button,
   CircularProgress,
   ListItemText,
+  ListSubheader,
   MenuItem,
   Paper,
   Stack,
@@ -653,6 +654,21 @@ export default function TalentsDashboardPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [evaluations]);
 
+  /** Mêmes personnes, regroupées par département et triées par nom : dans une
+   * liste de plusieurs dizaines de noms, le département sert de repère. */
+  const peopleByDepartment = useMemo(() => {
+    const byId = new Map<number, { id: number; name: string; department: string }>();
+    evaluations.forEach((e) => byId.set(e.user, { id: e.user, name: e.user_name, department: e.user_department ?? "" }));
+    const groups = new Map<string, { id: number; name: string }[]>();
+    Array.from(byId.values()).forEach((p) => {
+      if (!groups.has(p.department)) groups.set(p.department, []);
+      groups.get(p.department)!.push({ id: p.id, name: p.name });
+    });
+    return Array.from(groups.entries())
+      .map(([department, members]) => ({ department, members: members.sort((a, b) => a.name.localeCompare(b.name)) }))
+      .sort((a, b) => a.department.localeCompare(b.department));
+  }, [evaluations]);
+
   /** Tracé de progression d'une personne : ses positions successives entre la
    * période de départ et la période affichée, dans l'ordre chronologique. Une
    * période sans progression calculable (première évaluation) est ignorée :
@@ -858,11 +874,16 @@ export default function TalentsDashboardPage() {
           sx={{ minWidth: 190 }}
         >
           <MenuItem value="">{t("talents.allPeople")}</MenuItem>
-          {people.map((p) => (
-            <MenuItem key={p.id} value={p.id}>
-              {p.name}
-            </MenuItem>
-          ))}
+          {peopleByDepartment.flatMap((group) => [
+            <ListSubheader key={`h-${group.department}`} sx={{ fontWeight: 700, lineHeight: 2 }}>
+              {group.department || t("id3aMatrix.noDepartment")}
+            </ListSubheader>,
+            ...group.members.map((m) => (
+              <MenuItem key={m.id} value={m.id} sx={{ pl: 3 }}>
+                {m.name}
+              </MenuItem>
+            )),
+          ])}
         </TextField>
       </Stack>
 
