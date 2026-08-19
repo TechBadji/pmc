@@ -29,7 +29,7 @@ import {
 } from "recharts";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
-import type { Evaluation, Paginated, PerformanceRating } from "@/api/types";
+import type { Evaluation, Paginated, PerformanceRating, UserRecord } from "@/api/types";
 import StatCard from "@/components/StatCard";
 import { CHART_NEUTRALS, performanceColors } from "@/theme";
 
@@ -582,6 +582,199 @@ function TrailLayer({ xAxisMap, yAxisMap, trail, toX, toY }: any) {
   );
 }
 
+
+// --- Vue "ID-TPD test" : le même repère, en perspective ------------------
+// Le plan est projeté obliquement (il s'éloigne vers le haut en se resserrant),
+// et les collaborateurs y sont posés debout, en pied. Les silhouettes ne
+// subissent pas la projection : seul le SOL est incliné, sinon les personnes
+// paraîtraient couchées.
+const TPD3D = {
+  width: 1500,
+  height: 780,
+  nearY: 700, // bord bas du plan
+  depth: 430, // profondeur projetée du plan
+  nearHalfWidth: 700,
+  farRatio: 0.9, // resserrement du bord éloigné
+  shiftX: 55, // décalage du fond vers la droite
+  figureHeight: 190, // hauteur d'une silhouette au premier plan
+};
+
+/** Projette une position du repère (x en %, y en points) sur le plan incliné. */
+function projectTpd(xPercent: number, yProgress: number) {
+  const u = (xPercent - TRAJECTORY_X[0]) / (TRAJECTORY_X[1] - TRAJECTORY_X[0]);
+  const v = (yProgress - TRAJECTORY_Y[0]) / (TRAJECTORY_Y[1] - TRAJECTORY_Y[0]);
+  const halfWidth = TPD3D.nearHalfWidth * (1 - (1 - TPD3D.farRatio) * v);
+  return {
+    x: TPD3D.width / 2 + (u - 0.5) * 2 * halfWidth + v * TPD3D.shiftX,
+    y: TPD3D.nearY - v * TPD3D.depth,
+    depth: v,
+  };
+}
+
+/** Chemin fermé à coins arrondis passant par quatre points projetés. */
+function roundedQuadPath(points: { x: number; y: number }[], radius: number) {
+  return (
+    points
+      .map((point, i) => {
+        const previous = points[(i + points.length - 1) % points.length];
+        const next = points[(i + 1) % points.length];
+        const from = shorten(point, previous, radius);
+        const to = shorten(point, next, radius);
+        return `${i === 0 ? "M" : "L"} ${from.x},${from.y} Q ${point.x},${point.y} ${to.x},${to.y}`;
+      })
+      .join(" ") + " Z"
+  );
+}
+
+function shorten(from: { x: number; y: number }, toward: { x: number; y: number }, distance: number) {
+  const dx = toward.x - from.x;
+  const dy = toward.y - from.y;
+  const length = Math.hypot(dx, dy) || 1;
+  const ratio = Math.min(0.5, distance / length);
+  return { x: from.x + dx * ratio, y: from.y + dy * ratio };
+}
+
+function TpdPerspective({
+  points,
+  fullBodyById,
+  periodName,
+}: {
+  points: TalentPoint[];
+  fullBodyById: Map<number, string | null>;
+  periodName: string;
+}) {
+  const { t } = useTranslation();
+  const xTicks = [50, 55, 60, 65, 70, 75, 80, 85, 95, 100, 105, 110, 115, 120];
+  const yTicks = [20, 15, 10, 5, -5, -10, -15, -20];
+  const gridX = Array.from({ length: 15 }, (_, i) => 50 + i * 5);
+  const gridY = Array.from({ length: 9 }, (_, i) => -20 + i * 5);
+  const tickText = { fontSize: 13, fontWeight: 700, fill: "#1f3a63" } as const;
+
+  function quadrant(x1: number, x2: number, y1: number, y2: number, key: string) {
+    const corners = [projectTpd(x1, y2), projectTpd(x2, y2), projectTpd(x2, y1), projectTpd(x1, y1)];
+    return <path key={key} d={roundedQuadPath(corners, 46)} fill="none" stroke="#1f3a63" strokeWidth={3.5} />;
+  }
+
+  // Les plus éloignés dessinés en premier : une silhouette au premier plan
+  // recouvre celles du fond, comme sur une photo de groupe.
+  const ordered = [...points].sort((a, b) => (b.progression as number) - (a.progression as number));
+
+  return (
+    <Box sx={{ width: "100%", overflowX: "auto" }}>
+      <svg viewBox={`0 0 ${TPD3D.width} ${TPD3D.height}`} width="100%" style={{ display: "block" }}>
+        <text x={TPD3D.width / 2} y={30} textAnchor="middle" fontSize={26} fontWeight={800} fill="#12275c">
+          {t("talents.trajectoryTitle").toUpperCase()}
+        </text>
+        <text x={TPD3D.width / 2} y={58} textAnchor="middle" fontSize={22} fontWeight={800} fill="#12275c">
+          {periodName}
+        </text>
+
+        {/* Quadrillage du sol */}
+        {gridX.map((v) => {
+          const a = projectTpd(v, TRAJECTORY_Y[0]);
+          const b = projectTpd(v, TRAJECTORY_Y[1]);
+          return <line key={`gx-${v}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#c8d6ea" strokeWidth={1} />;
+        })}
+        {gridY.map((v) => {
+          const a = projectTpd(TRAJECTORY_X[0], v);
+          const b = projectTpd(TRAJECTORY_X[1], v);
+          return <line key={`gy-${v}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#c8d6ea" strokeWidth={1} />;
+        })}
+
+        {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, 0, TRAJECTORY_Y[1], "tl")}
+        {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], 0, TRAJECTORY_Y[1], "tr")}
+        {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[0], 0, "bl")}
+        {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], TRAJECTORY_Y[0], 0, "br")}
+
+        {/* Axes du repère, projetés eux aussi */}
+        {[
+          [projectTpd(TRAJECTORY_X[0], 0), projectTpd(TRAJECTORY_X[1], 0)],
+          [projectTpd(TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[0]), projectTpd(TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[1])],
+        ].map(([a, b], i) => (
+          <line key={`axis-${i}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={AXIS_BLUE} strokeWidth={5} />
+        ))}
+
+        {/* Graduations, posées sur le sol */}
+        {xTicks.map((v) => {
+          const p = projectTpd(v, 0);
+          return (
+            <text key={`xt-${v}`} x={p.x} y={p.y + 20} textAnchor="middle" style={tickText} fontStyle="italic">
+              {v}%
+            </text>
+          );
+        })}
+        {yTicks.map((v) => {
+          const p = projectTpd(TRAJECTORY_ORIGIN_X, v);
+          return (
+            <text key={`yt-${v}`} x={p.x + 12} y={p.y + 4} textAnchor="start" style={tickText}>
+              {v > 0 ? `+${v}%` : `- ${Math.abs(v)}%`}
+            </text>
+          );
+        })}
+
+        {/* Origine et intitulés d'axes */}
+        {(() => {
+          const o = projectTpd(TRAJECTORY_ORIGIN_X, 0);
+          const right = projectTpd(TRAJECTORY_X[1], 0);
+          const top = projectTpd(TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[1]);
+          return (
+            <g>
+              <rect x={o.x - 26} y={o.y + 26} width={52} height={22} rx={4} fill="#8fe8a8" />
+              <text x={o.x} y={o.y + 42} textAnchor="middle" style={tickText}>
+                {TRAJECTORY_ORIGIN_X}%
+              </text>
+              <rect x={right.x - 150} y={right.y - 46} width={168} height={34} rx={4} fill="#ffe86b" />
+              <text x={right.x - 142} y={right.y - 24} style={{ ...tickText, fontSize: 12 }}>
+                % {t("talents.trajectoryXAxis")}
+              </text>
+              <g transform={`translate(${top.x - 30}, ${top.y + 6})`}>
+                <rect x={0} y={0} width={20} height={84} rx={4} fill="#ffe86b" />
+                <text x={10} y={42} textAnchor="middle" transform="rotate(-90 10 42)" style={{ ...tickText, fontSize: 12 }}>
+                  {t("talents.trajectoryYAxis")}
+                </text>
+              </g>
+            </g>
+          );
+        })()}
+
+        {/* Silhouettes debout : ancrées par les pieds sur leur position, et
+            d'autant plus petites qu'elles sont loin. */}
+        {ordered.map((p) => {
+          const at = projectTpd(p.performance, p.progression as number);
+          const scale = 1 - 0.3 * at.depth;
+          const height = TPD3D.figureHeight * scale;
+          const width = height * 0.42;
+          const image = fullBodyById.get(p.userId) ?? p.avatar;
+          const delta = p.progression as number;
+          return (
+            <g key={p.userId}>
+              <ellipse cx={at.x} cy={at.y} rx={width * 0.38} ry={width * 0.12} fill="#1f3a63" opacity={0.16} />
+              {image ? (
+                <image href={image} x={at.x - width / 2} y={at.y - height} width={width} height={height} preserveAspectRatio="xMidYMax meet" />
+              ) : (
+                <circle cx={at.x} cy={at.y - height / 2} r={width / 2} fill={performanceColors[p.rating]} />
+              )}
+              <text x={at.x + width / 2 + 6} y={at.y - height + 14} fontSize={15} fontWeight={800} fill={performanceColors[p.rating]}>
+                {p.performance}%
+              </text>
+              <text
+                x={at.x + width / 2 + 6}
+                y={at.y - height + 32}
+                fontSize={15}
+                fontWeight={800}
+                fill={delta >= 0 ? "#2e7d32" : "#c62828"}
+              >
+                {delta >= 0 ? "+" : ""}
+                {delta}%
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </Box>
+  );
+}
+
 /** Infobulle commune aux deux vues. */
 function TalentTooltip({ active, payload }: any) {
   const { t } = useTranslation();
@@ -620,7 +813,9 @@ export default function TalentsDashboardPage() {
   const [fromCampaignId, setFromCampaignId] = useState<number | "">("");
   const [ratingFilter, setRatingFilter] = useState<PerformanceRating[]>([]);
   const [personFilter, setPersonFilter] = useState<number | "">("");
-  const [view, setView] = useState<"boxes" | "trajectory">("boxes");
+  const [view, setView] = useState<"boxes" | "trajectory" | "tpd3d">("boxes");
+  // Photos en pied, absentes des évaluations : chargées depuis les comptes.
+  const [fullBodyById, setFullBodyById] = useState<Map<number, string | null>>(new Map());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -641,6 +836,13 @@ export default function TalentsDashboardPage() {
   }
 
   useEffect(load, []);
+
+  useEffect(() => {
+    apiClient
+      .get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } })
+      .then((r) => setFullBodyById(new Map(r.data.results.map((u) => [u.id, u.avatar_full_body ?? u.avatar]))))
+      .catch(() => setFullBodyById(new Map()));
+  }, []);
 
   const campaigns = useMemo(() => {
     const byId = new Map<number, { id: number; name: string; start_date: string }>();
@@ -832,6 +1034,7 @@ export default function TalentsDashboardPage() {
         >
           <ToggleButton value="boxes">{t("talents.viewBoxes")}</ToggleButton>
           <ToggleButton value="trajectory">{t("talents.viewTrajectory")}</ToggleButton>
+          <ToggleButton value="tpd3d">{t("talents.viewTpd3d")}</ToggleButton>
         </ToggleButtonGroup>
 
         <TextField
@@ -971,6 +1174,14 @@ export default function TalentsDashboardPage() {
           <Typography variant="body2" color="text.secondary">
             {t("talents.noData")}
           </Typography>
+        </Paper>
+      ) : view === "tpd3d" ? (
+        <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
+          <TpdPerspective
+            points={placed}
+            fullBodyById={fullBodyById}
+            periodName={campaigns.find((c) => c.id === campaignId)?.name ?? ""}
+          />
         </Paper>
       ) : view === "boxes" ? (
         <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
