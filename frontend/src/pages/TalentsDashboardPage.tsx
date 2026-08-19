@@ -330,10 +330,11 @@ const TRAJECTORY_MARGIN = { top: 30, right: 60, bottom: 30, left: 40 };
 const TRAJECTORY_X: [number, number] = [50, 120];
 const TRAJECTORY_Y: [number, number] = [-20, 20];
 const TRAJECTORY_ORIGIN_X = 90;
-// Dépassement des axes au-delà de la dernière graduation : la pointe se pose
-// dans la marge, comme sur la planche, au lieu d'être rentrée dans le tracé.
-// 20 px tiennent dans les marges (60 à droite, 30 en haut) sans être rognés.
-const AXIS_OVERSHOOT = 20;
+// Pointe des axes : longueur le long de l'axe et demi-envergure. Les axes
+// s'arrêtent sur la dernière graduation, pointe comprise — rien ne dépasse du
+// cadre, et le triangle (22 px de large) se distingue nettement du trait (6 px).
+const AXIS_HEAD_LENGTH = 18;
+const AXIS_HEAD_HALF = 11;
 // Marges de sécurité : une vignette posée sur la graduation extrême sortirait
 // du repère de la moitié de sa photo. Exprimées dans l'unité de chaque axe.
 const TRAJECTORY_X_INSET = 2; // ~2 points de performance
@@ -385,43 +386,33 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
       {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[0], 0, "bl", "#fdeeec")}
       {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], TRAJECTORY_Y[0], 0, "br", "#fdf6e9")}
 
-      <defs>
-        {/* markerUnits="userSpaceOnUse" : sinon la flèche est multipliée par
-            l'épaisseur du trait (6) et déborde largement de l'axe. */}
-        {/* markerWidth = longueur de la pointe le long de l'axe,
-            markerHeight = son envergure : 18 px pour un trait de 6, la pointe
-            se voit. refX place le sommet sur l'extrémité de la ligne, donc la
-            flèche est dessinée EN DEÇÀ du point d'arrivée, jamais au-delà. */}
-        <marker
-          id="tpd-arrow"
-          markerUnits="userSpaceOnUse"
-          markerWidth="15"
-          markerHeight="18"
-          refX="15"
-          refY="9"
-          orient="auto"
-        >
-          <path d="M0,0 L15,9 L0,18 Z" fill={AXIS_BLUE} />
-        </marker>
-      </defs>
-      {/* Axes épais fléchés, croisés sur l'origine du support (90 % / 0 %). */}
+      {/* Axes : la ligne s'arrête AVANT la pointe, dessinée à la main en
+        * triangle plein. Un marqueur SVG se superposait au trait de 6 px et
+        * donnait une pointe émoussée ; ici la base du triangle prend le relais
+        * exactement là où la ligne s'arrête, et rien ne sort du cadre. */}
       <line
         x1={X(TRAJECTORY_X[0])}
         y1={Y(0)}
-        x2={X(TRAJECTORY_X[1]) + AXIS_OVERSHOOT}
+        x2={X(TRAJECTORY_X[1]) - AXIS_HEAD_LENGTH}
         y2={Y(0)}
         stroke={AXIS_BLUE}
         strokeWidth={6}
-        markerEnd="url(#tpd-arrow)"
+      />
+      <polygon
+        points={`${X(TRAJECTORY_X[1])},${Y(0)} ${X(TRAJECTORY_X[1]) - AXIS_HEAD_LENGTH},${Y(0) - AXIS_HEAD_HALF} ${X(TRAJECTORY_X[1]) - AXIS_HEAD_LENGTH},${Y(0) + AXIS_HEAD_HALF}`}
+        fill={AXIS_BLUE}
       />
       <line
         x1={X(TRAJECTORY_ORIGIN_X)}
         y1={Y(TRAJECTORY_Y[0])}
         x2={X(TRAJECTORY_ORIGIN_X)}
-        y2={Y(TRAJECTORY_Y[1]) - AXIS_OVERSHOOT}
+        y2={Y(TRAJECTORY_Y[1]) + AXIS_HEAD_LENGTH}
         stroke={AXIS_BLUE}
         strokeWidth={6}
-        markerEnd="url(#tpd-arrow)"
+      />
+      <polygon
+        points={`${X(TRAJECTORY_ORIGIN_X)},${Y(TRAJECTORY_Y[1])} ${X(TRAJECTORY_ORIGIN_X) - AXIS_HEAD_HALF},${Y(TRAJECTORY_Y[1]) + AXIS_HEAD_LENGTH} ${X(TRAJECTORY_ORIGIN_X) + AXIS_HEAD_HALF},${Y(TRAJECTORY_Y[1]) + AXIS_HEAD_LENGTH}`}
+        fill={AXIS_BLUE}
       />
 
       {/* Graduations : sous l'axe horizontal, à droite de l'axe vertical. */}
@@ -443,18 +434,21 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
       </text>
 
       {/* Intitulés des axes sur fond jaune, comme sur la planche. */}
-      <g transform={`translate(${X(TRAJECTORY_ORIGIN_X) - 34}, ${Y(TRAJECTORY_Y[1]) + 6})`}>
-        <rect x={0} y={0} width={18} height={92} rx={5} fill="#ffe86b" />
-        <text x={9} y={46} textAnchor="middle" transform="rotate(-90 9 46)" style={tickText}>
+      {/* Intitulé de l'ordonnée : collé à gauche de l'axe, sous la pointe. */}
+      <g transform={`translate(${X(TRAJECTORY_ORIGIN_X) - 32}, ${Y(TRAJECTORY_Y[1]) + AXIS_HEAD_LENGTH + 6})`}>
+        <rect x={0} y={0} width={19} height={86} rx={4} fill="#ffe86b" />
+        <text x={9.5} y={43} textAnchor="middle" transform="rotate(-90 9.5 43)" style={tickText}>
           {t("talents.trajectoryYAxis")}
         </text>
       </g>
-      <g transform={`translate(${X(TRAJECTORY_X[1]) - 4}, ${Y(0) - 40})`}>
-        <rect x={0} y={0} width={150} height={30} rx={5} fill="#ffe86b" />
-        <text x={6} y={13} style={{ ...tickText, fontSize: 10 }}>
+      {/* Intitulé de l'abscisse : au-dessus de la fin de l'axe et à gauche de
+        * la pointe, pour ne déborder ni du cadre ni sur les graduations. */}
+      <g transform={`translate(${X(TRAJECTORY_X[1]) - 152}, ${Y(0) - 42})`}>
+        <rect x={0} y={0} width={142} height={30} rx={4} fill="#ffe86b" />
+        <text x={8} y={13} style={{ ...tickText, fontSize: 10 }}>
           %
         </text>
-        <text x={6} y={25} style={{ ...tickText, fontSize: 10 }}>
+        <text x={8} y={25} style={{ ...tickText, fontSize: 10 }}>
           {t("talents.trajectoryXAxis")}
         </text>
       </g>
