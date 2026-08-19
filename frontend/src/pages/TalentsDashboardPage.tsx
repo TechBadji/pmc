@@ -90,10 +90,11 @@ const MARKER_ROW_OFFSET = 24;
 // Transitions du survol des vignettes — mêmes durées que la matrice ID-3A.
 const DOT_TRANSITION = "r 0.15s ease, width 0.15s ease, height 0.15s ease, x 0.15s ease, y 0.15s ease, font-size 0.15s ease";
 const MARKER_SIDE_OFFSET = 22;
-// Le bandeau "TAUX DE PROGRESSION" descend jusqu'à la rangée des pastilles :
-// son bas s'aligne sur la pastille 1, point de départ des deux axes. Le centrer
-// sur le bloc le laissait visuellement trop haut.
-const AXIS_BAND_TOP = CHART_HEIGHT - CHART_MARGIN.bottom + MARKER_ROW_OFFSET - AXIS_BAND_HEIGHT;
+// Le bandeau "TAUX DE PROGRESSION" se centre sur le tableau en pointillés
+// lui-même — c'est-à-dire la zone de tracé, hors marges : ni la rangée des
+// pastilles chiffrées ni la barre "PERFORMANCE %" n'entrent dans le calcul.
+const PLOT_HEIGHT = CHART_HEIGHT - CHART_MARGIN.top - CHART_MARGIN.bottom;
+const AXIS_BAND_TOP = CHART_MARGIN.top + (PLOT_HEIGHT - AXIS_BAND_HEIGHT) / 2;
 
 const PROGRESS_BANDS = [
   { key: "regression", max: 0 },
