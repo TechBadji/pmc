@@ -97,7 +97,9 @@ const PLOT_BOTTOM = CHART_HEIGHT - CHART_MARGIN.bottom;
 // tableau, la 4 aux deux tiers. Leur milieu tombe donc au centre du tableau.
 const MARKER_3_Y = PLOT_BOTTOM - PLOT_HEIGHT / 3;
 const MARKER_4_Y = PLOT_BOTTOM - (PLOT_HEIGHT * 2) / 3;
-const AXIS_BAND_TOP = (MARKER_3_Y + MARKER_4_Y) / 2 - AXIS_BAND_HEIGHT / 2;
+// Descendu d'un quart de sa propre hauteur sous ce centrage : à l'écran, le
+// bandeau paraissait trop haut par rapport aux intitulés de paliers.
+const AXIS_BAND_TOP = (MARKER_3_Y + MARKER_4_Y) / 2 - AXIS_BAND_HEIGHT / 2 + AXIS_BAND_HEIGHT / 4;
 
 const PROGRESS_BANDS = [
   { key: "regression", max: 0 },
