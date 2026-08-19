@@ -337,6 +337,11 @@ class PerformanceProfile(models.Model):
     )
     qualifications = models.JSONField("Qualifications", default=list, blank=True)
     previous_positions = models.JSONField("Postes précédents", default=list, blank=True)
+    # Dates de prise de fonction des postes précédents, alignées par index sur
+    # `previous_positions` : une liste parallèle évite de changer le format des
+    # postes déjà saisis (de simples chaînes) et reste vide tant qu'aucune date
+    # n'est renseignée.
+    previous_position_dates = models.JSONField("Dates de début des postes précédents", default=list, blank=True)
     professional_achievements = models.JSONField("Réalisations professionnelles", default=list, blank=True)
     personal_achievements = models.JSONField("Réalisations personnelles", default=list, blank=True)
     vision_aspirations = models.TextField("Vision / Aspirations", blank=True)

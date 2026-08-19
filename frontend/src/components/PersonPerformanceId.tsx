@@ -362,6 +362,8 @@ type PerformerCategory = "" | "OUTSTANDING" | "GOOD" | "AVERAGE" | "LOW" | "VERY
 const PERFORMER_CATEGORIES: Exclude<PerformerCategory, "">[] = ["OUTSTANDING", "GOOD", "AVERAGE", "LOW", "VERY_LOW"];
 
 type ProfileForm = Record<ListKey, string[]> & {
+  /** Dates de prise de fonction des postes précédents, alignées par index. */
+  previous_position_dates: string[];
   gender: string;
   contract_type: string;
   performance_pct: string;
@@ -382,6 +384,7 @@ function emptyForm(): ProfileForm {
     bono_hat: "",
     qualifications: [],
     previous_positions: [],
+    previous_position_dates: [],
     professional_achievements: [],
     personal_achievements: [],
     professional_role_models: [],
@@ -441,6 +444,7 @@ export default function PersonPerformanceId({
               bono_hat: p.bono_hat,
               qualifications: p.qualifications,
               previous_positions: p.previous_positions,
+              previous_position_dates: p.previous_position_dates ?? [],
               professional_achievements: p.professional_achievements,
               personal_achievements: p.personal_achievements,
               professional_role_models: p.professional_role_models,
@@ -731,7 +735,34 @@ export default function PersonPerformanceId({
             <SubHead sx={{ gridColumn: 4, gridRow: 2 }}>{t("performanceId.qualifications")}</SubHead>
             {listCells(form.qualifications, 5, 4, 3, (v) => setList("qualifications", v))}
             <SubHead sx={{ gridColumn: 4, gridRow: 8 }}>{t("performanceId.previousPositions")}</SubHead>
-            {listCells(form.previous_positions, 2, 4, 9, (v) => setList("previous_positions", v))}
+            {/* Date de prise de fonction devant chaque poste : une case étroite
+              * dans la même ligne, pour ne pas ajouter de ligne à la fiche. */}
+            {[0, 1].map((i) => (
+              <Box
+                key={`prev-${i}`}
+                sx={{ gridColumn: 4, gridRow: 9 + i, display: "grid", gridTemplateColumns: "58px 1fr", gap: SHEET_GAP }}
+              >
+                <Fld
+                  value={padTo(form.previous_position_dates, 2)[i]}
+                  placeholder={t("performanceId.since")}
+                  onChange={(v) => {
+                    const next = padTo(form.previous_position_dates, 2);
+                    next[i] = v;
+                    patchForm({ previous_position_dates: next });
+                  }}
+                  sx={{ "& input": { fontSize: 10 } }}
+                />
+                <Fld
+                  value={padTo(form.previous_positions, 2)[i]}
+                  placeholder={`${i + 1}.`}
+                  onChange={(v) => {
+                    const next = padTo(form.previous_positions, 2);
+                    next[i] = v;
+                    patchForm({ previous_positions: next });
+                  }}
+                />
+              </Box>
+            ))}
 
             <SubHead sx={{ gridColumn: 5, gridRow: 2 }}>{t("performanceId.professionalAchievements")}</SubHead>
             {listCells(form.professional_achievements, 5, 5, 3, (v) => setList("professional_achievements", v))}

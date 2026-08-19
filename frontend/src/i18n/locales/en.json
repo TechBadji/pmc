@@ -304,7 +304,9 @@
       "There is good horizontal communication between the different departments/directorates",
       "There is a high level of trust between Top Management and the rest of the organization",
       "There is a high level of trust among employees themselves"
-    ]
+    ],
+    "newEntry": "New entry",
+    "viewingArchive": "You are viewing the {{date}} measurement. The sheet is read-only; switch to a new entry to record the current period."
   },
   "evaluations": {
     "title": "ID-3A Evaluations",
@@ -460,7 +462,8 @@
     "risksObstacles": "Risks / Obstacles / Uncertainties",
     "saved": "Saved.",
     "print": "Print the sheet",
-    "unsavedChanges": "Unsaved changes"
+    "unsavedChanges": "Unsaved changes",
+    "since": "Since"
   },
   "id3aMatrix": {
     "title": "ID-3A Matrix — Aptitudes × Attitudes",

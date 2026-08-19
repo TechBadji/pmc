@@ -304,7 +304,9 @@
       "Il y a une bonne communication horizontale entre les différents départements/directions",
       "Il y a un niveau élevé de confiance entre le Top Management et le reste de l'organisation",
       "Il y a un niveau élevé de confiance entre les employés eux-mêmes"
-    ]
+    ],
+    "newEntry": "Nouvelle saisie",
+    "viewingArchive": "Vous consultez la mesure du {{date}}. La fiche est en lecture seule ; passez en nouvelle saisie pour enregistrer une mesure de la période en cours."
   },
   "evaluations": {
     "title": "Évaluations ID-3A",
@@ -460,7 +462,8 @@
     "risksObstacles": "Risques / Obstacles / Incertitudes",
     "saved": "Enregistré.",
     "print": "Imprimer la fiche",
-    "unsavedChanges": "Modifications non enregistrées"
+    "unsavedChanges": "Modifications non enregistrées",
+    "since": "Depuis"
   },
   "id3aMatrix": {
     "title": "Matrice ID-3A — Aptitudes × Attitudes",

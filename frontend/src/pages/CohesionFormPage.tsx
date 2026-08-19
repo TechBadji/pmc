@@ -143,6 +143,8 @@ export default function CohesionFormPage() {
     criteria.map((c) => ({ criterion: c, score: 3, objective_score: null, achieved_score: null }))
   );
   const [history, setHistory] = useState<TeamCohesionAnalysis[]>([]);
+  // Analyse consultée : "" = nouvelle saisie, sinon une analyse déjà enregistrée.
+  const [viewedAnalysisId, setViewedAnalysisId] = useState<number | "">("");
   const [saved, setSaved] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
   const [plans, setPlans] = useState<ActionPlan[]>([]);
@@ -169,6 +171,7 @@ export default function CohesionFormPage() {
     // affichés et risquaient d'être soumis par erreur pour la nouvelle équipe.
     setRows(criteria.map((c) => ({ criterion: c, score: 3, objective_score: null, achieved_score: null })));
     setSaved(false);
+    setViewedAnalysisId("");
     if (!teamId) {
       setHistory([]);
       setPlans([]);
@@ -182,6 +185,33 @@ export default function CohesionFormPage() {
       .then((r) => setPlans(r.data.results));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
+
+  /** Consultation d'une analyse antérieure : ses notes remplissent la grille,
+   * en lecture seule — la fiche sert alors d'archive de la période choisie,
+   * sans risque d'écraser une mesure passée. */
+  function showAnalysis(id: number | "") {
+    setViewedAnalysisId(id);
+    setSaved(false);
+    if (id === "") {
+      setRows(criteria.map((c) => ({ criterion: c, score: 3, objective_score: null, achieved_score: null })));
+      return;
+    }
+    const analysis = history.find((h) => h.id === id);
+    if (!analysis) return;
+    setRows(
+      criteria.map((criterion) => {
+        const saved = analysis.criterion_scores.find((cs) => cs.criterion === criterion);
+        return {
+          criterion,
+          score: saved ? Number(saved.score) : 3,
+          objective_score: saved?.objective_score ?? null,
+          achieved_score: saved?.achieved_score ?? null,
+        };
+      })
+    );
+  }
+
+  const readOnly = viewedAnalysisId !== "";
 
   const ownTeamExists = !isCompanyAdmin || departments.some((d) => d.manager === user!.id);
   const selectedDept = departments.find((d) => d.id === teamId);
@@ -345,6 +375,32 @@ export default function CohesionFormPage() {
               ))}
             </TextField>
           </Stack>
+          {/* Période : la cohésion se mesure à chaque exercice, on doit donc
+            * pouvoir relire une mesure antérieure et pas seulement en saisir
+            * une nouvelle. */}
+          {history.length > 0 && (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="subtitle2" fontWeight={700} sx={{ minWidth: 90 }}>
+                {t("common.period")}
+              </Typography>
+              <TextField
+                select
+                size="small"
+                value={viewedAnalysisId}
+                onChange={(e) => showAnalysis(e.target.value === "" ? "" : Number(e.target.value))}
+                sx={{ minWidth: 260 }}
+              >
+                <MenuItem value="">{t("cohesion.newEntry")}</MenuItem>
+                {[...history]
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((h) => (
+                    <MenuItem key={h.id} value={h.id}>
+                      {h.date} — ICE {Number(h.ice_score).toFixed(1)}
+                    </MenuItem>
+                  ))}
+              </TextField>
+            </Stack>
+          )}
           {selectedDept && (
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="subtitle2" fontWeight={700} sx={{ minWidth: 90 }}>
@@ -373,6 +429,12 @@ export default function CohesionFormPage() {
 
       {teamId && (
         <>
+          {readOnly && (
+            <Alert severity="info" action={<Button size="small" color="inherit" onClick={() => showAnalysis("")}>{t("cohesion.newEntry")}</Button>}>
+              {t("cohesion.viewingArchive", { date: history.find((h) => h.id === viewedAnalysisId)?.date ?? "" })}
+            </Alert>
+          )}
+
           <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
             <TableContainer>
               <Table size="small">
@@ -419,7 +481,7 @@ export default function CohesionFormPage() {
                           <ScoreOval
                             selected={row.score === tier}
                             color={cohesionColor(tier)}
-                            onClick={() => updateRow(i, { score: tier })}
+                            onClick={() => !readOnly && updateRow(i, { score: tier })}
                             ariaLabel={`${row.criterion} — ${tier}`}
                           />
                         </TableCell>
@@ -439,6 +501,7 @@ export default function CohesionFormPage() {
                           onChange={(e) =>
                             updateRow(i, { objective_score: e.target.value === "" ? null : Number(e.target.value) })
                           }
+                          disabled={readOnly}
                           sx={{ minWidth: 64, bgcolor: "#fff4c2", borderRadius: 1 }}
                         >
                           <MenuItem value="">{t("cohesion.unset")}</MenuItem>
@@ -457,6 +520,7 @@ export default function CohesionFormPage() {
                           onChange={(e) =>
                             updateRow(i, { achieved_score: e.target.value === "" ? null : Number(e.target.value) })
                           }
+                          disabled={readOnly}
                           sx={{ minWidth: 64, bgcolor: "#dbeeff", borderRadius: 1 }}
                         >
                           <MenuItem value="">{t("cohesion.unset")}</MenuItem>
@@ -475,7 +539,7 @@ export default function CohesionFormPage() {
           </Paper>
 
           <Stack direction="row" justifyContent="flex-end">
-            <Button variant="contained" onClick={handleSubmit} disabled={!teamId}>
+            <Button variant="contained" onClick={handleSubmit} disabled={!teamId || readOnly}>
               {t("cohesion.save")}
             </Button>
           </Stack>

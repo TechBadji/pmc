@@ -296,6 +296,7 @@ export interface PerformanceProfile {
   contract_type: string;
   qualifications: string[];
   previous_positions: string[];
+  previous_position_dates: string[];
   professional_achievements: string[];
   personal_achievements: string[];
   vision_aspirations: string;
