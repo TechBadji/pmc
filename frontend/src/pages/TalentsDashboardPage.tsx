@@ -507,6 +507,8 @@ const TRAIL_STEP_RADIUS = 11;
 const TRAIL_CURRENT_RADIUS = 26;
 
 function TrailLayer({ xAxisMap, yAxisMap, trail, toX, toY }: any) {
+  const { t } = useTranslation();
+  const [hovered, setHovered] = useState<number | null>(null);
   const xAxis = xAxisMap?.[0];
   const yAxis = yAxisMap?.[0];
   if (!xAxis || !yAxis || !trail || trail.length === 0) return null;
@@ -559,30 +561,67 @@ function TrailLayer({ xAxisMap, yAxisMap, trail, toX, toY }: any) {
           />
         );
       })}
-      {trail.map((p: TalentPoint, i: number) => (
-        <g key={`p-${i}`}>
-          {/* Étapes précédentes en petits jalons ; la position courante est
-              dessinée par la vignette photo, on ne la double pas. */}
-          {i < trail.length - 1 && (
-            <>
-              <circle cx={X(p)} cy={Y(p)} r={7} fill="#fff" stroke={performanceColors[p.rating]} strokeWidth={3} />
-              <text
-                x={X(p)}
-                y={Y(p) - 12}
-                textAnchor="middle"
-                fontSize={10}
-                fontWeight={700}
-                fill={performanceColors[p.rating]}
-                stroke={CHART_NEUTRALS.halo}
-                strokeWidth={3}
-                paintOrder="stroke"
-              >
-                {p.campaignName} · {p.performance}%
-              </text>
-            </>
-          )}
-        </g>
-      ))}
+      {trail.map((p: TalentPoint, i: number) => {
+        // La position courante est dessinée par la vignette photo, qui a déjà
+        // son infobulle : on ne la double pas d'un jalon.
+        if (i === trail.length - 1) return null;
+        const color = performanceColors[p.rating];
+        const isHovered = hovered === i;
+        const points = p.previousPerformance !== null ? Math.round((p.performance - p.previousPerformance) * 10) / 10 : null;
+        const delta = p.progression as number;
+        return (
+          <g
+            key={`p-${i}`}
+            style={{ cursor: "pointer" }}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            {/* Zone de survol généreuse : un jalon de 7 px est trop petit pour
+                être visé confortablement à la souris. */}
+            <circle cx={X(p)} cy={Y(p)} r={16} fill="transparent" />
+            <circle
+              cx={X(p)}
+              cy={Y(p)}
+              r={isHovered ? 10 : 7}
+              fill="#fff"
+              stroke={color}
+              strokeWidth={3}
+              style={{ transition: "r 0.12s ease" }}
+            />
+            <text
+              x={X(p)}
+              y={Y(p) - 14}
+              textAnchor="middle"
+              fontSize={10}
+              fontWeight={700}
+              fill={color}
+              stroke={CHART_NEUTRALS.halo}
+              strokeWidth={3}
+              paintOrder="stroke"
+            >
+              {p.campaignName} · {p.performance}%
+            </text>
+
+            {/* Au survol : le détail chiffré de l'étape, écart en points ET en
+                pourcentage relatif, recalculés depuis la période précédente. */}
+            {isHovered && (
+              <g transform={`translate(${X(p) + 14}, ${Y(p) - 62})`}>
+                <rect x={0} y={0} width={186} height={58} rx={4} fill="#fff" stroke={color} strokeWidth={1.5} opacity={0.98} />
+                <text x={9} y={17} fontSize={11} fontWeight={800} fill="#12275c">
+                  {p.campaignName}
+                </text>
+                <text x={9} y={33} fontSize={11} fontWeight={700} fill={color}>
+                  {t("talents.performance")} : {p.performance}%
+                </text>
+                <text x={9} y={49} fontSize={11} fontWeight={700} fill={delta >= 0 ? "#2e7d32" : "#c62828"}>
+                  {points !== null ? `${points >= 0 ? "+" : ""}${points} pts` : "—"} ({delta >= 0 ? "+" : ""}
+                  {delta}%)
+                </text>
+              </g>
+            )}
+          </g>
+        );
+      })}
     </g>
   );
 }
