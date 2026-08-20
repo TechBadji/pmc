@@ -121,7 +121,9 @@
     "themeSystem": "System (follows device)",
     "language": "Language",
     "languageHelper": "Interface language for your account.",
-    "changePassword": "Change my password"
+    "changePassword": "Change my password",
+    "fullBodyPhoto": "Full-body photo",
+    "fullBodyHint": "The full-body photo appears on the evaluation sheet, next to the skills. Portrait framing, whole person."
   },
   "dashboard": {
     "superAdmin": {

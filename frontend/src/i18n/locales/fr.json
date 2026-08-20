@@ -121,7 +121,9 @@
     "themeSystem": "Système (suit l'appareil)",
     "language": "Langue",
     "languageHelper": "Langue de l'interface pour votre compte.",
-    "changePassword": "Changer mon mot de passe"
+    "changePassword": "Changer mon mot de passe",
+    "fullBodyPhoto": "Photo en pied",
+    "fullBodyHint": "La photo en pied s'affiche sur la fiche d'évaluation, à côté des compétences. Cadrage vertical, personne entière."
   },
   "dashboard": {
     "superAdmin": {

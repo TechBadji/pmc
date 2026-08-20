@@ -1,3 +1,4 @@
+import AccessibilityNewOutlinedIcon from "@mui/icons-material/AccessibilityNewOutlined";
 import PhotoCameraOutlinedIcon from "@mui/icons-material/PhotoCameraOutlined";
 import {
   Alert,
@@ -26,6 +27,7 @@ export default function ProfilePage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fullBodyInputRef = useRef<HTMLInputElement>(null);
   // Garde synchrone anti double-soumission : un double-clic avant que React
   // ne re-rende le bouton désactivé peut déclencher deux PATCH quasi
   // simultanés. Le second, parti d'une copie du profil chargée avant la fin
@@ -44,6 +46,10 @@ export default function ProfilePage() {
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  // Photo en pied : déjà stockée en base et affichée sur la fiche
+  // d'évaluation, mais jusqu'ici impossible à téléverser depuis l'application.
+  const [fullBodyFile, setFullBodyFile] = useState<File | null>(null);
+  const [fullBodyPreview, setFullBodyPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +73,13 @@ export default function ProfilePage() {
     setAvatarPreview(file ? URL.createObjectURL(file) : null);
   }
 
+  function handleFullBodyChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (fullBodyPreview) URL.revokeObjectURL(fullBodyPreview);
+    setFullBodyFile(file);
+    setFullBodyPreview(file ? URL.createObjectURL(file) : null);
+  }
+
   async function handleSubmit() {
     if (submittingRef.current) return;
     submittingRef.current = true;
@@ -82,6 +95,7 @@ export default function ProfilePage() {
       formData.append("theme_preference", form.theme_preference);
       formData.append("language", form.language);
       if (avatarFile) formData.append("avatar", avatarFile);
+      if (fullBodyFile) formData.append("avatar_full_body", fullBodyFile);
 
       await apiClient.patch("/auth/me/", formData);
       await dispatch(fetchMe());
@@ -101,6 +115,7 @@ export default function ProfilePage() {
   if (!user) return null;
 
   const displayedAvatar = avatarPreview ?? user.avatar ?? undefined;
+  const displayedFullBody = fullBodyPreview ?? user.avatar_full_body ?? undefined;
   const initial = (user.full_name || user.email).charAt(0).toUpperCase();
 
   return (
@@ -167,7 +182,47 @@ export default function ProfilePage() {
                 {user.company_name ? ` · ${user.company_name}` : ""}
               </Typography>
             </Stack>
+
+            {/* Photo en pied : cadre vertical, distinct de la vignette ronde.
+              * Elle sert sur la fiche d'évaluation, où le collaborateur est
+              * représenté en entier à côté de ses compétences. */}
+            <Stack spacing={0.5} alignItems="center" sx={{ ml: "auto" }}>
+              <Box
+                sx={{
+                  width: 84,
+                  height: 118,
+                  border: "1px dashed",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor: "action.hover",
+                }}
+              >
+                {displayedFullBody ? (
+                  <Box
+                    component="img"
+                    key={displayedFullBody}
+                    src={displayedFullBody}
+                    alt={t("profile.fullBodyPhoto")}
+                    sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <AccessibilityNewOutlinedIcon sx={{ color: "text.disabled" }} />
+                )}
+              </Box>
+              <Button size="small" startIcon={<PhotoCameraOutlinedIcon />} onClick={() => fullBodyInputRef.current?.click()}>
+                {t("profile.fullBodyPhoto")}
+              </Button>
+              <input ref={fullBodyInputRef} type="file" accept="image/*" hidden onChange={handleFullBodyChange} />
+            </Stack>
           </Stack>
+
+          <Typography variant="caption" color="text.secondary">
+            {t("profile.fullBodyHint")}
+          </Typography>
 
           <Divider />
 
