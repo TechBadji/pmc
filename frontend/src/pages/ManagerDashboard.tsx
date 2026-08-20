@@ -3,8 +3,6 @@ import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import SupportOutlinedIcon from "@mui/icons-material/SupportOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import {
-  Avatar,
-  Box,
   Chip,
   Paper,
   Stack,
@@ -22,58 +20,10 @@ import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Evaluation, Paginated, UserRecord } from "@/api/types";
+import LeadershipOverview from "@/components/LeadershipOverview";
 import StatCard from "@/components/StatCard";
 import { performanceColors } from "@/theme";
 import { average, lastEvaluationByUser, ratingForAltitude } from "@/utils/performance";
-
-function OrgChartCard({ user, root }: { user: UserRecord; root?: boolean }) {
-  const size = root ? 64 : 48;
-  return (
-    <Stack alignItems="center" spacing={0.75} sx={{ width: 140 }}>
-      <Avatar
-        src={user.avatar ?? undefined}
-        sx={{ width: size, height: size, bgcolor: "primary.main", fontSize: root ? 22 : 16 }}
-      >
-        {(user.full_name || user.email).charAt(0).toUpperCase()}
-      </Avatar>
-      <Paper
-        elevation={0}
-        sx={{ px: 1.5, py: 0.5, border: "1px solid", borderColor: "divider", borderRadius: 1, textAlign: "center", width: "100%" }}
-      >
-        <Typography variant="body2" fontWeight={700} noWrap>
-          {user.full_name || user.email}
-        </Typography>
-      </Paper>
-      <Typography variant="caption" color="text.secondary" textAlign="center" noWrap sx={{ maxWidth: "100%" }}>
-        {user.position}
-      </Typography>
-    </Stack>
-  );
-}
-
-function OrgChart({ manager, reports }: { manager: UserRecord; reports: UserRecord[] }) {
-  return (
-    <Paper elevation={0} sx={{ p: 3, border: "1px solid", borderColor: "divider" }}>
-      <Stack alignItems="center" spacing={0}>
-        <OrgChartCard user={manager} root />
-        {reports.length > 0 && (
-          <>
-            <Box sx={{ width: 2, height: 20, bgcolor: "divider" }} />
-            <Box sx={{ height: 2, bgcolor: "divider", width: "90%", maxWidth: 700 }} />
-            <Stack direction="row" spacing={3} flexWrap="wrap" justifyContent="center" sx={{ mt: 0, pt: 0 }}>
-              {reports.map((r) => (
-                <Stack key={r.id} alignItems="center" spacing={0}>
-                  <Box sx={{ width: 2, height: 16, bgcolor: "divider" }} />
-                  <OrgChartCard user={r} />
-                </Stack>
-              ))}
-            </Stack>
-          </>
-        )}
-      </Stack>
-    </Paper>
-  );
-}
 
 /** Tableau de bord du manager : même lecture que celui du CEO — organigramme,
  * indicateurs de tête, puis tableau détaillé cliquable — mais à l'échelle du
@@ -124,7 +74,14 @@ export default function ManagerDashboard() {
         )}
       </Stack>
 
-      {managerRecord && <OrgChart manager={managerRecord} reports={directReports} />}
+      {managerRecord && (
+        <LeadershipOverview
+          root={managerRecord}
+          people={directReports}
+          titleKey="dashboard.manager.overviewTitle"
+          lastEvaluationByUser={lastByUser}
+        />
+      )}
 
       <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
         <StatCard label={t("dashboard.manager.headcount")} value={directReports.length} icon={<GroupsOutlinedIcon />} />

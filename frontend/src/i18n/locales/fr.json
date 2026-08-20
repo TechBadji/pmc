@@ -160,7 +160,8 @@
       "title": "Tableau de bord du département",
       "headcount": "Effectif de l'équipe",
       "avgPerformance": "Performance moyenne",
-      "toSupport": "Collaborateurs à accompagner"
+      "toSupport": "Collaborateurs à accompagner",
+      "overviewTitle": "Organigramme et parcours de l'équipe"
     }
   },
   "companies": {

@@ -160,7 +160,8 @@
       "title": "Department dashboard",
       "headcount": "Team headcount",
       "avgPerformance": "Average performance",
-      "toSupport": "People needing support"
+      "toSupport": "People needing support",
+      "overviewTitle": "Team org chart and background"
     }
   },
   "companies": {

@@ -72,14 +72,19 @@ export default function CompanyAdminDashboard() {
     : 0;
 
   const directors = members.filter((m) => m.role === "MANAGER");
+  // Effectif encadré par chaque directeur : dernière ligne du tableau de tête.
+  const headcountByDirector = new Map<number, number>();
+  departments.forEach((d) => {
+    if (d.manager) headcountByDirector.set(d.manager, d.member_count);
+  });
 
   return (
     <Stack spacing={3}>
       {user && (
         <LeadershipOverview
-          ceo={user}
-          directors={directors}
-          departments={departments}
+          root={user}
+          people={directors}
+          headcountById={headcountByDirector}
           lastEvaluationByUser={lastEvaluationByUser}
         />
       )}

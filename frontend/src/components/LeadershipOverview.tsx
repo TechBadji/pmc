@@ -1,7 +1,7 @@
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import { Avatar, Box, Paper, Stack, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import type { Department, Evaluation, Me, UserRecord } from "@/api/types";
+import type { Evaluation, UserRecord } from "@/api/types";
 import { EXECUTIVE_BADGE_COLOR, performanceColors } from "@/theme";
 
 const LABEL_WIDTH = 220;
@@ -119,36 +119,51 @@ interface StatRow {
   gapBefore?: boolean;
 }
 
+/** Personne pouvant occuper la racine de l'organigramme : le CEO sur le
+ * tableau de bord entreprise, le manager sur celui de son département. */
+interface RootPerson {
+  id: number;
+  full_name: string;
+  position: string;
+  avatar: string | null;
+}
+
+/**
+ * Organigramme d'un responsable et de ceux qui lui reportent, surmontant le
+ * tableau des données de carrière — âge, ancienneté, expérience — colonne par
+ * colonne. Générique pour servir les deux échelles : CEO et directeurs,
+ * manager et son équipe. La dernière ligne (effectif encadré) n'a de sens que
+ * lorsque les personnes affichées encadrent elles-mêmes du monde : elle est
+ * omise quand aucun effectif n'est fourni.
+ */
 export default function LeadershipOverview({
-  ceo,
-  directors,
-  departments,
+  root,
+  people,
+  headcountById,
+  titleKey = "dashboard.companyAdmin.leadershipTitle",
   lastEvaluationByUser,
 }: {
-  ceo: Me;
-  directors: UserRecord[];
-  departments: Department[];
+  root: RootPerson;
+  people: UserRecord[];
+  headcountById?: Map<number, number>;
+  titleKey?: string;
   lastEvaluationByUser: Map<number, Evaluation>;
 }) {
   const { t } = useTranslation();
 
+  const directors = people;
   if (directors.length === 0) return null;
 
-  const headcountByDirector = new Map<number, number>();
-  departments.forEach((d) => {
-    if (d.manager) headcountByDirector.set(d.manager, d.member_count);
-  });
+  const headcounts = directors.map((d) => headcountById?.get(d.id) ?? null);
 
   const statRows: StatRow[] = [
     { labelKey: "dashboard.companyAdmin.age", values: directors.map((d) => d.age) },
     { labelKey: "dashboard.companyAdmin.yearsInRole", values: directors.map((d) => d.years_in_current_role) },
     { labelKey: "dashboard.companyAdmin.yearsInCompany", values: directors.map((d) => d.years_in_company) },
     { labelKey: "dashboard.companyAdmin.totalExperience", values: directors.map((d) => d.total_experience_years) },
-    {
-      labelKey: "dashboard.companyAdmin.teamHeadcount",
-      values: directors.map((d) => headcountByDirector.get(d.id) ?? null),
-      gapBefore: true,
-    },
+    ...(headcounts.some((v) => v !== null)
+      ? [{ labelKey: "dashboard.companyAdmin.teamHeadcount", values: headcounts, gapBefore: true }]
+      : []),
   ];
 
   // Colonnes fixes partagées par l'organigramme et le tableau ci-dessous —
@@ -160,7 +175,7 @@ export default function LeadershipOverview({
   return (
     <Paper elevation={0} sx={{ p: { xs: 2, sm: 2.5 }, border: "1px solid", borderColor: "divider" }}>
       <Typography variant="subtitle1" fontWeight={800} textAlign="center" sx={{ color: "primary.main", mb: 2, letterSpacing: 0.3 }}>
-        {t("dashboard.companyAdmin.leadershipTitle")}
+        {t(titleKey)}
       </Typography>
 
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", overflowX: "auto" }}>
@@ -169,7 +184,7 @@ export default function LeadershipOverview({
               largeur, décalée par la colonne des intitulés à gauche). */}
           <Box />
           <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center", width: 128 }}>
-            <PersonNode name={ceo.full_name} position={ceo.position} avatar={ceo.avatar} evaluation={lastEvaluationByUser.get(ceo.id)} root />
+            <PersonNode name={root.full_name} position={root.position} avatar={root.avatar} evaluation={lastEvaluationByUser.get(root.id)} root />
           </Box>
 
           <Box />
