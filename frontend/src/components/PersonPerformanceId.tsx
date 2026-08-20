@@ -46,7 +46,7 @@ const ROW_H = 21; // hauteur d'une ligne de la fiche
 const SHEET_GAP = "3px";
 /** Lignes de synthèse « % de performance » et « Catégorie de performance » :
  * intitulé au plus large, case de saisie volontairement étroite. */
-const SYNTHESIS_COLS = "1fr 52px";
+const SYNTHESIS_COLS = "1fr 64px";
 /** L'intitulé « Catégorie de performance » est plus long que sa colonne sur les
  * écrans étroits et à l'impression : on l'autorise à passer sur deux lignes
  * dans la hauteur de ligne existante plutôt que de le rogner. */
@@ -57,7 +57,7 @@ const SYNTHESIS_LAB_SX = {
   lineHeight: 0.95,
 };
 const SELECT_VALUE_SX = (color: string) => ({
-  fontSize: 9,
+  fontSize: 10,
   fontWeight: 700,
   color,
   whiteSpace: "nowrap" as const,
