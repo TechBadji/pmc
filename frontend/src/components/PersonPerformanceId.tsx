@@ -45,11 +45,19 @@ const CREAM = "#f5efd6";
 const ROW_H = 21; // hauteur d'une ligne de la fiche
 const SHEET_GAP = "3px";
 /** Lignes de synthèse « % de performance » et « Catégorie de performance » :
- * intitulé au plus large, case de saisie volontairement étroite, puis
- * HSO/SSIO à droite. */
-const SYNTHESIS_COLS = "minmax(0, 1fr) 68px 46px 54px";
-const SELECT_VALUE_SX = (color: string) => ({
+ * intitulé au plus large, case de saisie volontairement étroite. */
+const SYNTHESIS_COLS = "1fr 52px";
+/** L'intitulé « Catégorie de performance » est plus long que sa colonne sur les
+ * écrans étroits et à l'impression : on l'autorise à passer sur deux lignes
+ * dans la hauteur de ligne existante plutôt que de le rogner. */
+const SYNTHESIS_LAB_SX = {
   fontSize: 10,
+  px: 0.5,
+  whiteSpace: "normal" as const,
+  lineHeight: 0.95,
+};
+const SELECT_VALUE_SX = (color: string) => ({
+  fontSize: 9,
   fontWeight: 700,
   color,
   whiteSpace: "nowrap" as const,
@@ -785,12 +793,10 @@ export default function PersonPerformanceId({
             {/* % de performance : saisi à la main comme sur la feuille, avec
               * l'Altitude calculée en valeur par défaut affichée en repère.
               * HSO/SSIO se placent à droite, sur les deux mêmes lignes. */}
-            {/* Les deux lignes couvrent d'un seul tenant les colonnes 5 et 6 :
-              * l'espace vide qui séparait la saisie de HSO/SSIO revient ainsi
-              * aux intitulés, dont « Catégorie de performance » était rogné.
-              * HSO/SSIO gardent leur abscisse (46 + 54 px calés à droite). */}
-            <Box sx={{ gridColumn: "5 / 7", gridRow: 9, display: "grid", gridTemplateColumns: SYNTHESIS_COLS, gap: SHEET_GAP }}>
-              <Lab bg={CREAM}>{t("performanceId.performancePct")}</Lab>
+            <Box sx={{ gridColumn: 5, gridRow: 9, display: "grid", gridTemplateColumns: SYNTHESIS_COLS, gap: SHEET_GAP }}>
+              <Lab bg={CREAM} sx={SYNTHESIS_LAB_SX}>
+                {t("performanceId.performancePct")}
+              </Lab>
               <Fld
                 value={form.performance_pct}
                 onChange={(v) => patchForm({ performance_pct: v })}
@@ -799,15 +805,20 @@ export default function PersonPerformanceId({
                 bold
                 color={latestEvaluation ? performanceColors[latestEvaluation.performance_rating] : undefined}
               />
+            </Box>
+            <Box sx={{ gridColumn: 6, gridRow: 9, display: "grid", gridTemplateColumns: "1fr 46px 54px", gap: SHEET_GAP }}>
+              <Box />
               <Lab center bg={HARD_BAND} sx={{ color: "#fff" }}>
                 HSO
               </Lab>
               <Fld value={latestEvaluation ? String(latestEvaluation.hso) : "—"} readOnly align="center" bold />
             </Box>
 
-            <Box sx={{ gridColumn: "5 / 7", gridRow: 10, display: "grid", gridTemplateColumns: SYNTHESIS_COLS, gap: SHEET_GAP }}>
-              <Lab bg={CREAM}>{t("performanceId.categoryOfPerformer")}</Lab>
-              <Box sx={{ border: SHEET_BORDER, bgcolor: FIELD_BG, height: ROW_H, display: "flex", alignItems: "center", px: 0.5 }}>
+            <Box sx={{ gridColumn: 5, gridRow: 10, display: "grid", gridTemplateColumns: SYNTHESIS_COLS, gap: SHEET_GAP }}>
+              <Lab bg={CREAM} sx={SYNTHESIS_LAB_SX}>
+                {t("performanceId.categoryOfPerformer")}
+              </Lab>
+              <Box sx={{ border: SHEET_BORDER, bgcolor: FIELD_BG, height: ROW_H, display: "flex", alignItems: "center", px: 0.25 }}>
                 <Select
                   value={form.performer_category}
                   displayEmpty
@@ -829,7 +840,13 @@ export default function PersonPerformanceId({
                       </Typography>
                     )
                   }
-                  sx={{ fontSize: 10, "& .MuiSelect-select": { p: 0 } }}
+                  /* Chevron réduit : dans une case aussi étroite, l'icône par
+                   * défaut mangerait la moitié de la largeur utile. */
+                  sx={{
+                    fontSize: 9,
+                    "& .MuiSelect-select": { p: 0, pr: "12px !important" },
+                    "& .MuiSelect-icon": { right: -2, fontSize: 14 },
+                  }}
                 >
                   {PERFORMER_CATEGORIES.map((c) => (
                     <MenuItem key={c} value={c} sx={{ fontSize: 12, fontWeight: 700, color: performanceColors[c] }}>
@@ -838,6 +855,9 @@ export default function PersonPerformanceId({
                   ))}
                 </Select>
               </Box>
+            </Box>
+            <Box sx={{ gridColumn: 6, gridRow: 10, display: "grid", gridTemplateColumns: "1fr 46px 54px", gap: SHEET_GAP }}>
+              <Box />
               <Lab center bg={SOFT_BAND} sx={{ color: "#fff" }}>
                 SSIO
               </Lab>
