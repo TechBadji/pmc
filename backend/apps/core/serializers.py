@@ -153,10 +153,13 @@ class DepartmentSerializer(serializers.ModelSerializer):
         parent = attrs.get("parent", getattr(self.instance, "parent", None))
         if parent is None:
             return attrs
-        company_id = getattr(self.instance, "company_id", None) or (
-            self.context["request"].user.company_id
-        )
-        if parent.company_id != company_id:
+        # L'entreprise vient de l'objet modifié, sinon du payload — c'est le
+        # Super Admin qui la fournit ainsi, n'étant lui-même rattaché à
+        # aucune entreprise (son `company_id` est nul).
+        company_id = getattr(self.instance, "company_id", None) or self.initial_data.get("company")
+        if company_id is None:
+            company_id = getattr(self.context["request"].user, "company_id", None)
+        if company_id is not None and parent.company_id != int(company_id):
             raise serializers.ValidationError({"parent": "Introuvable."})
         if self.instance is not None:
             if parent.id == self.instance.id:
