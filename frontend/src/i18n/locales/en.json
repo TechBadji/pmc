@@ -71,6 +71,13 @@
       "GOOD": "Good (90-100%)",
       "OUTSTANDING": "Outstanding (>100%)"
     },
+    "performanceShort": {
+      "VERY_LOW": "Very low",
+      "LOW": "Low",
+      "AVERAGE": "Average",
+      "GOOD": "Good",
+      "OUTSTANDING": "Top"
+    },
     "unsavedTitle": "Unsaved changes",
     "unsavedBody": "You have unsaved changes on this page. Do you want to save them before leaving?",
     "saveAndLeave": "Save and leave",

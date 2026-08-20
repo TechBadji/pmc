@@ -44,6 +44,18 @@ const HEADER_ORANGE = "#E08A34"; // orange du logo — même bandeau que le Plan
 const CREAM = "#f5efd6";
 const ROW_H = 21; // hauteur d'une ligne de la fiche
 const SHEET_GAP = "3px";
+/** Lignes de synthèse « % de performance » et « Catégorie de performance » :
+ * intitulé au plus large, case de saisie volontairement étroite, puis
+ * HSO/SSIO à droite. */
+const SYNTHESIS_COLS = "minmax(0, 1fr) 68px 46px 54px";
+const SELECT_VALUE_SX = (color: string) => ({
+  fontSize: 10,
+  fontWeight: 700,
+  color,
+  whiteSpace: "nowrap" as const,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+});
 const SHEET_BORDER = "1px solid #b6bdc9";
 const FIELD_BG = "#eaeef6"; // bleu très pâle des cases de saisie
 const READONLY_BG = "#f5f6f8"; // gris neutre : donnée calculée, non modifiable
@@ -773,7 +785,11 @@ export default function PersonPerformanceId({
             {/* % de performance : saisi à la main comme sur la feuille, avec
               * l'Altitude calculée en valeur par défaut affichée en repère.
               * HSO/SSIO se placent à droite, sur les deux mêmes lignes. */}
-            <Box sx={{ gridColumn: 5, gridRow: 9, display: "grid", gridTemplateColumns: "1fr 0.55fr", gap: SHEET_GAP }}>
+            {/* Les deux lignes couvrent d'un seul tenant les colonnes 5 et 6 :
+              * l'espace vide qui séparait la saisie de HSO/SSIO revient ainsi
+              * aux intitulés, dont « Catégorie de performance » était rogné.
+              * HSO/SSIO gardent leur abscisse (46 + 54 px calés à droite). */}
+            <Box sx={{ gridColumn: "5 / 7", gridRow: 9, display: "grid", gridTemplateColumns: SYNTHESIS_COLS, gap: SHEET_GAP }}>
               <Lab bg={CREAM}>{t("performanceId.performancePct")}</Lab>
               <Fld
                 value={form.performance_pct}
@@ -783,16 +799,13 @@ export default function PersonPerformanceId({
                 bold
                 color={latestEvaluation ? performanceColors[latestEvaluation.performance_rating] : undefined}
               />
-            </Box>
-            <Box sx={{ gridColumn: 6, gridRow: 9, display: "grid", gridTemplateColumns: "1fr 46px 54px", gap: SHEET_GAP }}>
-              <Box />
               <Lab center bg={HARD_BAND} sx={{ color: "#fff" }}>
                 HSO
               </Lab>
               <Fld value={latestEvaluation ? String(latestEvaluation.hso) : "—"} readOnly align="center" bold />
             </Box>
 
-            <Box sx={{ gridColumn: 5, gridRow: 10, display: "grid", gridTemplateColumns: "1fr 0.55fr", gap: SHEET_GAP }}>
+            <Box sx={{ gridColumn: "5 / 7", gridRow: 10, display: "grid", gridTemplateColumns: SYNTHESIS_COLS, gap: SHEET_GAP }}>
               <Lab bg={CREAM}>{t("performanceId.categoryOfPerformer")}</Lab>
               <Box sx={{ border: SHEET_BORDER, bgcolor: FIELD_BG, height: ROW_H, display: "flex", alignItems: "center", px: 0.5 }}>
                 <Select
@@ -802,18 +815,21 @@ export default function PersonPerformanceId({
                   disableUnderline
                   fullWidth
                   onChange={(e) => patchForm({ performer_category: e.target.value as PerformerCategory })}
+                  /* Case étroite : on n'y affiche que le palier, sans sa plage
+                   * de pourcentage — celle-ci reste lisible dans la liste
+                   * déroulante, et le % exact est juste au-dessus. */
                   renderValue={(v) =>
                     v ? (
-                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: performanceColors[v as PerformanceRating] }}>
-                        {t(`common.performance.${v}`)}
+                      <Typography sx={SELECT_VALUE_SX(performanceColors[v as PerformanceRating])}>
+                        {t(`common.performanceShort.${v}`)}
                       </Typography>
                     ) : (
-                      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
-                        {latestEvaluation ? t(`common.performance.${latestEvaluation.performance_rating}`) : "—"}
+                      <Typography sx={SELECT_VALUE_SX("text.secondary")}>
+                        {latestEvaluation ? t(`common.performanceShort.${latestEvaluation.performance_rating}`) : "—"}
                       </Typography>
                     )
                   }
-                  sx={{ fontSize: 11, "& .MuiSelect-select": { p: 0 } }}
+                  sx={{ fontSize: 10, "& .MuiSelect-select": { p: 0 } }}
                 >
                   {PERFORMER_CATEGORIES.map((c) => (
                     <MenuItem key={c} value={c} sx={{ fontSize: 12, fontWeight: 700, color: performanceColors[c] }}>
@@ -822,9 +838,6 @@ export default function PersonPerformanceId({
                   ))}
                 </Select>
               </Box>
-            </Box>
-            <Box sx={{ gridColumn: 6, gridRow: 10, display: "grid", gridTemplateColumns: "1fr 46px 54px", gap: SHEET_GAP }}>
-              <Box />
               <Lab center bg={SOFT_BAND} sx={{ color: "#fff" }}>
                 SSIO
               </Lab>
