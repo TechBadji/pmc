@@ -29,7 +29,7 @@ import {
 } from "recharts";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
-import type { Evaluation, Paginated, PerformanceRating } from "@/api/types";
+import type { Department, Evaluation, Paginated, PerformanceRating } from "@/api/types";
 import StatCard from "@/components/StatCard";
 import { CHART_NEUTRALS, performanceColors } from "@/theme";
 
@@ -677,8 +677,11 @@ export default function TalentsDashboardPage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [departmentRecords, setDepartmentRecords] = useState<Department[]>([]);
   const [campaignId, setCampaignId] = useState<number | "">("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
+  // Périmètre d'un directeur : les départements qu'il dirige, lui compris.
+  const [directorFilter, setDirectorFilter] = useState<number | "">("");
   // Période de départ du tracé de progression, palier(s) retenus et personne
   // suivie individuellement.
   const [fromCampaignId, setFromCampaignId] = useState<number | "">("");
@@ -704,6 +707,13 @@ export default function TalentsDashboardPage() {
       })
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
+    // Les départements portent le nom de leur directeur : c'est la seule
+    // source qui relie un directeur à son périmètre, une évaluation ne disant
+    // que le département de la personne évaluée.
+    apiClient
+      .get<Paginated<Department>>("/departments/", { params: { page_size: 500 } })
+      .then((r) => setDepartmentRecords(r.data.results))
+      .catch(() => setDepartmentRecords([]));
   }
 
   useEffect(load, []);
@@ -717,6 +727,29 @@ export default function TalentsDashboardPage() {
   const departments = useMemo(
     () => Array.from(new Set(evaluations.map((e) => e.user_department).filter((d): d is string => !!d))).sort(),
     [evaluations]
+  );
+
+  /** Directeurs de l'entreprise, avec le périmètre qu'ils dirigent. Un même
+   * directeur peut porter plusieurs départements : ils sont regroupés sous une
+   * seule entrée pour que le filtre couvre tout son périmètre. */
+  const directors = useMemo(() => {
+    const byId = new Map<number, { id: number; name: string; departments: string[] }>();
+    departmentRecords.forEach((d) => {
+      if (d.manager == null) return;
+      const entry = byId.get(d.manager) ?? { id: d.manager, name: d.manager_name ?? "", departments: [] };
+      entry.departments.push(d.name);
+      byId.set(d.manager, entry);
+    });
+    return Array.from(byId.values())
+      .map((d) => ({ ...d, departments: d.departments.sort() }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [departmentRecords]);
+
+  // Mémorisé : ce périmètre est une dépendance du calcul des points, une
+  // nouvelle référence à chaque rendu le relancerait pour rien.
+  const selectedDirector = useMemo(
+    () => directors.find((d) => d.id === directorFilter) ?? null,
+    [directors, directorFilter]
   );
 
   /** Point par personne évaluée sur la campagne choisie. La progression se
@@ -739,6 +772,14 @@ export default function TalentsDashboardPage() {
       if (index === -1) return;
       const evaluation = sorted[index];
       if (departmentFilter && evaluation.user_department !== departmentFilter) return;
+      // Le directeur choisi est retenu lui-même, en plus des collaborateurs
+      // des départements qu'il dirige.
+      if (
+        selectedDirector &&
+        evaluation.user !== selectedDirector.id &&
+        !selectedDirector.departments.includes(evaluation.user_department ?? "")
+      )
+        return;
       const baselineEvaluation =
         fromCampaignId === ""
           ? index > 0
@@ -774,7 +815,7 @@ export default function TalentsDashboardPage() {
             (personFilter === DIRECTORS_ONLY ? p.isDirector : p.userId === personFilter))
       )
       .sort((a, b) => b.performance - a.performance);
-  }, [evaluations, campaigns, campaignId, fromCampaignId, departmentFilter, ratingFilter, personFilter]);
+  }, [evaluations, campaigns, campaignId, fromCampaignId, departmentFilter, selectedDirector, ratingFilter, personFilter]);
 
   const people = useMemo(() => {
     const byId = new Map<number, string>();
@@ -877,11 +918,39 @@ export default function TalentsDashboardPage() {
     if (ratingFilter.length > 0 && placed.length === 0) {
       return { severity: "warning", text: t("talents.errorRatingEmpty") };
     }
+    // Département et directeur se cumulent : les croiser hors périmètre ne
+    // peut rien donner, on l'explique plutôt que d'afficher un graphe vide.
+    if (selectedDirector && departmentFilter && !selectedDirector.departments.includes(departmentFilter)) {
+      return {
+        severity: "warning",
+        text: t("talents.errorDirectorDepartment", {
+          director: selectedDirector.name,
+          department: departmentFilter,
+          departments: selectedDirector.departments.join(", "),
+        }),
+      };
+    }
+    if (selectedDirector && placed.length === 0) {
+      return { severity: "warning", text: t("talents.errorDirectorEmpty", { director: selectedDirector.name }) };
+    }
     if (departmentFilter && placed.length === 0) {
       return { severity: "warning", text: t("talents.errorDepartmentEmpty", { department: departmentFilter }) };
     }
     return null;
-  }, [campaigns, campaignId, fromCampaignId, personFilter, people, points.length, placed.length, trail.length, ratingFilter, departmentFilter, t]);
+  }, [
+    campaigns,
+    campaignId,
+    fromCampaignId,
+    personFilter,
+    people,
+    points.length,
+    placed.length,
+    trail.length,
+    ratingFilter,
+    departmentFilter,
+    selectedDirector,
+    t,
+  ]);
 
   const scatterData = placed.map((p) => ({
     ...p,
@@ -1000,6 +1069,40 @@ export default function TalentsDashboardPage() {
             {departments.map((d) => (
               <MenuItem key={d} value={d}>
                 {d}
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
+
+        {/* Périmètre d'un directeur : lui et les départements qu'il dirige.
+          * Le département sous chaque nom évite l'homonymie et rappelle ce que
+          * le choix va restreindre. */}
+        {directors.length > 0 && (
+          <TextField
+            select
+            size="small"
+            label={t("talents.directors")}
+            value={directorFilter}
+            onChange={(e) => setDirectorFilter(e.target.value === "" ? "" : Number(e.target.value))}
+            sx={{ minWidth: 200 }}
+            // Sans cela, la case fermée reprendrait les deux lignes de l'option
+            // et grandirait par rapport aux autres sélecteurs de la barre.
+            SelectProps={{
+              renderValue: (value: unknown) =>
+                value === "" || value === undefined
+                  ? t("talents.allDirectorsScope")
+                  : directors.find((d) => d.id === value)?.name ?? "",
+            }}
+          >
+            <MenuItem value="">{t("talents.allDirectorsScope")}</MenuItem>
+            {directors.map((d) => (
+              <MenuItem key={d.id} value={d.id}>
+                <Stack spacing={0} sx={{ minWidth: 0 }}>
+                  <Typography variant="body2">{d.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {d.departments.join(" · ")}
+                  </Typography>
+                </Stack>
               </MenuItem>
             ))}
           </TextField>
