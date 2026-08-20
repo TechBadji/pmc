@@ -161,7 +161,9 @@
       "headcount": "Team headcount",
       "avgPerformance": "Average performance",
       "toSupport": "People needing support",
-      "overviewTitle": "Team org chart and background"
+      "overviewTitle": "Team org chart and background",
+      "servicesTitle": "Services in this division ({{count}})",
+      "service": "Service"
     }
   },
   "companies": {
@@ -233,7 +235,8 @@
     "login": "Login",
     "password": "Password",
     "row": "Row",
-    "error": "Error"
+    "error": "Error",
+    "serviceHint": "“service_code” is optional: leave it empty to attach the person straight to their division. When filled in, it must name a service of that division."
   },
   "passwordRequests": {
     "title": "Password reset requests",

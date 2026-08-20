@@ -31,6 +31,7 @@ import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, Paginated, PerformanceRating } from "@/api/types";
 import StatCard from "@/components/StatCard";
+import { departmentScopeNames, orderedDepartmentOptions } from "@/utils/departments";
 import { CHART_NEUTRALS, performanceColors } from "@/theme";
 
 /**
@@ -725,9 +726,20 @@ export default function TalentsDashboardPage() {
     return Array.from(byId.values()).sort((a, b) => a.start_date.localeCompare(b.start_date));
   }, [evaluations]);
 
-  const departments = useMemo(
-    () => Array.from(new Set(evaluations.map((e) => e.user_department).filter((d): d is string => !!d))).sort(),
-    [evaluations]
+  /** Directions puis leurs services : tant qu'aucun service n'existe, la
+   * liste est celle d'avant, à plat et par ordre alphabétique. */
+  const departments = useMemo(() => {
+    const present = Array.from(
+      new Set(evaluations.map((e) => e.user_department).filter((d): d is string => !!d))
+    );
+    return orderedDepartmentOptions(departmentRecords, present);
+  }, [evaluations, departmentRecords]);
+
+  /** Choisir une direction retient aussi ses services : le directeur lit son
+   * périmètre complet, pas seulement ses rattachés directs. */
+  const departmentScope = useMemo(
+    () => departmentScopeNames(departmentRecords, departmentFilter),
+    [departmentRecords, departmentFilter]
   );
 
   /** Directeurs de l'entreprise, avec les départements qu'ils dirigent —
@@ -777,7 +789,7 @@ export default function TalentsDashboardPage() {
       const index = sorted.findIndex((e) => e.campaign === campaignId);
       if (index === -1) return;
       const evaluation = sorted[index];
-      if (departmentFilter && evaluation.user_department !== departmentFilter) return;
+      if (departmentScope.length && !departmentScope.includes(evaluation.user_department ?? "")) return;
       const baselineEvaluation =
         fromCampaignId === ""
           ? index > 0
@@ -813,7 +825,7 @@ export default function TalentsDashboardPage() {
           (focusedPersonId === "" || p.userId === focusedPersonId)
       )
       .sort((a, b) => b.performance - a.performance);
-  }, [evaluations, campaigns, campaignId, fromCampaignId, departmentFilter, ratingFilter, personFilter, focusedPersonId]);
+  }, [evaluations, campaigns, campaignId, fromCampaignId, departmentScope, ratingFilter, personFilter, focusedPersonId]);
 
   const people = useMemo(() => {
     const byId = new Map<number, string>();
@@ -1054,8 +1066,8 @@ export default function TalentsDashboardPage() {
           >
             <MenuItem value="">{t("talents.allDepartments")}</MenuItem>
             {departments.map((d) => (
-              <MenuItem key={d} value={d}>
-                {d}
+              <MenuItem key={d.name} value={d.name} sx={d.isService ? { pl: 3.5, fontSize: 13 } : undefined}>
+                {d.isService ? `— ${d.name}` : d.name}
               </MenuItem>
             ))}
           </TextField>

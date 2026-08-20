@@ -19,7 +19,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
-import type { Evaluation, Paginated, UserRecord } from "@/api/types";
+import type { Department, Evaluation, Paginated, UserRecord } from "@/api/types";
 import LeadershipOverview from "@/components/LeadershipOverview";
 import StatCard from "@/components/StatCard";
 import { performanceColors } from "@/theme";
@@ -35,6 +35,7 @@ export default function ManagerDashboard() {
   const { user } = useAppSelector((s) => s.auth);
   const [members, setMembers] = useState<UserRecord[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   useEffect(() => {
     apiClient
@@ -43,15 +44,41 @@ export default function ManagerDashboard() {
     apiClient
       .get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } })
       .then((r) => setEvaluations(r.data.results));
+    // Départements encadrés : la direction et, le cas échéant, ses services.
+    apiClient
+      .get<Paginated<Department>>("/departments/", { params: { page_size: 500 } })
+      .then((r) => setDepartments(r.data.results))
+      .catch(() => setDepartments([]));
   }, []);
 
   const managerRecord = members.find((m) => m.id === user?.id);
   const directReports = members.filter((m) => m.id !== user?.id);
   const departmentName = managerRecord?.department_name ?? "";
 
+  /** Services de la direction encadrée. Vide tant qu'aucun service n'existe :
+   * la page reste alors exactement celle d'aujourd'hui. */
+  const myDirection = departments.find((d) => d.manager === user?.id && d.parent === null) ?? null;
+  const services = myDirection ? departments.filter((d) => d.parent === myDirection.id) : [];
+
   // La liste contient toutes les campagnes : sans ce tri, une ancienne
   // évaluation pouvait être présentée comme la situation actuelle.
   const lastByUser = useMemo(() => lastEvaluationByUser(evaluations), [evaluations]);
+
+  /** Colonnes de l'organigramme : les chefs de service et les rattachés
+   * directs dès qu'il existe des services — sinon toute l'équipe, comme
+   * aujourd'hui. C'est la même lecture que chez le CEO, qui montre ses
+   * directeurs et non l'ensemble des collaborateurs. */
+  const serviceHeadIds = new Set(services.map((s) => s.manager).filter((id): id is number => id !== null));
+  const overviewPeople =
+    services.length === 0
+      ? directReports
+      : directReports.filter((m) => serviceHeadIds.has(m.id) || m.department === myDirection?.id);
+  /** Effectif encadré par chaque chef de service : remplit la dernière ligne
+   * du tableau des parcours, vide en l'absence de service. */
+  const headcountByHead = new Map<number, number>();
+  services.forEach((s) => {
+    if (s.manager !== null) headcountByHead.set(s.manager, s.member_count);
+  });
 
   const rows = members.map((m) => ({ member: m, evaluation: lastByUser.get(m.id) ?? null }));
   // Les indicateurs portent sur l'équipe encadrée. La ligne du manager reste
@@ -79,10 +106,81 @@ export default function ManagerDashboard() {
       {managerRecord && (
         <LeadershipOverview
           root={managerRecord}
-          people={directReports}
+          people={overviewPeople}
+          headcountById={headcountByHead}
           titleKey="dashboard.manager.overviewTitle"
           lastEvaluationByUser={lastByUser}
         />
+      )}
+
+      {/* Consolidation par service : la même lecture que le tableau du CEO sur
+        * ses directions. Rien ne s'affiche tant que la direction n'a pas de
+        * service. */}
+      {services.length > 0 && (
+        <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ px: 2, pt: 2 }}>
+            {t("dashboard.manager.servicesTitle", { count: services.length })}
+          </Typography>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t("dashboard.manager.service")}</TableCell>
+                  <TableCell>{t("departments.serviceHead")}</TableCell>
+                  <TableCell align="right">{t("dashboard.companyAdmin.headcount")}</TableCell>
+                  <TableCell align="right">HSI</TableCell>
+                  <TableCell align="right">SSI</TableCell>
+                  <TableCell align="right">{t("dashboard.companyAdmin.performance")}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {services.map((service) => {
+                  const serviceEvals = members
+                    .filter((m) => m.department === service.id)
+                    .map((m) => lastByUser.get(m.id))
+                    .filter((e): e is Evaluation => e !== undefined);
+                  const avg = average(serviceEvals.map((e) => Number(e.altitude_percentage)));
+                  const rating = serviceEvals.length ? ratingForAltitude(avg) : null;
+                  const open = () => navigate(`/departments/${service.id}`);
+                  return (
+                    <TableRow
+                      key={service.id}
+                      hover
+                      sx={{ cursor: "pointer" }}
+                      onClick={open}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={service.name}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          open();
+                        }
+                      }}
+                    >
+                      <TableCell>{service.name}</TableCell>
+                      <TableCell>{service.manager_name ?? "—"}</TableCell>
+                      <TableCell align="right">{service.member_count}</TableCell>
+                      <TableCell align="right">
+                        {serviceEvals.length ? average(serviceEvals.map((e) => Number(e.hsi))).toFixed(2) : "—"}
+                      </TableCell>
+                      <TableCell align="right">
+                        {serviceEvals.length ? average(serviceEvals.map((e) => Number(e.ssi))).toFixed(2) : "—"}
+                      </TableCell>
+                      <TableCell align="right">
+                        {rating ? (
+                          <span style={{ color: performanceColors[rating], fontWeight: 600 }}>{avg.toFixed(0)}%</span>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       )}
 
       <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>

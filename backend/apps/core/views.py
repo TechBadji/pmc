@@ -199,8 +199,12 @@ class CompanyViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="bulk-upload-users", parser_classes=[MultiPartParser])
     def bulk_upload_users(self, request, pk=None):
         """Charge des utilisateurs en masse depuis un CSV :
-        colonnes attendues -> prenom,nom,email,poste,departement_code,role
-        `email` et `role` sont optionnels (role par défaut: MEMBER).
+        colonnes attendues -> prenom,nom,email,poste,departement_code,service_code,role
+        `email`, `service_code` et `role` sont optionnels (role par défaut:
+        MEMBER). `service_code` rattache la personne à un service : il doit
+        désigner un service de la direction indiquée par `departement_code` —
+        un décalage entre les deux colonnes est refusé ligne à ligne plutôt
+        que d'affecter silencieusement la personne au mauvais endroit.
         Génère un login/mot de passe par défaut (123456, à changer à la
         première connexion) quand l'email n'est pas fourni.
         """
@@ -220,7 +224,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
             {f.strip().lower() for f in reader.fieldnames}
         ):
             raise ValidationError(
-                {"file": "Colonnes attendues: prenom,nom,email,poste,departement_code,role"}
+                {"file": "Colonnes attendues: prenom,nom,email,poste,departement_code,service_code,role"}
             )
 
         departments_by_code = {d.code: d for d in company.departments.all()}
@@ -230,6 +234,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
             row = {(k or "").strip().lower(): (v or "").strip() for k, v in raw_row.items()}
             first_name, last_name = row.get("prenom", ""), row.get("nom", "")
             dept_code = row.get("departement_code", "").upper()
+            service_code = row.get("service_code", "").upper()
             role = (row.get("role") or User.Role.MEMBER).upper()
 
             if not first_name or not last_name:
@@ -241,6 +246,24 @@ class CompanyViewSet(viewsets.ModelViewSet):
             if role not in (User.Role.MEMBER, User.Role.MANAGER):
                 errors.append({"row": row_number, "error": f"Rôle invalide: {role}"})
                 continue
+
+            target_department = departments_by_code[dept_code]
+            if service_code:
+                service = departments_by_code.get(service_code)
+                if service is None:
+                    errors.append({"row": row_number, "error": f"Service inconnu: {service_code}"})
+                    continue
+                if service.parent_id != target_department.id:
+                    errors.append(
+                        {
+                            "row": row_number,
+                            "error": (
+                                f"Le service {service_code} ne dépend pas de la direction {dept_code}."
+                            ),
+                        }
+                    )
+                    continue
+                target_department = service
 
             email = row.get("email") or ""
             if email:
@@ -263,7 +286,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
                 position=row.get("poste", ""),
                 role=role,
                 company=company,
-                department=departments_by_code[dept_code],
+                department=target_department,
                 generated_login=login,
                 must_change_password=True,
             )
@@ -275,7 +298,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
                     "full_name": f"{first_name} {last_name}",
                     "email": email,
                     "login": login,
-                    "department": departments_by_code[dept_code].name,
+                    "department": target_department.name,
                     "role": role,
                     "password": DEFAULT_PASSWORD,
                 }

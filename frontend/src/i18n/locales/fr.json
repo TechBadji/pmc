@@ -161,7 +161,9 @@
       "headcount": "Effectif de l'équipe",
       "avgPerformance": "Performance moyenne",
       "toSupport": "Collaborateurs à accompagner",
-      "overviewTitle": "Organigramme et parcours de l'équipe"
+      "overviewTitle": "Organigramme et parcours de l'équipe",
+      "servicesTitle": "Services de la direction ({{count}})",
+      "service": "Service"
     }
   },
   "companies": {
@@ -233,7 +235,8 @@
     "login": "Login",
     "password": "Mot de passe",
     "row": "Ligne",
-    "error": "Erreur"
+    "error": "Erreur",
+    "serviceHint": "« service_code » est facultatif : laissez-le vide pour rattacher la personne directement à sa direction. S'il est renseigné, il doit désigner un service de la direction indiquée."
   },
   "passwordRequests": {
     "title": "Demandes de réinitialisation de mot de passe",

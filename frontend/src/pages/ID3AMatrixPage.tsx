@@ -47,7 +47,8 @@ import {
 } from "recharts";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
-import type { Evaluation, Paginated, PerformanceRating } from "@/api/types";
+import type { Department, Evaluation, Paginated, PerformanceRating } from "@/api/types";
+import { departmentScopeNames, orderedDepartmentOptions } from "@/utils/departments";
 import StatCard from "@/components/StatCard";
 import { CHART_NEUTRALS, performanceColors } from "@/theme";
 
@@ -661,6 +662,7 @@ export default function ID3AMatrixPage() {
   const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
 
   const [allEvaluations, setAllEvaluations] = useState<Evaluation[]>([]);
+  const [departmentRecords, setDepartmentRecords] = useState<Department[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | "">("");
   const [compareCampaignId, setCompareCampaignId] = useState<number | typeof NONE_PERIOD>(NONE_PERIOD);
   const [leadershipOnly, setLeadershipOnly] = useState(true);
@@ -689,6 +691,12 @@ export default function ID3AMatrixPage() {
       })
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
+    // Hiérarchie des départements : seule source qui relie un service à sa
+    // direction, une évaluation ne portant que le nom du département.
+    apiClient
+      .get<Paginated<Department>>("/departments/", { params: { page_size: 500 } })
+      .then((r) => setDepartmentRecords(r.data.results))
+      .catch(() => setDepartmentRecords([]));
   }
 
   useEffect(loadEvaluations, []);
@@ -737,9 +745,17 @@ export default function ID3AMatrixPage() {
       .sort((a, b) => a.department.localeCompare(b.department));
   }, [allEvaluations]);
 
+  /** Directions puis leurs services. Sans service, la liste est celle d'avant. */
   const departmentOptions = useMemo(
-    () => peopleByDepartment.map((g) => g.department).filter(Boolean),
-    [peopleByDepartment]
+    () => orderedDepartmentOptions(departmentRecords, peopleByDepartment.map((g) => g.department).filter(Boolean)),
+    [departmentRecords, peopleByDepartment]
+  );
+
+  /** Une direction entraîne ses services : le graphe montre alors tout son
+   * périmètre, et non ses seuls rattachés directs. */
+  const departmentScope = useMemo(
+    () => departmentScopeNames(departmentRecords, departmentFilter),
+    [departmentRecords, departmentFilter]
   );
 
   const scopedEvaluations = useMemo(
@@ -750,7 +766,7 @@ export default function ID3AMatrixPage() {
         if (!departmentFilter && canFilterLeadership && leadershipOnly && e.user_role === "MEMBER") return false;
         if (showDirectorFilter && directorFilter !== "" && e.user !== directorFilter) return false;
         if (memberFilter !== "" && e.user !== memberFilter) return false;
-        if (departmentFilter && e.user_department !== departmentFilter) return false;
+        if (departmentScope.length && !departmentScope.includes(e.user_department ?? "")) return false;
         if (ratingFilter.length > 0 && !ratingFilter.includes(e.performance_rating)) return false;
         return true;
       }),
@@ -759,7 +775,7 @@ export default function ID3AMatrixPage() {
       leadershipOnly,
       directorFilter,
       memberFilter,
-      departmentFilter,
+      departmentScope,
       ratingFilter,
       showDirectorFilter,
       canFilterLeadership,
@@ -1003,8 +1019,8 @@ export default function ID3AMatrixPage() {
           >
             <MenuItem value="">{t("id3aMatrix.allDepartments")}</MenuItem>
             {departmentOptions.map((d) => (
-              <MenuItem key={d} value={d}>
-                {d}
+              <MenuItem key={d.name} value={d.name} sx={d.isService ? { pl: 3.5, fontSize: 13 } : undefined}>
+                {d.isService ? `— ${d.name}` : d.name}
               </MenuItem>
             ))}
           </TextField>

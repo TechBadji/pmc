@@ -21,8 +21,13 @@ import { useParams } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import type { BulkUploadResult, Company, Paginated } from "@/api/types";
 
+// `service_code` est facultatif : laissé vide, la personne est rattachée
+// directement à la direction, comme avant l'introduction des services.
 const TEMPLATE_CSV =
-  "prenom,nom,email,poste,departement_code,role\nAwa,Ndiaye,,Technicienne,DSI,MEMBER\nMoussa,Diop,moussa.diop@exemple.com,Comptable,DAF,MANAGER\n";
+  "prenom,nom,email,poste,departement_code,service_code,role\n" +
+  "Awa,Ndiaye,,Technicienne,DSI,,MEMBER\n" +
+  "Moussa,Diop,moussa.diop@exemple.com,Comptable,DAF,,MANAGER\n" +
+  "Fatou,Sall,,Acheteuse,DAF,ACH,MEMBER\n";
 
 export default function BulkUploadPage() {
   const { t } = useTranslation();
@@ -79,7 +84,10 @@ export default function BulkUploadPage() {
       </Typography>
       <Typography variant="body2" color="text.secondary">
         {t("bulkUpload.explanation")}{" "}
-        <code>prenom,nom,email,poste,departement_code,role</code>
+        <code>prenom,nom,email,poste,departement_code,service_code,role</code>
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        {t("bulkUpload.serviceHint")}
       </Typography>
 
       <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}>
