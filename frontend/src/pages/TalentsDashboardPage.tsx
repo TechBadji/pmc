@@ -680,7 +680,8 @@ export default function TalentsDashboardPage() {
   const [departmentRecords, setDepartmentRecords] = useState<Department[]>([]);
   const [campaignId, setCampaignId] = useState<number | "">("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
-  // Périmètre d'un directeur : les départements qu'il dirige, lui compris.
+  // Raccourci de navigation : atteindre un directeur sans le chercher dans la
+  // liste de tous les collaborateurs. Il n'affiche que le directeur choisi.
   const [directorFilter, setDirectorFilter] = useState<number | "">("");
   // Période de départ du tracé de progression, palier(s) retenus et personne
   // suivie individuellement.
@@ -729,9 +730,9 @@ export default function TalentsDashboardPage() {
     [evaluations]
   );
 
-  /** Directeurs de l'entreprise, avec le périmètre qu'ils dirigent. Un même
-   * directeur peut porter plusieurs départements : ils sont regroupés sous une
-   * seule entrée pour que le filtre couvre tout son périmètre. */
+  /** Directeurs de l'entreprise, avec les départements qu'ils dirigent —
+   * rappelés sous leur nom pour lever toute homonymie. Un directeur portant
+   * plusieurs départements n'apparaît qu'une fois. */
   const directors = useMemo(() => {
     const byId = new Map<number, { id: number; name: string; departments: string[] }>();
     departmentRecords.forEach((d) => {
@@ -745,12 +746,17 @@ export default function TalentsDashboardPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [departmentRecords]);
 
-  // Mémorisé : ce périmètre est une dépendance du calcul des points, une
-  // nouvelle référence à chaque rendu le relancerait pour rien.
   const selectedDirector = useMemo(
     () => directors.find((d) => d.id === directorFilter) ?? null,
     [directors, directorFilter]
   );
+
+  /** Personne suivie individuellement, quel que soit le sélecteur par lequel
+   * elle a été atteinte : la liste des collaborateurs ou le raccourci
+   * « Directeurs ». Les deux sélecteurs se remettent à zéro l'un l'autre, il
+   * ne peut donc y avoir qu'une seule personne suivie. */
+  const focusedPersonId: number | "" =
+    personFilter !== "" && personFilter !== DIRECTORS_ONLY ? personFilter : directorFilter;
 
   /** Point par personne évaluée sur la campagne choisie. La progression se
    * mesure depuis la période de comparaison quand elle est renseignée — c'est
@@ -772,14 +778,6 @@ export default function TalentsDashboardPage() {
       if (index === -1) return;
       const evaluation = sorted[index];
       if (departmentFilter && evaluation.user_department !== departmentFilter) return;
-      // Le directeur choisi est retenu lui-même, en plus des collaborateurs
-      // des départements qu'il dirige.
-      if (
-        selectedDirector &&
-        evaluation.user !== selectedDirector.id &&
-        !selectedDirector.departments.includes(evaluation.user_department ?? "")
-      )
-        return;
       const baselineEvaluation =
         fromCampaignId === ""
           ? index > 0
@@ -811,11 +809,11 @@ export default function TalentsDashboardPage() {
       .filter(
         (p) =>
           (ratingFilter.length === 0 || ratingFilter.includes(p.rating)) &&
-          (personFilter === "" ||
-            (personFilter === DIRECTORS_ONLY ? p.isDirector : p.userId === personFilter))
+          (personFilter !== DIRECTORS_ONLY || p.isDirector) &&
+          (focusedPersonId === "" || p.userId === focusedPersonId)
       )
       .sort((a, b) => b.performance - a.performance);
-  }, [evaluations, campaigns, campaignId, fromCampaignId, departmentFilter, selectedDirector, ratingFilter, personFilter]);
+  }, [evaluations, campaigns, campaignId, fromCampaignId, departmentFilter, ratingFilter, personFilter, focusedPersonId]);
 
   const people = useMemo(() => {
     const byId = new Map<number, string>();
@@ -845,12 +843,12 @@ export default function TalentsDashboardPage() {
    * période sans progression calculable (première évaluation) est ignorée :
    * elle n'a pas d'ordonnée. */
   const trail = useMemo<TalentPoint[]>(() => {
-    if (personFilter === "" || personFilter === DIRECTORS_ONLY || campaignId === "" || fromCampaignId === "") return [];
+    if (focusedPersonId === "" || campaignId === "" || fromCampaignId === "") return [];
     const from = campaigns.find((c) => c.id === fromCampaignId);
     const to = campaigns.find((c) => c.id === campaignId);
     if (!from || !to) return [];
     const own = evaluations
-      .filter((e) => e.user === personFilter)
+      .filter((e) => e.user === focusedPersonId)
       .sort((a, b) => a.campaign_start_date.localeCompare(b.campaign_start_date));
     // Référence unique : la performance de l'année de départ. Chaque étape du
     // tracé exprime donc la marge cumulée depuis cette année, cohérente avec
@@ -879,7 +877,7 @@ export default function TalentsDashboardPage() {
       });
     });
     return result;
-  }, [evaluations, campaigns, personFilter, campaignId, fromCampaignId]);
+  }, [evaluations, campaigns, focusedPersonId, campaignId, fromCampaignId]);
 
   const placed = points.filter((p) => p.progression !== null);
   const unrated = points.filter((p) => p.progression === null);
@@ -898,18 +896,22 @@ export default function TalentsDashboardPage() {
   const guidance = useMemo<{ severity: "warning" | "info"; text: string } | null>(() => {
     const current = campaigns.find((c) => c.id === campaignId);
     const from = campaigns.find((c) => c.id === fromCampaignId);
-    const personName = people.find((p) => p.id === personFilter)?.name ?? "";
+    // Le nom peut venir de l'un ou l'autre sélecteur : on le cherche d'abord
+    // parmi les évalués, et à défaut parmi les directeurs — un directeur sans
+    // évaluation sur la période n'est pas dans `people`.
+    const personName =
+      people.find((p) => p.id === focusedPersonId)?.name ?? (selectedDirector ? selectedDirector.name : "");
 
     if (from && current && from.start_date >= current.start_date) {
       return { severity: "warning", text: t("talents.errorComparePeriod", { period: current.name }) };
     }
-    if (from && (personFilter === "" || personFilter === DIRECTORS_ONLY)) {
+    if (from && focusedPersonId === "") {
       return { severity: "info", text: t("talents.errorCompareNoPerson") };
     }
-    if (personFilter !== "" && personFilter !== DIRECTORS_ONLY && placed.length === 0) {
+    if (focusedPersonId !== "" && placed.length === 0) {
       return { severity: "warning", text: t("talents.errorPersonNoPoint", { name: personName, period: current?.name ?? "" }) };
     }
-    if (personFilter !== "" && personFilter !== DIRECTORS_ONLY && from && trail.length < 2) {
+    if (focusedPersonId !== "" && from && trail.length < 2) {
       return { severity: "info", text: t("talents.errorTrailTooShort", { name: personName }) };
     }
     if (from && points.length === 0 && placed.length === 0) {
@@ -917,21 +919,6 @@ export default function TalentsDashboardPage() {
     }
     if (ratingFilter.length > 0 && placed.length === 0) {
       return { severity: "warning", text: t("talents.errorRatingEmpty") };
-    }
-    // Département et directeur se cumulent : les croiser hors périmètre ne
-    // peut rien donner, on l'explique plutôt que d'afficher un graphe vide.
-    if (selectedDirector && departmentFilter && !selectedDirector.departments.includes(departmentFilter)) {
-      return {
-        severity: "warning",
-        text: t("talents.errorDirectorDepartment", {
-          director: selectedDirector.name,
-          department: departmentFilter,
-          departments: selectedDirector.departments.join(", "),
-        }),
-      };
-    }
-    if (selectedDirector && placed.length === 0) {
-      return { severity: "warning", text: t("talents.errorDirectorEmpty", { director: selectedDirector.name }) };
     }
     if (departmentFilter && placed.length === 0) {
       return { severity: "warning", text: t("talents.errorDepartmentEmpty", { department: departmentFilter }) };
@@ -941,7 +928,7 @@ export default function TalentsDashboardPage() {
     campaigns,
     campaignId,
     fromCampaignId,
-    personFilter,
+    focusedPersonId,
     people,
     points.length,
     placed.length,
@@ -1074,16 +1061,20 @@ export default function TalentsDashboardPage() {
           </TextField>
         )}
 
-        {/* Périmètre d'un directeur : lui et les départements qu'il dirige.
-          * Le département sous chaque nom évite l'homonymie et rappelle ce que
-          * le choix va restreindre. */}
+        {/* Raccourci vers un directeur : il n'affiche que lui, sans avoir à le
+          * chercher dans la liste de tous les collaborateurs. Le département
+          * rappelé sous son nom lève l'homonymie. Les deux sélecteurs de
+          * personne se remettent à zéro l'un l'autre. */}
         {directors.length > 0 && (
           <TextField
             select
             size="small"
             label={t("talents.directors")}
             value={directorFilter}
-            onChange={(e) => setDirectorFilter(e.target.value === "" ? "" : Number(e.target.value))}
+            onChange={(e) => {
+              setDirectorFilter(e.target.value === "" ? "" : Number(e.target.value));
+              setPersonFilter("");
+            }}
             sx={{ minWidth: 200 }}
             // Sans cela, la case fermée reprendrait les deux lignes de l'option
             // et grandirait par rapport aux autres sélecteurs de la barre.
@@ -1113,11 +1104,12 @@ export default function TalentsDashboardPage() {
           size="small"
           label={t("talents.person")}
           value={personFilter}
-          onChange={(e) =>
+          onChange={(e) => {
             setPersonFilter(
               e.target.value === "" ? "" : e.target.value === DIRECTORS_ONLY ? DIRECTORS_ONLY : Number(e.target.value)
-            )
-          }
+            );
+            if (e.target.value !== "") setDirectorFilter("");
+          }}
           sx={{ minWidth: 190 }}
         >
           <MenuItem value="">{t("talents.allPeople")}</MenuItem>
