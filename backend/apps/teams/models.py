@@ -104,6 +104,10 @@ class TeamRelationship(models.Model):
         verbose_name = "Relation d'équipe"
         verbose_name_plural = "Relations d'équipe"
         unique_together = ("from_user", "to_user")
+        # Sans ordre par défaut, la pagination DRF avertit — et surtout, deux
+        # appels sur la même page peuvent renvoyer des lignes différentes, le
+        # SGBD étant libre de changer l'ordre de restitution.
+        ordering = ["id"]
 
     def __str__(self):
         return f"{self.from_user} → {self.to_user}: {self.get_quality_display()}"
