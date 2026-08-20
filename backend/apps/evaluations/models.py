@@ -100,15 +100,29 @@ class Evaluation(models.Model):
     def __str__(self):
         return f"{self.user} — {self.campaign.name}"
 
-    def _skill_index(self, skill_type):
-        scores = self.skill_scores.filter(skill_item__matrix__type=skill_type)
-        if not scores.exists():
+    def _weighted_index(self, skill_type, field):
+        """Moyenne pondérée des notes d'un référentiel (HARD ou SOFT).
+
+        Le tri se fait EN PYTHON sur `skill_scores.all()`, jamais par un
+        `.filter()` : un filtre sur un manager lié rejoue une requête et ignore
+        le `prefetch_related` de la vue, ce qui coûtait une trentaine de
+        requêtes SQL par évaluation — 4 500 pour une page de liste.
+        """
+        scores = [
+            s
+            for s in self.skill_scores.all()
+            if s.skill_item.matrix.type == skill_type and getattr(s, field) is not None
+        ]
+        if not scores:
             return Decimal("0.0")
         total_weight = sum((s.skill_item.weight for s in scores), Decimal("0"))
         if total_weight == 0:
             return Decimal("0.0")
-        weighted_sum = sum((s.score * s.skill_item.weight for s in scores), Decimal("0"))
+        weighted_sum = sum((getattr(s, field) * s.skill_item.weight for s in scores), Decimal("0"))
         return round(weighted_sum / total_weight, 2)
+
+    def _skill_index(self, skill_type):
+        return self._weighted_index(skill_type, "score")
 
     @property
     def hsi(self):
@@ -123,16 +137,7 @@ class Evaluation(models.Model):
     def _objective_index(self, skill_type):
         """Même moyenne pondérée que `_skill_index`, mais sur les objectifs
         fixés pour la période — les lignes sans objectif sont ignorées."""
-        scores = self.skill_scores.filter(
-            skill_item__matrix__type=skill_type, objective_score__isnull=False
-        )
-        if not scores.exists():
-            return Decimal("0.0")
-        total_weight = sum((s.skill_item.weight for s in scores), Decimal("0"))
-        if total_weight == 0:
-            return Decimal("0.0")
-        weighted_sum = sum((s.objective_score * s.skill_item.weight for s in scores), Decimal("0"))
-        return round(weighted_sum / total_weight, 2)
+        return self._weighted_index(skill_type, "objective_score")
 
     @property
     def hso(self):

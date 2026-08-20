@@ -291,7 +291,9 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
 
 class DepartmentViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
-    queryset = Department.objects.select_related("manager", "company")
+    # `members` préchargé : le serializer expose l'effectif, et `count()` sur un
+    # manager préchargé lit le cache au lieu de refaire un COUNT par département.
+    queryset = Department.objects.select_related("manager", "company").prefetch_related("members")
     serializer_class = DepartmentSerializer
     company_lookup = "company_id"
     filterset_fields = ["company"]

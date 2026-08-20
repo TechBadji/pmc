@@ -111,8 +111,10 @@ class EvaluationCampaignViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
 
 
 class EvaluationViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
+    # `user__department` est indispensable : le serializer expose le nom du
+    # département, qui déclenchait sinon une requête par évaluation.
     queryset = Evaluation.objects.select_related(
-        "user", "evaluator", "campaign"
+        "user", "user__department", "evaluator", "campaign"
     ).prefetch_related("skill_scores__skill_item__matrix")
     company_lookup = "user__company_id"
     filterset_fields = ["user", "campaign", "user__role"]
