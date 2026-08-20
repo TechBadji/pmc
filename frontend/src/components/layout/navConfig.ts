@@ -42,6 +42,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { labelKey: "nav.passwordRequests", path: "/password-requests", icon: "lockReset" },
   ],
   MANAGER: [
+    { labelKey: "nav.dashboard", path: "/", icon: "dashboard" },
     { labelKey: "nav.myTeam", path: "/teams", icon: "groups" },
     { labelKey: "nav.cohesion", path: "/cohesion", icon: "hub" },
     { labelKey: "nav.id3aMatrix", path: "/id3a-matrix", icon: "scatterPlot" },

@@ -156,7 +156,11 @@
     },
     "manager": {
       "member": "Team member",
-      "altitude": "Altitude"
+      "altitude": "Altitude",
+      "title": "Department dashboard",
+      "headcount": "Team headcount",
+      "avgPerformance": "Average performance",
+      "toSupport": "People needing support"
     }
   },
   "companies": {

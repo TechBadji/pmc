@@ -156,7 +156,11 @@
     },
     "manager": {
       "member": "Collaborateur",
-      "altitude": "Altitude"
+      "altitude": "Altitude",
+      "title": "Tableau de bord du département",
+      "headcount": "Effectif de l'équipe",
+      "avgPerformance": "Performance moyenne",
+      "toSupport": "Collaborateurs à accompagner"
     }
   },
   "companies": {

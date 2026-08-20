@@ -22,6 +22,7 @@ import type { Department, Evaluation, Paginated, UserRecord } from "@/api/types"
 import LeadershipOverview from "@/components/LeadershipOverview";
 import StatCard from "@/components/StatCard";
 import { EXECUTIVE_BADGE_COLOR, performanceColors } from "@/theme";
+import { average, lastEvaluationByUser as lastByUserOf, ratingForAltitude } from "@/utils/performance";
 
 interface DeptRow {
   department: Department;
@@ -29,10 +30,6 @@ interface DeptRow {
   avgSsi: number;
   avgAltitude: number;
   evaluatedCount: number;
-}
-
-function average(values: number[]): number {
-  return values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
 }
 
 export default function CompanyAdminDashboard() {
@@ -54,19 +51,7 @@ export default function CompanyAdminDashboard() {
   // Dernière évaluation connue par collaborateur (même logique que
   // EvaluationsPage/ID3AMatrixPage) — sert de base aux moyennes par
   // département, plutôt que la seule évaluation du manager comme proxy.
-  const lastEvaluationByUser = useMemo(() => {
-    const byUser = new Map<number, Evaluation[]>();
-    evaluations.forEach((e) => {
-      if (!byUser.has(e.user)) byUser.set(e.user, []);
-      byUser.get(e.user)!.push(e);
-    });
-    const last = new Map<number, Evaluation>();
-    byUser.forEach((list, userId) => {
-      const sorted = [...list].sort((a, b) => a.campaign_start_date.localeCompare(b.campaign_start_date));
-      last.set(userId, sorted[sorted.length - 1]);
-    });
-    return last;
-  }, [evaluations]);
+  const lastEvaluationByUser = useMemo(() => lastByUserOf(evaluations), [evaluations]);
 
   const rows: DeptRow[] = departments.map((department) => {
     const deptMembers = members.filter((m) => m.department === department.id);
@@ -85,14 +70,6 @@ export default function CompanyAdminDashboard() {
   const companyAvgAltitude = evaluations.length
     ? evaluations.reduce((s, e) => s + Number(e.altitude_percentage), 0) / evaluations.length
     : 0;
-
-  function ratingForAltitude(pct: number) {
-    if (pct < 50) return "VERY_LOW" as const;
-    if (pct < 75) return "LOW" as const;
-    if (pct < 90) return "AVERAGE" as const;
-    if (pct <= 100) return "GOOD" as const;
-    return "OUTSTANDING" as const;
-  }
 
   const directors = members.filter((m) => m.role === "MANAGER");
 

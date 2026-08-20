@@ -1,3 +1,7 @@
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
+import SupportOutlinedIcon from "@mui/icons-material/SupportOutlined";
+import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import {
   Avatar,
   Box,
@@ -12,12 +16,15 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Evaluation, Paginated, UserRecord } from "@/api/types";
+import StatCard from "@/components/StatCard";
 import { performanceColors } from "@/theme";
+import { average, lastEvaluationByUser, ratingForAltitude } from "@/utils/performance";
 
 function OrgChartCard({ user, root }: { user: UserRecord; root?: boolean }) {
   const size = root ? 64 : 48;
@@ -68,8 +75,13 @@ function OrgChart({ manager, reports }: { manager: UserRecord; reports: UserReco
   );
 }
 
+/** Tableau de bord du manager : même lecture que celui du CEO — organigramme,
+ * indicateurs de tête, puis tableau détaillé cliquable — mais à l'échelle du
+ * département. Les deux API appelées sont déjà restreintes côté serveur à
+ * l'équipe du manager, la page ne peut donc rien montrer d'autre. */
 export default function ManagerDashboard() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user } = useAppSelector((s) => s.auth);
   const [members, setMembers] = useState<UserRecord[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -85,14 +97,58 @@ export default function ManagerDashboard() {
 
   const managerRecord = members.find((m) => m.id === user?.id);
   const directReports = members.filter((m) => m.id !== user?.id);
+  const departmentName = managerRecord?.department_name ?? "";
+
+  // La liste contient toutes les campagnes : sans ce tri, une ancienne
+  // évaluation pouvait être présentée comme la situation actuelle.
+  const lastByUser = useMemo(() => lastEvaluationByUser(evaluations), [evaluations]);
+
+  const rows = members.map((m) => ({ member: m, evaluation: lastByUser.get(m.id) ?? null }));
+  // Les indicateurs portent sur l'équipe encadrée. La ligne du manager reste
+  // dans le tableau comme repère, mais sa propre note ne se mélange pas à la
+  // performance de son équipe : les quatre cartes décrivent la même population.
+  const evaluated = rows.filter((r) => r.evaluation !== null && r.member.id !== user?.id);
+  const avgAltitude = average(evaluated.map((r) => Number(r.evaluation!.altitude_percentage)));
+  // Sous 90 %, les objectifs ne sont pas atteints : c'est la file de travail du
+  // manager, celle qui appelle un plan d'action.
+  const toSupport = evaluated.filter((r) => Number(r.evaluation!.altitude_percentage) < 90).length;
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5" fontWeight={700}>
-        {t("nav.myTeam")}
-      </Typography>
+      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
+        <Typography variant="h5" fontWeight={700}>
+          {t("dashboard.manager.title")}
+        </Typography>
+        {departmentName && (
+          <Chip label={departmentName} color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
+        )}
+      </Stack>
 
       {managerRecord && <OrgChart manager={managerRecord} reports={directReports} />}
+
+      <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+        <StatCard label={t("dashboard.manager.headcount")} value={directReports.length} icon={<GroupsOutlinedIcon />} />
+        <StatCard
+          label={t("dashboard.companyAdmin.evaluatedMembers")}
+          value={evaluated.length}
+          color="#B23FA0"
+          icon={<InsightsOutlinedIcon />}
+          onClick={() => navigate("/evaluations")}
+        />
+        <StatCard
+          label={t("dashboard.manager.avgPerformance")}
+          value={evaluated.length ? `${avgAltitude.toFixed(0)}%` : "—"}
+          color="#0ca30c"
+          icon={<TrendingUpOutlinedIcon />}
+        />
+        <StatCard
+          label={t("dashboard.manager.toSupport")}
+          value={toSupport}
+          color={performanceColors.AVERAGE}
+          icon={<SupportOutlinedIcon />}
+          onClick={() => navigate("/action-plans")}
+        />
+      </Stack>
 
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
         <TableContainer>
@@ -108,25 +164,52 @@ export default function ManagerDashboard() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {members.map((m) => {
-                const evalRow = evaluations.find((e) => e.user === m.id);
+              {rows.map(({ member, evaluation }) => {
+                // Ouvrir la fiche d'évaluation depuis la ligne, comme le CEO
+                // ouvre le détail d'un département depuis la sienne.
+                const open = evaluation ? () => navigate(`/evaluations/${evaluation.id}`) : undefined;
+                const rating = evaluation
+                  ? ratingForAltitude(Number(evaluation.altitude_percentage))
+                  : null;
                 return (
-                  <TableRow key={m.id} hover>
-                    <TableCell>{m.full_name || m.email}</TableCell>
-                    <TableCell>{m.position}</TableCell>
-                    <TableCell align="right">{evalRow?.hsi ?? "—"}</TableCell>
-                    <TableCell align="right">{evalRow?.ssi ?? "—"}</TableCell>
+                  <TableRow
+                    key={member.id}
+                    hover
+                    sx={{ cursor: open ? "pointer" : "default" }}
+                    onClick={open}
+                    tabIndex={open ? 0 : -1}
+                    role={open ? "button" : undefined}
+                    aria-label={member.full_name || member.email}
+                    onKeyDown={(e) => {
+                      if (open && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        open();
+                      }
+                    }}
+                  >
+                    <TableCell sx={{ fontWeight: member.id === user?.id ? 700 : 400 }}>
+                      {member.full_name || member.email}
+                    </TableCell>
+                    <TableCell>{member.position}</TableCell>
+                    <TableCell align="right">{evaluation?.hsi ?? "—"}</TableCell>
+                    <TableCell align="right">{evaluation?.ssi ?? "—"}</TableCell>
                     <TableCell align="right">
-                      {evalRow ? `${evalRow.altitude_percentage}%` : "—"}
+                      {evaluation && rating ? (
+                        <span style={{ color: performanceColors[rating], fontWeight: 600 }}>
+                          {evaluation.altitude_percentage}%
+                        </span>
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
                     <TableCell>
-                      {evalRow ? (
+                      {evaluation ? (
                         <Chip
                           size="small"
-                          label={t(`common.performance.${evalRow.performance_rating}`)}
+                          label={t(`common.performance.${evaluation.performance_rating}`)}
                           sx={{
-                            bgcolor: performanceColors[evalRow.performance_rating] + "22",
-                            color: performanceColors[evalRow.performance_rating],
+                            bgcolor: performanceColors[evaluation.performance_rating] + "22",
+                            color: performanceColors[evaluation.performance_rating],
                             fontWeight: 600,
                           }}
                         />
