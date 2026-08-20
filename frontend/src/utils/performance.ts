@@ -11,6 +11,12 @@ export function ratingForAltitude(pct: number): PerformanceRating {
   return "OUTSTANDING";
 }
 
+/** Sous ce seuil d'Altitude, les objectifs ne sont pas atteints : c'est la
+ * définition de « collaborateur à accompagner », partagée par le tableau de
+ * bord du manager et la page Plans d'action — les deux doivent compter les
+ * mêmes personnes. */
+export const SUPPORT_THRESHOLD = 90;
+
 export function average(values: number[]): number {
   return values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
 }

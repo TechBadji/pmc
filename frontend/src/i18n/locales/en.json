@@ -399,7 +399,17 @@
       "TODO": "To do",
       "IN_PROGRESS": "In progress",
       "DONE": "Done"
-    }
+    },
+    "targetUser": "Team member concerned",
+    "targetUserHelper": "Pick a team first",
+    "wholeTeam": "Whole team",
+    "supportTitle": "People needing support ({{count}})",
+    "supportHint": "Latest Altitude below {{threshold}}%: objectives are not met.",
+    "supportNone": "Nobody below {{threshold}}% Altitude on their latest evaluation.",
+    "supportOpenPlans": "{{count}} action(s) in progress",
+    "supportNoPlan": "No open action",
+    "supportCreate": "Create an action",
+    "suggestedPriority": "Raise Altitude from {{current}}% to {{target}}%"
   },
   "managerDevPlan": {
     "title": "Development Plan for the Manager",

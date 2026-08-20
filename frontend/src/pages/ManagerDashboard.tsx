@@ -23,7 +23,7 @@ import type { Evaluation, Paginated, UserRecord } from "@/api/types";
 import LeadershipOverview from "@/components/LeadershipOverview";
 import StatCard from "@/components/StatCard";
 import { performanceColors } from "@/theme";
-import { average, lastEvaluationByUser, ratingForAltitude } from "@/utils/performance";
+import { SUPPORT_THRESHOLD, average, lastEvaluationByUser, ratingForAltitude } from "@/utils/performance";
 
 /** Tableau de bord du manager : même lecture que celui du CEO — organigramme,
  * indicateurs de tête, puis tableau détaillé cliquable — mais à l'échelle du
@@ -59,9 +59,11 @@ export default function ManagerDashboard() {
   // performance de son équipe : les quatre cartes décrivent la même population.
   const evaluated = rows.filter((r) => r.evaluation !== null && r.member.id !== user?.id);
   const avgAltitude = average(evaluated.map((r) => Number(r.evaluation!.altitude_percentage)));
-  // Sous 90 %, les objectifs ne sont pas atteints : c'est la file de travail du
-  // manager, celle qui appelle un plan d'action.
-  const toSupport = evaluated.filter((r) => Number(r.evaluation!.altitude_percentage) < 90).length;
+  // Même seuil que la liste "à accompagner" de la page Plans d'action, vers
+  // laquelle mène la carte : les deux doivent compter les mêmes personnes.
+  const toSupport = evaluated.filter(
+    (r) => Number(r.evaluation!.altitude_percentage) < SUPPORT_THRESHOLD
+  ).length;
 
   return (
     <Stack spacing={3}>
@@ -103,7 +105,7 @@ export default function ManagerDashboard() {
           value={toSupport}
           color={performanceColors.AVERAGE}
           icon={<SupportOutlinedIcon />}
-          onClick={() => navigate("/action-plans")}
+          onClick={() => navigate("/action-plans?focus=support")}
         />
       </Stack>
 

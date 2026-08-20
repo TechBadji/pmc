@@ -399,7 +399,17 @@
       "TODO": "À faire",
       "IN_PROGRESS": "En cours",
       "DONE": "Terminé"
-    }
+    },
+    "targetUser": "Collaborateur concerné",
+    "targetUserHelper": "Choisissez d'abord une équipe",
+    "wholeTeam": "Toute l'équipe",
+    "supportTitle": "Collaborateurs à accompagner ({{count}})",
+    "supportHint": "Dernière Altitude connue sous {{threshold}} % : les objectifs ne sont pas atteints.",
+    "supportNone": "Aucun collaborateur sous {{threshold}} % d'Altitude sur sa dernière évaluation.",
+    "supportOpenPlans": "{{count}} action(s) en cours",
+    "supportNoPlan": "Aucune action ouverte",
+    "supportCreate": "Créer une action",
+    "suggestedPriority": "Remonter l'Altitude de {{current}} % à {{target}} %"
   },
   "managerDevPlan": {
     "title": "Plan de Développement pour le Manager",
