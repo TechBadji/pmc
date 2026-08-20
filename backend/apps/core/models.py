@@ -224,6 +224,20 @@ class Department(models.Model):
         blank=True,
         related_name="managed_departments",
     )
+    # Une direction est composée de services : le service est un département à
+    # part entière (son chef en est le manager, ses membres y sont rattachés),
+    # relié à sa direction par ce champ. Nul pour une direction. La profondeur
+    # s'arrête volontairement à un niveau — un service ne peut pas contenir de
+    # sous-service — pour interdire les cycles et les portées imprévisibles.
+    parent = models.ForeignKey(
+        "self",
+        verbose_name="Direction de rattachement",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="services",
+        help_text="Renseigné pour un service : la direction dont il dépend. Vide pour une direction.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -234,6 +248,10 @@ class Department(models.Model):
 
     def __str__(self):
         return f"{self.code} — {self.name} ({self.company.name})"
+
+    @property
+    def is_service(self) -> bool:
+        return self.parent_id is not None
 
 
 class PasswordResetRequest(models.Model):

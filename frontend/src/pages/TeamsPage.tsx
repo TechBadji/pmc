@@ -48,6 +48,8 @@ export default function TeamsPage() {
   const [memberDialog, setMemberDialog] = useState<Department | null>(null);
   const [deptName, setDeptName] = useState("");
   const [deptCode, setDeptCode] = useState("");
+  // Rattachement : vide = nouvelle direction, renseigné = service de cette direction.
+  const [deptParent, setDeptParent] = useState<number | "">("");
   const [memberForm, setMemberForm] = useState({
     email: "",
     password: "",
@@ -94,10 +96,15 @@ export default function TeamsPage() {
   }, [evaluations, user]);
 
   async function handleCreateDepartment() {
-    await apiClient.post("/departments/", { name: deptName, code: deptCode });
+    await apiClient.post("/departments/", {
+      name: deptName,
+      code: deptCode,
+      parent: deptParent === "" ? null : deptParent,
+    });
     setDeptDialog(false);
     setDeptName("");
     setDeptCode("");
+    setDeptParent("");
     load();
   }
 
@@ -115,6 +122,18 @@ export default function TeamsPage() {
   }
 
   const canCreateDepartment = user?.role === "COMPANY_ADMIN";
+  const directions = useMemo(() => departments.filter((d) => d.parent === null), [departments]);
+  /** Directions dans l'ordre, chacune immédiatement suivie de ses services :
+   * la hiérarchie se lit dans la liste elle-même, sans imbriquer un accordéon
+   * dans un autre — un service reste une équipe à part entière. */
+  const orderedDepartments = useMemo(() => {
+    const services = departments.filter((d) => d.parent !== null);
+    const orphans = services.filter((s) => !directions.some((d) => d.id === s.parent));
+    return [
+      ...directions.flatMap((d) => [d, ...services.filter((s) => s.parent === d.id)]),
+      ...orphans,
+    ];
+  }, [departments, directions]);
   // Comptes de l'entreprise détachés de toute équipe (le CEO lui-même n'a pas
   // de département : on ne garde que les rôles affectables à une équipe).
   const unassignedMembers = useMemo(
@@ -202,8 +221,9 @@ export default function TeamsPage() {
         </Alert>
       )}
 
-      {departments.map((dept) => {
+      {orderedDepartments.map((dept) => {
         const teamMembers = members.filter((m) => m.department === dept.id);
+        const services = departments.filter((d) => d.parent === dept.id);
         return (
           // Côté manager, l'API ne renvoie que son propre département :
           // "Mon équipe" s'ouvre donc directement sur la liste des membres, au
@@ -213,12 +233,33 @@ export default function TeamsPage() {
             key={dept.id}
             elevation={0}
             defaultExpanded={user?.role === "MANAGER" || departments.length === 1}
-            sx={{ border: "1px solid", borderColor: "divider" }}
+            // Un service est décalé sous sa direction et porte une bordure de
+            // couleur : sa dépendance se voit sans avoir à lire son libellé.
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              ...(dept.parent !== null && { ml: { xs: 0, sm: 4 }, borderLeft: "3px solid", borderLeftColor: "primary.main" }),
+            }}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Stack direction="row" spacing={2} alignItems="center" sx={{ width: "100%" }}>
+              <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap sx={{ width: "100%" }}>
                 <Typography fontWeight={600}>{dept.name}</Typography>
-                <Chip size="small" label={`${t("common.manager")}: ${dept.manager_name ?? "—"}`} />
+                <Chip
+                  size="small"
+                  color={dept.parent === null ? "default" : "primary"}
+                  variant={dept.parent === null ? "filled" : "outlined"}
+                  label={
+                    dept.parent === null
+                      ? `${t("common.manager")}: ${dept.manager_name ?? "—"}`
+                      : `${t("departments.serviceHead")}: ${dept.manager_name ?? "—"}`
+                  }
+                />
+                {dept.parent !== null && dept.parent_name && (
+                  <Chip size="small" variant="outlined" label={t("departments.partOf", { name: dept.parent_name })} />
+                )}
+                {services.length > 0 && (
+                  <Chip size="small" color="primary" label={t("departments.serviceCount", { count: services.length })} />
+                )}
                 <Chip size="small" label={t("teams.memberCount", { count: dept.member_count })} variant="outlined" />
               </Stack>
             </AccordionSummary>
@@ -428,6 +469,23 @@ export default function TeamsPage() {
               helperText={t("departments.codeHelper")}
               fullWidth
             />
+            {/* Une direction se crée sans rattachement ; choisir une direction
+              * ici crée un service à l'intérieur de celle-ci. */}
+            <TextField
+              select
+              label={t("departments.parent")}
+              value={deptParent}
+              onChange={(e) => setDeptParent(e.target.value === "" ? "" : Number(e.target.value))}
+              helperText={t("departments.parentHelper")}
+              fullWidth
+            >
+              <MenuItem value="">{t("departments.noParent")}</MenuItem>
+              {directions.map((d) => (
+                <MenuItem key={d.id} value={d.id}>
+                  {d.name}
+                </MenuItem>
+              ))}
+            </TextField>
           </Stack>
         </DialogContent>
         <DialogActions>

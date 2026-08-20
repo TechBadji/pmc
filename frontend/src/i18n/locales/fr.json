@@ -213,7 +213,13 @@
     "departmentName": "Nom du département",
     "codeLabel": "Code (3-4 lettres)",
     "createError": "Erreur de création.",
-    "deleteError": "Suppression impossible."
+    "deleteError": "Suppression impossible.",
+    "parent": "Rattaché à une direction",
+    "parentHelper": "Laisser vide pour créer une direction ; choisir une direction pour créer un service.",
+    "noParent": "Aucune — c'est une direction",
+    "serviceHead": "Chef de service",
+    "partOf": "Service de {{name}}",
+    "serviceCount": "{{count}} service(s)"
   },
   "bulkUpload": {
     "title": "Chargement en masse d'utilisateurs",

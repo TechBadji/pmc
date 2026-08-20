@@ -4,6 +4,8 @@ from rest_framework import serializers
 from apps.core.validators import require_same_company
 from apps.skills.models import SkillItem
 
+from apps.core.scoping import manages_user
+
 from .models import Evaluation, EvaluationCampaign, EvaluationSkillScore, SkillNote
 
 
@@ -122,7 +124,7 @@ class EvaluationWriteSerializer(serializers.ModelSerializer):
             )
         if actor.role == actor.Role.MANAGER and target_user and target_user.id != actor.id:
             is_own_team_member = (
-                target_user.department_id and target_user.department.manager_id == actor.id
+                manages_user(actor, target_user)
             )
             if not is_own_team_member:
                 raise serializers.ValidationError(

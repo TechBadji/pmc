@@ -20,6 +20,8 @@ from .permissions import (
     IsSuperAdmin,
     IsSuperAdminOrCompanyAdminOrManager,
 )
+from apps.core.scoping import managed_department_ids, manages_user
+
 from .serializers import (
     AuditLogSerializer,
     ChangePasswordSerializer,
@@ -308,8 +310,9 @@ class DepartmentViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         qs = super().get_queryset()
         user = self.request.user
         if user.role == User.Role.MANAGER:
-            # Un manager ne voit que son/ses propre(s) département(s).
-            qs = qs.filter(manager=user)
+            # Un manager voit son/ses département(s) — et, s'il dirige une
+            # direction, les services qui en dépendent.
+            qs = qs.filter(id__in=managed_department_ids(user))
         return qs
 
     def perform_create(self, serializer):
@@ -354,8 +357,9 @@ class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         qs = super().get_queryset()
         user = self.request.user
         if user.role == User.Role.MANAGER:
-            # Un manager ne voit que les membres de son/ses équipe(s).
-            qs = qs.filter(department__manager=user) | qs.filter(id=user.id)
+            # Un encadrant ne voit que les membres qu'il encadre : sa ou ses
+            # équipes, services compris pour un directeur.
+            qs = qs.filter(department_id__in=managed_department_ids(user)) | qs.filter(id=user.id)
         return qs.distinct()
 
     @staticmethod
@@ -441,9 +445,7 @@ class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         if actor.role == User.Role.COMPANY_ADMIN:
             return target.role in (User.Role.MANAGER, User.Role.MEMBER)
         if actor.role == User.Role.MANAGER:
-            return target.role == User.Role.MEMBER and target.department_id and (
-                target.department.manager_id == actor.id
-            )
+            return target.role == User.Role.MEMBER and manages_user(actor, target)
         return False
 
     @action(detail=True, methods=["post"], url_path="reset-password")
@@ -553,7 +555,7 @@ class PerformanceProfileViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
         qs = super().get_queryset()
         user = self.request.user
         if user.role == user.Role.MANAGER:
-            qs = qs.filter(user__department__manager=user) | qs.filter(user=user)
+            qs = qs.filter(user__department_id__in=managed_department_ids(user)) | qs.filter(user=user)
         elif user.role == user.Role.MEMBER:
             qs = qs.filter(user=user)
         return qs.distinct()
@@ -569,9 +571,7 @@ class PerformanceProfileViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
 
         actor = request.user
         if actor.role == actor.Role.MANAGER and target_user.id != actor.id:
-            is_own_team_member = (
-                target_user.department_id and target_user.department.manager_id == actor.id
-            )
+            is_own_team_member = manages_user(actor, target_user)
             if not is_own_team_member:
                 raise ValidationError({"user": "Ce collaborateur ne fait pas partie de votre équipe."})
 

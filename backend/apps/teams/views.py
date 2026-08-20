@@ -1,6 +1,7 @@
 from rest_framework import permissions, viewsets
 
 from apps.core.permissions import CompanyScopedQuerySetMixin, IsCompanyAdminOrManager
+from apps.core.scoping import managed_department_ids
 
 from .models import TeamCohesionAnalysis, TeamRelationship
 from .serializers import TeamCohesionAnalysisSerializer, TeamRelationshipSerializer
@@ -23,7 +24,7 @@ class TeamCohesionAnalysisViewSet(CompanyScopedQuerySetMixin, viewsets.ModelView
         qs = super().get_queryset()
         user = self.request.user
         if user.role == user.Role.MANAGER:
-            qs = qs.filter(team__manager=user)
+            qs = qs.filter(team_id__in=managed_department_ids(user))
         return qs
 
 
@@ -38,5 +39,5 @@ class TeamRelationshipViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         qs = super().get_queryset()
         user = self.request.user
         if user.role == user.Role.MANAGER:
-            qs = qs.filter(team__manager=user)
+            qs = qs.filter(team_id__in=managed_department_ids(user))
         return qs

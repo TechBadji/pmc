@@ -8,6 +8,8 @@ référencer un objet appartenant à une AUTRE entreprise par un id deviné/énu
 """
 from rest_framework import serializers
 
+from apps.core.scoping import manages_department
+
 
 def require_same_company(actor, **named_objects):
     """Vérifie que chaque objet fourni (exposant `company_id`) appartient à
@@ -34,6 +36,6 @@ def require_manages_team(actor, team, target_user=None):
         return
     if target_user is not None and target_user.id == actor.id:
         return
-    if team is not None and team.manager_id == actor.id:
+    if team is not None and manages_department(actor, team):
         return
     raise serializers.ValidationError({"team": "Vous ne gérez pas cette équipe."})

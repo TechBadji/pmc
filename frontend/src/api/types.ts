@@ -76,6 +76,11 @@ export interface Department {
   manager_name: string | null;
   manager_position: string | null;
   member_count: number;
+  /** Direction de rattachement : renseigné pour un service, nul pour une
+   * direction. La hiérarchie s'arrête à ce niveau. */
+  parent: number | null;
+  parent_name: string | null;
+  service_count: number;
 }
 
 export interface UserRecord {

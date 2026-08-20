@@ -213,7 +213,13 @@
     "departmentName": "Department name",
     "codeLabel": "Code (3-4 letters)",
     "createError": "Error while creating.",
-    "deleteError": "Unable to delete."
+    "deleteError": "Unable to delete.",
+    "parent": "Reports to a division",
+    "parentHelper": "Leave empty to create a division; pick one to create a service inside it.",
+    "noParent": "None — this is a division",
+    "serviceHead": "Service head",
+    "partOf": "Service of {{name}}",
+    "serviceCount": "{{count}} service(s)"
   },
   "bulkUpload": {
     "title": "Bulk user upload",

@@ -12,6 +12,8 @@ from apps.core.permissions import (
 )
 from apps.core.validators import require_same_company
 
+from apps.core.scoping import managed_department_ids
+
 from .models import Evaluation, EvaluationCampaign, SkillNote
 from .serializers import (
     EvaluationCampaignSerializer,
@@ -136,7 +138,7 @@ class EvaluationViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             qs = qs.filter(user=user)
         elif user.role == user.Role.MANAGER:
             # Un manager ne voit que les évaluations de son équipe (+ les siennes).
-            qs = qs.filter(user__department__manager=user) | qs.filter(user=user)
+            qs = qs.filter(user__department_id__in=managed_department_ids(user)) | qs.filter(user=user)
         return qs.distinct()
 
 
@@ -163,7 +165,9 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         if user.role == user.Role.MEMBER:
             qs = qs.filter(evaluation__user=user)
         elif user.role == user.Role.MANAGER:
-            qs = qs.filter(evaluation__user__department__manager=user) | qs.filter(evaluation__user=user)
+            qs = qs.filter(
+                evaluation__user__department_id__in=managed_department_ids(user)
+            ) | qs.filter(evaluation__user=user)
         return qs.distinct()
 
     @action(detail=False, methods=["post"], url_path="bulk-save")

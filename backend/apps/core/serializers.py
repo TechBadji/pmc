@@ -126,12 +126,14 @@ class DepartmentSerializer(serializers.ModelSerializer):
         source="manager.get_full_name", read_only=True, default=None
     )
     member_count = serializers.IntegerField(source="members.count", read_only=True)
+    parent_name = serializers.CharField(source="parent.name", read_only=True, default=None)
+    service_count = serializers.IntegerField(source="services.count", read_only=True)
 
     class Meta:
         model = Department
         fields = [
             "id", "company", "name", "code", "manager", "manager_name",
-            "member_count", "created_at",
+            "member_count", "parent", "parent_name", "service_count", "created_at",
         ]
         # `company` est toujours injecté par DepartmentViewSet.perform_create
         # (jamais par le payload client, sauf pour le Super Admin qui le lit
@@ -141,6 +143,35 @@ class DepartmentSerializer(serializers.ModelSerializer):
 
     def validate_code(self, value):
         return value.strip().upper()
+
+    def validate(self, attrs):
+        """Garde-fous de la hiérarchie : la direction de rattachement doit
+        appartenir à la même entreprise, ne pas être le département lui-même,
+        et être une direction — la profondeur s'arrête à un niveau de services.
+        Un département qui porte déjà des services ne peut pas, à l'inverse,
+        devenir lui-même un service."""
+        parent = attrs.get("parent", getattr(self.instance, "parent", None))
+        if parent is None:
+            return attrs
+        company_id = getattr(self.instance, "company_id", None) or (
+            self.context["request"].user.company_id
+        )
+        if parent.company_id != company_id:
+            raise serializers.ValidationError({"parent": "Introuvable."})
+        if self.instance is not None:
+            if parent.id == self.instance.id:
+                raise serializers.ValidationError(
+                    {"parent": "Un département ne peut pas dépendre de lui-même."}
+                )
+            if self.instance.services.exists():
+                raise serializers.ValidationError(
+                    {"parent": "Ce département porte déjà des services : il ne peut pas en devenir un."}
+                )
+        if parent.parent_id is not None:
+            raise serializers.ValidationError(
+                {"parent": "Un service ne peut pas contenir de sous-service."}
+            )
+        return attrs
 
 
 class UserSerializer(serializers.ModelSerializer):
