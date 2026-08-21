@@ -77,6 +77,21 @@ const PERF_BANDS = [
 // directeurs de département (tout rôle autre que membre d'équipe).
 const DIRECTORS_ONLY = "__directors__";
 
+/** Nom du collaborateur suivi de sa fonction : deux homonymes se distinguent,
+ * et le rôle de chacun se lit sans quitter la liste. */
+function personLabel(p: { name: string; position?: string }) {
+  return (
+    <Stack direction="row" spacing={1} alignItems="baseline" sx={{ minWidth: 0 }}>
+      <Typography variant="body2">{p.name}</Typography>
+      {p.position && (
+        <Typography variant="caption" color="text.secondary" noWrap>
+          {p.position}
+        </Typography>
+      )}
+    </Stack>
+  );
+}
+
 const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
 
 const CHART_HEIGHT = 520;
@@ -677,6 +692,7 @@ function TalentTooltip({ active, payload }: any) {
 export default function TalentsDashboardPage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [departmentRecords, setDepartmentRecords] = useState<Department[]>([]);
   const [campaignId, setCampaignId] = useState<number | "">("");
@@ -828,22 +844,41 @@ export default function TalentsDashboardPage() {
   }, [evaluations, campaigns, campaignId, fromCampaignId, departmentScope, ratingFilter, personFilter, focusedPersonId]);
 
   const people = useMemo(() => {
-    const byId = new Map<number, string>();
-    evaluations.forEach((e) => byId.set(e.user, e.user_name));
-    return Array.from(byId.entries())
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const byId = new Map<number, { id: number; name: string; position: string }>();
+    evaluations.forEach((e) => byId.set(e.user, { id: e.user, name: e.user_name, position: e.user_position }));
+    return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [evaluations]);
+
+  /** Ordre hiérarchique de l'espace manager : le directeur, puis ses chefs de
+   * service s'il y en a, puis le reste par ordre alphabétique. Une liste
+   * plate — dans une direction, le département n'apporte aucun repère. */
+  const peopleRanked = useMemo(() => {
+    const directorIds = new Set(
+      departmentRecords.filter((d) => d.parent === null && d.manager !== null).map((d) => d.manager)
+    );
+    const headIds = new Set(
+      departmentRecords.filter((d) => d.parent !== null && d.manager !== null).map((d) => d.manager)
+    );
+    const rank = (id: number) => (directorIds.has(id) ? 0 : headIds.has(id) ? 1 : 2);
+    return [...people].sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
+  }, [people, departmentRecords]);
 
   /** Mêmes personnes, regroupées par département et triées par nom : dans une
    * liste de plusieurs dizaines de noms, le département sert de repère. */
   const peopleByDepartment = useMemo(() => {
-    const byId = new Map<number, { id: number; name: string; department: string }>();
-    evaluations.forEach((e) => byId.set(e.user, { id: e.user, name: e.user_name, department: e.user_department ?? "" }));
-    const groups = new Map<string, { id: number; name: string }[]>();
+    const byId = new Map<number, { id: number; name: string; position: string; department: string }>();
+    evaluations.forEach((e) =>
+      byId.set(e.user, {
+        id: e.user,
+        name: e.user_name,
+        position: e.user_position,
+        department: e.user_department ?? "",
+      })
+    );
+    const groups = new Map<string, { id: number; name: string; position: string }[]>();
     Array.from(byId.values()).forEach((p) => {
       if (!groups.has(p.department)) groups.set(p.department, []);
-      groups.get(p.department)!.push({ id: p.id, name: p.name });
+      groups.get(p.department)!.push({ id: p.id, name: p.name, position: p.position });
     });
     return Array.from(groups.entries())
       .map(([department, members]) => ({ department, members: members.sort((a, b) => a.name.localeCompare(b.name)) }))
@@ -1077,7 +1112,7 @@ export default function TalentsDashboardPage() {
           * chercher dans la liste de tous les collaborateurs. Le département
           * rappelé sous son nom lève l'homonymie. Les deux sélecteurs de
           * personne se remettent à zéro l'un l'autre. */}
-        {directors.length > 0 && (
+        {isCompanyAdmin && directors.length > 0 && (
           <TextField
             select
             size="small"
@@ -1116,6 +1151,18 @@ export default function TalentsDashboardPage() {
           size="small"
           label={t("talents.person")}
           value={personFilter}
+          SelectProps={{
+            // Sans cela, la case fermée reprendrait les deux lignes de
+            // l'option et grandirait par rapport aux autres sélecteurs.
+            renderValue: (value: unknown) =>
+              value === "" || value === undefined
+                ? t("talents.allPeople")
+                : value === DIRECTORS_ONLY
+                  ? isCompanyAdmin
+                    ? t("talents.directorsOnly")
+                    : t("talents.serviceHeadsOnly")
+                  : people.find((p) => p.id === value)?.name ?? "",
+          }}
           onChange={(e) => {
             setPersonFilter(
               e.target.value === "" ? "" : e.target.value === DIRECTORS_ONLY ? DIRECTORS_ONLY : Number(e.target.value)
@@ -1126,18 +1173,24 @@ export default function TalentsDashboardPage() {
         >
           <MenuItem value="">{t("talents.allPeople")}</MenuItem>
           <MenuItem value={DIRECTORS_ONLY} sx={{ fontWeight: 700 }}>
-            {t("talents.directorsOnly")}
+            {isCompanyAdmin ? t("talents.directorsOnly") : t("talents.serviceHeadsOnly")}
           </MenuItem>
-          {peopleByDepartment.flatMap((group) => [
-            <ListSubheader key={`h-${group.department}`} sx={{ fontWeight: 700, lineHeight: 2 }}>
-              {group.department || t("id3aMatrix.noDepartment")}
-            </ListSubheader>,
-            ...group.members.map((m) => (
-              <MenuItem key={m.id} value={m.id} sx={{ pl: 3 }}>
-                {m.name}
-              </MenuItem>
-            )),
-          ])}
+          {isCompanyAdmin
+            ? peopleByDepartment.flatMap((group) => [
+                <ListSubheader key={`h-${group.department}`} sx={{ fontWeight: 700, lineHeight: 2 }}>
+                  {group.department || t("id3aMatrix.noDepartment")}
+                </ListSubheader>,
+                ...group.members.map((m) => (
+                  <MenuItem key={m.id} value={m.id} sx={{ pl: 3 }}>
+                    {personLabel(m)}
+                  </MenuItem>
+                )),
+              ])
+            : peopleRanked.map((m) => (
+                <MenuItem key={m.id} value={m.id}>
+                  {personLabel(m)}
+                </MenuItem>
+              ))}
         </TextField>
       </Stack>
 

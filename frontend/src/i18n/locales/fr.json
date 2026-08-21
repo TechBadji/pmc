@@ -658,6 +658,7 @@
     "person": "Tous les collaborateurs",
     "allPeople": "Tous les collaborateurs",
     "directorsOnly": "Tous les directeurs",
+    "serviceHeadsOnly": "Tous les responsables de services",
     "trailHint": "Tracé de progression de {{name}} : chaque point est une période, la couleur donne le palier atteint.",
     "errorComparePeriod": "La période de comparaison doit être antérieure à « {{period}} ». Choisissez une période plus ancienne, ou revenez à « Choisir une période » pour ne rien comparer.",
     "errorCompareNoPerson": "Le tracé de progression s'affiche pour un collaborateur à la fois : choisissez-en un dans la liste « Tous les collaborateurs ».",
