@@ -3,6 +3,7 @@ import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import {
   Alert,
   Avatar,
+  CircularProgress,
   Box,
   Button,
   GlobalStyles,
@@ -441,15 +442,40 @@ export default function PersonPerformanceId({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
+  // Un appel en échec laissait la fiche muette : cadre et intitulés dessinés,
+  // toutes les cases vides, sans rien qui distingue une panne d'une personne
+  // réellement sans données. On retient donc ce qui a échoué, pour le dire.
+  const [loadErrors, setLoadErrors] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const selectedUser = people.find((p) => p.id === selectedId) ?? null;
   const managerOf = selectedUser?.manager != null ? people.find((p) => p.id === selectedUser.manager) : null;
+
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (selectedId === "") return;
     setSaved(false);
     setDirty(false);
-    apiClient.get<Paginated<Evaluation>>("/evaluations/", { params: { user: selectedId, page_size: 500 } }).then((r) => setEvaluations(r.data.results));
+    setLoadErrors([]);
+    setLoading(true);
+    let pending = 2;
+    const done = () => {
+      pending -= 1;
+      if (pending === 0) setLoading(false);
+    };
+    function failed(what: string, err: any) {
+      const status = err?.response?.status;
+      setLoadErrors((prev) => [...prev, status ? `${what} (HTTP ${status})` : `${what} (réseau)`]);
+    }
+    apiClient
+      .get<Paginated<Evaluation>>("/evaluations/", { params: { user: selectedId, page_size: 500 } })
+      .then((r) => setEvaluations(r.data.results))
+      .catch((err) => {
+        setEvaluations([]);
+        failed(t("performanceId.loadEvaluations"), err);
+      })
+      .finally(done);
     apiClient.get<Paginated<PerformanceProfile>>("/performance-profiles/", { params: { user: selectedId } }).then((r) => {
       const p = r.data.results[0];
       setForm(
@@ -484,8 +510,13 @@ export default function PersonPerformanceId({
             }
           : emptyForm()
       );
-    });
-  }, [selectedId]);
+    })
+      .catch((err) => {
+        setForm(emptyForm());
+        failed(t("performanceId.loadProfile"), err);
+      })
+      .finally(done);
+  }, [selectedId, reloadKey, t]);
 
   useEffect(() => {
     if (selectedUser?.department) {
@@ -672,7 +703,29 @@ export default function PersonPerformanceId({
             {t("performanceId.print")}
           </Button>
         )}
+        {loading && <CircularProgress size={18} />}
       </Stack>
+
+      {/* Une fiche vide a désormais toujours une explication : appel en échec,
+        * ou personne sans évaluation. */}
+      {loadErrors.length > 0 && (
+        <Alert
+          severity="error"
+          className="pmc-no-print"
+          action={
+            <Button color="inherit" size="small" onClick={() => setReloadKey((k) => k + 1)}>
+              {t("common.retry")}
+            </Button>
+          }
+        >
+          {t("performanceId.loadFailed", { details: loadErrors.join(" · ") })}
+        </Alert>
+      )}
+      {selectedUser && !loading && loadErrors.length === 0 && evaluations.length === 0 && (
+        <Alert severity="info" className="pmc-no-print">
+          {t("performanceId.noEvaluation", { name: selectedUser.full_name || selectedUser.email })}
+        </Alert>
+      )}
 
       {selectedUser && (
         <Paper elevation={0} sx={{ p: 1.5, border: SHEET_BORDER, bgcolor: "#fbfbfa" }}>

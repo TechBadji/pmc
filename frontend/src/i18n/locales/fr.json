@@ -496,7 +496,11 @@
     "saved": "Enregistré.",
     "print": "Imprimer la fiche",
     "unsavedChanges": "Modifications non enregistrées",
-    "since": "Depuis"
+    "since": "Depuis",
+    "loadFailed": "Impossible de charger la fiche de cette personne : {{details}}. Réessayez ; si le message persiste, communiquez-le tel quel.",
+    "loadEvaluations": "évaluations",
+    "loadProfile": "informations de la fiche",
+    "noEvaluation": "{{name}} n'a encore aucune évaluation : les indices HSO/SSIO, le graphe de performance et la matrice ID-3A restent vides tant qu'une évaluation n'a pas été enregistrée."
   },
   "id3aMatrix": {
     "title": "Matrice ID-3A — Aptitudes × Attitudes",

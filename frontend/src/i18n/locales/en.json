@@ -496,7 +496,11 @@
     "saved": "Saved.",
     "print": "Print the sheet",
     "unsavedChanges": "Unsaved changes",
-    "since": "Since"
+    "since": "Since",
+    "loadFailed": "Could not load this person's sheet: {{details}}. Try again; if the message persists, report it as is.",
+    "loadEvaluations": "evaluations",
+    "loadProfile": "sheet information",
+    "noEvaluation": "{{name}} has no evaluation yet: HSO/SSIO, the performance chart and the ID-3A matrix stay empty until one is recorded."
   },
   "id3aMatrix": {
     "title": "ID-3A Matrix — Aptitudes × Attitudes",
