@@ -1,4 +1,3 @@
-import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import WorkspacesOutlinedIcon from "@mui/icons-material/WorkspacesOutlined";
@@ -189,16 +188,11 @@ export default function ManagerDashboard() {
         </Paper>
       )}
 
-      {/* Six indicateurs, du contexte (entreprise, département) à l'action
+      {/* Cinq indicateurs, du contexte (département) à l'action
         * (collaborateurs à accompagner). Les noms d'entreprise et de
         * département sont du texte : police réduite pour tenir sur une ligne
         * sans rétrécir les valeurs chiffrées des autres cartes. */}
       <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-        <StatCard
-          label={t("common.company")}
-          value={<TextValue>{user?.company_name ?? "—"}</TextValue>}
-          icon={<BusinessOutlinedIcon />}
-        />
         <StatCard
           label={t("common.department")}
           value={<TextValue>{departmentName || "—"}</TextValue>}
