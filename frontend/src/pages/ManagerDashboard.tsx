@@ -1,10 +1,8 @@
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
-import WorkspacesOutlinedIcon from "@mui/icons-material/WorkspacesOutlined";
 import SupportOutlinedIcon from "@mui/icons-material/SupportOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import {
-  Box,
   Chip,
   Paper,
   Stack,
@@ -26,14 +24,6 @@ import LeadershipOverview from "@/components/LeadershipOverview";
 import StatCard from "@/components/StatCard";
 import { EXECUTIVE_BADGE_COLOR, performanceColors } from "@/theme";
 import { SUPPORT_THRESHOLD, average, lastEvaluationByUser, ratingForAltitude } from "@/utils/performance";
-
-function TextValue({ children }: { children: React.ReactNode }) {
-  return (
-    <Box component="span" sx={{ display: "block", fontSize: 16, fontWeight: 700, lineHeight: 1.3 }}>
-      {children}
-    </Box>
-  );
-}
 
 /** Tableau de bord du manager : même lecture que celui du CEO — organigramme,
  * indicateurs de tête, puis tableau détaillé cliquable — mais à l'échelle du
@@ -105,7 +95,7 @@ export default function ManagerDashboard() {
   return (
     <Stack spacing={3}>
       <Typography variant="h5" fontWeight={700}>
-        {t("dashboard.manager.title")}
+        {departmentName ? `${t("dashboard.manager.title")} — ${departmentName}` : t("dashboard.manager.title")}
       </Typography>
 
       {managerRecord && (
@@ -188,17 +178,9 @@ export default function ManagerDashboard() {
         </Paper>
       )}
 
-      {/* Cinq indicateurs, du contexte (département) à l'action
-        * (collaborateurs à accompagner). Les noms d'entreprise et de
-        * département sont du texte : police réduite pour tenir sur une ligne
-        * sans rétrécir les valeurs chiffrées des autres cartes. */}
+      {/* Quatre indicateurs chiffrés, du constat (évalués, performance) à
+        * l'action (revue, accompagnement). */}
       <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-        <StatCard
-          label={t("common.department")}
-          value={<TextValue>{departmentName || "—"}</TextValue>}
-          color="#7a5ea8"
-          icon={<WorkspacesOutlinedIcon />}
-        />
         <StatCard
           label={t("dashboard.companyAdmin.evaluatedMembers")}
           value={evaluated.length}
