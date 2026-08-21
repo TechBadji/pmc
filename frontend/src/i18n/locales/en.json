@@ -159,11 +159,12 @@
       "altitude": "Altitude",
       "title": "Department dashboard",
       "headcount": "Team headcount",
-      "avgPerformance": "Average performance",
+      "avgPerformance": "Average performance (Altitude)",
       "toSupport": "People needing support",
       "overviewTitle": "Team org chart and background",
       "servicesTitle": "Services in this division ({{count}})",
-      "service": "Service"
+      "service": "Service",
+      "reviewTeam": "Performance review (team members)"
     }
   },
   "companies": {
@@ -567,6 +568,7 @@
   },
   "directorsReview": {
     "title": "Individual performance review of directors {{range}}",
+    "titleTeam": "Individual performance review — team members {{range}}",
     "achievement": "Achievement",
     "period": "Period",
     "allPeriods": "All years ({{range}})"

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { apiClient } from "@/api/client";
+import { useAppSelector } from "@/app/hooks";
 import type { Evaluation, Paginated, PerformanceRating, UserRecord } from "@/api/types";
 import { EXECUTIVE_BADGE_COLOR, performanceColors } from "@/theme";
 
@@ -102,13 +103,22 @@ function DirectorPerformanceCard({ director, points }: { director: UserRecord; p
 
 export default function DirectorsPerformanceReviewPage() {
   const { t } = useTranslation();
+  const { user } = useAppSelector((s) => s.auth);
+  // La même revue à deux échelles : le CEO passe ses directeurs en revue, un
+  // directeur ses collaborateurs. Filtrer sur le rôle Manager côté directeur
+  // ne lui montrerait que lui-même.
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
   const [directors, setDirectors] = useState<UserRecord[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
 
   useEffect(() => {
-    apiClient.get<Paginated<UserRecord>>("/users/", { params: { role: "MANAGER", page_size: 500 } }).then((r) => setDirectors(r.data.results));
+    apiClient
+      .get<Paginated<UserRecord>>("/users/", {
+        params: { page_size: 500, ...(isCompanyAdmin ? { role: "MANAGER" } : {}) },
+      })
+      .then((r) => setDirectors(r.data.results.filter((u) => isCompanyAdmin || u.id !== user?.id)));
     apiClient.get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } }).then((r) => setEvaluations(r.data.results));
-  }, []);
+  }, [isCompanyAdmin, user?.id]);
 
   const pointsByDirector = useMemo(() => {
     const map = new Map<number, YearPoint[]>();
@@ -169,7 +179,7 @@ export default function DirectorsPerformanceReviewPage() {
   return (
     <Stack spacing={3}>
       <Typography variant="h5" fontWeight={800} textAlign="center" sx={{ color: "primary.main" }}>
-        {t("directorsReview.title", { range: titleRange }).toUpperCase()}
+        {t(isCompanyAdmin ? "directorsReview.title" : "directorsReview.titleTeam", { range: titleRange }).toUpperCase()}
       </Typography>
 
       {periodOptions.length > 1 && (

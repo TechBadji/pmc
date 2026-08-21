@@ -1,8 +1,11 @@
-import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
+import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
+import WorkspacesOutlinedIcon from "@mui/icons-material/WorkspacesOutlined";
 import SupportOutlinedIcon from "@mui/icons-material/SupportOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import {
+  Box,
   Chip,
   Paper,
   Stack,
@@ -22,8 +25,16 @@ import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, Paginated, UserRecord } from "@/api/types";
 import LeadershipOverview from "@/components/LeadershipOverview";
 import StatCard from "@/components/StatCard";
-import { performanceColors } from "@/theme";
+import { EXECUTIVE_BADGE_COLOR, performanceColors } from "@/theme";
 import { SUPPORT_THRESHOLD, average, lastEvaluationByUser, ratingForAltitude } from "@/utils/performance";
+
+function TextValue({ children }: { children: React.ReactNode }) {
+  return (
+    <Box component="span" sx={{ display: "block", fontSize: 16, fontWeight: 700, lineHeight: 1.3 }}>
+      {children}
+    </Box>
+  );
+}
 
 /** Tableau de bord du manager : même lecture que celui du CEO — organigramme,
  * indicateurs de tête, puis tableau détaillé cliquable — mais à l'échelle du
@@ -94,14 +105,9 @@ export default function ManagerDashboard() {
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
-        <Typography variant="h5" fontWeight={700}>
-          {t("dashboard.manager.title")}
-        </Typography>
-        {departmentName && (
-          <Chip label={departmentName} color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
-        )}
-      </Stack>
+      <Typography variant="h5" fontWeight={700}>
+        {t("dashboard.manager.title")}
+      </Typography>
 
       {managerRecord && (
         <LeadershipOverview
@@ -183,14 +189,35 @@ export default function ManagerDashboard() {
         </Paper>
       )}
 
+      {/* Six indicateurs, du contexte (entreprise, département) à l'action
+        * (collaborateurs à accompagner). Les noms d'entreprise et de
+        * département sont du texte : police réduite pour tenir sur une ligne
+        * sans rétrécir les valeurs chiffrées des autres cartes. */}
       <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-        <StatCard label={t("dashboard.manager.headcount")} value={directReports.length} icon={<GroupsOutlinedIcon />} />
+        <StatCard
+          label={t("common.company")}
+          value={<TextValue>{user?.company_name ?? "—"}</TextValue>}
+          icon={<BusinessOutlinedIcon />}
+        />
+        <StatCard
+          label={t("common.department")}
+          value={<TextValue>{departmentName || "—"}</TextValue>}
+          color="#7a5ea8"
+          icon={<WorkspacesOutlinedIcon />}
+        />
         <StatCard
           label={t("dashboard.companyAdmin.evaluatedMembers")}
           value={evaluated.length}
           color="#B23FA0"
           icon={<InsightsOutlinedIcon />}
           onClick={() => navigate("/evaluations")}
+        />
+        <StatCard
+          label={t("dashboard.manager.reviewTeam")}
+          value={directReports.length}
+          color={EXECUTIVE_BADGE_COLOR}
+          icon={<RateReviewOutlinedIcon />}
+          onClick={() => navigate("/directors-performance-review")}
         />
         <StatCard
           label={t("dashboard.manager.avgPerformance")}

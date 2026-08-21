@@ -159,11 +159,12 @@
       "altitude": "Altitude",
       "title": "Tableau de bord du département",
       "headcount": "Effectif de l'équipe",
-      "avgPerformance": "Performance moyenne",
+      "avgPerformance": "Performance moyenne (Altitude)",
       "toSupport": "Collaborateurs à accompagner",
       "overviewTitle": "Organigramme et parcours de l'équipe",
       "servicesTitle": "Services de la direction ({{count}})",
-      "service": "Service"
+      "service": "Service",
+      "reviewTeam": "Revue des performances (Collaborateurs)"
     }
   },
   "companies": {
@@ -567,6 +568,7 @@
   },
   "directorsReview": {
     "title": "Revue des performances individuelles des directeurs {{range}}",
+    "titleTeam": "Revue des performances individuelles des collaborateurs {{range}}",
     "achievement": "Réalisation",
     "period": "Période",
     "allPeriods": "Toutes les années ({{range}})"
