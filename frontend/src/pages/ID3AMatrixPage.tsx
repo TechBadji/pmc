@@ -14,7 +14,6 @@ import {
   Divider,
   IconButton,
   ListItemText,
-  ListSubheader,
   MenuItem,
   Paper,
   Stack,
@@ -48,6 +47,7 @@ import {
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, Paginated, PerformanceRating } from "@/api/types";
+import PersonOption, { rankPeopleByHierarchy } from "@/components/PersonOption";
 import { departmentScopeNames, orderedDepartmentOptions } from "@/utils/departments";
 import StatCard from "@/components/StatCard";
 import { CHART_NEUTRALS, performanceColors } from "@/theme";
@@ -728,14 +728,19 @@ export default function ID3AMatrixPage() {
    * dans une entreprise de plusieurs dizaines de personnes, une liste à plat
    * oblige à connaître le nom exact avant de chercher. */
   const peopleByDepartment = useMemo(() => {
-    const byId = new Map<number, { id: number; name: string; department: string }>();
+    const byId = new Map<number, { id: number; name: string; position: string; department: string }>();
     allEvaluations.forEach((e) =>
-      byId.set(e.user, { id: e.user, name: e.user_name, department: e.user_department ?? "" })
+      byId.set(e.user, {
+        id: e.user,
+        name: e.user_name,
+        position: e.user_position,
+        department: e.user_department ?? "",
+      })
     );
-    const groups = new Map<string, { id: number; name: string }[]>();
+    const groups = new Map<string, { id: number; name: string; position: string }[]>();
     Array.from(byId.values()).forEach((p) => {
       if (!groups.has(p.department)) groups.set(p.department, []);
-      groups.get(p.department)!.push({ id: p.id, name: p.name });
+      groups.get(p.department)!.push({ id: p.id, name: p.name, position: p.position });
     });
     return Array.from(groups.entries())
       .map(([department, members]) => ({
@@ -746,6 +751,13 @@ export default function ID3AMatrixPage() {
   }, [allEvaluations]);
 
   /** Directions puis leurs services. Sans service, la liste est celle d'avant. */
+  /** Collaborateurs par rang plutôt que par département : le département
+   * n'apporte pas de repère ici, l'organigramme si. */
+  const peopleRanked = useMemo(
+    () => rankPeopleByHierarchy(peopleByDepartment.flatMap((g) => g.members), departmentRecords),
+    [peopleByDepartment, departmentRecords]
+  );
+
   const departmentOptions = useMemo(
     () => orderedDepartmentOptions(departmentRecords, peopleByDepartment.map((g) => g.department).filter(Boolean)),
     [departmentRecords, peopleByDepartment]
@@ -1035,18 +1047,19 @@ export default function ID3AMatrixPage() {
           value={memberFilter}
           onChange={(e) => setMemberFilter(e.target.value === "" ? "" : Number(e.target.value))}
           sx={{ minWidth: 210 }}
+          SelectProps={{
+            renderValue: (value: unknown) =>
+              value === "" || value === undefined
+                ? t("id3aMatrix.allTeamMembers")
+                : peopleRanked.find((p) => p.id === value)?.name ?? "",
+          }}
         >
           <MenuItem value="">{t("id3aMatrix.allTeamMembers")}</MenuItem>
-          {peopleByDepartment.flatMap((group) => [
-            <ListSubheader key={`h-${group.department}`} sx={{ fontWeight: 700, lineHeight: 2 }}>
-              {group.department || t("id3aMatrix.noDepartment")}
-            </ListSubheader>,
-            ...group.members.map((m) => (
-              <MenuItem key={m.id} value={m.id} sx={{ pl: 3 }}>
-                {m.name}
-              </MenuItem>
-            )),
-          ])}
+          {peopleRanked.map((m) => (
+            <MenuItem key={m.id} value={m.id}>
+              <PersonOption person={m} />
+            </MenuItem>
+          ))}
         </TextField>
 
         <TextField

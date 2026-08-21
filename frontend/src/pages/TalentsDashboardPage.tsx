@@ -30,6 +30,7 @@ import {
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, Paginated, PerformanceRating } from "@/api/types";
+import PersonOption, { rankPeopleByHierarchy } from "@/components/PersonOption";
 import StatCard from "@/components/StatCard";
 import { departmentScopeNames, orderedDepartmentOptions } from "@/utils/departments";
 import { CHART_NEUTRALS, performanceColors } from "@/theme";
@@ -76,21 +77,6 @@ const PERF_BANDS = [
 // Valeur sentinelle du sélecteur de collaborateur : filtrer sur les seuls
 // directeurs de département (tout rôle autre que membre d'équipe).
 const DIRECTORS_ONLY = "__directors__";
-
-/** Nom du collaborateur suivi de sa fonction : deux homonymes se distinguent,
- * et le rôle de chacun se lit sans quitter la liste. */
-function personLabel(p: { name: string; position?: string }) {
-  return (
-    <Stack direction="row" spacing={1} alignItems="baseline" sx={{ minWidth: 0 }}>
-      <Typography variant="body2">{p.name}</Typography>
-      {p.position && (
-        <Typography variant="caption" color="text.secondary" noWrap>
-          {p.position}
-        </Typography>
-      )}
-    </Stack>
-  );
-}
 
 const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
 
@@ -852,16 +838,10 @@ export default function TalentsDashboardPage() {
   /** Ordre hiérarchique de l'espace manager : le directeur, puis ses chefs de
    * service s'il y en a, puis le reste par ordre alphabétique. Une liste
    * plate — dans une direction, le département n'apporte aucun repère. */
-  const peopleRanked = useMemo(() => {
-    const directorIds = new Set(
-      departmentRecords.filter((d) => d.parent === null && d.manager !== null).map((d) => d.manager)
-    );
-    const headIds = new Set(
-      departmentRecords.filter((d) => d.parent !== null && d.manager !== null).map((d) => d.manager)
-    );
-    const rank = (id: number) => (directorIds.has(id) ? 0 : headIds.has(id) ? 1 : 2);
-    return [...people].sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
-  }, [people, departmentRecords]);
+  const peopleRanked = useMemo(
+    () => rankPeopleByHierarchy(people, departmentRecords),
+    [people, departmentRecords]
+  );
 
   /** Mêmes personnes, regroupées par département et triées par nom : dans une
    * liste de plusieurs dizaines de noms, le département sert de repère. */
@@ -1182,13 +1162,13 @@ export default function TalentsDashboardPage() {
                 </ListSubheader>,
                 ...group.members.map((m) => (
                   <MenuItem key={m.id} value={m.id} sx={{ pl: 3 }}>
-                    {personLabel(m)}
+                    <PersonOption person={m} />
                   </MenuItem>
                 )),
               ])
             : peopleRanked.map((m) => (
                 <MenuItem key={m.id} value={m.id}>
-                  {personLabel(m)}
+                  <PersonOption person={m} />
                 </MenuItem>
               ))}
         </TextField>
