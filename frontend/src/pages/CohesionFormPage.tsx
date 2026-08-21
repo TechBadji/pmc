@@ -59,6 +59,9 @@ const OCE_COLOR = "#eb6834";
 const TIERS = [1, 2, 3, 4, 5];
 /** Bleu clair du bandeau titre et de la colonne "Critères de cohésion" — les
  * entêtes de paliers, eux, gardent la couleur du barème 1-5. */
+// Cases à fond clair imposé : leur texte doit l'être aussi, sinon il hérite du
+// thème et vire au blanc sur fond crème en mode sombre.
+const LIGHT_CELL_TEXT = "#20242e";
 const HEADER_BLUE = "#dbe4ee";
 const HEADER_TEXT = "#243747";
 
@@ -460,10 +463,10 @@ export default function CohesionFormPage() {
                     <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
                       {t("cohesion.totalCol")}
                     </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12, bgcolor: "#fff4c2" }}>
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12, bgcolor: "#fff4c2", color: LIGHT_CELL_TEXT }}>
                       {t("cohesion.oceCol")}
                     </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12, bgcolor: "#dbeeff" }}>
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12, bgcolor: "#dbeeff", color: LIGHT_CELL_TEXT }}>
                       {t("cohesion.achievedCol")}
                     </TableCell>
                   </TableRow>
@@ -493,7 +496,7 @@ export default function CohesionFormPage() {
                           </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell align="center" sx={{ bgcolor: "#fffaf0" }}>
+                      <TableCell align="center" sx={{ bgcolor: "#fffaf0", color: LIGHT_CELL_TEXT }}>
                         <TextField
                           select
                           size="small"
@@ -502,7 +505,7 @@ export default function CohesionFormPage() {
                             updateRow(i, { objective_score: e.target.value === "" ? null : Number(e.target.value) })
                           }
                           disabled={readOnly}
-                          sx={{ minWidth: 64, bgcolor: "#fff4c2", borderRadius: 1 }}
+                          sx={{ minWidth: 64, bgcolor: "#fff4c2", borderRadius: 1, color: LIGHT_CELL_TEXT, "& .MuiInputBase-root, & .MuiSelect-select": { color: LIGHT_CELL_TEXT } }}
                         >
                           <MenuItem value="">{t("cohesion.unset")}</MenuItem>
                           {TIERS.map((tier) => (
@@ -512,7 +515,7 @@ export default function CohesionFormPage() {
                           ))}
                         </TextField>
                       </TableCell>
-                      <TableCell align="center" sx={{ bgcolor: "#f5faff" }}>
+                      <TableCell align="center" sx={{ bgcolor: "#f5faff", color: LIGHT_CELL_TEXT }}>
                         <TextField
                           select
                           size="small"
@@ -521,7 +524,7 @@ export default function CohesionFormPage() {
                             updateRow(i, { achieved_score: e.target.value === "" ? null : Number(e.target.value) })
                           }
                           disabled={readOnly}
-                          sx={{ minWidth: 64, bgcolor: "#dbeeff", borderRadius: 1 }}
+                          sx={{ minWidth: 64, bgcolor: "#dbeeff", borderRadius: 1, color: LIGHT_CELL_TEXT, "& .MuiInputBase-root, & .MuiSelect-select": { color: LIGHT_CELL_TEXT } }}
                         >
                           <MenuItem value="">{t("cohesion.unset")}</MenuItem>
                           {TIERS.map((tier) => (

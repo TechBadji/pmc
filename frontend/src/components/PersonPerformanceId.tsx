@@ -66,6 +66,12 @@ const SELECT_VALUE_SX = (color: string) => ({
   textOverflow: "ellipsis",
 });
 const SHEET_BORDER = "1px solid #b6bdc9";
+// La fiche reproduit une feuille de tableur : ses fonds sont clairs en toutes
+// circonstances. Sa couleur de texte doit l'être aussi — héritée du thème,
+// elle passait en quasi-blanc sur fond clair en mode sombre, rendant la fiche
+// illisible alors que toutes les données étaient bien chargées.
+const SHEET_TEXT = "#20242e";
+const SHEET_PLACEHOLDER = "#8b8f99";
 const FIELD_BG = "#eaeef6"; // bleu très pâle des cases de saisie
 const READONLY_BG = "#f5f6f8"; // gris neutre : donnée calculée, non modifiable
 const LABEL_BG = "#f3f2ef"; // gris des intitulés de ligne
@@ -728,7 +734,21 @@ export default function PersonPerformanceId({
       )}
 
       {selectedUser && (
-        <Paper elevation={0} sx={{ p: 1.5, border: SHEET_BORDER, bgcolor: "#fbfbfa" }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 1.5,
+            border: SHEET_BORDER,
+            bgcolor: "#fbfbfa",
+            color: SHEET_TEXT,
+            // Les champs MUI tirent leur couleur de la palette : on la fixe ici
+            // pour toute la fiche, y compris les valeurs saisies, les textes
+            // d'aide et le chevron des listes déroulantes.
+            "& .MuiInputBase-root, & .MuiInputBase-input, & .MuiSelect-select": { color: "inherit" },
+            "& .MuiInputBase-input::placeholder": { color: SHEET_PLACEHOLDER, opacity: 1 },
+            "& .MuiSelect-icon": { color: SHEET_PLACEHOLDER },
+          }}
+        >
           {/* Bandeau titre, comme l'entête de la feuille de référence. */}
           <Box sx={{ bgcolor: CREAM, border: SHEET_BORDER, py: 0.5, mb: 0.75, textAlign: "center" }}>
             <Typography sx={{ fontSize: 17, fontWeight: 800, color: "primary.main" }}>
