@@ -30,8 +30,9 @@ export interface VisioPerson {
 }
 
 // --- Repère du dessin ------------------------------------------------------
+// Largeur de référence du plateau ; la hauteur, elle, n'est pas fixée : le
+// cadre se calcule à partir du contenu (voir `createBounds`).
 const W = 2400;
-const H = 1450;
 
 const PERF_MIN = 50;
 const PERF_MAX = 120;
@@ -42,11 +43,9 @@ const EVO_MAX = 20;
 const PERF_ORIGIN = 90;
 
 // Trapèze du sol : le fond est plus étroit et plus haut que le devant.
-// Le plateau garde sa profondeur agrandie (915 px). Le cadre, lui, est assez
-// haut pour que les silhouettes du fond — qui se dressent au-dessus du
-// plateau — tiennent en entier à leur taille de perspective : c'est le cadre
-// qui s'adapte aux portraits, jamais l'inverse. `fitScale` ne reste qu'un
-// garde-fou, sans effet tant que ce dégagement est respecté.
+// Le plateau garde sa profondeur agrandie (915 px). Les silhouettes gardent
+// toujours l'échelle de la perspective : c'est le cadre qui s'ouvre pour les
+// contenir, jamais elles qui rapetissent.
 const FLOOR_FRONT_Y = 1345;
 const FLOOR_BACK_Y = 430;
 const FLOOR_FRONT_HALF = 1170; // demi-largeur au premier plan
@@ -82,19 +81,44 @@ function project(perf: number, evo: number) {
 }
 
 /** Place occupée par les deux étiquettes au-dessus d'une silhouette. */
-const LABEL_SPACE = 56;
-/** Marge minimale conservée en haut du cadre. */
-const TOP_MARGIN = 12;
+const LABEL_SPACE = 60;
+/** Place du prénom sous les pieds. */
+const NAME_SPACE = 40;
+/** Air laissé autour du dessin une fois le cadre ajusté au contenu. */
+const PADDING = 48;
 
 /**
- * Taille réellement applicable à une silhouette : celle de la perspective,
- * réduite si la place manque au-dessus d'elle. Sans cela, une personne au fond
- * du plateau dépasserait du cadre — et remonter la grille sous le sous-titre
- * revient justement à réduire cette réserve.
+ * Cadre calculé à partir de ce qui est réellement dessiné.
+ *
+ * Fixer le cadre à l'avance oblige à choisir entre deux défauts : trop haut, il
+ * laisse une bande vide au-dessus du plateau ; trop court, il rogne les
+ * silhouettes du fond. Ici l'inverse : on accumule les extrémités de chaque
+ * élément — plateau, axes, étiquettes, portraits — et le cadre s'y ajuste.
+ * Aucune silhouette ne peut donc sortir, quelle que soit la donnée, et il n'y a
+ * jamais de vide inutile.
  */
-function fitScale(baseScale: number, groundY: number, photoHeight: number) {
-  const available = groundY - TOP_MARGIN - LABEL_SPACE;
-  return Math.max(0.42, Math.min(baseScale, available / photoHeight));
+function createBounds() {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  return {
+    add(x1: number, y1: number, x2 = x1, y2 = y1) {
+      minX = Math.min(minX, x1, x2);
+      maxX = Math.max(maxX, x1, x2);
+      minY = Math.min(minY, y1, y2);
+      maxY = Math.max(maxY, y1, y2);
+    },
+    viewBox() {
+      const x = minX - PADDING;
+      const y = minY - PADDING;
+      return {
+        value: `${x} ${y} ${maxX - minX + PADDING * 2} ${maxY - minY + PADDING * 2}`,
+        width: maxX - minX + PADDING * 2,
+        height: maxY - minY + PADDING * 2,
+      };
+    },
+  };
 }
 
 const PERF_TICKS = Array.from({ length: (PERF_MAX - PERF_MIN) / 5 + 1 }, (_, i) => PERF_MIN + i * 5);
@@ -146,6 +170,23 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const positioned = spread(people);
   const PHOTO_H = 420;
 
+  // Tout ce qui sera dessiné passe par la mesure : le cadre en découle.
+  const bounds = createBounds();
+  bounds.add(floorBackLeft.x - 60, floorBackLeft.y - 40, floorFrontRight.x + 80, floorFrontRight.y + 60);
+  bounds.add(floorFrontLeft.x - 80, floorFrontLeft.y + 60, floorBackRight.x + 60, floorBackRight.y - 40);
+  bounds.add(axisTop.x - 90, axisTop.y - 60); // flèche et étiquette verticale
+  bounds.add(origin.x, FLOOR_FRONT_Y + 40); // pied de l'axe vertical
+  bounds.add(project(PERF_MAX, 0).x + 130, project(PERF_MAX, 0).y + 40); // post-it horizontal
+  positioned.forEach(({ person, x, y, scale }) => {
+    const height = PHOTO_H * scale;
+    const width = height * 0.34;
+    bounds.add(x - width / 2, y - height - LABEL_SPACE, x + width / 2, y + NAME_SPACE);
+    // Un prénom peut être plus large que la silhouette elle-même.
+    bounds.add(x - 90, y + NAME_SPACE, x + 90, y + NAME_SPACE);
+    void person;
+  });
+  const frame = bounds.viewBox();
+
   return (
     <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider", bgcolor: "#fff" }}>
       <Stack spacing={0.25} sx={{ mb: 1 }}>
@@ -158,7 +199,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
       </Stack>
 
       <svg
-        viewBox={`0 0 ${W} ${H}`}
+        viewBox={frame.value}
         width="100%"
         style={{ display: "block", height: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}
         role="img"
@@ -277,7 +318,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
             se met à jour en changeant les données, sans retoucher le dessin. */}
         <g id="people">
           {positioned.map(({ person, x, y, scale }) => {
-            const height = PHOTO_H * fitScale(scale, y, PHOTO_H);
+            const height = PHOTO_H * scale;
             const width = height * 0.34;
             const progression = person.progression;
             const progressionColor = progression === null ? "#7a7a7a" : progression >= 0 ? "#2e7d32" : "#c62828";
