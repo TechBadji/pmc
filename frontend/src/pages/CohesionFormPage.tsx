@@ -2,6 +2,8 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import {
   Alert,
+  ToggleButton,
+  ToggleButtonGroup,
   Box,
   Button,
   Chip,
@@ -36,8 +38,19 @@ import {
   YAxis,
 } from "recharts";
 import { apiClient } from "@/api/client";
+import { BoardPeriodBar } from "@/components/teamBoard/BoardPieces";
+import TeamRelationshipBoard from "@/components/teamBoard/TeamRelationshipBoard";
+import TeamStrengthsBoard from "@/components/teamBoard/TeamStrengthsBoard";
+import { today as boardToday, useTeamBoard } from "@/features/teamBoard";
 import { useAppSelector } from "@/app/hooks";
-import type { ActionPlan, Department, Paginated, TeamCohesionAnalysis } from "@/api/types";
+import type {
+  ActionPlan,
+  Department,
+  Paginated,
+  TeamCohesionAnalysis,
+  TeamRelationship,
+  UserRecord,
+} from "@/api/types";
 import { cohesionColor } from "@/theme";
 
 type PlanStatus = ActionPlan["status"];
@@ -142,6 +155,12 @@ export default function CohesionFormPage() {
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [teamId, setTeamId] = useState<number | "">("");
+  // Trois lectures d'une même équipe : sa cohésion mesurée, ses forces et
+  // faiblesses, sa dynamique relationnelle.
+  const [view, setView] = useState<"cohesion" | "strengths" | "relationship">("cohesion");
+  const [teamMembers, setTeamMembers] = useState<UserRecord[]>([]);
+  const [teamRelationships, setTeamRelationships] = useState<TeamRelationship[]>([]);
+  const board = useTeamBoard(teamId);
   const [rows, setRows] = useState<CriterionRow[]>(
     criteria.map((c) => ({ criterion: c, score: 3, objective_score: null, achieved_score: null }))
   );
@@ -214,7 +233,24 @@ export default function CohesionFormPage() {
     );
   }
 
+  useEffect(() => {
+    if (teamId === "") {
+      setTeamMembers([]);
+      setTeamRelationships([]);
+      return;
+    }
+    apiClient
+      .get<Paginated<UserRecord>>("/users/", { params: { department: teamId, page_size: 200 } })
+      .then((r) => setTeamMembers(r.data.results));
+    apiClient
+      .get<Paginated<TeamRelationship>>("/team-relationships/", { params: { team: teamId, page_size: 500 } })
+      .then((r) => setTeamRelationships(r.data.results));
+  }, [teamId]);
+
   const readOnly = viewedAnalysisId !== "";
+  // Une planche archivée se relit ; seule la saisie courante s'édite, et
+  // seulement par le CEO ou l'encadrant de l'équipe.
+  const canEditBoard = (isCompanyAdmin || user?.role === "MANAGER") && board.draft !== null;
 
   const ownTeamExists = !isCompanyAdmin || departments.some((d) => d.manager === user!.id);
   const selectedDept = departments.find((d) => d.id === teamId);
@@ -342,7 +378,83 @@ export default function CohesionFormPage() {
         </Typography>
       </Paper>
 
-      {isCompanyAdmin && !ownTeamExists && (
+      <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap className="pmc-no-print">
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={view}
+          onChange={(_, v) => v && setView(v)}
+          sx={{
+            height: 40,
+            "& .MuiToggleButton-root": { px: 2, fontWeight: 700, borderColor: "primary.main", color: "primary.main" },
+            "& .Mui-selected": { bgcolor: "primary.main", color: "#fff !important", "&:hover": { bgcolor: "primary.dark" } },
+          }}
+        >
+          <ToggleButton value="cohesion">{t("cohesion.viewSheet")}</ToggleButton>
+          <ToggleButton value="strengths">{t("cohesion.viewStrengths")}</ToggleButton>
+          <ToggleButton value="relationship">{t("cohesion.viewRelationship")}</ToggleButton>
+        </ToggleButtonGroup>
+
+        {/* L'équipe se choisit dans toutes les vues : la fiche de cohésion a
+          * son propre sélecteur plus bas, les planches utilisent celui-ci. */}
+        {view !== "cohesion" && (
+          <TextField
+            select
+            size="small"
+            label={t("cohesion.team")}
+            value={teamId}
+            onChange={(e) => setTeamId(Number(e.target.value))}
+            sx={{ minWidth: 260 }}
+          >
+            {departments.map((d) => (
+              <MenuItem key={d.id} value={d.id}>
+                {d.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
+      </Stack>
+
+      {view !== "cohesion" && (
+        <Stack spacing={2}>
+          <BoardPeriodBar
+            dates={board.dates}
+            currentId={board.currentId}
+            onSelect={board.select}
+            onNew={() => board.startNew(boardToday())}
+            onSave={board.save}
+            dirty={board.dirty}
+            saving={board.saving}
+            canEdit={canEditBoard}
+          />
+          {board.error === "duplicate" && <Alert severity="warning">{t("teamBoard.duplicateDate")}</Alert>}
+          {board.error === "save" && <Alert severity="error">{t("teamBoard.saveFailed")}</Alert>}
+          {board.draft && board.draft.id !== 0 && !canEditBoard && (
+            <Alert severity="info">{t("teamBoard.readOnlyHint")}</Alert>
+          )}
+          {view === "strengths" ? (
+            <TeamStrengthsBoard
+              board={board.draft}
+              patch={board.patch}
+              readOnly={!canEditBoard}
+              teamName={departments.find((d) => d.id === teamId)?.name ?? ""}
+              teamSize={teamMembers.length}
+            />
+          ) : (
+            <TeamRelationshipBoard
+              board={board.draft}
+              patch={board.patch}
+              readOnly={!canEditBoard}
+              members={teamMembers}
+              relationships={teamRelationships}
+              teamName={departments.find((d) => d.id === teamId)?.name ?? ""}
+              iceScore={history.length ? Number(history[0].ice_score) : null}
+            />
+          )}
+        </Stack>
+      )}
+
+      {view === "cohesion" && isCompanyAdmin && !ownTeamExists && (
         <Alert
           severity="info"
           action={
@@ -355,6 +467,8 @@ export default function CohesionFormPage() {
         </Alert>
       )}
 
+      {view === "cohesion" && (
+      <>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={3}>
         <Stack spacing={1.5}>
           <Stack direction="row" spacing={1} alignItems="center">
@@ -778,6 +892,8 @@ export default function CohesionFormPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      </>
+      )}
     </Stack>
   );
 }

@@ -330,7 +330,16 @@
       "There is a high level of trust among employees themselves"
     ],
     "newEntry": "New entry",
-    "viewingArchive": "You are viewing the {{date}} measurement. The sheet is read-only; switch to a new entry to record the current period."
+    "viewingArchive": "You are viewing the {{date}} measurement. The sheet is read-only; switch to a new entry to record the current period.",
+    "relationQuality": {
+      "CORRECT": "Correct relationships",
+      "EXCELLENT": "Excellent relationships",
+      "DIFFICULT": "Difficult relationships",
+      "TOXIC": "Toxic relationships"
+    },
+    "viewSheet": "Cohesion sheet",
+    "viewStrengths": "Strengths & weaknesses",
+    "viewRelationship": "Relationship dynamic"
   },
   "evaluations": {
     "title": "ID-3A Evaluations",
@@ -678,5 +687,46 @@
     "sinceBaseline": "since {{period}}",
     "legendRange": "Performance = Altitude for the displayed period. Progression = relative change between {{from}} and {{to}}, measured across the whole range rather than period to period.",
     "errorNoBaseline": "Nobody has an evaluation for “{{period}}”: progression cannot be measured from it. Pick another period."
+  },
+  "teamBoard": {
+    "period": "Entry of",
+    "newEntry": "New entry",
+    "noEntry": "No entry",
+    "noMember": "No member in this team.",
+    "strengthsTitle": "ID-PMC — Team strengths & weaknesses",
+    "relationshipTitle": "ID-PMC — Relationship dynamic",
+    "teamIdTitle": "ID-PMC — Team performance ID",
+    "people": "People",
+    "business": "Business",
+    "strengths": "Strengths",
+    "weaknesses": "Weaknesses",
+    "catalysts": "Catalysts",
+    "nourishers": "Nourishers",
+    "inhibitors": "Inhibitors",
+    "toxins": "Toxins",
+    "visionMissions": "Team vision / missions",
+    "values": "Values",
+    "counterValues": "Counter-values",
+    "achievements": "Key achievements",
+    "failures": "Failures / lessons",
+    "objectives": "Objectives",
+    "prioritiesCohesion": "Priorities — team cohesion",
+    "prioritiesBusiness": "Priorities — business",
+    "targetsVsActuals": "Achievements vs objectives",
+    "target": "Objective",
+    "actual": "Achieved",
+    "year": "Year",
+    "teamCohesion": "Team cohesion",
+    "spider": "Relationship web",
+    "team": "Team",
+    "id3aTeam": "ID-3A team",
+    "idTpd": "ID-TPD",
+    "tpr": "TPR",
+    "ice": "ICE",
+    "noEntryHint": "No entry for this team yet: create one to start.",
+    "duplicateDate": "An entry already exists at that date for this team. Pick another one.",
+    "saveFailed": "Could not save. Try again.",
+    "readOnlyHint": "Archived entry: create a new one to edit.",
+    "addYear": "Add a year"
   }
 }

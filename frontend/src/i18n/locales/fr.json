@@ -330,7 +330,16 @@
       "Il y a un niveau élevé de confiance entre les employés eux-mêmes"
     ],
     "newEntry": "Nouvelle saisie",
-    "viewingArchive": "Vous consultez la mesure du {{date}}. La fiche est en lecture seule ; passez en nouvelle saisie pour enregistrer une mesure de la période en cours."
+    "viewingArchive": "Vous consultez la mesure du {{date}}. La fiche est en lecture seule ; passez en nouvelle saisie pour enregistrer une mesure de la période en cours.",
+    "relationQuality": {
+      "CORRECT": "Relations correctes",
+      "EXCELLENT": "Relations excellentes",
+      "DIFFICULT": "Relations difficiles",
+      "TOXIC": "Relations toxiques"
+    },
+    "viewSheet": "Fiche de cohésion",
+    "viewStrengths": "Forces & faiblesses",
+    "viewRelationship": "Dynamique relationnelle"
   },
   "evaluations": {
     "title": "Évaluations ID-3A",
@@ -678,5 +687,46 @@
     "sinceBaseline": "depuis {{period}}",
     "legendRange": "Performance = Altitude de la période affichée. Progression = marge relative entre {{from}} et {{to}}, calculée sur toute la plage et non d'une période à l'autre.",
     "errorNoBaseline": "Personne n'a d'évaluation sur « {{period}} » : la progression ne peut pas être calculée depuis cette période. Choisissez-en une autre."
+  },
+  "teamBoard": {
+    "period": "Saisie du",
+    "newEntry": "Nouvelle saisie",
+    "noEntry": "Aucune saisie",
+    "noMember": "Aucun membre dans cette équipe.",
+    "strengthsTitle": "ID-PMC — Forces & faiblesses de l'équipe",
+    "relationshipTitle": "ID-PMC — Dynamique relationnelle",
+    "teamIdTitle": "ID-PMC — Carte d'identité de la performance équipe",
+    "people": "People",
+    "business": "Business",
+    "strengths": "Forces",
+    "weaknesses": "Faiblesses",
+    "catalysts": "Catalyseurs",
+    "nourishers": "Nourrisseurs",
+    "inhibitors": "Inhibiteurs",
+    "toxins": "Toxines",
+    "visionMissions": "Vision / Missions de l'équipe",
+    "values": "Valeurs",
+    "counterValues": "Contre-valeurs",
+    "achievements": "Grandes réalisations",
+    "failures": "Échecs / leçons",
+    "objectives": "Objectifs",
+    "prioritiesCohesion": "Priorités — cohésion d'équipe",
+    "prioritiesBusiness": "Priorités — business",
+    "targetsVsActuals": "Réalisations vs objectifs",
+    "target": "Objectif",
+    "actual": "Réalisé",
+    "year": "Année",
+    "teamCohesion": "Cohésion de l'équipe",
+    "spider": "Toile relationnelle",
+    "team": "Équipe",
+    "id3aTeam": "ID-3A équipe",
+    "idTpd": "ID-TPD",
+    "tpr": "TPR",
+    "ice": "ICE",
+    "noEntryHint": "Aucune saisie pour cette équipe : créez-en une pour commencer.",
+    "duplicateDate": "Une saisie existe déjà à cette date pour cette équipe. Choisissez-en une autre.",
+    "saveFailed": "Enregistrement impossible. Réessayez.",
+    "readOnlyHint": "Saisie archivée : créez une nouvelle entrée pour modifier.",
+    "addYear": "Ajouter une année"
   }
 }

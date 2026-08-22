@@ -343,3 +343,30 @@ export interface Paginated<T> {
   previous: string | null;
   results: T[];
 }
+
+/** Carte d'identité d'une équipe à une date donnée — support des planches
+ * Forces & faiblesses, Relationship Dynamic et Team Performance ID. */
+export interface TeamBoard {
+  id: number;
+  team: number;
+  team_name: string;
+  date: string;
+  people_strengths: string[];
+  people_weaknesses: string[];
+  business_strengths: string[];
+  business_weaknesses: string[];
+  catalysts: string[];
+  nourishers: string[];
+  inhibitors: string[];
+  toxins: string[];
+  vision_missions: string;
+  values: string[];
+  counter_values: string[];
+  achievements: string[];
+  failures_lessons: string[];
+  objectives: string[];
+  priorities_cohesion: string[];
+  priorities_business: string[];
+  /** Une ligne par année : objectif visé et résultat obtenu. */
+  targets_vs_actuals: { year: string; target: number | null; actual: number | null }[];
+}
