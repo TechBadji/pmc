@@ -339,7 +339,8 @@
     },
     "viewSheet": "Cohesion sheet",
     "viewStrengths": "Strengths & weaknesses",
-    "viewRelationship": "Relationship dynamic"
+    "viewRelationship": "Relationship dynamic",
+    "noHistory": "No cohesion measurement recorded for this team."
   },
   "evaluations": {
     "title": "ID-3A Evaluations",
@@ -517,7 +518,10 @@
     "loadFailed": "Could not load this person's sheet: {{details}}. Try again; if the message persists, report it as is.",
     "loadEvaluations": "evaluations",
     "loadProfile": "sheet information",
-    "noEvaluation": "{{name}} has no evaluation yet: HSO/SSIO, the performance chart and the ID-3A matrix stay empty until one is recorded."
+    "noEvaluation": "{{name}} has no evaluation yet: HSO/SSIO, the performance chart and the ID-3A matrix stay empty until one is recorded.",
+    "viewManager": "Manager Performance ID",
+    "viewMember": "Member Performance ID",
+    "viewTeam": "Team Performance ID"
   },
   "id3aMatrix": {
     "title": "ID-3A Matrix — Aptitudes × Attitudes",

@@ -339,7 +339,8 @@
     },
     "viewSheet": "Fiche de cohésion",
     "viewStrengths": "Forces & faiblesses",
-    "viewRelationship": "Dynamique relationnelle"
+    "viewRelationship": "Dynamique relationnelle",
+    "noHistory": "Aucune mesure de cohésion enregistrée pour cette équipe."
   },
   "evaluations": {
     "title": "Évaluations ID-3A",
@@ -517,7 +518,10 @@
     "loadFailed": "Impossible de charger la fiche de cette personne : {{details}}. Réessayez ; si le message persiste, communiquez-le tel quel.",
     "loadEvaluations": "évaluations",
     "loadProfile": "informations de la fiche",
-    "noEvaluation": "{{name}} n'a encore aucune évaluation : les indices HSO/SSIO, le graphe de performance et la matrice ID-3A restent vides tant qu'une évaluation n'a pas été enregistrée."
+    "noEvaluation": "{{name}} n'a encore aucune évaluation : les indices HSO/SSIO, le graphe de performance et la matrice ID-3A restent vides tant qu'une évaluation n'a pas été enregistrée.",
+    "viewManager": "Manager Performance ID",
+    "viewMember": "Member Performance ID",
+    "viewTeam": "Team Performance ID"
   },
   "id3aMatrix": {
     "title": "Matrice ID-3A — Aptitudes × Attitudes",
