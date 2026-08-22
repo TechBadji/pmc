@@ -3,8 +3,8 @@ from rest_framework import permissions, viewsets
 from apps.core.permissions import CompanyScopedQuerySetMixin, IsCompanyAdminOrManager
 from apps.core.scoping import managed_department_ids
 
-from .models import TeamCohesionAnalysis, TeamRelationship
-from .serializers import TeamCohesionAnalysisSerializer, TeamRelationshipSerializer
+from .models import TeamBoard, TeamCohesionAnalysis, TeamRelationship
+from .serializers import TeamBoardSerializer, TeamCohesionAnalysisSerializer, TeamRelationshipSerializer
 
 
 class TeamCohesionAnalysisViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
@@ -34,6 +34,29 @@ class TeamRelationshipViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
     company_lookup = "team__company_id"
     filterset_fields = ["team"]
     permission_classes = [IsCompanyAdminOrManager]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.role == user.Role.MANAGER:
+            qs = qs.filter(team_id__in=managed_department_ids(user))
+        return qs
+
+
+class TeamBoardViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
+    """Cartes d'équipe (forces/faiblesses, dynamique relationnelle, Team
+    Performance ID). Mêmes règles que la cohésion : lecture pour l'entreprise,
+    écriture pour le CEO et l'encadrant de l'équipe."""
+
+    queryset = TeamBoard.objects.select_related("team")
+    serializer_class = TeamBoardSerializer
+    company_lookup = "team__company_id"
+    filterset_fields = ["team"]
+
+    def get_permissions(self):
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            return [IsCompanyAdminOrManager()]
+        return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
         qs = super().get_queryset()

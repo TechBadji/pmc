@@ -419,7 +419,14 @@
     "supportOpenPlans": "{{count}} action(s) in progress",
     "supportNoPlan": "No open action",
     "supportCreate": "Create an action",
-    "suggestedPriority": "Raise Altitude from {{current}}% to {{target}}%"
+    "suggestedPriority": "Raise Altitude from {{current}}% to {{target}}%",
+    "viewIndividualManagers": "Managers' individual plan",
+    "viewIndividualMembers": "Members' individual plan",
+    "viewTeam": "Team action plan",
+    "viewTeamDepartment": "Department action plan",
+    "selectMember": "Choose a team member",
+    "pickManagerFirst": "Pick a manager to open their individual development plan.",
+    "pickMemberFirst": "Pick a team member to open their individual development plan."
   },
   "managerDevPlan": {
     "title": "Development Plan for the Manager",

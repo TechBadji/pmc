@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.core.validators import require_manages_team, require_same_company
 
-from .models import CohesionCriterionScore, TeamCohesionAnalysis, TeamRelationship
+from .models import CohesionCriterionScore, TeamBoard, TeamCohesionAnalysis, TeamRelationship
 
 
 class CohesionCriterionScoreSerializer(serializers.ModelSerializer):
@@ -101,5 +101,33 @@ class TeamRelationshipSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {field_name: "Ce membre n'appartient pas à cette équipe."}
                 )
+        require_manages_team(actor, team)
+        return attrs
+
+
+class TeamBoardSerializer(serializers.ModelSerializer):
+    """Carte d'équipe : listes libres, toutes facultatives. Une saisie
+    incomplète est la règle — on remplit ce que l'atelier a produit."""
+
+    team_name = serializers.CharField(source="team.name", read_only=True)
+
+    class Meta:
+        model = TeamBoard
+        fields = [
+            "id", "team", "team_name", "date",
+            "people_strengths", "people_weaknesses",
+            "business_strengths", "business_weaknesses",
+            "catalysts", "nourishers", "inhibitors", "toxins",
+            "vision_missions", "values", "counter_values",
+            "achievements", "failures_lessons", "objectives",
+            "priorities_cohesion", "priorities_business", "targets_vs_actuals",
+            "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        actor = self.context["request"].user
+        team = attrs.get("team", getattr(self.instance, "team", None))
+        require_same_company(actor, team=team)
         require_manages_team(actor, team)
         return attrs

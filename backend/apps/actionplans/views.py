@@ -7,8 +7,8 @@ from apps.core.models import User
 from apps.core.permissions import (
     CompanyScopedQuerySetMixin,
     IsCompanyAdminOrManager,
-    IsSuperAdminOrCompanyAdmin,
 )
+from apps.core.scoping import manages_user
 from apps.core.validators import require_same_company
 
 from .models import ActionPlan
@@ -31,7 +31,12 @@ class ActionPlanViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         # Manager, qui n'a aucune légitimité à réécrire la fiche d'un autre
         # manager), contrairement aux plans d'action d'équipe classiques.
         if self.action == "bulk_save_dev_plan":
-            return [IsSuperAdminOrCompanyAdmin()]
+            # Un manager y accède désormais pour les personnes qu'il encadre :
+            # la grille sert autant au plan individuel d'un directeur, tenu par
+            # le CEO, qu'à celui d'un collaborateur, tenu par son responsable.
+            # La légitimité est vérifiée dans l'action elle-même — jamais un
+            # pair sur la fiche d'un autre manager.
+            return [IsCompanyAdminOrManager()]
         if self.action in ("create", "update", "partial_update", "destroy"):
             return [IsCompanyAdminOrManager()]
         return [permissions.IsAuthenticated()]
@@ -63,7 +68,14 @@ class ActionPlanViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         except (User.DoesNotExist, TypeError, ValueError):
             raise ValidationError({"target_user": "Manager introuvable."})
         require_same_company(request.user, target_user=target_user)
-        if target_user.role != User.Role.MANAGER:
+        actor = request.user
+        if actor.role == User.Role.MANAGER:
+            # Son périmètre, et pas lui-même : sa propre fiche relève du CEO.
+            if target_user.id == actor.id or not manages_user(actor, target_user):
+                raise ValidationError(
+                    {"target_user": "Ce collaborateur ne fait pas partie de votre équipe."}
+                )
+        elif target_user.role != User.Role.MANAGER:
             raise ValidationError({"target_user": "Le plan de développement ne concerne que les managers."})
 
         team = target_user.department

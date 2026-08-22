@@ -2,6 +2,8 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import {
   Alert,
+  ToggleButton,
+  ToggleButtonGroup,
   Avatar,
   Box,
   Button,
@@ -58,6 +60,11 @@ export default function ActionPlansPage() {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [managers, setManagers] = useState<UserRecord[]>([]);
   const [selectedManagerId, setSelectedManagerId] = useState<number | "">("");
+  // Deux plans coexistent : celui d'une personne (grille de développement) et
+  // celui de l'équipe (actions libres). Ils ne se lisent pas ensemble.
+  const [view, setView] = useState<"individual" | "team">("team");
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
+  const canEdit = isCompanyAdmin || user?.role === "MANAGER";
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const supportRef = useRef<HTMLDivElement>(null);
@@ -132,13 +139,20 @@ export default function ActionPlansPage() {
     setOpen(true);
   }
 
+  // Sujets possibles d'un plan individuel : ses directeurs pour le CEO, les
+  // collaborateurs encadrés pour un directeur — jamais lui-même, sa propre
+  // fiche relevant du CEO.
   useEffect(() => {
     if (user?.role === "COMPANY_ADMIN") {
       apiClient
         .get<Paginated<UserRecord>>("/users/", { params: { role: "MANAGER", page_size: 500 } })
         .then((r) => setManagers(r.data.results));
+    } else if (user?.role === "MANAGER") {
+      apiClient
+        .get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } })
+        .then((r) => setManagers(r.data.results.filter((u) => u.id !== user.id)));
     }
-  }, [user?.role]);
+  }, [user?.role, user?.id]);
 
   async function handleCreate() {
     // Les dates vides doivent partir en null : "" n'est pas une date valide
@@ -161,48 +175,71 @@ export default function ActionPlansPage() {
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h5" fontWeight={700}>
-          {t("actionPlans.title")}
-        </Typography>
-        {(user?.role === "MANAGER" || user?.role === "COMPANY_ADMIN") && (
-          <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setOpen(true)}>
-            {t("actionPlans.newAction")}
-          </Button>
-        )}
-      </Stack>
+      <Typography variant="h5" fontWeight={700}>
+        {t("actionPlans.title")}
+      </Typography>
 
-      {user?.role === "COMPANY_ADMIN" && (
-        <>
-          <TextField
-            select
+      {canEdit && (
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+          <ToggleButtonGroup
             size="small"
-            label={t("managerDevPlan.selectManager")}
-            value={selectedManagerId}
-            onChange={(e) => setSelectedManagerId(e.target.value === "" ? "" : Number(e.target.value))}
-            // Même largeur compacte que le sélecteur de la fiche Performance :
-            // sans alignSelf, le Stack l'étire sur toute la page.
-            sx={{ width: 240, alignSelf: "flex-start" }}
+            exclusive
+            value={view}
+            onChange={(_, v) => v && setView(v)}
+            sx={{
+              height: 40,
+              "& .MuiToggleButton-root": { px: 2, fontWeight: 700, borderColor: "primary.main", color: "primary.main" },
+              "& .Mui-selected": { bgcolor: "primary.main", color: "#fff !important", "&:hover": { bgcolor: "primary.dark" } },
+            }}
           >
-            {managers.map((m) => (
-              // Département suffixé au nom, comme le sélecteur de la fiche
-              // Performance : deux managers homonymes restent distinguables.
-              <MenuItem key={m.id} value={m.id}>
-                {m.full_name || m.email}
-                {m.department_name ? ` — ${m.department_name}` : ""}
-              </MenuItem>
-            ))}
-          </TextField>
-          {selectedManagerId !== "" && (
-            <ManagerDevelopmentPlan
-              managerId={selectedManagerId}
-              managerName={managers.find((m) => m.id === selectedManagerId)?.full_name ?? ""}
-            />
+            <ToggleButton value="individual">
+              {isCompanyAdmin ? t("actionPlans.viewIndividualManagers") : t("actionPlans.viewIndividualMembers")}
+            </ToggleButton>
+            <ToggleButton value="team">
+              {isCompanyAdmin ? t("actionPlans.viewTeam") : t("actionPlans.viewTeamDepartment")}
+            </ToggleButton>
+          </ToggleButtonGroup>
+
+          {view === "individual" && (
+            <TextField
+              select
+              size="small"
+              label={isCompanyAdmin ? t("managerDevPlan.selectManager") : t("actionPlans.selectMember")}
+              value={selectedManagerId}
+              onChange={(e) => setSelectedManagerId(e.target.value === "" ? "" : Number(e.target.value))}
+              sx={{ width: 260 }}
+            >
+              {managers.map((m) => (
+                // Département suffixé au nom : deux homonymes restent distincts.
+                <MenuItem key={m.id} value={m.id}>
+                  {m.full_name || m.email}
+                  {m.department_name ? ` — ${m.department_name}` : ""}
+                </MenuItem>
+              ))}
+            </TextField>
           )}
-        </>
+
+          {view === "team" && (
+            <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setOpen(true)} sx={{ ml: "auto" }}>
+              {t("actionPlans.newAction")}
+            </Button>
+          )}
+        </Stack>
       )}
 
-      {user?.role === "MANAGER" && (
+      {view === "individual" &&
+        (selectedManagerId === "" ? (
+          <Alert severity="info">
+            {isCompanyAdmin ? t("actionPlans.pickManagerFirst") : t("actionPlans.pickMemberFirst")}
+          </Alert>
+        ) : (
+          <ManagerDevelopmentPlan
+            managerId={selectedManagerId}
+            managerName={managers.find((m) => m.id === selectedManagerId)?.full_name ?? ""}
+          />
+        ))}
+
+      {view === "team" && user?.role === "MANAGER" && (
         <Box ref={supportRef}>
           {toSupport.length === 0 ? (
             <Alert severity="success" icon={<CheckCircleOutlineIcon />}>
@@ -270,6 +307,7 @@ export default function ActionPlansPage() {
         </Box>
       )}
 
+      {view === "team" && (
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
         <TableContainer>
           <Table size="small">
@@ -309,6 +347,7 @@ export default function ActionPlansPage() {
           </Table>
         </TableContainer>
       </Paper>
+      )}
 
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>{t("actionPlans.newPlan")}</DialogTitle>

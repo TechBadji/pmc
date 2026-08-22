@@ -419,7 +419,14 @@
     "supportOpenPlans": "{{count}} action(s) en cours",
     "supportNoPlan": "Aucune action ouverte",
     "supportCreate": "Créer une action",
-    "suggestedPriority": "Remonter l'Altitude de {{current}} % à {{target}} %"
+    "suggestedPriority": "Remonter l'Altitude de {{current}} % à {{target}} %",
+    "viewIndividualManagers": "Plan individuel des managers",
+    "viewIndividualMembers": "Plan individuel des membres",
+    "viewTeam": "Plan d'action de l'équipe",
+    "viewTeamDepartment": "Plan d'action du département",
+    "selectMember": "Choisir un collaborateur",
+    "pickManagerFirst": "Choisissez un manager pour ouvrir son plan de développement individuel.",
+    "pickMemberFirst": "Choisissez un collaborateur pour ouvrir son plan de développement individuel."
   },
   "managerDevPlan": {
     "title": "Plan de Développement pour le Manager",

@@ -22,7 +22,7 @@ from apps.core.views import (
 )
 from apps.evaluations.views import EvaluationCampaignViewSet, EvaluationViewSet, SkillNoteViewSet
 from apps.skills.views import SkillItemViewSet, SkillMatrixViewSet
-from apps.teams.views import TeamCohesionAnalysisViewSet, TeamRelationshipViewSet
+from apps.teams.views import TeamBoardViewSet, TeamCohesionAnalysisViewSet, TeamRelationshipViewSet
 
 router = DefaultRouter()
 router.register("companies", CompanyViewSet, basename="company")
@@ -35,6 +35,7 @@ router.register("evaluations", EvaluationViewSet, basename="evaluation")
 router.register("skill-notes", SkillNoteViewSet, basename="skill-note")
 router.register("cohesion-analyses", TeamCohesionAnalysisViewSet, basename="cohesion-analysis")
 router.register("team-relationships", TeamRelationshipViewSet, basename="team-relationship")
+router.register("team-boards", TeamBoardViewSet, basename="team-board")
 router.register("action-plans", ActionPlanViewSet, basename="action-plan")
 router.register("password-reset-requests", PasswordResetRequestViewSet, basename="password-reset-request")
 router.register("audit-logs", AuditLogViewSet, basename="audit-log")
