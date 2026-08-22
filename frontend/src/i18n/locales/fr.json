@@ -690,7 +690,9 @@
     "errorDepartmentEmpty": "Aucun collaborateur positionné pour le département « {{department}} » sur cette période. Choisissez un autre département ou une autre période.",
     "sinceBaseline": "depuis {{period}}",
     "legendRange": "Performance = Altitude de la période affichée. Progression = marge relative entre {{from}} et {{to}}, calculée sur toute la plage et non d'une période à l'autre.",
-    "errorNoBaseline": "Personne n'a d'évaluation sur « {{period}} » : la progression ne peut pas être calculée depuis cette période. Choisissez-en une autre."
+    "errorNoBaseline": "Personne n'a d'évaluation sur « {{period}} » : la progression ne peut pas être calculée depuis cette période. Choisissez-en une autre.",
+    "viewVisio": "TPD-VISIO",
+    "visioTitle": "ID-PMC TPD-VISIO — Planche des talents par casier"
   },
   "teamBoard": {
     "period": "Saisie du",

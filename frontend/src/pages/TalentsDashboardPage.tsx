@@ -32,6 +32,7 @@ import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, Paginated, PerformanceRating } from "@/api/types";
 import PersonOption, { rankPeopleByHierarchy } from "@/components/PersonOption";
 import StatCard from "@/components/StatCard";
+import TpdVisioBoard from "@/components/talents/TpdVisioBoard";
 import { departmentScopeNames, orderedDepartmentOptions } from "@/utils/departments";
 import { CHART_NEUTRALS, performanceColors } from "@/theme";
 
@@ -693,7 +694,7 @@ export default function TalentsDashboardPage() {
   // "" = tout le monde, DIRECTORS_ONLY = les seuls directeurs de département,
   // un identifiant = un collaborateur suivi individuellement.
   const [personFilter, setPersonFilter] = useState<number | "" | typeof DIRECTORS_ONLY>("");
-  const [view, setView] = useState<"boxes" | "trajectory">("boxes");
+  const [view, setView] = useState<"boxes" | "trajectory" | "visio">("boxes");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -973,6 +974,14 @@ export default function TalentsDashboardPage() {
     z: 200,
   }));
   const boxData = placed.map((p) => ({ ...p, x: xPos(p.performance), y: yPos(p.progression as number), z: 200 }));
+  /** Même découpage que la 9 Box, mais ramené au numéro de case : la planche
+   * TPD-VISIO range les personnes dans des casiers plutôt que de les poser au
+   * pixel près. */
+  const visioPeople = placed.map((p) => ({
+    ...p,
+    col: Math.min(2, Math.max(0, Math.floor(xPos(p.performance)))),
+    row: Math.min(2, Math.max(0, Math.floor(yPos(p.progression as number)))),
+  }));
 
   return (
     <Stack spacing={3}>
@@ -980,9 +989,9 @@ export default function TalentsDashboardPage() {
         {t("talents.title")}
       </Typography>
 
-      {/* Barre de commandes, dans l'ordre de lecture : la vue d'abord, puis la
-        * période observée et sa comparaison, enfin les filtres du plus large
-        * (performance, département) au plus fin (collaborateur). */}
+      {/* Deux lignes de commandes : le choix de la planche d'abord, seul sur
+        * sa ligne, puis les filtres — de la période au collaborateur. Mêlés,
+        * les trois boutons de vue se perdaient au milieu de six sélecteurs. */}
       <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="flex-start">
         <ToggleButtonGroup
           size="small"
@@ -1006,8 +1015,11 @@ export default function TalentsDashboardPage() {
         >
           <ToggleButton value="boxes">{t("talents.viewBoxes")}</ToggleButton>
           <ToggleButton value="trajectory">{t("talents.viewTrajectory")}</ToggleButton>
+          <ToggleButton value="visio">{t("talents.viewVisio")}</ToggleButton>
         </ToggleButtonGroup>
+      </Stack>
 
+      <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="flex-start">
         <TextField
           select
           size="small"
@@ -1210,6 +1222,8 @@ export default function TalentsDashboardPage() {
             {t("talents.noData")}
           </Typography>
         </Paper>
+      ) : view === "visio" ? (
+        <TpdVisioBoard people={visioPeople} />
       ) : view === "boxes" ? (
         <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
           {/* Intitulé du schéma, repris tel quel du support ID-PMC. */}
