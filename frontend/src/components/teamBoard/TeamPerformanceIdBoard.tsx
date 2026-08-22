@@ -19,7 +19,6 @@ import {
 import { apiClient } from "@/api/client";
 import type { Evaluation, Paginated, TeamBoard, TeamCohesionAnalysis, TeamRelationship, UserRecord } from "@/api/types";
 import { performanceColors } from "@/theme";
-import { lastEvaluationByUser as lastEvalOf } from "@/utils/performance";
 import { BOARD_CREAM, BOARD_TEXT, BoardPanel, EditableList, TeamSpiderGraph } from "./BoardPieces";
 
 const YEAR_COLORS = ["#5b8ac6", "#c0504d", "#9bbb59", "#8064a2", "#4bacc6"];
@@ -216,7 +215,6 @@ export default function TeamPerformanceIdBoard({
 
   const memberIds = useMemo(() => new Set(members.map((m) => m.id)), [members]);
   const teamEvaluations = useMemo(() => evaluations.filter((e) => memberIds.has(e.user)), [evaluations, memberIds]);
-  const lastByUser = useMemo(() => lastEvalOf(teamEvaluations), [teamEvaluations]);
   const manager = members.find((m) => m.role === "MANAGER") ?? null;
   const others = members.filter((m) => m.id !== manager?.id);
 
@@ -325,7 +323,7 @@ export default function TeamPerformanceIdBoard({
         </BoardPanel>
 
         <BoardPanel title={t("teamBoard.spider")} sx={{ ...panel, minWidth: 300 }}>
-          <TeamSpiderGraph members={members} relationships={relationships} size={300} lastEvaluationByUser={lastByUser} />
+          <TeamSpiderGraph members={members} relationships={relationships} size={300} />
         </BoardPanel>
 
         <Stack spacing={1.5} sx={panel}>

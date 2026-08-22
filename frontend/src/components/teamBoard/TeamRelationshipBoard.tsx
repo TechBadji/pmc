@@ -1,6 +1,6 @@
 import { Alert, Box, Paper, Stack, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import type { Evaluation, TeamBoard, TeamRelationship, UserRecord } from "@/api/types";
+import type { TeamBoard, TeamRelationship, UserRecord } from "@/api/types";
 import { BOARD_TEXT, EditableList, TeamSpiderGraph } from "./BoardPieces";
 
 const GOOD = "#4a9a52";
@@ -46,7 +46,6 @@ export default function TeamRelationshipBoard({
   readOnly,
   members,
   relationships,
-  lastEvaluationByUser,
   teamName,
   iceScore,
 }: {
@@ -55,7 +54,6 @@ export default function TeamRelationshipBoard({
   readOnly: boolean;
   members: UserRecord[];
   relationships: TeamRelationship[];
-  lastEvaluationByUser?: Map<number, Evaluation>;
   teamName: string;
   iceScore: number | null;
 }) {
@@ -102,11 +100,7 @@ export default function TeamRelationshipBoard({
               <Typography sx={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{teamName || "—"}</Typography>
             </Box>
           </Stack>
-          <TeamSpiderGraph
-            members={members}
-            relationships={relationships}
-            lastEvaluationByUser={lastEvaluationByUser}
-          />
+          <TeamSpiderGraph members={members} relationships={relationships} />
           {iceScore !== null && (
             <Box sx={{ bgcolor: "#f6e5e3", px: 2, py: 0.5, borderRadius: 0.5 }}>
               <Typography sx={{ fontWeight: 800, fontSize: 14, color: BOARD_TEXT }}>

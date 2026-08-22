@@ -2,7 +2,7 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { Box, Button, IconButton, InputBase, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import type { Evaluation, TeamRelationship, UserRecord } from "@/api/types";
+import type { TeamRelationship, UserRecord } from "@/api/types";
 
 /** Bandeau de section des planches ID-PMC — vert olive, texte blanc centré. */
 export const BOARD_GREEN = "#8faa54";
@@ -161,12 +161,10 @@ export function TeamSpiderGraph({
   members,
   relationships,
   size = 420,
-  lastEvaluationByUser,
 }: {
   members: UserRecord[];
   relationships: TeamRelationship[];
   size?: number;
-  lastEvaluationByUser?: Map<number, Evaluation>;
 }) {
   const { t } = useTranslation();
   if (members.length === 0) {
@@ -213,7 +211,6 @@ export function TeamSpiderGraph({
         })}
         {members.map((m) => {
           const p = positions.get(m.id)!;
-          const evaluation = lastEvaluationByUser?.get(m.id);
           const name = m.full_name || m.email;
           return (
             <g key={m.id}>
@@ -243,11 +240,6 @@ export function TeamSpiderGraph({
               <text x={p.x} y={p.y + 37} textAnchor="middle" fontSize={10} fontWeight={700} fill={BOARD_TEXT}>
                 {name.length > 14 ? `${name.slice(0, 13)}…` : name}
               </text>
-              {evaluation && (
-                <text x={p.x} y={p.y - 28} textAnchor="middle" fontSize={10} fontWeight={700} fill="#5b6472">
-                  {evaluation.altitude_percentage}%
-                </text>
-              )}
             </g>
           );
         })}
