@@ -52,7 +52,13 @@ const PERF_ORIGIN = 90;
 const FLOOR_FRONT_Y = 1600;
 const FLOOR_BACK_Y = 330; // ligne des +20 %, sommet du plateau
 const FLOOR_FRONT_HALF = 1180; // demi-largeur au premier plan
-const FLOOR_BACK_HALF = 1040; // demi-largeur au sommet
+const FLOOR_BACK_HALF = 860; // demi-largeur au sommet — forte convergence
+/**
+ * Inclinaison du plateau. Un plan vu de bas resserre ses rangées à mesure
+ * qu'elles s'éloignent : la profondeur ne progresse donc pas linéairement.
+ * Plus `TILT` est grand, plus le regard est rasant et le plateau incliné.
+ */
+const TILT = 1.1;
 const CENTER_X = W / 2;
 
 // --- Palette ---------------------------------------------------------------
@@ -71,13 +77,19 @@ function ratio(value: number, min: number, max: number) {
  * Conversion (performance %, écart %) → pixels du dessin.
  * `v` est la profondeur : 0 au premier plan (-20 %), 1 au fond (+20 %).
  */
+/** Profondeur perçue : 0 au premier plan, 1 au fond, resserrée vers le fond. */
+function perspective(v: number) {
+  return (v * (1 + TILT)) / (1 + TILT * v);
+}
+
 function depthPoint(u: number, v: number) {
-  const half = FLOOR_FRONT_HALF + (FLOOR_BACK_HALF - FLOOR_FRONT_HALF) * v;
+  const d = perspective(v);
+  const half = FLOOR_FRONT_HALF + (FLOOR_BACK_HALF - FLOOR_FRONT_HALF) * d;
   return {
     x: CENTER_X + (u - 0.5) * 2 * half,
-    y: FLOOR_FRONT_Y - (FLOOR_FRONT_Y - FLOOR_BACK_Y) * v,
+    y: FLOOR_FRONT_Y - (FLOOR_FRONT_Y - FLOOR_BACK_Y) * d,
     /** Échelle des silhouettes : plus petites au fond, comme en perspective. */
-    scale: 1.06 - 0.22 * v,
+    scale: 1.06 - 0.3 * d,
   };
 }
 
