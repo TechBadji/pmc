@@ -370,13 +370,12 @@ export default function CohesionFormPage() {
 
   return (
     <Stack spacing={3} maxWidth={1180}>
-      {/* Bandeau titre — même bleu clair que l'entête du tableau des critères,
-       * pour que la fiche se lise comme un seul bloc. */}
-      <Paper elevation={0} sx={{ py: 1.5, textAlign: "center", bgcolor: HEADER_BLUE, border: "1px solid", borderColor: "divider" }}>
-        <Typography variant="h6" fontWeight={700} sx={{ color: HEADER_TEXT }}>
-          {t("cohesion.title").toUpperCase()}
-        </Typography>
-      </Paper>
+      {/* Titre de page aligné sur les autres rubriques (Référentiel, Matrice
+       * ID-3A) : le bandeau centré faisait doublon avec l'entête du tableau
+       * des critères, juste en dessous. */}
+      <Typography variant="h5" fontWeight={700}>
+        {t("nav.cohesion")}
+      </Typography>
 
       <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap className="pmc-no-print">
         <ToggleButtonGroup
