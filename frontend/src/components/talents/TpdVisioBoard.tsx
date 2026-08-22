@@ -110,16 +110,39 @@ function floorPoint(u: number, v: number) {
   return depthPoint(u, v);
 }
 
+/** Coordonnées des quatre compartiments sur le plateau. */
+const U_ORIGIN = (PERF_ORIGIN - PERF_MIN) / (PERF_MAX - PERF_MIN);
+const V_ORIGIN = (0 - EVO_MIN) / (EVO_MAX - EVO_MIN);
+const LANE = {
+  left0: 0,
+  left1: U_ORIGIN - 0.03,
+  right0: U_ORIGIN + 0.03,
+  // Allongés d'un tiers : les compartiments de droite étaient plus courts que
+  // ceux de gauche, la performance de référence n'étant pas au milieu de
+  // l'échelle.
+  right1: U_ORIGIN + 0.03 + (1 - U_ORIGIN - 0.03) * 1.3,
+  topStart: V_ORIGIN + 0.02,
+  topEnd: 1,
+  bottomStart: V_ORIGIN - 0.02,
+  // Raccourcis de 30 % : ils descendaient jusqu'au bord avant du plateau.
+  bottomEnd: (V_ORIGIN - 0.02) * 0.3,
+};
+
 const PERF_TICKS = Array.from({ length: (PERF_MAX - PERF_MIN) / 5 + 1 }, (_, i) => PERF_MIN + i * 5);
 const EVO_TICKS = [-20, -15, -10, -5, 5, 10, 15, 20];
 
-/** Contour d'un compartiment : rectangle posé sur le plateau, donc vu en
- * trapèze — les angles restent vifs, sans arrondi. */
-function lanePath(perfFrom: number, perfTo: number, evoFrom: number, evoTo: number) {
-  const a = project(perfFrom, evoTo); // haut gauche
-  const b = project(perfTo, evoTo); // haut droit
-  const c = project(perfTo, evoFrom); // bas droit
-  const d = project(perfFrom, evoFrom); // bas gauche
+/**
+ * Contour d'un compartiment, décrit dans les coordonnées du plateau (`u` le
+ * long des performances, `v` en profondeur). Les quatre coins passent par la
+ * même projection que la grille : le compartiment épouse donc l'inclinaison du
+ * plateau, et ses côtés restent parallèles à ses lignes. Un rectangle posé sur
+ * un plan incliné se lit en trapèze — les angles restent vifs, sans arrondi.
+ */
+function lanePath(u0: number, u1: number, v0: number, v1: number) {
+  const a = floorPoint(u0, v1); // haut gauche
+  const b = floorPoint(u1, v1); // haut droit
+  const c = floorPoint(u1, v0); // bas droit
+  const d = floorPoint(u0, v0); // bas gauche
   return `M ${a.x} ${a.y} L ${b.x} ${b.y} L ${c.x} ${c.y} L ${d.x} ${d.y} Z`;
 }
 
@@ -154,9 +177,9 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const SLAB = 26;
   const slab = {
     backLeft: floorPoint(-0.03, 1),
-    backRight: floorPoint(1.03, 1),
+    backRight: floorPoint(LANE.right1 + 0.03, 1),
     frontLeft: { x: floorPoint(0, 0).x - 46, y: floorPoint(0, 0).y + 52 },
-    frontRight: { x: floorPoint(1, 0).x + 46, y: floorPoint(1, 0).y + 52 },
+    frontRight: { x: floorPoint(LANE.right1 + 0.03, 0).x + 46, y: floorPoint(1, 0).y + 52 },
   };
   const positioned = spread(people);
   // Hauteur de référence d'un portrait. Réduite en proportion de
@@ -246,25 +269,36 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           })}
         </g>
 
-        {/* ---- Quatre couloirs arrondis, deux par moitié --------------- */}
+        {/* ---- Les quatre compartiments -------------------------------
+            Décrits en coordonnées du plateau : ceux de droite sont allongés
+            d'un tiers au-delà de la dernière graduation, ceux du bas raccourcis
+            d'autant — le plateau est dessiné assez large pour les porter. */}
         <g id="lanes" fill="none" stroke={NAVY} strokeWidth={7}>
-          <path d={lanePath(PERF_MIN, PERF_ORIGIN - 2, 1, EVO_MAX)} />
-          <path d={lanePath(PERF_ORIGIN + 2, PERF_MAX, 1, EVO_MAX)} />
-          <path d={lanePath(PERF_MIN, PERF_ORIGIN - 2, EVO_MIN, -1)} />
-          <path d={lanePath(PERF_ORIGIN + 2, PERF_MAX, EVO_MIN, -1)} />
+          <path d={lanePath(LANE.left0, LANE.left1, LANE.topStart, LANE.topEnd)} />
+          <path d={lanePath(LANE.right0, LANE.right1, LANE.topStart, LANE.topEnd)} />
+          <path d={lanePath(LANE.left0, LANE.left1, LANE.bottomEnd, LANE.bottomStart)} />
+          <path d={lanePath(LANE.right0, LANE.right1, LANE.bottomEnd, LANE.bottomStart)} />
         </g>
 
         {/* ---- Axes ---------------------------------------------------- */}
         <g id="axes" stroke={NAVY} strokeWidth={6} fill="none">
-          {/* Abscisse : la ligne des 0 % d'écart, sur toute la largeur. */}
+          {/* Les deux axes sont tracés dans les coordonnées du plateau, et
+            * prolongés dans ces mêmes coordonnées : ils restent donc parallèles
+            * à ses lignes, au lieu de repartir à l'horizontale ou à la
+            * verticale dès qu'ils dépassent la grille. */}
           <line
-            x1={project(PERF_MIN, 0).x - 70}
-            y1={project(PERF_MIN, 0).y}
-            x2={project(PERF_MAX, 0).x + 70}
-            y2={project(PERF_MAX, 0).y}
+            x1={floorPoint(-0.05, V_ORIGIN).x}
+            y1={floorPoint(-0.05, V_ORIGIN).y}
+            x2={floorPoint(LANE.right1 + 0.05, V_ORIGIN).x}
+            y2={floorPoint(LANE.right1 + 0.05, V_ORIGIN).y}
           />
-          {/* Ordonnée : flèche verticale au droit des 90 %. */}
-          <line x1={origin.x} y1={FLOOR_FRONT_Y + 40} x2={axisTop.x} y2={axisTop.y - 60} markerEnd="url(#tpd-arrow)" />
+          <line
+            x1={floorPoint(U_ORIGIN, -0.05).x}
+            y1={floorPoint(U_ORIGIN, -0.05).y}
+            x2={floorPoint(U_ORIGIN, 1.06).x}
+            y2={floorPoint(U_ORIGIN, 1.06).y}
+            markerEnd="url(#tpd-arrow)"
+          />
         </g>
         <defs>
           {/* Surface du plateau : la lumière vient du fond. */}
