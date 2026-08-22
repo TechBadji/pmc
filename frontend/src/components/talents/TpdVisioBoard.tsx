@@ -52,21 +52,29 @@ const PERF_ORIGIN = 90;
 const FLOOR_FRONT_Y = 1600;
 const FLOOR_BACK_Y = 330; // ligne des +20 %, sommet du plateau
 const FLOOR_FRONT_HALF = 1180; // demi-largeur au premier plan
-const FLOOR_BACK_HALF = 860; // demi-largeur au sommet — forte convergence
+const FLOOR_BACK_HALF = 760; // demi-largeur au sommet — forte convergence
+/**
+ * Décalage du fond vers la droite : le point de fuite n'est pas au centre, si
+ * bien que le plateau paraît tourné, vu depuis sa gauche. Une perspective
+ * frontale donne une planche figée ; celle-ci a du relief.
+ */
+const RIGHT_SHIFT = 210;
 /**
  * Inclinaison du plateau. Un plan vu de bas resserre ses rangées à mesure
  * qu'elles s'éloignent : la profondeur ne progresse donc pas linéairement.
  * Plus `TILT` est grand, plus le regard est rasant et le plateau incliné.
  */
-const TILT = 1.1;
+const TILT = 1.9;
 const CENTER_X = W / 2;
 
 // --- Palette ---------------------------------------------------------------
-const NAVY = "#1a2744";
+// Bleu des compartiments et des axes : allégé, il laisse la grille et les
+// silhouettes au premier plan de la lecture.
+const NAVY = "#4a6fa5";
 const GRID = "#d0d0d0";
 const POSTIT = "#f5e050";
 const GREEN = "#7cb342";
-const TEXT_DARK = "#1a2744";
+const TEXT_DARK = "#1a2744"; // texte : le bleu profond reste le plus lisible
 
 /** Fraction 0→1 d'une valeur sur son axe. */
 function ratio(value: number, min: number, max: number) {
@@ -86,7 +94,7 @@ function depthPoint(u: number, v: number) {
   const d = perspective(v);
   const half = FLOOR_FRONT_HALF + (FLOOR_BACK_HALF - FLOOR_FRONT_HALF) * d;
   return {
-    x: CENTER_X + (u - 0.5) * 2 * half,
+    x: CENTER_X + RIGHT_SHIFT * d + (u - 0.5) * 2 * half,
     y: FLOOR_FRONT_Y - (FLOOR_FRONT_Y - FLOOR_BACK_Y) * d,
     /** Échelle des silhouettes : plus petites au fond, comme en perspective. */
     scale: 1.06 - 0.3 * d,
@@ -105,17 +113,14 @@ function floorPoint(u: number, v: number) {
 const PERF_TICKS = Array.from({ length: (PERF_MAX - PERF_MIN) / 5 + 1 }, (_, i) => PERF_MIN + i * 5);
 const EVO_TICKS = [-20, -15, -10, -5, 5, 10, 15, 20];
 
-/** Contour arrondi d'un couloir, tracé dans le repère des axes. */
-function lanePath(perfFrom: number, perfTo: number, evoFrom: number, evoTo: number, radius = 46) {
+/** Contour d'un compartiment : rectangle posé sur le plateau, donc vu en
+ * trapèze — les angles restent vifs, sans arrondi. */
+function lanePath(perfFrom: number, perfTo: number, evoFrom: number, evoTo: number) {
   const a = project(perfFrom, evoTo); // haut gauche
   const b = project(perfTo, evoTo); // haut droit
   const c = project(perfTo, evoFrom); // bas droit
   const d = project(perfFrom, evoFrom); // bas gauche
-  return `M ${a.x + radius} ${a.y}
-          L ${b.x - radius} ${b.y} Q ${b.x} ${b.y} ${b.x} ${b.y + radius}
-          L ${c.x} ${c.y - radius} Q ${c.x} ${c.y} ${c.x - radius} ${c.y}
-          L ${d.x + radius} ${d.y} Q ${d.x} ${d.y} ${d.x} ${d.y - radius}
-          L ${a.x} ${a.y + radius} Q ${a.x} ${a.y} ${a.x + radius} ${a.y} Z`;
+  return `M ${a.x} ${a.y} L ${b.x} ${b.y} L ${c.x} ${c.y} L ${d.x} ${d.y} Z`;
 }
 
 /**
