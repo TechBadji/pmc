@@ -31,7 +31,7 @@ export interface VisioPerson {
 
 // --- Repère du dessin ------------------------------------------------------
 const W = 2400;
-const H = 1400;
+const H = 1440;
 
 const PERF_MIN = 50;
 const PERF_MAX = 120;
@@ -45,17 +45,14 @@ const PERF_ORIGIN = 90;
 // Le plateau garde sa profondeur agrandie (915 px). Les silhouettes gardent
 // toujours l'échelle de la perspective : c'est le cadre qui s'ouvre pour les
 // contenir, jamais elles qui rapetissent.
-const FLOOR_FRONT_Y = 1300;
-const FLOOR_BACK_Y = 560; // ligne des +20 %, où s'arrêtent axes et couloirs
-const FLOOR_FRONT_HALF = 1185; // demi-largeur au premier plan
-const FLOOR_BACK_HALF = 1050; // demi-largeur à la ligne des +20 %
-/**
- * Le plateau se prolonge d'une demi-profondeur au-delà des +20 %. C'est la
- * bande dans laquelle se dressent les silhouettes du fond : la grille l'occupe
- * au lieu de laisser un vide blanc, si bien que le dessin remplit tout le
- * cadre et que les portraits restent posés *dans* la grille.
- */
-const FLOOR_HEAD_DEPTH = 1.65;
+// Le plateau occupe toute la largeur et les deux tiers de la hauteur, comme
+// sur la planche de référence : son bord supérieur EST la ligne des +20 %.
+// Le tiers laissé libre au-dessus n'est pas perdu — c'est là que se dressent
+// les silhouettes posées au fond des compartiments.
+const FLOOR_FRONT_Y = 1360;
+const FLOOR_BACK_Y = 420; // ligne des +20 %, sommet du plateau
+const FLOOR_FRONT_HALF = 1180; // demi-largeur au premier plan
+const FLOOR_BACK_HALF = 1040; // demi-largeur au sommet
 const CENTER_X = W / 2;
 
 // --- Palette ---------------------------------------------------------------
@@ -137,9 +134,10 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const axisTop = project(PERF_ORIGIN, EVO_MAX);
   const floorFrontLeft = project(PERF_MIN, EVO_MIN);
   const floorFrontRight = project(PERF_MAX, EVO_MIN);
-  // Bord haut du plateau dessiné, au-delà de la dernière graduation.
-  const headLeft = floorPoint(0, FLOOR_HEAD_DEPTH);
-  const headRight = floorPoint(1, FLOOR_HEAD_DEPTH);
+  // Coins supérieurs du plateau : la ligne des +20 %, légèrement débordée
+  // pour que le sol paraisse porter la grille plutôt que s'y arrêter net.
+  const headLeft = floorPoint(-0.03, 1);
+  const headRight = floorPoint(1.03, 1);
   const positioned = spread(people);
   const PHOTO_H = 420;
 
@@ -165,7 +163,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
         {/* ---- Sol en perspective -------------------------------------- */}
         <g id="floor">
           <polygon
-            points={`${headLeft.x},${headLeft.y} ${headRight.x},${headRight.y} ${floorFrontRight.x + 40},${floorFrontRight.y + 45} ${floorFrontLeft.x - 40},${floorFrontLeft.y + 45}`}
+            points={`${headLeft.x},${headLeft.y} ${headRight.x},${headRight.y} ${floorFrontRight.x + 46},${floorFrontRight.y + 52} ${floorFrontLeft.x - 46},${floorFrontLeft.y + 52}`}
             fill="#fdfdfd"
             stroke="#e8e8e8"
             strokeWidth={3}
@@ -175,23 +173,14 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
         {/* ---- Grille : un trait par graduation ------------------------ */}
         <g id="grid" stroke={GRID} strokeWidth={1.6} fill="none">
           {PERF_TICKS.map((perf) => {
-            const u = ratio(perf, PERF_MIN, PERF_MAX);
-            const a = floorPoint(u, 0);
-            const b = floorPoint(u, FLOOR_HEAD_DEPTH);
+            const a = project(perf, EVO_MIN);
+            const b = project(perf, EVO_MAX);
             return <line key={`v-${perf}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />;
           })}
           {[...EVO_TICKS, 0].map((evo) => {
             const a = project(PERF_MIN, evo);
             const b = project(PERF_MAX, evo);
             return <line key={`h-${evo}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />;
-          })}
-          {/* Prolongement au-dessus des +20 % : la trame se poursuit derrière
-            * les silhouettes du fond, sans graduation puisque l'échelle des
-            * écarts, elle, s'arrête bien à +20 %. */}
-          {[1.15, 1.3, 1.45, 1.6].map((v) => {
-            const a = floorPoint(0, v);
-            const b = floorPoint(1, v);
-            return <line key={`hh-${v}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} opacity={0.6} />;
           })}
         </g>
 
