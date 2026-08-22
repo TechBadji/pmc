@@ -31,7 +31,7 @@ export interface VisioPerson {
 
 // --- Repère du dessin ------------------------------------------------------
 const W = 2400;
-const H = 1440;
+const H = 1680;
 
 const PERF_MIN = 50;
 const PERF_MAX = 120;
@@ -45,12 +45,12 @@ const PERF_ORIGIN = 90;
 // Le plateau garde sa profondeur agrandie (915 px). Les silhouettes gardent
 // toujours l'échelle de la perspective : c'est le cadre qui s'ouvre pour les
 // contenir, jamais elles qui rapetissent.
-// Le plateau occupe toute la largeur et les deux tiers de la hauteur, comme
-// sur la planche de référence : son bord supérieur EST la ligne des +20 %.
-// Le tiers laissé libre au-dessus n'est pas perdu — c'est là que se dressent
-// les silhouettes posées au fond des compartiments.
-const FLOOR_FRONT_Y = 1360;
-const FLOOR_BACK_Y = 420; // ligne des +20 %, sommet du plateau
+// Le plateau occupe toute la largeur et les trois quarts de la hauteur : son
+// bord supérieur EST la ligne des +20 %. Sa profondeur a encore été augmentée
+// d'un tiers ; la bande laissée libre au-dessus est celle, réduite d'autant,
+// où se dressent les silhouettes posées au fond des compartiments.
+const FLOOR_FRONT_Y = 1600;
+const FLOOR_BACK_Y = 330; // ligne des +20 %, sommet du plateau
 const FLOOR_FRONT_HALF = 1180; // demi-largeur au premier plan
 const FLOOR_BACK_HALF = 1040; // demi-largeur au sommet
 const CENTER_X = W / 2;
@@ -139,7 +139,12 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const headLeft = floorPoint(-0.03, 1);
   const headRight = floorPoint(1.03, 1);
   const positioned = spread(people);
-  const PHOTO_H = 420;
+  // Hauteur de référence d'un portrait. Réduite en proportion de
+  // l'agrandissement des compartiments : ce sont eux qui doivent porter la
+  // lecture, les silhouettes s'y inscrivant sans les écraser.
+  const PHOTO_H = 310;
+  /** Marge intérieure du cadre : rien n'est dessiné au-delà. */
+  const EDGE = 24;
 
 
   return (
@@ -272,9 +277,18 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
             Un groupe par personne, nommé et portant ses valeurs : la planche
             se met à jour en changeant les données, sans retoucher le dessin. */}
         <g id="people">
-          {positioned.map(({ person, x, y, scale }) => {
-            const height = PHOTO_H * scale;
-            const width = height * 0.34;
+          {positioned.map(({ person, x: rawX, y, scale }) => {
+            const hasPhoto = Boolean(person.photo);
+            // Sans portrait en pied, on s'en tient à la vignette ronde : une
+            // silhouette dessinée à la place laisserait croire à une photo.
+            const height = hasPhoto ? PHOTO_H * scale : PHOTO_H * scale * 0.42;
+            const width = hasPhoto ? height * 0.34 : height;
+            // Rien ne sort du cadre : ni le portrait, ni la vignette, ni leurs
+            // étiquettes. Le point de pose glisse le long de l'axe plutôt que
+            // de laisser déborder le dessin.
+            const halfSpan = Math.max(width / 2, 90);
+            const x = Math.min(W - EDGE - halfSpan, Math.max(EDGE + halfSpan, rawX));
+            const top = Math.max(EDGE + 34, y - height);
             const progression = person.progression;
             const progressionColor = progression === null ? "#7a7a7a" : progression >= 0 ? "#2e7d32" : "#c62828";
             return (
@@ -290,51 +304,64 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                   {`${t("talents.performance")} ${person.performance}%`}
                   {progression !== null ? ` · ${progression > 0 ? "+" : ""}${progression}%` : ""}
                 </title>
-                {person.photo ? (
+                {hasPhoto ? (
                   // `multiply` laisse la grille traverser le fond clair d'un
                   // portrait : les photos détourées gardent leur transparence,
                   // et celles restées sur fond blanc se fondent pareillement.
                   <image
-                    href={person.photo}
+                    href={person.photo as string}
                     x={x - width / 2}
-                    y={y - height}
+                    y={top}
                     width={width}
                     height={height}
                     preserveAspectRatio="xMidYMax meet"
                     style={{ mixBlendMode: "multiply" }}
                   />
                 ) : (
-                  <>
-                    <circle cx={x} cy={y - height * 0.72} r={height * 0.17} fill="#dbe4ee" fillOpacity={0.75} stroke={NAVY} strokeWidth={3} />
-                    <text
-                      x={x}
-                      y={y - height * 0.66}
-                      textAnchor="middle"
-                      fontSize={height * 0.18}
-                      fontWeight="800"
-                      fill={NAVY}
-                    >
-                      {person.name.charAt(0).toUpperCase()}
-                    </text>
-                    <rect
-                      x={x - width * 0.34}
-                      y={y - height * 0.5}
-                      width={width * 0.68}
-                      height={height * 0.5}
-                      rx={8}
-                      fill="#dbe4ee"
-                      fillOpacity={0.75}
+                  <g>
+                    {person.avatar && (
+                      <clipPath id={`tpd-clip-${person.userId}`}>
+                        <circle cx={x} cy={top + height / 2} r={height / 2} />
+                      </clipPath>
+                    )}
+                    <circle
+                      cx={x}
+                      cy={top + height / 2}
+                      r={height / 2}
+                      fill="#e9edf4"
                       stroke={NAVY}
-                      strokeWidth={3}
+                      strokeWidth={4}
                     />
-                  </>
+                    {person.avatar ? (
+                      <image
+                        href={person.avatar}
+                        x={x - height / 2}
+                        y={top}
+                        width={height}
+                        height={height}
+                        clipPath={`url(#tpd-clip-${person.userId})`}
+                        preserveAspectRatio="xMidYMid slice"
+                      />
+                    ) : (
+                      <text
+                        x={x}
+                        y={top + height * 0.66}
+                        textAnchor="middle"
+                        fontSize={height * 0.5}
+                        fontWeight="800"
+                        fill={NAVY}
+                      >
+                        {person.name.charAt(0).toUpperCase()}
+                      </text>
+                    )}
+                  </g>
                 )}
                 {/* Valeurs au-dessus de la tête, comme sur la planche. */}
-                <text x={x} y={y - height - 32} textAnchor="middle" fontSize={26} fontWeight="800" fill="#6d6d6d">
+                <text x={x} y={top - 32} textAnchor="middle" fontSize={26} fontWeight="800" fill="#6d6d6d">
                   {person.performance}%
                 </text>
                 {progression !== null && (
-                  <text x={x} y={y - height - 4} textAnchor="middle" fontSize={26} fontWeight="800" fill={progressionColor}>
+                  <text x={x} y={top - 4} textAnchor="middle" fontSize={26} fontWeight="800" fill={progressionColor}>
                     {progression > 0 ? `+${progression}` : progression}
                   </text>
                 )}
