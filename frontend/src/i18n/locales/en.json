@@ -692,7 +692,7 @@
     "legendRange": "Performance = Altitude for the displayed period. Progression = relative change between {{from}} and {{to}}, measured across the whole range rather than period to period.",
     "errorNoBaseline": "Nobody has an evaluation for “{{period}}”: progression cannot be measured from it. Pick another period.",
     "viewVisio": "TPD-VISIO",
-    "visioTitle": "ID-PMC TPD-VISIO — Talent board by cell"
+    "visioTitle": "ID-PMC ID-TPD Talents Performance Dashboard"
   },
   "teamBoard": {
     "period": "Entry of",

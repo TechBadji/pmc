@@ -29,7 +29,7 @@ import {
 } from "recharts";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
-import type { Department, Evaluation, Paginated, PerformanceRating } from "@/api/types";
+import type { Department, Evaluation, Paginated, PerformanceRating, UserRecord } from "@/api/types";
 import PersonOption, { rankPeopleByHierarchy } from "@/components/PersonOption";
 import StatCard from "@/components/StatCard";
 import TpdVisioBoard from "@/components/talents/TpdVisioBoard";
@@ -682,6 +682,9 @@ export default function TalentsDashboardPage() {
   const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [departmentRecords, setDepartmentRecords] = useState<Department[]>([]);
+  // Portraits en pied : la planche TPD-VISIO pose les silhouettes sur le
+  // plateau, or l'évaluation ne porte que la vignette ronde.
+  const [fullBodyByUser, setFullBodyByUser] = useState<Map<number, string | null>>(new Map());
   const [campaignId, setCampaignId] = useState<number | "">("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
   // Raccourci de navigation : atteindre un directeur sans le chercher dans la
@@ -719,6 +722,10 @@ export default function TalentsDashboardPage() {
       .get<Paginated<Department>>("/departments/", { params: { page_size: 500 } })
       .then((r) => setDepartmentRecords(r.data.results))
       .catch(() => setDepartmentRecords([]));
+    apiClient
+      .get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } })
+      .then((r) => setFullBodyByUser(new Map(r.data.results.map((u) => [u.id, u.avatar_full_body]))))
+      .catch(() => setFullBodyByUser(new Map()));
   }
 
   useEffect(load, []);
@@ -978,9 +985,15 @@ export default function TalentsDashboardPage() {
    * TPD-VISIO range les personnes dans des casiers plutôt que de les poser au
    * pixel près. */
   const visioPeople = placed.map((p) => ({
-    ...p,
-    col: Math.min(2, Math.max(0, Math.floor(xPos(p.performance)))),
-    row: Math.min(2, Math.max(0, Math.floor(yPos(p.progression as number)))),
+    userId: p.userId,
+    name: p.name,
+    position: p.position,
+    department: p.department,
+    photo: fullBodyByUser.get(p.userId) ?? null,
+    avatar: p.avatar,
+    performance: p.performance,
+    progression: p.progression,
+    rating: p.rating,
   }));
 
   return (
@@ -1223,7 +1236,10 @@ export default function TalentsDashboardPage() {
           </Typography>
         </Paper>
       ) : view === "visio" ? (
-        <TpdVisioBoard people={visioPeople} />
+        <TpdVisioBoard
+          people={visioPeople}
+          periodLabel={campaigns.find((c) => c.id === campaignId)?.name ?? ""}
+        />
       ) : view === "boxes" ? (
         <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
           {/* Intitulé du schéma, repris tel quel du support ID-PMC. */}
