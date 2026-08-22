@@ -31,7 +31,7 @@ export interface VisioPerson {
 
 // --- Repère du dessin ------------------------------------------------------
 const W = 2400;
-const H = 1260;
+const H = 1310;
 
 const PERF_MIN = 50;
 const PERF_MAX = 120;
@@ -42,13 +42,14 @@ const EVO_MAX = 20;
 const PERF_ORIGIN = 90;
 
 // Trapèze du sol : le fond est plus étroit et plus haut que le devant.
-// Le plateau occupe la plus grande partie du cadre : la grille doit rester
-// lisible en réunion, sur un écran partagé. La marge du haut est celle dont
-// les silhouettes du fond ont besoin pour leurs étiquettes.
-const FLOOR_FRONT_Y = 1150;
-const FLOOR_BACK_Y = 540;
-const FLOOR_FRONT_HALF = 1150; // demi-largeur au premier plan
-const FLOOR_BACK_HALF = 1010; // demi-largeur au fond
+// Le plateau démarre juste sous le sous-titre et occupe presque tout le cadre.
+// Sa profondeur a été augmentée de moitié (610 → 915 px) ; la bande laissée
+// libre au-dessus n'est plus qu'un dégagement pour les silhouettes du fond,
+// dont la taille s'ajuste à la place disponible (voir `fitScale`).
+const FLOOR_FRONT_Y = 1215;
+const FLOOR_BACK_Y = 300;
+const FLOOR_FRONT_HALF = 1170; // demi-largeur au premier plan
+const FLOOR_BACK_HALF = 1030; // demi-largeur au fond
 const CENTER_X = W / 2;
 
 // --- Palette ---------------------------------------------------------------
@@ -77,6 +78,22 @@ function project(perf: number, evo: number) {
     /** Échelle des silhouettes : plus petites au fond, comme en perspective. */
     scale: 1.06 - 0.22 * v,
   };
+}
+
+/** Place occupée par les deux étiquettes au-dessus d'une silhouette. */
+const LABEL_SPACE = 56;
+/** Marge minimale conservée en haut du cadre. */
+const TOP_MARGIN = 12;
+
+/**
+ * Taille réellement applicable à une silhouette : celle de la perspective,
+ * réduite si la place manque au-dessus d'elle. Sans cela, une personne au fond
+ * du plateau dépasserait du cadre — et remonter la grille sous le sous-titre
+ * revient justement à réduire cette réserve.
+ */
+function fitScale(baseScale: number, groundY: number, photoHeight: number) {
+  const available = groundY - TOP_MARGIN - LABEL_SPACE;
+  return Math.max(0.42, Math.min(baseScale, available / photoHeight));
 }
 
 const PERF_TICKS = Array.from({ length: (PERF_MAX - PERF_MIN) / 5 + 1 }, (_, i) => PERF_MIN + i * 5);
@@ -259,7 +276,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
             se met à jour en changeant les données, sans retoucher le dessin. */}
         <g id="people">
           {positioned.map(({ person, x, y, scale }) => {
-            const height = PHOTO_H * scale;
+            const height = PHOTO_H * fitScale(scale, y, PHOTO_H);
             const width = height * 0.34;
             const progression = person.progression;
             const progressionColor = progression === null ? "#7a7a7a" : progression >= 0 ? "#2e7d32" : "#c62828";
@@ -316,11 +333,11 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                   </>
                 )}
                 {/* Valeurs au-dessus de la tête, comme sur la planche. */}
-                <text x={x} y={y - height - 46} textAnchor="middle" fontSize={26} fontWeight="800" fill="#6d6d6d">
+                <text x={x} y={y - height - 32} textAnchor="middle" fontSize={26} fontWeight="800" fill="#6d6d6d">
                   {person.performance}%
                 </text>
                 {progression !== null && (
-                  <text x={x} y={y - height - 16} textAnchor="middle" fontSize={26} fontWeight="800" fill={progressionColor}>
+                  <text x={x} y={y - height - 4} textAnchor="middle" fontSize={26} fontWeight="800" fill={progressionColor}>
                     {progression > 0 ? `+${progression}` : progression}
                   </text>
                 )}
