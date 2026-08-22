@@ -132,12 +132,15 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const { t } = useTranslation();
   const origin = project(PERF_ORIGIN, 0);
   const axisTop = project(PERF_ORIGIN, EVO_MAX);
-  const floorFrontLeft = project(PERF_MIN, EVO_MIN);
-  const floorFrontRight = project(PERF_MAX, EVO_MIN);
-  // Coins supérieurs du plateau : la ligne des +20 %, légèrement débordée
-  // pour que le sol paraisse porter la grille plutôt que s'y arrêter net.
-  const headLeft = floorPoint(-0.03, 1);
-  const headRight = floorPoint(1.03, 1);
+  // Dalle : la surface déborde légèrement de la grille, et son épaisseur se
+  // voit au premier plan — c'est ce qui la fait lire comme un volume.
+  const SLAB = 26;
+  const slab = {
+    backLeft: floorPoint(-0.03, 1),
+    backRight: floorPoint(1.03, 1),
+    frontLeft: { x: floorPoint(0, 0).x - 46, y: floorPoint(0, 0).y + 52 },
+    frontRight: { x: floorPoint(1, 0).x + 46, y: floorPoint(1, 0).y + 52 },
+  };
   const positioned = spread(people);
   // Hauteur de référence d'un portrait. Réduite en proportion de
   // l'agrandissement des compartiments : ce sont eux qui doivent porter la
@@ -145,6 +148,18 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const PHOTO_H = 310;
   /** Marge intérieure du cadre : rien n'est dessiné au-delà. */
   const EDGE = 24;
+
+  /**
+   * Haut du cadre : le plateau remonte sous le sous-titre quand personne
+   * n'occupe le fond. La bande au-dessus du plateau n'existe que pour les
+   * silhouettes qui s'y dressent ; on ne garde donc que la hauteur qu'elles
+   * réclament vraiment, au lieu de la réserver en toutes circonstances.
+   */
+  const highestDrawing = positioned.reduce((top, { person, y, scale }) => {
+    const height = person.photo ? PHOTO_H * scale : PHOTO_H * scale * 0.42;
+    return Math.min(top, y - height - 40);
+  }, FLOOR_BACK_Y);
+  const viewTop = Math.max(0, Math.min(FLOOR_BACK_Y - 20, highestDrawing - EDGE));
 
 
   return (
@@ -159,19 +174,44 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
       </Stack>
 
       <svg
-        viewBox={`0 0 ${W} ${H}`}
+        viewBox={`0 ${viewTop} ${W} ${H - viewTop}`}
         width="100%"
         style={{ display: "block", height: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}
         role="img"
         aria-label={t("talents.visioTitle")}
       >
-        {/* ---- Sol en perspective -------------------------------------- */}
+        {/* ---- Sol en perspective, avec son épaisseur -------------------
+            Le plateau est dessiné comme une dalle : face supérieure en léger
+            dégradé (plus clair au fond, comme une surface qui fuit), puis la
+            tranche avant et les deux côtés en teintes plus soutenues. C'est
+            cette épaisseur, avec l'ombre portée sous chaque personne, qui
+            donne l'impression qu'on se tient dessus. */}
         <g id="floor">
           <polygon
-            points={`${headLeft.x},${headLeft.y} ${headRight.x},${headRight.y} ${floorFrontRight.x + 46},${floorFrontRight.y + 52} ${floorFrontLeft.x - 46},${floorFrontLeft.y + 52}`}
-            fill="#fdfdfd"
-            stroke="#e8e8e8"
+            points={`${slab.backLeft.x},${slab.backLeft.y} ${slab.backRight.x},${slab.backRight.y} ${slab.frontRight.x},${slab.frontRight.y} ${slab.frontLeft.x},${slab.frontLeft.y}`}
+            fill="url(#tpd-floor)"
+            stroke="#dcdcdc"
             strokeWidth={3}
+          />
+          {/* tranche avant */}
+          <polygon
+            points={`${slab.frontLeft.x},${slab.frontLeft.y} ${slab.frontRight.x},${slab.frontRight.y} ${slab.frontRight.x},${slab.frontRight.y + SLAB} ${slab.frontLeft.x},${slab.frontLeft.y + SLAB}`}
+            fill="#e4e6ea"
+            stroke="#cfd2d8"
+            strokeWidth={2}
+          />
+          {/* côtés, qui filent vers le fond */}
+          <polygon
+            points={`${slab.frontLeft.x},${slab.frontLeft.y} ${slab.frontLeft.x},${slab.frontLeft.y + SLAB} ${slab.backLeft.x},${slab.backLeft.y + SLAB * 0.5} ${slab.backLeft.x},${slab.backLeft.y}`}
+            fill="#eceef1"
+            stroke="#dcdee2"
+            strokeWidth={2}
+          />
+          <polygon
+            points={`${slab.frontRight.x},${slab.frontRight.y} ${slab.frontRight.x},${slab.frontRight.y + SLAB} ${slab.backRight.x},${slab.backRight.y + SLAB * 0.5} ${slab.backRight.x},${slab.backRight.y}`}
+            fill="#eceef1"
+            stroke="#dcdee2"
+            strokeWidth={2}
           />
         </g>
 
@@ -210,6 +250,17 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           <line x1={origin.x} y1={FLOOR_FRONT_Y + 40} x2={axisTop.x} y2={axisTop.y - 60} markerEnd="url(#tpd-arrow)" />
         </g>
         <defs>
+          {/* Surface du plateau : la lumière vient du fond. */}
+          <linearGradient id="tpd-floor" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor="#f2f3f5" />
+          </linearGradient>
+          {/* Ombre portée sous les pieds : franche au contact, diffuse ensuite. */}
+          <radialGradient id="tpd-shadow">
+            <stop offset="0%" stopColor="#2b3245" stopOpacity="0.42" />
+            <stop offset="70%" stopColor="#2b3245" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="#2b3245" stopOpacity="0" />
+          </radialGradient>
           <marker id="tpd-arrow" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto" markerUnits="userSpaceOnUse">
             <path d="M 0 0 L 12 6 L 0 12 z" fill={NAVY} />
           </marker>
@@ -304,6 +355,9 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                   {`${t("talents.performance")} ${person.performance}%`}
                   {progression !== null ? ` · ${progression > 0 ? "+" : ""}${progression}%` : ""}
                 </title>
+                {/* Ombre portée : le contact avec le sol, sans lequel une
+                  * silhouette semble flotter au-dessus du plateau. */}
+                <ellipse cx={x} cy={y + 4} rx={Math.max(width * 0.62, 42)} ry={Math.max(width * 0.19, 13)} fill="url(#tpd-shadow)" />
                 {hasPhoto ? (
                   // `multiply` laisse la grille traverser le fond clair d'un
                   // portrait : les photos détourées gardent leur transparence,
