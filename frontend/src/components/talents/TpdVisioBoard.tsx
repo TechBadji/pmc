@@ -31,7 +31,7 @@ export interface VisioPerson {
 
 // --- Repère du dessin ------------------------------------------------------
 const W = 2400;
-const H = 1310;
+const H = 1450;
 
 const PERF_MIN = 50;
 const PERF_MAX = 120;
@@ -42,12 +42,13 @@ const EVO_MAX = 20;
 const PERF_ORIGIN = 90;
 
 // Trapèze du sol : le fond est plus étroit et plus haut que le devant.
-// Le plateau démarre juste sous le sous-titre et occupe presque tout le cadre.
-// Sa profondeur a été augmentée de moitié (610 → 915 px) ; la bande laissée
-// libre au-dessus n'est plus qu'un dégagement pour les silhouettes du fond,
-// dont la taille s'ajuste à la place disponible (voir `fitScale`).
-const FLOOR_FRONT_Y = 1215;
-const FLOOR_BACK_Y = 300;
+// Le plateau garde sa profondeur agrandie (915 px). Le cadre, lui, est assez
+// haut pour que les silhouettes du fond — qui se dressent au-dessus du
+// plateau — tiennent en entier à leur taille de perspective : c'est le cadre
+// qui s'adapte aux portraits, jamais l'inverse. `fitScale` ne reste qu'un
+// garde-fou, sans effet tant que ce dégagement est respecté.
+const FLOOR_FRONT_Y = 1345;
+const FLOOR_BACK_Y = 430;
 const FLOOR_FRONT_HALF = 1170; // demi-largeur au premier plan
 const FLOOR_BACK_HALF = 1030; // demi-largeur au fond
 const CENTER_X = W / 2;
