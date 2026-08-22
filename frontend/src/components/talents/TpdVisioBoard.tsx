@@ -30,7 +30,8 @@ export interface VisioPerson {
 }
 
 // --- Repère du dessin ------------------------------------------------------
-const W = 2400;
+// Cadre élargi pour loger les compartiments de droite, allongés d'un tiers.
+const W = 3000;
 const H = 1680;
 
 const PERF_MIN = 50;
@@ -65,7 +66,9 @@ const RIGHT_SHIFT = 210;
  * Plus `TILT` est grand, plus le regard est rasant et le plateau incliné.
  */
 const TILT = 1.9;
-const CENTER_X = W / 2;
+// Le plateau est tiré vers la gauche : la place gagnée à droite laisse voir
+// les compartiments allongés en entier.
+const CENTER_X = 1360;
 
 // --- Palette ---------------------------------------------------------------
 // Bleu des compartiments et des axes : allégé, il laisse la grille et les
@@ -138,12 +141,44 @@ const EVO_TICKS = [-20, -15, -10, -5, 5, 10, 15, 20];
  * plateau, et ses côtés restent parallèles à ses lignes. Un rectangle posé sur
  * un plan incliné se lit en trapèze — les angles restent vifs, sans arrondi.
  */
-function lanePath(u0: number, u1: number, v0: number, v1: number) {
-  const a = floorPoint(u0, v1); // haut gauche
-  const b = floorPoint(u1, v1); // haut droit
-  const c = floorPoint(u1, v0); // bas droit
-  const d = floorPoint(u0, v0); // bas gauche
-  return `M ${a.x} ${a.y} L ${b.x} ${b.y} L ${c.x} ${c.y} L ${d.x} ${d.y} Z`;
+function lanePath(u0: number, u1: number, v0: number, v1: number, radius = 46) {
+  return roundedPath(
+    [
+      floorPoint(u0, v1), // haut gauche
+      floorPoint(u1, v1), // haut droit
+      floorPoint(u1, v0), // bas droit
+      floorPoint(u0, v0), // bas gauche
+    ],
+    radius
+  );
+}
+
+/**
+ * Contour arrondi d'un polygone quelconque. Chaque angle est repris à
+ * `radius` de son sommet sur les deux côtés adjacents, puis raccordé par une
+ * courbe passant par le sommet. Écrit ainsi, l'arrondi vaut pour un trapèze
+ * en perspective comme pour un rectangle : les côtés restent ceux du plateau.
+ */
+function roundedPath(points: { x: number; y: number }[], radius: number) {
+  const n = points.length;
+  const towards = (from: { x: number; y: number }, to: { x: number; y: number }, distance: number) => {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const length = Math.hypot(dx, dy) || 1;
+    const step = Math.min(distance, length / 2);
+    return { x: from.x + (dx / length) * step, y: from.y + (dy / length) * step };
+  };
+  let d = "";
+  for (let i = 0; i < n; i += 1) {
+    const previous = points[(i - 1 + n) % n];
+    const corner = points[i];
+    const next = points[(i + 1) % n];
+    const entry = towards(corner, previous, radius);
+    const exit = towards(corner, next, radius);
+    d += i === 0 ? `M ${entry.x} ${entry.y}` : ` L ${entry.x} ${entry.y}`;
+    d += ` Q ${corner.x} ${corner.y} ${exit.x} ${exit.y}`;
+  }
+  return `${d} Z`;
 }
 
 /**
