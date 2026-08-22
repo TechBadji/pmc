@@ -692,7 +692,7 @@
     "legendRange": "Performance = Altitude de la période affichée. Progression = marge relative entre {{from}} et {{to}}, calculée sur toute la plage et non d'une période à l'autre.",
     "errorNoBaseline": "Personne n'a d'évaluation sur « {{period}} » : la progression ne peut pas être calculée depuis cette période. Choisissez-en une autre.",
     "viewVisio": "TPD-VISIO",
-    "visioTitle": "ID-PMC ID-TPD Talents Performance Dashboard"
+    "visioTitle": "Talents Performance Dashboard"
   },
   "teamBoard": {
     "period": "Saisie du",

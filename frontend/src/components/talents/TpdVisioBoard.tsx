@@ -31,7 +31,7 @@ export interface VisioPerson {
 
 // --- Repère du dessin ------------------------------------------------------
 const W = 2400;
-const H = 1080;
+const H = 1260;
 
 const PERF_MIN = 50;
 const PERF_MAX = 120;
@@ -42,10 +42,13 @@ const EVO_MAX = 20;
 const PERF_ORIGIN = 90;
 
 // Trapèze du sol : le fond est plus étroit et plus haut que le devant.
-const FLOOR_FRONT_Y = 1010;
-const FLOOR_BACK_Y = 300;
-const FLOOR_FRONT_HALF = 1160; // demi-largeur au premier plan
-const FLOOR_BACK_HALF = 1020; // demi-largeur au fond
+// Le plateau occupe la plus grande partie du cadre : la grille doit rester
+// lisible en réunion, sur un écran partagé. La marge du haut est celle dont
+// les silhouettes du fond ont besoin pour leurs étiquettes.
+const FLOOR_FRONT_Y = 1150;
+const FLOOR_BACK_Y = 540;
+const FLOOR_FRONT_HALF = 1150; // demi-largeur au premier plan
+const FLOOR_BACK_HALF = 1010; // demi-largeur au fond
 const CENTER_X = W / 2;
 
 // --- Palette ---------------------------------------------------------------
@@ -103,9 +106,9 @@ function spread(people: VisioPerson[]) {
     const point = project(person.performance, person.progression ?? 0);
     let x = point.x;
     let guard = 0;
-    while (placed.some((p) => Math.abs(p.x - x) < 150 && Math.abs(p.y - point.y) < 220) && guard < 12) {
+    while (placed.some((p) => Math.abs(p.x - x) < 190 && Math.abs(p.y - point.y) < 260) && guard < 12) {
       // On décale alternativement à droite puis à gauche, de plus en plus loin.
-      const step = 160 * Math.ceil((guard + 1) / 2);
+      const step = 200 * Math.ceil((guard + 1) / 2);
       x = point.x + (guard % 2 === 0 ? step : -step);
       guard += 1;
     }
@@ -123,12 +126,12 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const floorBackLeft = project(PERF_MIN, EVO_MAX);
   const floorBackRight = project(PERF_MAX, EVO_MAX);
   const positioned = spread(people);
-  const PHOTO_H = 300;
+  const PHOTO_H = 420;
 
   return (
     <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider", bgcolor: "#fff" }}>
       <Stack spacing={0.25} sx={{ mb: 1 }}>
-        <Typography sx={{ fontWeight: 800, fontSize: 20, textAlign: "center", color: TEXT_DARK }}>
+        <Typography sx={{ fontWeight: 800, fontSize: 22, textAlign: "center", color: TEXT_DARK }}>
           {t("talents.visioTitle").toUpperCase()}
         </Typography>
         <Typography sx={{ fontWeight: 700, fontSize: 16, textAlign: "center", color: TEXT_DARK }}>
@@ -274,6 +277,9 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                   {progression !== null ? ` · ${progression > 0 ? "+" : ""}${progression}%` : ""}
                 </title>
                 {person.photo ? (
+                  // `multiply` laisse la grille traverser le fond clair d'un
+                  // portrait : les photos détourées gardent leur transparence,
+                  // et celles restées sur fond blanc se fondent pareillement.
                   <image
                     href={person.photo}
                     x={x - width / 2}
@@ -281,10 +287,11 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                     width={width}
                     height={height}
                     preserveAspectRatio="xMidYMax meet"
+                    style={{ mixBlendMode: "multiply" }}
                   />
                 ) : (
                   <>
-                    <circle cx={x} cy={y - height * 0.72} r={height * 0.17} fill="#dbe4ee" stroke={NAVY} strokeWidth={3} />
+                    <circle cx={x} cy={y - height * 0.72} r={height * 0.17} fill="#dbe4ee" fillOpacity={0.75} stroke={NAVY} strokeWidth={3} />
                     <text
                       x={x}
                       y={y - height * 0.66}
@@ -295,7 +302,17 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                     >
                       {person.name.charAt(0).toUpperCase()}
                     </text>
-                    <rect x={x - width * 0.34} y={y - height * 0.5} width={width * 0.68} height={height * 0.5} rx={8} fill="#dbe4ee" stroke={NAVY} strokeWidth={3} />
+                    <rect
+                      x={x - width * 0.34}
+                      y={y - height * 0.5}
+                      width={width * 0.68}
+                      height={height * 0.5}
+                      rx={8}
+                      fill="#dbe4ee"
+                      fillOpacity={0.75}
+                      stroke={NAVY}
+                      strokeWidth={3}
+                    />
                   </>
                 )}
                 {/* Valeurs au-dessus de la tête, comme sur la planche. */}
