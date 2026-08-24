@@ -29,6 +29,7 @@ export function EditableList({
   readOnly,
   placeholder,
   dense,
+  hideEmpty,
 }: {
   items: string[];
   onChange: (next: string[]) => void;
@@ -36,10 +37,15 @@ export function EditableList({
   readOnly?: boolean;
   placeholder?: string;
   dense?: boolean;
+  /** N'affiche que les lignes renseignées : le bloc ne prend que la place de
+   * ce qu'il contient, au lieu d'étirer la planche sur des cases vides. */
+  hideEmpty?: boolean;
 }) {
   const { t } = useTranslation();
-  const shown = [...items];
-  while (shown.length < rows) shown.push("");
+  const shown = hideEmpty ? [...items] : [...items];
+  if (!hideEmpty) {
+    while (shown.length < rows) shown.push("");
+  }
 
   function setAt(index: number, value: string) {
     const next = [...shown];
@@ -51,6 +57,11 @@ export function EditableList({
 
   return (
     <Stack spacing={dense ? 0.4 : 0.6}>
+      {hideEmpty && shown.length === 0 && readOnly && (
+        <Typography variant="caption" color="text.secondary">
+          —
+        </Typography>
+      )}
       {shown.map((value, i) => (
         <Stack key={i} direction="row" spacing={0.75} alignItems="center">
           <Typography sx={{ fontSize: 11.5, color: "text.secondary", width: 16, textAlign: "right" }}>{i + 1}.</Typography>
@@ -179,7 +190,9 @@ export function TeamSpiderGraph({
       </Typography>
     );
   }
-  const radius = size / 2 - 54;
+  const radius = size / 2 - 48;
+  // Le centre est légèrement au-dessus du milieu : les étiquettes de noms
+  // pendent sous les vignettes, sans quoi la toile paraît basse dans son cadre.
   const center = size / 2;
   const positions = new Map<number, { x: number; y: number }>();
   // Le responsable occupe le centre : la toile se lit alors comme une équipe
@@ -202,7 +215,7 @@ export function TeamSpiderGraph({
   return (
     <Box sx={{ width: "100%", overflowX: "auto" }}>
       <svg
-        viewBox={`0 0 ${size} ${size}`}
+        viewBox={`0 22 ${size} ${size - 22}`}
         width="100%"
         style={{ display: "block", margin: "0 auto", maxWidth: size, height: "auto" }}
       >
