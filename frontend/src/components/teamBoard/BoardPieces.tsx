@@ -30,6 +30,7 @@ export function EditableList({
   placeholder,
   dense,
   hideEmpty,
+  asText,
 }: {
   items: string[];
   onChange: (next: string[]) => void;
@@ -40,6 +41,9 @@ export function EditableList({
   /** N'affiche que les lignes renseignées : le bloc ne prend que la place de
    * ce qu'il contient, au lieu d'étirer la planche sur des cases vides. */
   hideEmpty?: boolean;
+  /** Rendu en texte, sans champ ni bouton : l'état de lecture de la planche,
+   * celui qu'on projette et qu'on remet au client. */
+  asText?: boolean;
 }) {
   const { t } = useTranslation();
   const shown = hideEmpty ? [...items] : [...items];
@@ -53,6 +57,25 @@ export function EditableList({
     // On ne conserve pas les lignes vides de fin : la liste reste propre en base.
     while (next.length && next[next.length - 1] === "") next.pop();
     onChange(next);
+  }
+
+  if (asText) {
+    const filled = items.filter((v) => v.trim() !== "");
+    return (
+      <Stack spacing={dense ? 0.35 : 0.5}>
+        {filled.length === 0 && (
+          <Typography variant="caption" color="text.secondary">
+            —
+          </Typography>
+        )}
+        {filled.map((value, i) => (
+          <Stack key={i} direction="row" spacing={0.75} alignItems="flex-start">
+            <Typography sx={{ fontSize: 11, color: "#5b6472", lineHeight: 1.5 }}>▫</Typography>
+            <Typography sx={{ fontSize: dense ? 11.5 : 12.5, color: "#1f3864", lineHeight: 1.35 }}>{value}</Typography>
+          </Stack>
+        ))}
+      </Stack>
+    );
   }
 
   return (

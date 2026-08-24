@@ -1,4 +1,4 @@
-import { Alert, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Alert, Button, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
@@ -19,6 +19,9 @@ export default function PerformancePage() {
   const [view, setView] = useState<"person" | "team">("person");
   const [teamId, setTeamId] = useState<number | "">("");
   const board = useTeamBoard(teamId);
+  // La planche se lit en texte ; on n'ouvre les champs que pendant une saisie,
+  // qu'il s'agisse d'une nouvelle entrée ou d'une correction demandée.
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     apiClient.get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } }).then((r) => setPeople(r.data.results));
@@ -90,11 +93,24 @@ export default function PerformancePage() {
             dates={board.dates}
             currentId={board.currentId}
             onSelect={board.select}
-            onNew={() => board.startNew(today())}
-            onSave={board.save}
+            onNew={() => {
+              board.startNew(today());
+              setEditing(true);
+            }}
+            onSave={async () => {
+              await board.save();
+              setEditing(false);
+            }}
             dirty={board.dirty}
             saving={board.saving}
             canEdit={canEditBoard}
+            extra={
+              canEditBoard && (
+                <Button size="small" variant={editing ? "contained" : "outlined"} onClick={() => setEditing((e) => !e)}>
+                  {editing ? t("teamBoard.stopEditing") : t("common.edit")}
+                </Button>
+              )
+            }
           />
           {board.error === "duplicate" && <Alert severity="warning">{t("teamBoard.duplicateDate")}</Alert>}
           {board.error === "save" && <Alert severity="error">{t("teamBoard.saveFailed")}</Alert>}
@@ -104,6 +120,7 @@ export default function PerformancePage() {
             board={board.draft}
             patch={board.patch}
             readOnly={!canEditBoard}
+            editing={editing && canEditBoard}
           />
         </Stack>
       )}

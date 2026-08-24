@@ -87,11 +87,13 @@ function TargetsVsActuals({
   onChange,
   readOnly,
   title,
+  editable,
 }: {
   rows: TeamBoard["targets_vs_actuals"];
   onChange: (next: TeamBoard["targets_vs_actuals"]) => void;
   readOnly: boolean;
   title: string;
+  editable: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -103,7 +105,7 @@ function TargetsVsActuals({
 
   return (
     <Box sx={{ position: "relative" }}>
-      {!readOnly && (
+      {!readOnly && editable && (
         <IconButton
           size="small"
           className="pmc-no-print"
@@ -305,12 +307,15 @@ export default function TeamPerformanceIdBoard({
   board,
   patch,
   readOnly,
+  editing,
 }: {
   teamId: number | "";
   teamName: string;
   board: TeamBoard | null;
   patch: (values: Partial<TeamBoard>) => void;
   readOnly: boolean;
+  /** Vrai pendant une saisie : hors de ce cas la planche se lit en texte. */
+  editing: boolean;
 }) {
   const { t } = useTranslation();
   const [members, setMembers] = useState<UserRecord[]>([]);
@@ -474,11 +479,11 @@ export default function TeamPerformanceIdBoard({
         {/* Réussites et échecs se lisent ensemble : un même bloc, deux
           * sections, comme sur la planche de référence. */}
         <BoardPanel title={t("teamBoard.achievements")}>
-          <EditableList items={board.achievements} onChange={(v) => patch({ achievements: v })} rows={5} readOnly={readOnly} dense hideEmpty />
+          <EditableList items={board.achievements} onChange={(v) => patch({ achievements: v })} rows={5} readOnly={readOnly} dense hideEmpty asText={!editing} />
           <Box sx={{ mt: 1.25 }}>
             <BandTitle>{t("teamBoard.failures")}</BandTitle>
             <Box sx={{ mt: 0.75 }}>
-              <EditableList items={board.failures_lessons} onChange={(v) => patch({ failures_lessons: v })} rows={4} readOnly={readOnly} dense hideEmpty />
+              <EditableList items={board.failures_lessons} onChange={(v) => patch({ failures_lessons: v })} rows={4} readOnly={readOnly} dense hideEmpty asText={!editing} />
             </Box>
           </Box>
         </BoardPanel>
@@ -489,6 +494,7 @@ export default function TeamPerformanceIdBoard({
             onChange={(v) => patch({ targets_vs_actuals: v })}
             readOnly={readOnly}
             title={t("teamBoard.targetsVsActuals")}
+            editable={editing}
           />
         </BoardPanel>
       </Box>
@@ -499,22 +505,22 @@ export default function TeamPerformanceIdBoard({
           <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: "#2e7d32", mb: 0.5 }}>
             {t("teamBoard.people").toUpperCase()}
           </Typography>
-          <EditableList items={board.people_strengths} onChange={(v) => patch({ people_strengths: v })} rows={3} readOnly={readOnly} dense hideEmpty />
+          <EditableList items={board.people_strengths} onChange={(v) => patch({ people_strengths: v })} rows={3} readOnly={readOnly} dense hideEmpty asText={!editing} />
           <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: "#2f6bad", mt: 1, mb: 0.5 }}>
             {t("teamBoard.business").toUpperCase()}
           </Typography>
-          <EditableList items={board.business_strengths} onChange={(v) => patch({ business_strengths: v })} rows={3} readOnly={readOnly} dense hideEmpty />
+          <EditableList items={board.business_strengths} onChange={(v) => patch({ business_strengths: v })} rows={3} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
 
         <BoardPanel title={t("teamBoard.weaknesses")} sx={panel}>
           <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: "#2e7d32", mb: 0.5 }}>
             {t("teamBoard.people").toUpperCase()}
           </Typography>
-          <EditableList items={board.people_weaknesses} onChange={(v) => patch({ people_weaknesses: v })} rows={3} readOnly={readOnly} dense hideEmpty />
+          <EditableList items={board.people_weaknesses} onChange={(v) => patch({ people_weaknesses: v })} rows={3} readOnly={readOnly} dense hideEmpty asText={!editing} />
           <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: "#2f6bad", mt: 1, mb: 0.5 }}>
             {t("teamBoard.business").toUpperCase()}
           </Typography>
-          <EditableList items={board.business_weaknesses} onChange={(v) => patch({ business_weaknesses: v })} rows={3} readOnly={readOnly} dense hideEmpty />
+          <EditableList items={board.business_weaknesses} onChange={(v) => patch({ business_weaknesses: v })} rows={3} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
 
         {/* La vision au centre de la planche, comme sur la fiche de référence. */}
@@ -537,7 +543,7 @@ export default function TeamPerformanceIdBoard({
           </Typography>
           <InputBase
             value={board.vision_missions}
-            readOnly={readOnly}
+            readOnly={readOnly || !editing}
             multiline
             minRows={5}
             onChange={(e) => patch({ vision_missions: e.target.value })}
@@ -546,11 +552,11 @@ export default function TeamPerformanceIdBoard({
         </Paper>
 
         <BoardPanel title={t("teamBoard.values")} sx={panel}>
-          <EditableList items={board.values} onChange={(v) => patch({ values: v })} rows={4} readOnly={readOnly} dense hideEmpty />
+          <EditableList items={board.values} onChange={(v) => patch({ values: v })} rows={4} readOnly={readOnly} dense hideEmpty asText={!editing} />
           <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: "#b3211f", mt: 1, mb: 0.5 }}>
             {t("teamBoard.counterValues").toUpperCase()}
           </Typography>
-          <EditableList items={board.counter_values} onChange={(v) => patch({ counter_values: v })} rows={3} readOnly={readOnly} dense hideEmpty />
+          <EditableList items={board.counter_values} onChange={(v) => patch({ counter_values: v })} rows={3} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
 
         {/* Les objectifs se lisent aussi dans le temps : mêmes séries que
@@ -561,6 +567,7 @@ export default function TeamPerformanceIdBoard({
             onChange={(v) => patch({ objectives_plan: v })}
             readOnly={readOnly}
             title={t("teamBoard.objectives")}
+            editable={editing}
           />
         </BoardPanel>
       </Stack>
@@ -619,11 +626,11 @@ export default function TeamPerformanceIdBoard({
         </BoardPanel>
 
         <BoardPanel title={t("teamBoard.prioritiesCohesion")} sx={panel}>
-          <EditableList items={board.priorities_cohesion} onChange={(v) => patch({ priorities_cohesion: v })} rows={5} readOnly={readOnly} dense hideEmpty />
+          <EditableList items={board.priorities_cohesion} onChange={(v) => patch({ priorities_cohesion: v })} rows={5} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
 
         <BoardPanel title={t("teamBoard.prioritiesBusiness")} sx={panel}>
-          <EditableList items={board.priorities_business} onChange={(v) => patch({ priorities_business: v })} rows={5} readOnly={readOnly} dense hideEmpty />
+          <EditableList items={board.priorities_business} onChange={(v) => patch({ priorities_business: v })} rows={5} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
       </Stack>
     </Paper>

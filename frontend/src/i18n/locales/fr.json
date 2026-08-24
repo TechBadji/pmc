@@ -744,6 +744,7 @@
     "toQualify": "À qualifier",
     "matrixProgress": "{{done}} / {{total}} binômes qualifiés dans l'équipe",
     "relationWith": "Relations de {{name}} avec",
-    "noSeries": "Aucune année saisie."
+    "noSeries": "Aucune année saisie.",
+    "stopEditing": "Terminer la saisie"
   }
 }

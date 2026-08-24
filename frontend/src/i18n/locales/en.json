@@ -744,6 +744,7 @@
     "toQualify": "To qualify",
     "matrixProgress": "{{done}} / {{total}} pairs qualified in the team",
     "relationWith": "{{name}}'s relationships with",
-    "noSeries": "No year recorded yet."
+    "noSeries": "No year recorded yet.",
+    "stopEditing": "Finish editing"
   }
 }
