@@ -151,7 +151,7 @@ export function BoardPeriodBar({
  * toxiques ressortent — c'est la lecture de la planche ID-PMC.
  */
 export const RELATION_COLORS: Record<TeamRelationship["quality"], string> = {
-  CORRECT: "#b9bcc2",
+  CORRECT: "#8a909b", // gris soutenu : un lien trop pâle disparaît de la toile
   EXCELLENT: "#2e7d32",
   DIFFICULT: "#ef8f2b",
   TOXIC: "#c62828",
@@ -161,10 +161,15 @@ export function TeamSpiderGraph({
   members,
   relationships,
   size = 420,
+  centerId,
+  showLegend = true,
 }: {
   members: UserRecord[];
   relationships: TeamRelationship[];
   size?: number;
+  /** Personne placée au centre — le responsable de l'équipe. */
+  centerId?: number | null;
+  showLegend?: boolean;
 }) {
   const { t } = useTranslation();
   if (members.length === 0) {
@@ -177,8 +182,13 @@ export function TeamSpiderGraph({
   const radius = size / 2 - 54;
   const center = size / 2;
   const positions = new Map<number, { x: number; y: number }>();
-  members.forEach((m, i) => {
-    const angle = (i / members.length) * Math.PI * 2 - Math.PI / 2;
+  // Le responsable occupe le centre : la toile se lit alors comme une équipe
+  // autour de son manager, et non comme un cercle de pairs indifférenciés.
+  const middle = members.find((m) => m.id === centerId) ?? null;
+  const ring = middle ? members.filter((m) => m.id !== middle.id) : members;
+  if (middle) positions.set(middle.id, { x: center, y: center });
+  ring.forEach((m, i) => {
+    const angle = (i / ring.length) * Math.PI * 2 - Math.PI / 2;
     positions.set(m.id, { x: center + radius * Math.cos(angle), y: center + radius * Math.sin(angle) });
   });
 
@@ -244,6 +254,7 @@ export function TeamSpiderGraph({
           );
         })}
       </svg>
+      {showLegend && (
       <Stack direction="row" spacing={2} justifyContent="center" flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
         {(Object.keys(RELATION_COLORS) as TeamRelationship["quality"][]).map((q) => (
           <Stack key={q} direction="row" spacing={0.75} alignItems="center">
@@ -254,6 +265,7 @@ export function TeamSpiderGraph({
           </Stack>
         ))}
       </Stack>
+      )}
     </Box>
   );
 }

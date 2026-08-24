@@ -436,7 +436,9 @@
     "viewTeamDepartment": "Department action plan",
     "selectMember": "Choose a team member",
     "pickManagerFirst": "Pick a manager to open their individual development plan.",
-    "pickMemberFirst": "Pick a team member to open their individual development plan."
+    "pickMemberFirst": "Pick a team member to open their individual development plan.",
+    "responsibleHelper": "Who is accountable",
+    "targetHelper": "Who it is aimed at"
   },
   "managerDevPlan": {
     "title": "Development Plan for the Manager",
@@ -733,6 +735,12 @@
     "duplicateDate": "An entry already exists at that date for this team. Pick another one.",
     "saveFailed": "Could not save. Try again.",
     "readOnlyHint": "Archived entry: create a new one to edit.",
-    "addYear": "Add a year"
+    "addYear": "Add a year",
+    "matrixTitle": "Relationship quality — {{count}} pairs",
+    "matrixMissing": "{{count}} pair(s) to qualify",
+    "matrixFill": "Set missing ones to “correct”",
+    "pair": "Pair",
+    "relationQuality": "Relationship type",
+    "toQualify": "To qualify"
   }
 }

@@ -171,7 +171,16 @@ export default function CohesionFormPage() {
   const [provisioning, setProvisioning] = useState(false);
   const [plans, setPlans] = useState<ActionPlan[]>([]);
   const [planDialog, setPlanDialog] = useState(false);
-  const [planForm, setPlanForm] = useState({ priority: "", objective: "", due_date: "", responsible: "" });
+  // Une action a deux personnes : celle qui en répond et celle qu'elle vise.
+  // Le champ libre « responsable » laissait les deux dans la même case, sans
+  // qu'on sache jamais laquelle était nommée.
+  const [planForm, setPlanForm] = useState({
+    priority: "",
+    objective: "",
+    due_date: "",
+    responsible: "",
+    target_user: "" as number | "",
+  });
   const [planToDelete, setPlanToDelete] = useState<ActionPlan | null>(null);
 
   useEffect(() => {
@@ -242,10 +251,16 @@ export default function CohesionFormPage() {
     apiClient
       .get<Paginated<UserRecord>>("/users/", { params: { department: teamId, page_size: 200 } })
       .then((r) => setTeamMembers(r.data.results));
+    loadRelationships();
+  }, [teamId]);
+
+  /** Relit les relations : la matrice de saisie écrit directement en base. */
+  function loadRelationships() {
+    if (teamId === "") return;
     apiClient
       .get<Paginated<TeamRelationship>>("/team-relationships/", { params: { team: teamId, page_size: 500 } })
       .then((r) => setTeamRelationships(r.data.results));
-  }, [teamId]);
+  }
 
   const readOnly = viewedAnalysisId !== "";
   // Une planche archivée se relit ; seule la saisie courante s'édite, et
@@ -307,9 +322,12 @@ export default function CohesionFormPage() {
       category: "SOFT_SKILLS",
       status: "TODO",
       ...planForm,
+      // Vide = l'action concerne toute l'équipe.
+      target_user: planForm.target_user === "" ? null : planForm.target_user,
+      due_date: planForm.due_date || null,
     });
     setPlanDialog(false);
-    setPlanForm({ priority: "", objective: "", due_date: "", responsible: "" });
+    setPlanForm({ priority: "", objective: "", due_date: "", responsible: "", target_user: "" });
     await reloadPlans();
   }
 
@@ -448,6 +466,9 @@ export default function CohesionFormPage() {
               relationships={teamRelationships}
               teamName={departments.find((d) => d.id === teamId)?.name ?? ""}
               iceScore={history.length ? Number(history[0].ice_score) : null}
+              teamId={teamId === "" ? 0 : teamId}
+              managerId={departments.find((d) => d.id === teamId)?.manager ?? null}
+              onRelationshipsChanged={loadRelationships}
             />
           )}
         </Stack>
@@ -763,6 +784,7 @@ export default function CohesionFormPage() {
                     <TableRow>
                       <TableCell>{t("actionPlans.priority")}</TableCell>
                       <TableCell sx={{ width: 130 }}>{t("actionPlans.responsible")}</TableCell>
+                      <TableCell sx={{ width: 130 }}>{t("actionPlans.targetUser")}</TableCell>
                       <TableCell sx={{ width: 130 }}>{t("actionPlans.dueDate")}</TableCell>
                       <TableCell sx={{ width: 150 }}>{t("common.status")}</TableCell>
                       <TableCell sx={{ width: 44 }} />
@@ -787,6 +809,9 @@ export default function CohesionFormPage() {
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2">{p.responsible || "—"}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{p.target_user_name ?? t("actionPlans.wholeTeam")}</Typography>
                           </TableCell>
                           <TableCell>
                             <Stack direction="row" spacing={0.5} alignItems="center">
@@ -851,12 +876,39 @@ export default function CohesionFormPage() {
               minRows={2}
               fullWidth
             />
+            {/* Qui répond de l'action, et qui elle vise. */}
             <TextField
+              select
               label={t("actionPlans.responsible")}
               value={planForm.responsible}
               onChange={(e) => setPlanForm({ ...planForm, responsible: e.target.value })}
+              helperText={t("actionPlans.responsibleHelper")}
               fullWidth
-            />
+            >
+              {teamMembers.map((m) => (
+                <MenuItem key={m.id} value={m.full_name || m.email}>
+                  {m.full_name || m.email}
+                  {m.position ? ` — ${m.position}` : ""}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label={t("actionPlans.targetUser")}
+              value={planForm.target_user}
+              onChange={(e) =>
+                setPlanForm({ ...planForm, target_user: e.target.value === "" ? "" : Number(e.target.value) })
+              }
+              helperText={t("actionPlans.targetHelper")}
+              fullWidth
+            >
+              <MenuItem value="">{t("actionPlans.wholeTeam")}</MenuItem>
+              {teamMembers.map((m) => (
+                <MenuItem key={m.id} value={m.id}>
+                  {m.full_name || m.email}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label={t("actionPlans.dueDate")}
               type="date"

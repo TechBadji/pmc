@@ -436,7 +436,9 @@
     "viewTeamDepartment": "Plan d'action du département",
     "selectMember": "Choisir un collaborateur",
     "pickManagerFirst": "Choisissez un manager pour ouvrir son plan de développement individuel.",
-    "pickMemberFirst": "Choisissez un collaborateur pour ouvrir son plan de développement individuel."
+    "pickMemberFirst": "Choisissez un collaborateur pour ouvrir son plan de développement individuel.",
+    "responsibleHelper": "Qui répond de cette action",
+    "targetHelper": "Qui elle vise"
   },
   "managerDevPlan": {
     "title": "Plan de Développement pour le Manager",
@@ -733,6 +735,12 @@
     "duplicateDate": "Une saisie existe déjà à cette date pour cette équipe. Choisissez-en une autre.",
     "saveFailed": "Enregistrement impossible. Réessayez.",
     "readOnlyHint": "Saisie archivée : créez une nouvelle entrée pour modifier.",
-    "addYear": "Ajouter une année"
+    "addYear": "Ajouter une année",
+    "matrixTitle": "Qualité des relations — {{count}} binômes",
+    "matrixMissing": "{{count}} binôme(s) à qualifier",
+    "matrixFill": "Poser les manquants en « correcte »",
+    "pair": "Binôme",
+    "relationQuality": "Nature de la relation",
+    "toQualify": "À qualifier"
   }
 }

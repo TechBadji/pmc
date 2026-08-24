@@ -2,6 +2,7 @@ import { Alert, Box, Paper, Stack, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import type { TeamBoard, TeamRelationship, UserRecord } from "@/api/types";
 import { BOARD_TEXT, EditableList, TeamSpiderGraph } from "./BoardPieces";
+import RelationshipMatrix from "./RelationshipMatrix";
 
 const GOOD = "#4a9a52";
 const BAD = "#b3211f";
@@ -48,6 +49,9 @@ export default function TeamRelationshipBoard({
   relationships,
   teamName,
   iceScore,
+  teamId,
+  managerId,
+  onRelationshipsChanged,
 }: {
   board: TeamBoard | null;
   patch: (values: Partial<TeamBoard>) => void;
@@ -56,6 +60,9 @@ export default function TeamRelationshipBoard({
   relationships: TeamRelationship[];
   teamName: string;
   iceScore: number | null;
+  teamId: number;
+  managerId: number | null;
+  onRelationshipsChanged: () => void;
 }) {
   const { t } = useTranslation();
   if (!board) return <Alert severity="info">{t("teamBoard.noEntryHint")}</Alert>;
@@ -100,7 +107,7 @@ export default function TeamRelationshipBoard({
               <Typography sx={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{teamName || "—"}</Typography>
             </Box>
           </Stack>
-          <TeamSpiderGraph members={members} relationships={relationships} />
+          <TeamSpiderGraph members={members} relationships={relationships} centerId={managerId} />
           {iceScore !== null && (
             <Box sx={{ bgcolor: "#f6e5e3", px: 2, py: 0.5, borderRadius: 0.5 }}>
               <Typography sx={{ fontWeight: 800, fontSize: 14, color: BOARD_TEXT }}>
@@ -127,6 +134,18 @@ export default function TeamRelationshipBoard({
           />
         </Stack>
       </Stack>
+
+      {/* Saisie des liens : sous la toile, pour qu'on voie le résultat de
+        * chaque choix sans quitter la planche. */}
+      <Box sx={{ mt: 2 }} className="pmc-no-print">
+        <RelationshipMatrix
+          teamId={teamId}
+          members={members}
+          relationships={relationships}
+          onChanged={onRelationshipsChanged}
+          readOnly={readOnly}
+        />
+      </Box>
     </Paper>
   );
 }
