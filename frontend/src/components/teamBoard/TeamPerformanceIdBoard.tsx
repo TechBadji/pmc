@@ -32,9 +32,28 @@ import {
   YAxis,
 } from "recharts";
 import { apiClient } from "@/api/client";
-import type { Evaluation, Paginated, TeamBoard, TeamCohesionAnalysis, TeamRelationship, UserRecord } from "@/api/types";
+import type {
+  Evaluation,
+  Paginated,
+  PerformanceRating,
+  TeamBoard,
+  TeamCohesionAnalysis,
+  TeamRelationship,
+  UserRecord,
+} from "@/api/types";
 import { performanceColors } from "@/theme";
 import { BOARD_CREAM, BOARD_TEXT, BandTitle, BoardPanel, EditableList, TeamSpiderGraph } from "./BoardPieces";
+
+/** Performance de référence : au-delà, les objectifs sont tenus. */
+const TPD_TARGET = 90;
+
+/** Les quatre quadrants, dans l'ordre de lecture de la planche. */
+const QUADRANTS = [
+  { key: "tl", above: false, rising: true, light: "orange" as const, tone: "#ed9c28", lightSide: "left" as const },
+  { key: "tr", above: true, rising: true, light: "green" as const, tone: "#2e9e4f", lightSide: "right" as const },
+  { key: "bl", above: false, rising: false, light: "red" as const, tone: "#d32f2f", lightSide: "left" as const },
+  { key: "br", above: true, rising: false, light: "green" as const, tone: "#2e9e4f", lightSide: "right" as const },
+];
 
 const YEAR_COLORS = ["#5b8ac6", "#c0504d", "#9bbb59", "#8064a2", "#4bacc6"];
 
@@ -229,6 +248,73 @@ function TargetsVsActuals({
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+/** Feu tricolore d'un quadrant : vert au-dessus de l'objectif et en
+ * progression, rouge en dessous et en recul, orange entre les deux. */
+function TrafficLight({ color }: { color: "green" | "orange" | "red" }) {
+  const lamps: { key: "red" | "orange" | "green"; fill: string }[] = [
+    { key: "red", fill: "#d32f2f" },
+    { key: "orange", fill: "#ed9c28" },
+    { key: "green", fill: "#2e9e4f" },
+  ];
+  return (
+    <svg width={14} height={30} viewBox="0 0 14 30">
+      <rect x="0.5" y="0.5" width="13" height="29" rx="3" fill="#3b3b3b" stroke="#2a2a2a" />
+      {lamps.map((lamp, i) => (
+        <circle
+          key={lamp.key}
+          cx={7}
+          cy={6.5 + i * 8.5}
+          r={3.1}
+          fill={lamp.key === color ? lamp.fill : "#5c5c5c"}
+          opacity={lamp.key === color ? 1 : 0.55}
+        />
+      ))}
+    </svg>
+  );
+}
+
+/** Vignette d'une personne sur la planche ID-TPD : photo, nom sur bandeau
+ * coloré, écart et performance à droite — la lecture de la capture. */
+function TpdPerson({
+  row,
+  tone,
+}: {
+  row: { id: number; name: string; avatar: string | null; performance: number; progression: number | null; rating: PerformanceRating };
+  tone: string;
+}) {
+  const up = (row.progression ?? 0) >= 0;
+  return (
+    <Stack direction="row" spacing={0.5} alignItems="flex-start">
+      <Stack alignItems="center" spacing={0.25} sx={{ width: 52 }}>
+        <Avatar
+          src={row.avatar ?? undefined}
+          variant="rounded"
+          sx={{ width: 38, height: 38, fontSize: 15, border: "1px solid", borderColor: "divider" }}
+        >
+          {row.name.charAt(0).toUpperCase()}
+        </Avatar>
+        <Box sx={{ bgcolor: tone, borderRadius: 0.5, px: 0.5, maxWidth: "100%" }}>
+          <Typography noWrap sx={{ fontSize: 8.5, fontWeight: 700, color: "#fff" }}>
+            {row.name.split(" ")[0]}
+          </Typography>
+        </Box>
+      </Stack>
+      <Stack spacing={0} sx={{ pt: 0.25 }}>
+        {row.progression !== null && (
+          <Typography sx={{ fontSize: 9.5, fontWeight: 800, color: up ? "#2e9e4f" : "#d32f2f", lineHeight: 1.2 }}>
+            {up ? "▲" : "▼"}
+            {up ? "+" : ""}
+            {row.progression}
+          </Typography>
+        )}
+        <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: performanceColors[row.rating], lineHeight: 1.2 }}>
+          {row.performance}%
+        </Typography>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -636,34 +722,83 @@ export default function TeamPerformanceIdBoard({
           </Stack>
         </BoardPanel>
 
+        {/* ID-TPD : quatre quadrants, l'objectif en abscisse et la progression
+            en ordonnée, un feu par quadrant — la planche de référence. */}
         <BoardPanel title={t("teamBoard.idTpd")} sx={panel}>
-          <Stack spacing={0.5}>
-            {tpdRows.length === 0 && (
-              <Typography variant="caption" color="text.secondary">
-                {t("evaluations.notEvaluated")}
+          {tpdRows.length === 0 ? (
+            <Typography variant="caption" color="text.secondary">
+              {t("evaluations.notEvaluated")}
+            </Typography>
+          ) : (
+            <Box>
+              <Typography sx={{ fontSize: 10.5, fontWeight: 800, textAlign: "center", mb: 0.5 }}>
+                {t("teamBoard.target")}
               </Typography>
-            )}
-            {tpdRows.map((row) => (
-              <Stack key={row.id} direction="row" spacing={1} alignItems="center">
-                <Avatar src={row.avatar ?? undefined} sx={{ width: 26, height: 26, fontSize: 12 }}>
-                  {row.name.charAt(0).toUpperCase()}
-                </Avatar>
-                <Typography noWrap sx={{ fontSize: 11.5, flex: 1, minWidth: 0 }}>
-                  {row.name}
-                </Typography>
-                <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: performanceColors[row.rating] }}>
-                  {row.performance}%
-                </Typography>
-                {row.progression !== null && (
-                  <Typography
-                    sx={{ fontSize: 11, fontWeight: 700, width: 44, textAlign: "right", color: row.progression >= 0 ? "#2e7d32" : "#c62828" }}
-                  >
-                    {row.progression >= 0 ? "▲" : "▼"} {Math.abs(row.progression)}
-                  </Typography>
-                )}
-              </Stack>
-            ))}
-          </Stack>
+              <Box sx={{ position: "relative" }}>
+                {/* Axes, en arrière-plan des quadrants */}
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    "&::before, &::after": {
+                      content: '""',
+                      position: "absolute",
+                      bgcolor: "#c7d0dd",
+                    },
+                    "&::before": { left: "50%", top: 0, bottom: 0, width: "2px", ml: "-1px" },
+                    "&::after": { top: "50%", left: 0, right: 0, height: "2px", mt: "-1px" },
+                  }}
+                />
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: 1,
+                    position: "relative",
+                  }}
+                >
+                  {QUADRANTS.map((quadrant) => {
+                    const people = tpdRows.filter(
+                      (r) =>
+                        (r.performance >= TPD_TARGET) === quadrant.above &&
+                        ((r.progression ?? 0) >= 0) === quadrant.rising
+                    );
+                    return (
+                      <Box
+                        key={quadrant.key}
+                        sx={{
+                          position: "relative",
+                          border: "1.5px dashed",
+                          borderColor: "#9fb3d1",
+                          borderRadius: 1.5,
+                          bgcolor: "#fdfdfd",
+                          minHeight: 96,
+                          p: 0.75,
+                          pt: 1,
+                        }}
+                      >
+                        <Box sx={{ position: "absolute", top: 4, [quadrant.lightSide]: 4 }}>
+                          <TrafficLight color={quadrant.light} />
+                        </Box>
+                        <Stack
+                          direction="row"
+                          spacing={0.75}
+                          flexWrap="wrap"
+                          useFlexGap
+                          justifyContent="center"
+                          sx={{ pl: quadrant.lightSide === "left" ? 2 : 0, pr: quadrant.lightSide === "right" ? 2 : 0 }}
+                        >
+                          {people.map((row) => (
+                            <TpdPerson key={row.id} row={row} tone={quadrant.tone} />
+                          ))}
+                        </Stack>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+            </Box>
+          )}
         </BoardPanel>
 
         <BoardPanel title={t("teamBoard.prioritiesCohesion")} sx={panel}>
