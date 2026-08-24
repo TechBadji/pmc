@@ -122,31 +122,62 @@ function TargetsVsActuals({
           {t("teamBoard.noSeries")}
         </Typography>
       ) : (
-        <ResponsiveContainer width="100%" height={210}>
-          <LineChart data={data} margin={{ top: 26, right: 16, left: 4, bottom: 4 }}>
-            <CartesianGrid stroke="#e6e5df" vertical={false} />
-            <XAxis dataKey="year" tick={{ fontSize: 12, fontWeight: 700, fill: "#3a3a3a" }} tickLine={false} axisLine={false} />
-            <YAxis hide domain={["dataMin - 1", "dataMax + 1"]} />
-            <Legend verticalAlign="bottom" height={26} iconType="plainline" wrapperStyle={{ fontSize: 12 }} />
+        <ResponsiveContainer width="100%" height={162}>
+          {/* Domaine élargi de part et d'autre : sans cette réserve, les
+            * valeurs des points extrêmes sortent du cadre et se coupent. Les
+            * chiffres reprennent la couleur de leur série, seul moyen de les
+            * rattacher sans hésitation quand les deux courbes se croisent. */}
+          <LineChart data={data} margin={{ top: 22, right: 14, left: 6, bottom: 0 }}>
+            <CartesianGrid stroke="#eceae2" vertical={false} />
+            <XAxis
+              dataKey="year"
+              tick={{ fontSize: 11.5, fontWeight: 700, fill: "#3a3a3a" }}
+              tickLine={false}
+              axisLine={{ stroke: "#cfcec6" }}
+              tickMargin={4}
+            />
+            <YAxis hide domain={[(min: number) => min - 6, (max: number) => max + 6]} />
+            <Legend
+              verticalAlign="bottom"
+              height={20}
+              iconType="plainline"
+              iconSize={16}
+              wrapperStyle={{ fontSize: 11.5, fontWeight: 700 }}
+            />
             <Line
               type="linear"
               dataKey="target"
               name={t("teamBoard.target")}
               stroke="#e02b20"
-              strokeWidth={3}
-              dot={{ r: 6, fill: "#e02b20", strokeWidth: 0 }}
+              strokeWidth={2.6}
+              dot={{ r: 5, fill: "#e02b20", stroke: "#fff", strokeWidth: 1.5 }}
+              activeDot={{ r: 6 }}
+              isAnimationActive={false}
             >
-              <LabelList dataKey="target" position="top" style={{ fontSize: 13, fontWeight: 800, fill: "#1a1a1a" }} />
+              <LabelList
+                dataKey="target"
+                position="top"
+                offset={9}
+                style={{ fontSize: 12, fontWeight: 800, fill: "#c22a20" }}
+              />
             </Line>
             <Line
               type="linear"
               dataKey="actual"
               name={t("teamBoard.actual")}
               stroke="#3d8fd0"
-              strokeWidth={3}
-              dot={{ r: 6, fill: "#3d8fd0", strokeWidth: 0 }}
+              strokeWidth={2.6}
+              dot={{ r: 5, fill: "#3d8fd0", stroke: "#fff", strokeWidth: 1.5 }}
+              activeDot={{ r: 6 }}
+              connectNulls
+              isAnimationActive={false}
             >
-              <LabelList dataKey="actual" position="bottom" style={{ fontSize: 13, fontWeight: 800, fill: "#1a1a1a" }} />
+              <LabelList
+                dataKey="actual"
+                position="bottom"
+                offset={9}
+                style={{ fontSize: 12, fontWeight: 800, fill: "#2b6fa8" }}
+              />
             </Line>
           </LineChart>
         </ResponsiveContainer>
@@ -531,26 +562,33 @@ export default function TeamPerformanceIdBoard({
           elevation={0}
           sx={{
             ...panel,
-            p: 2,
+            p: 1.5,
             border: "1px solid",
             borderColor: "divider",
-            borderRadius: "50% / 22%",
+            borderRadius: "50% / 18%",
             bgcolor: "#f2f3f5",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            alignSelf: "flex-start",
           }}
         >
-          <Typography sx={{ fontWeight: 800, fontSize: 12.5, textAlign: "center", mb: 1 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: 12, textAlign: "center", mb: 0.75 }}>
             {t("teamBoard.visionMissions").toUpperCase()}
           </Typography>
           <InputBase
             value={board.vision_missions}
             readOnly={readOnly || !editing}
             multiline
-            minRows={5}
+            minRows={editing ? 3 : 1}
             onChange={(e) => patch({ vision_missions: e.target.value })}
-            sx={{ width: "100%", fontSize: 12.5, textAlign: "center", "& textarea": { textAlign: "center" } }}
+            sx={{
+              width: "100%",
+              fontSize: 12,
+              lineHeight: 1.35,
+              textAlign: "center",
+              "& textarea": { textAlign: "center" },
+            }}
           />
         </Paper>
 
