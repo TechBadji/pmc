@@ -738,9 +738,11 @@
     "addYear": "Add a year",
     "matrixTitle": "Relationship quality — {{count}} pairs",
     "matrixMissing": "{{count}} pair(s) to qualify",
-    "matrixFill": "Set missing ones to “correct”",
+    "matrixFill": "Set the {{count}} missing ones to “correct”",
     "pair": "Pair",
     "relationQuality": "Relationship type",
-    "toQualify": "To qualify"
+    "toQualify": "To qualify",
+    "matrixProgress": "{{done}} / {{total}} pairs qualified in the team",
+    "relationWith": "{{name}}'s relationships with"
   }
 }

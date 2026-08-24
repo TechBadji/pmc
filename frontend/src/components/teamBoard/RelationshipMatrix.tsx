@@ -33,11 +33,14 @@ function pairKey(a: number, b: number) {
  * Saisie de la dynamique relationnelle d'une équipe.
  *
  * Dans un département, chacun est en relation avec tous les autres : ce qui
- * varie n'est pas l'existence du lien mais sa nature. La matrice part donc de
- * cette obligation — elle affiche tous les binômes, signale ceux qui ne sont
- * pas encore qualifiés et propose de les poser d'un coup en « correcte », état
- * neutre à corriger ensuite. Saisir lien par lien, dans une équipe de six,
- * revenait à ne jamais terminer les quinze binômes.
+ * varie n'est pas l'existence du lien mais sa nature. La saisie se fait donc
+ * personne par personne — on choisit un collaborateur, et ses liens avec
+ * chacun des autres s'affichent d'un bloc. Une liste à plat des quinze binômes
+ * d'une équipe de six oblige à chercher les siens ; ici, on qualifie les cinq
+ * relations d'une personne, puis on passe à la suivante.
+ *
+ * Un binôme reste unique : qualifié depuis l'un ou l'autre de ses membres,
+ * c'est la même relation qui est mise à jour.
  */
 export default function RelationshipMatrix({
   teamId,
@@ -55,6 +58,7 @@ export default function RelationshipMatrix({
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<number | "">("");
 
   const byPair = useMemo(() => {
     const map = new Map<string, TeamRelationship>();
@@ -73,6 +77,12 @@ export default function RelationshipMatrix({
   }, [members, byPair]);
 
   const missing = pairs.filter((p) => !p.relation);
+
+  // Personne dont on qualifie les liens : le responsable d'abord, c'est par
+  // lui qu'on commence naturellement une revue d'équipe.
+  const manager = members.find((m) => m.role === "MANAGER") ?? members[0];
+  const focus = members.find((m) => m.id === focusId) ?? manager;
+  const others = members.filter((m) => m.id !== focus?.id);
 
   async function setQuality(a: UserRecord, b: UserRecord, quality: TeamRelationship["quality"]) {
     const existing = byPair.get(pairKey(a.id, b.id));
@@ -126,21 +136,38 @@ export default function RelationshipMatrix({
 
   return (
     <Paper elevation={0} sx={{ p: 1.5, border: "1px solid", borderColor: "divider" }}>
-      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
-        <Typography variant="subtitle2" fontWeight={700}>
-          {t("teamBoard.matrixTitle", { count: pairs.length })}
+      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
+        <Select
+          size="small"
+          value={focus?.id ?? ""}
+          onChange={(e) => setFocusId(Number(e.target.value))}
+          sx={{ minWidth: 260 }}
+        >
+          {members.map((m) => (
+            <MenuItem key={m.id} value={m.id}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Avatar src={m.avatar ?? undefined} sx={{ width: 24, height: 24, fontSize: 11 }}>
+                  {(m.full_name || m.email).charAt(0)}
+                </Avatar>
+                <Typography variant="body2">{m.full_name || m.email}</Typography>
+                {m.role === "MANAGER" && (
+                  <Typography variant="caption" color="text.secondary">
+                    {t("departments.serviceHead")}
+                  </Typography>
+                )}
+              </Stack>
+            </MenuItem>
+          ))}
+        </Select>
+
+        <Typography variant="caption" color="text.secondary">
+          {t("teamBoard.matrixProgress", { done: pairs.length - missing.length, total: pairs.length })}
         </Typography>
-        {missing.length > 0 && (
-          <>
-            <Typography variant="caption" color="warning.main">
-              {t("teamBoard.matrixMissing", { count: missing.length })}
-            </Typography>
-            {!readOnly && (
-              <Button size="small" startIcon={<AutoFixHighOutlinedIcon />} onClick={fillMissing} disabled={busy}>
-                {t("teamBoard.matrixFill")}
-              </Button>
-            )}
-          </>
+
+        {missing.length > 0 && !readOnly && (
+          <Button size="small" startIcon={<AutoFixHighOutlinedIcon />} onClick={fillMissing} disabled={busy}>
+            {t("teamBoard.matrixFill", { count: missing.length })}
+          </Button>
         )}
       </Stack>
 
@@ -154,32 +181,31 @@ export default function RelationshipMatrix({
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>{t("teamBoard.pair")}</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 210 }}>{t("teamBoard.relationQuality")}</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>
+                {t("teamBoard.relationWith", { name: focus?.full_name || focus?.email || "" })}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 230 }}>{t("teamBoard.relationQuality")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {pairs.map(({ a, b, relation }) => {
+            {others.map((other) => {
+              const relation = focus ? byPair.get(pairKey(focus.id, other.id)) : undefined;
               const quality: TeamRelationship["quality"] | "" = relation?.quality ?? "";
               return (
-                <TableRow key={pairKey(a.id, b.id)} hover>
+                <TableRow key={other.id} hover>
                   <TableCell>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Avatar src={a.avatar ?? undefined} sx={{ width: 26, height: 26, fontSize: 12 }}>
-                        {(a.full_name || a.email).charAt(0)}
+                    <Stack direction="row" spacing={1.25} alignItems="center">
+                      <Avatar src={other.avatar ?? undefined} sx={{ width: 30, height: 30, fontSize: 13 }}>
+                        {(other.full_name || other.email).charAt(0)}
                       </Avatar>
-                      <Typography variant="body2" noWrap>
-                        {a.full_name || a.email}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        ↔
-                      </Typography>
-                      <Avatar src={b.avatar ?? undefined} sx={{ width: 26, height: 26, fontSize: 12 }}>
-                        {(b.full_name || b.email).charAt(0)}
-                      </Avatar>
-                      <Typography variant="body2" noWrap>
-                        {b.full_name || b.email}
-                      </Typography>
+                      <Stack sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" fontWeight={600} noWrap>
+                          {other.full_name || other.email}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" noWrap>
+                          {other.position}
+                        </Typography>
+                      </Stack>
                     </Stack>
                   </TableCell>
                   <TableCell>
@@ -188,8 +214,8 @@ export default function RelationshipMatrix({
                       fullWidth
                       displayEmpty
                       value={quality}
-                      disabled={readOnly || busy}
-                      onChange={(e) => setQuality(a, b, e.target.value as TeamRelationship["quality"])}
+                      disabled={readOnly || busy || !focus}
+                      onChange={(e) => focus && setQuality(focus, other, e.target.value as TeamRelationship["quality"])}
                       renderValue={(value) =>
                         !value ? (
                           <Typography variant="body2" color="warning.main">

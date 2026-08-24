@@ -738,9 +738,11 @@
     "addYear": "Ajouter une année",
     "matrixTitle": "Qualité des relations — {{count}} binômes",
     "matrixMissing": "{{count}} binôme(s) à qualifier",
-    "matrixFill": "Poser les manquants en « correcte »",
+    "matrixFill": "Poser les {{count}} manquants en « correcte »",
     "pair": "Binôme",
     "relationQuality": "Nature de la relation",
-    "toQualify": "À qualifier"
+    "toQualify": "À qualifier",
+    "matrixProgress": "{{done}} / {{total}} binômes qualifiés dans l'équipe",
+    "relationWith": "Relations de {{name}} avec"
   }
 }
