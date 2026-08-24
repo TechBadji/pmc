@@ -215,7 +215,7 @@ export function TeamSpiderGraph({
   return (
     <Box sx={{ width: "100%", overflowX: "auto" }}>
       <svg
-        viewBox={`0 22 ${size} ${size - 22}`}
+        viewBox={`0 8 ${size} ${size - 8}`}
         width="100%"
         style={{ display: "block", margin: "0 auto", maxWidth: size, height: "auto" }}
       >

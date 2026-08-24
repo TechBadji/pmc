@@ -458,9 +458,9 @@ export default function TeamPerformanceIdBoard({
         </BoardPanel>
 
         <BoardPanel title={t("teamBoard.spider")}>
-          {/* La toile porte sa propre marge interne : on la remonte pour
-            * qu'elle s'aligne sur le haut des blocs voisins. */}
-          <Box sx={{ mt: -2 }}>
+          {/* Remontée mesurée : assez pour ne pas flotter bas dans le cadre,
+            * pas au point de venir buter contre le bandeau du titre. */}
+          <Box sx={{ mt: 0.5 }}>
             <TeamSpiderGraph
               members={members}
               relationships={relationships}
