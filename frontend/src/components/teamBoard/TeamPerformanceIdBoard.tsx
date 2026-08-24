@@ -423,7 +423,7 @@ export default function TeamPerformanceIdBoard({
           // Écart élargi entre les cinq blocs : ils se resserrent d'autant,
           // sans que la ligne cesse d'occuper toute la largeur ni de s'aligner
           // sur les bandeaux du dessous.
-          gap: 3,
+          gap: 5,
           mb: 1.5,
           alignItems: "stretch",
           gridTemplateColumns: {
