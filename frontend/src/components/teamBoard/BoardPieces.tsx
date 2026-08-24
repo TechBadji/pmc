@@ -192,8 +192,9 @@ export function TeamSpiderGraph({
     positions.set(m.id, { x: center + radius * Math.cos(angle), y: center + radius * Math.sin(angle) });
   });
 
-  // Les relations marquantes se dessinent en dernier : elles doivent passer
-  // au-dessus du maillage gris, sinon elles disparaissent dans la toile.
+  // Tous les liens ont la même épaisseur : seule la couleur distingue leur
+  // nature. Les relations marquantes se dessinent néanmoins en dernier, pour
+  // passer au-dessus du maillage gris aux croisements.
   const ordered = [...relationships].sort(
     (a, b) => (a.quality === "CORRECT" ? 0 : 1) - (b.quality === "CORRECT" ? 0 : 1)
   );
@@ -214,8 +215,8 @@ export function TeamSpiderGraph({
               x2={to.x}
               y2={to.y}
               stroke={RELATION_COLORS[rel.quality]}
-              strokeWidth={strong ? 2.6 : 1.5}
-              opacity={strong ? 0.95 : 0.8}
+              strokeWidth={2.6}
+              opacity={strong ? 0.95 : 0.85}
             />
           );
         })}
