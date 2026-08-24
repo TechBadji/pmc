@@ -151,7 +151,7 @@ export function BoardPeriodBar({
  * toxiques ressortent — c'est la lecture de la planche ID-PMC.
  */
 export const RELATION_COLORS: Record<TeamRelationship["quality"], string> = {
-  CORRECT: "#8a909b", // gris soutenu : un lien trop pâle disparaît de la toile
+  CORRECT: "#5f6672", // gris franc : le lien doit se voir sans hésitation
   EXCELLENT: "#2e7d32",
   DIFFICULT: "#ef8f2b",
   TOXIC: "#c62828",
@@ -214,8 +214,8 @@ export function TeamSpiderGraph({
               x2={to.x}
               y2={to.y}
               stroke={RELATION_COLORS[rel.quality]}
-              strokeWidth={strong ? 2.4 : 1}
-              opacity={strong ? 0.95 : 0.55}
+              strokeWidth={strong ? 2.6 : 1.5}
+              opacity={strong ? 0.95 : 0.8}
             />
           );
         })}
