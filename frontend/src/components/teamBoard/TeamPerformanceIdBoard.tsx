@@ -408,13 +408,28 @@ export default function TeamPerformanceIdBoard({
         </Typography>
       </Box>
 
-      {/* ---- Bandeau 1 : équipe, cohésion, relations, réalisations ---- */}
-      <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap alignItems="stretch" sx={{ mb: 1.5 }}>
-        <BoardPanel title={t("teamBoard.team")} sx={panel}>
+      {/* ---- Bandeau 1 : équipe, cohésion, relations, réalisations ----
+          Cinq colonnes de même largeur et de même hauteur, comme sur la
+          planche. La grille remplace l'empilement souple : celui-ci laissait
+          chaque bloc prendre sa largeur propre et rompait l'alignement. */}
+      <Box
+        sx={{
+          display: "grid",
+          gap: 1.5,
+          mb: 1.5,
+          alignItems: "stretch",
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, minmax(0, 1fr))",
+            lg: "repeat(5, minmax(0, 1fr))",
+          },
+        }}
+      >
+        <BoardPanel title={t("teamBoard.team")}>
           <TeamOrgChart manager={manager} members={others} />
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.teamCohesion")} sx={panel}>
+        <BoardPanel title={t("teamBoard.teamCohesion")}>
           {cohesionByYear.length === 0 ? (
             <Typography variant="caption" color="text.secondary">
               {t("cohesion.noHistory")}
@@ -442,7 +457,7 @@ export default function TeamPerformanceIdBoard({
           )}
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.spider")} sx={{ ...panel, minWidth: 300 }}>
+        <BoardPanel title={t("teamBoard.spider")}>
           <TeamSpiderGraph
             members={members}
             relationships={relationships}
@@ -454,7 +469,7 @@ export default function TeamPerformanceIdBoard({
 
         {/* Réussites et échecs se lisent ensemble : un même bloc, deux
           * sections, comme sur la planche de référence. */}
-        <BoardPanel title={t("teamBoard.achievements")} sx={panel}>
+        <BoardPanel title={t("teamBoard.achievements")}>
           <EditableList items={board.achievements} onChange={(v) => patch({ achievements: v })} rows={5} readOnly={readOnly} dense />
           <Box sx={{ mt: 1.25 }}>
             <BandTitle>{t("teamBoard.failures")}</BandTitle>
@@ -464,7 +479,7 @@ export default function TeamPerformanceIdBoard({
           </Box>
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.targetsVsActuals")} sx={panel}>
+        <BoardPanel title={t("teamBoard.targetsVsActuals")}>
           <TargetsVsActuals
             rows={board.targets_vs_actuals}
             onChange={(v) => patch({ targets_vs_actuals: v })}
@@ -472,7 +487,7 @@ export default function TeamPerformanceIdBoard({
             title={t("teamBoard.targetsVsActuals")}
           />
         </BoardPanel>
-      </Stack>
+      </Box>
 
       {/* ---- Bandeau 2 : forces, faiblesses, vision, valeurs, objectifs ---- */}
       <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap alignItems="stretch" sx={{ mb: 1.5 }}>

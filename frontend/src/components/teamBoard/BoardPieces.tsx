@@ -201,7 +201,11 @@ export function TeamSpiderGraph({
 
   return (
     <Box sx={{ width: "100%", overflowX: "auto" }}>
-      <svg width={size} height={size} style={{ display: "block", margin: "0 auto" }}>
+      <svg
+        viewBox={`0 0 ${size} ${size}`}
+        width="100%"
+        style={{ display: "block", margin: "0 auto", maxWidth: size, height: "auto" }}
+      >
         {ordered.map((rel) => {
           const from = positions.get(rel.from_user);
           const to = positions.get(rel.to_user);
