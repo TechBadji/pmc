@@ -10,16 +10,13 @@ import {
   Line,
   LineChart,
   ResponsiveContainer,
-  Scatter,
-  ScatterChart,
   XAxis,
   YAxis,
-  ZAxis,
 } from "recharts";
 import { apiClient } from "@/api/client";
 import type { Evaluation, Paginated, TeamBoard, TeamCohesionAnalysis, TeamRelationship, UserRecord } from "@/api/types";
 import { performanceColors } from "@/theme";
-import { BOARD_CREAM, BOARD_TEXT, BoardPanel, EditableList, TeamSpiderGraph } from "./BoardPieces";
+import { BOARD_CREAM, BOARD_TEXT, BandTitle, BoardPanel, EditableList, TeamSpiderGraph } from "./BoardPieces";
 
 const YEAR_COLORS = ["#5b8ac6", "#c0504d", "#9bbb59", "#8064a2", "#4bacc6"];
 
@@ -136,31 +133,89 @@ function TargetsVsActuals({
   );
 }
 
-/** Matrice ID-3A de l'équipe pour une campagne : Aptitudes (HSI) en ordonnée,
- * Attitudes (SSI) en abscisse, une bulle par membre, colorée par son palier. */
-function Id3aTeamChart({ points, title, tpr }: { points: any[]; title: string; tpr: number | null }) {
+/**
+ * Matrice ID-3A de l'équipe pour une campagne, conforme à la planche : une
+ * bulle par personne, colorée selon son palier, portant son prénom et l'année ;
+ * Attitudes (SSI) en abscisse, Aptitudes (HSI) en ordonnée, graduées de 0 à 5
+ * par demi-points ; le TPR de la période encadré sous le repère.
+ */
+function Id3aTeamChart({
+  points,
+  title,
+  tpr,
+  year,
+}: {
+  points: { id: number; x: number; y: number; label: string; color: string }[];
+  title: string;
+  tpr: number | null;
+  year: string;
+}) {
   const { t } = useTranslation();
+  const SIZE = { w: 460, h: 330 };
+  const PAD = { left: 46, right: 18, top: 16, bottom: 44 };
+  const plotW = SIZE.w - PAD.left - PAD.right;
+  const plotH = SIZE.h - PAD.top - PAD.bottom;
+  const X = (v: number) => PAD.left + (v / 5) * plotW;
+  const Y = (v: number) => PAD.top + plotH - (v / 5) * plotH;
+  const ticks = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+
   return (
     <Stack spacing={0.5}>
       <Typography sx={{ fontSize: 11.5, fontWeight: 700, textAlign: "center", color: BOARD_TEXT }}>{title}</Typography>
-      <ResponsiveContainer width="100%" height={190}>
-        <ScatterChart margin={{ top: 8, right: 12, bottom: 18, left: 0 }}>
-          <CartesianGrid stroke="#dfe6ef" />
-          <XAxis type="number" dataKey="x" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 10 }} />
-          <YAxis type="number" dataKey="y" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 10 }} />
-          <ZAxis range={[260, 260]} />
-          <Scatter data={points}>
-            {points.map((p) => (
-              <Cell key={p.id} fill={p.color} />
-            ))}
-            <LabelList dataKey="label" position="top" style={{ fontSize: 9, fontWeight: 700, fill: BOARD_TEXT }} />
-          </Scatter>
-        </ScatterChart>
-      </ResponsiveContainer>
+      <Box sx={{ width: "100%", overflowX: "auto" }}>
+        <svg viewBox={`0 0 ${SIZE.w} ${SIZE.h}`} width="100%" style={{ display: "block" }}>
+          {/* Trame fine, comme sur la planche */}
+          <rect x={PAD.left} y={PAD.top} width={plotW} height={plotH} fill="#f4f8fd" stroke="#c9d6e6" />
+          {ticks.map((v) => (
+            <line key={`gx-${v}`} x1={X(v)} y1={PAD.top} x2={X(v)} y2={PAD.top + plotH} stroke="#dbe6f2" strokeWidth={1} />
+          ))}
+          {ticks.map((v) => (
+            <line key={`gy-${v}`} x1={PAD.left} y1={Y(v)} x2={PAD.left + plotW} y2={Y(v)} stroke="#dbe6f2" strokeWidth={1} />
+          ))}
+          {ticks.map((v) => (
+            <text key={`ty-${v}`} x={PAD.left - 8} y={Y(v) + 4} textAnchor="end" fontSize={10} fontWeight={700} fill="#2f6bad">
+              {v % 1 === 0 ? v : v.toFixed(1)}
+            </text>
+          ))}
+          {[0, 1, 2, 3, 4, 5].map((v) => (
+            <text key={`tx-${v}`} x={X(v)} y={PAD.top + plotH + 16} textAnchor="middle" fontSize={10} fontWeight={700} fill="#2e7d32">
+              {v}
+            </text>
+          ))}
+
+          {/* Bulles : la personne, son prénom et l'année, comme sur la planche */}
+          {points.map((p) => (
+            <g key={p.id}>
+              <circle cx={X(p.x)} cy={Y(p.y)} r={26} fill={p.color} opacity={0.92} />
+              <circle cx={X(p.x) - 8} cy={Y(p.y) - 9} r={7} fill="#ffffff" opacity={0.28} />
+              <text x={X(p.x)} y={Y(p.y) - 1} textAnchor="middle" fontSize={9} fontWeight={800} fill="#fff">
+                {p.label.toUpperCase().slice(0, 9)}
+              </text>
+              <text x={X(p.x)} y={Y(p.y) + 10} textAnchor="middle" fontSize={8.5} fontWeight={700} fill="#fff">
+                {year}
+              </text>
+            </g>
+          ))}
+
+          {/* Intitulés des axes */}
+          <g transform={`translate(14 ${PAD.top + plotH / 2}) rotate(-90)`}>
+            <rect x={-42} y={-9} width={84} height={18} rx={2} fill="#3b5aa0" />
+            <text x={0} y={4} textAnchor="middle" fontSize={10} fontWeight={800} fill="#fff">
+              {t("evaluationForm.aptitudes").toUpperCase()}
+            </text>
+          </g>
+          <g transform={`translate(${PAD.left + plotW / 2} ${SIZE.h - 8})`}>
+            <rect x={-46} y={-14} width={92} height={18} rx={2} fill="#4a9a52" />
+            <text x={0} y={-1} textAnchor="middle" fontSize={10} fontWeight={800} fill="#fff">
+              {t("evaluationForm.attitudes").toUpperCase()}
+            </text>
+          </g>
+        </svg>
+      </Box>
       {tpr !== null && (
-        <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 0.5, py: 0.4, textAlign: "center" }}>
-          <Typography sx={{ fontSize: 12, fontWeight: 800, color: BOARD_TEXT }}>
-            {t("teamBoard.tpr")} = {tpr.toFixed(0)}%
+        <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 0.5, py: 0.5, textAlign: "center", bgcolor: "#fff" }}>
+          <Typography sx={{ fontSize: 13, fontWeight: 800, color: BOARD_TEXT }}>
+            {t("teamBoard.tpr")} {year} = {tpr.toFixed(0)}%
           </Typography>
         </Box>
       )}
@@ -242,7 +297,6 @@ export default function TeamPerformanceIdBoard({
       id: e.id,
       x: Number(e.ssi),
       y: Number(e.hsi),
-      z: 260,
       label: (e.user_name || "").split(" ")[0],
       color: performanceColors[e.performance_rating],
     }));
@@ -323,17 +377,26 @@ export default function TeamPerformanceIdBoard({
         </BoardPanel>
 
         <BoardPanel title={t("teamBoard.spider")} sx={{ ...panel, minWidth: 300 }}>
-          <TeamSpiderGraph members={members} relationships={relationships} size={300} />
+          <TeamSpiderGraph
+            members={members}
+            relationships={relationships}
+            size={300}
+            centerId={manager?.id ?? null}
+            showLegend={false}
+          />
         </BoardPanel>
 
-        <Stack spacing={1.5} sx={panel}>
-          <BoardPanel title={t("teamBoard.achievements")}>
-            <EditableList items={board.achievements} onChange={(v) => patch({ achievements: v })} rows={4} readOnly={readOnly} dense />
-          </BoardPanel>
-          <BoardPanel title={t("teamBoard.failures")}>
-            <EditableList items={board.failures_lessons} onChange={(v) => patch({ failures_lessons: v })} rows={3} readOnly={readOnly} dense />
-          </BoardPanel>
-        </Stack>
+        {/* Réussites et échecs se lisent ensemble : un même bloc, deux
+          * sections, comme sur la planche de référence. */}
+        <BoardPanel title={t("teamBoard.achievements")} sx={panel}>
+          <EditableList items={board.achievements} onChange={(v) => patch({ achievements: v })} rows={5} readOnly={readOnly} dense />
+          <Box sx={{ mt: 1.25 }}>
+            <BandTitle>{t("teamBoard.failures")}</BandTitle>
+            <Box sx={{ mt: 0.75 }}>
+              <EditableList items={board.failures_lessons} onChange={(v) => patch({ failures_lessons: v })} rows={4} readOnly={readOnly} dense />
+            </Box>
+          </Box>
+        </BoardPanel>
 
         <BoardPanel title={t("teamBoard.targetsVsActuals")} sx={panel}>
           <TargetsVsActuals rows={board.targets_vs_actuals} onChange={(v) => patch({ targets_vs_actuals: v })} readOnly={readOnly} />
@@ -400,8 +463,17 @@ export default function TeamPerformanceIdBoard({
           <EditableList items={board.counter_values} onChange={(v) => patch({ counter_values: v })} rows={3} readOnly={readOnly} dense />
         </BoardPanel>
 
+        {/* Les objectifs se lisent aussi dans le temps : mêmes séries que
+          * « Réalisations vs objectifs », sur les années à venir. */}
         <BoardPanel title={t("teamBoard.objectives")} sx={panel}>
-          <EditableList items={board.objectives} onChange={(v) => patch({ objectives: v })} rows={5} readOnly={readOnly} dense />
+          <TargetsVsActuals
+            rows={board.objectives_plan}
+            onChange={(v) => patch({ objectives_plan: v })}
+            readOnly={readOnly}
+          />
+          <Box sx={{ mt: 1 }}>
+            <EditableList items={board.objectives} onChange={(v) => patch({ objectives: v })} rows={3} readOnly={readOnly} dense />
+          </Box>
         </BoardPanel>
       </Stack>
 
@@ -413,14 +485,16 @@ export default function TeamPerformanceIdBoard({
               <Id3aTeamChart
                 points={previous.points}
                 tpr={previous.tpr}
-                title={campaigns[campaigns.length - 2]?.name ?? "—"}
+                title={`ID 3A — ${campaigns[campaigns.length - 2]?.name ?? "—"}`}
+                year={(campaigns[campaigns.length - 2]?.start ?? "").slice(0, 4)}
               />
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Id3aTeamChart
                 points={current.points}
                 tpr={current.tpr}
-                title={campaigns[campaigns.length - 1]?.name ?? "—"}
+                title={`ID 3A — ${campaigns[campaigns.length - 1]?.name ?? "—"}`}
+                year={(campaigns[campaigns.length - 1]?.start ?? "").slice(0, 4)}
               />
             </Box>
           </Stack>

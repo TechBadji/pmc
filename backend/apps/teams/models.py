@@ -159,6 +159,9 @@ class TeamBoard(models.Model):
     priorities_business = models.JSONField("Priorités — business", default=list, blank=True)
     # Réalisations vs objectifs : une ligne par année {"year", "target", "actual"}.
     targets_vs_actuals = models.JSONField("Réalisations vs objectifs", default=list, blank=True)
+    # Objectifs des années à venir, même forme : l'équipe compare ce qu'elle
+    # vise à ce qu'elle a déjà tenu.
+    objectives_plan = models.JSONField("Objectifs par année", default=list, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

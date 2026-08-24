@@ -369,4 +369,6 @@ export interface TeamBoard {
   priorities_business: string[];
   /** Une ligne par année : objectif visé et résultat obtenu. */
   targets_vs_actuals: { year: string; target: number | null; actual: number | null }[];
+  /** Mêmes séries, projetées sur les années à venir. */
+  objectives_plan: { year: string; target: number | null; actual: number | null }[];
 }

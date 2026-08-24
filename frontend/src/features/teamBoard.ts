@@ -26,6 +26,7 @@ function emptyBoard(team: number, date: string): TeamBoard {
     priorities_cohesion: [],
     priorities_business: [],
     targets_vs_actuals: [],
+    objectives_plan: [],
   };
 }
 

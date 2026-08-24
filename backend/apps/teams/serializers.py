@@ -121,6 +121,7 @@ class TeamBoardSerializer(serializers.ModelSerializer):
             "vision_missions", "values", "counter_values",
             "achievements", "failures_lessons", "objectives",
             "priorities_cohesion", "priorities_business", "targets_vs_actuals",
+            "objectives_plan",
             "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
