@@ -743,6 +743,7 @@
     "relationQuality": "Relationship type",
     "toQualify": "To qualify",
     "matrixProgress": "{{done}} / {{total}} pairs qualified in the team",
-    "relationWith": "{{name}}'s relationships with"
+    "relationWith": "{{name}}'s relationships with",
+    "noSeries": "No year recorded yet."
   }
 }

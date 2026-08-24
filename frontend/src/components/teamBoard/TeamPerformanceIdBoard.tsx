@@ -1,4 +1,21 @@
-import { Alert, Avatar, Box, InputBase, Paper, Stack, TextField, Typography } from "@mui/material";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  InputBase,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -7,6 +24,7 @@ import {
   CartesianGrid,
   Cell,
   LabelList,
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -55,81 +73,129 @@ function TeamOrgChart({ manager, members }: { manager: UserRecord | null; member
   );
 }
 
-/** Réalisations vs objectifs : une ligne par année, saisie à la main puis
- * tracée — l'objectif d'une équipe n'est pas déductible des évaluations. */
+/**
+ * Réalisations vs objectifs : la courbe seule, comme sur la planche — deux
+ * séries, les valeurs au-dessus de chaque point et la légende dessous.
+ *
+ * La saisie des années passe par une boîte de dialogue plutôt que par des
+ * champs sous le graphe : la planche est faite pour être projetée et remise au
+ * client, un formulaire y ferait tache. Le crayon n'apparaît qu'en édition et
+ * disparaît à l'impression.
+ */
 function TargetsVsActuals({
   rows,
   onChange,
   readOnly,
+  title,
 }: {
   rows: TeamBoard["targets_vs_actuals"];
   onChange: (next: TeamBoard["targets_vs_actuals"]) => void;
   readOnly: boolean;
+  title: string;
 }) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const data = rows.filter((r) => r.year);
 
   function setAt(i: number, patch: Partial<TeamBoard["targets_vs_actuals"][number]>) {
-    const next = rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r));
-    onChange(next);
+    onChange(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   }
 
   return (
-    <Stack spacing={1}>
-      {data.length > 0 && (
-        <ResponsiveContainer width="100%" height={150}>
-          <LineChart data={data} margin={{ top: 18, right: 12, left: 0, bottom: 0 }}>
+    <Box sx={{ position: "relative" }}>
+      {!readOnly && (
+        <IconButton
+          size="small"
+          className="pmc-no-print"
+          onClick={() => setOpen(true)}
+          sx={{ position: "absolute", top: -6, right: -4 }}
+          aria-label={t("common.edit")}
+        >
+          <EditOutlinedIcon fontSize="small" />
+        </IconButton>
+      )}
+
+      {data.length === 0 ? (
+        <Typography variant="caption" color="text.secondary">
+          {t("teamBoard.noSeries")}
+        </Typography>
+      ) : (
+        <ResponsiveContainer width="100%" height={210}>
+          <LineChart data={data} margin={{ top: 26, right: 16, left: 4, bottom: 4 }}>
             <CartesianGrid stroke="#e6e5df" vertical={false} />
-            <XAxis dataKey="year" tick={{ fontSize: 11, fill: "#6b6b66" }} tickLine={false} />
-            <YAxis hide />
-            <Line type="linear" dataKey="target" stroke="#d33a30" strokeWidth={2.5} dot={{ r: 5 }} name={t("teamBoard.target")}>
-              <LabelList dataKey="target" position="top" style={{ fontSize: 11, fontWeight: 700, fill: "#d33a30" }} />
+            <XAxis dataKey="year" tick={{ fontSize: 12, fontWeight: 700, fill: "#3a3a3a" }} tickLine={false} axisLine={false} />
+            <YAxis hide domain={["dataMin - 1", "dataMax + 1"]} />
+            <Legend verticalAlign="bottom" height={26} iconType="plainline" wrapperStyle={{ fontSize: 12 }} />
+            <Line
+              type="linear"
+              dataKey="target"
+              name={t("teamBoard.target")}
+              stroke="#e02b20"
+              strokeWidth={3}
+              dot={{ r: 6, fill: "#e02b20", strokeWidth: 0 }}
+            >
+              <LabelList dataKey="target" position="top" style={{ fontSize: 13, fontWeight: 800, fill: "#1a1a1a" }} />
             </Line>
-            <Line type="linear" dataKey="actual" stroke="#2f7fd0" strokeWidth={2.5} dot={{ r: 5 }} name={t("teamBoard.actual")}>
-              <LabelList dataKey="actual" position="bottom" style={{ fontSize: 11, fontWeight: 700, fill: "#2f7fd0" }} />
+            <Line
+              type="linear"
+              dataKey="actual"
+              name={t("teamBoard.actual")}
+              stroke="#3d8fd0"
+              strokeWidth={3}
+              dot={{ r: 6, fill: "#3d8fd0", strokeWidth: 0 }}
+            >
+              <LabelList dataKey="actual" position="bottom" style={{ fontSize: 13, fontWeight: 800, fill: "#1a1a1a" }} />
             </Line>
           </LineChart>
         </ResponsiveContainer>
       )}
-      {!readOnly && (
-        <Stack spacing={0.5}>
-          {rows.map((row, i) => (
-            <Stack key={i} direction="row" spacing={0.5}>
-              <TextField
-                size="small"
-                value={row.year}
-                placeholder={t("teamBoard.year")}
-                onChange={(e) => setAt(i, { year: e.target.value })}
-                sx={{ width: 84, "& .MuiInputBase-input": { fontSize: 12, py: 0.5 } }}
-              />
-              <TextField
-                size="small"
-                type="number"
-                value={row.target ?? ""}
-                placeholder={t("teamBoard.target")}
-                onChange={(e) => setAt(i, { target: e.target.value === "" ? null : Number(e.target.value) })}
-                sx={{ width: 96, "& .MuiInputBase-input": { fontSize: 12, py: 0.5 } }}
-              />
-              <TextField
-                size="small"
-                type="number"
-                value={row.actual ?? ""}
-                placeholder={t("teamBoard.actual")}
-                onChange={(e) => setAt(i, { actual: e.target.value === "" ? null : Number(e.target.value) })}
-                sx={{ width: 96, "& .MuiInputBase-input": { fontSize: 12, py: 0.5 } }}
-              />
-            </Stack>
-          ))}
-          <Typography
-            component="button"
-            onClick={() => onChange([...rows, { year: "", target: null, actual: null }])}
-            sx={{ alignSelf: "flex-start", background: "none", border: 0, color: "primary.main", fontSize: 12, cursor: "pointer", p: 0 }}
-          >
-            + {t("teamBoard.addYear")}
-          </Typography>
-        </Stack>
-      )}
-    </Stack>
+
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>{title}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1} sx={{ mt: 1 }}>
+            {rows.map((row, i) => (
+              <Stack key={i} direction="row" spacing={1}>
+                <TextField
+                  size="small"
+                  label={t("teamBoard.year")}
+                  value={row.year}
+                  onChange={(e) => setAt(i, { year: e.target.value })}
+                  sx={{ width: 110 }}
+                />
+                <TextField
+                  size="small"
+                  type="number"
+                  label={t("teamBoard.target")}
+                  value={row.target ?? ""}
+                  onChange={(e) => setAt(i, { target: e.target.value === "" ? null : Number(e.target.value) })}
+                  sx={{ width: 120 }}
+                />
+                <TextField
+                  size="small"
+                  type="number"
+                  label={t("teamBoard.actual")}
+                  value={row.actual ?? ""}
+                  onChange={(e) => setAt(i, { actual: e.target.value === "" ? null : Number(e.target.value) })}
+                  sx={{ width: 120 }}
+                />
+              </Stack>
+            ))}
+            <Button
+              size="small"
+              startIcon={<AddOutlinedIcon />}
+              onClick={() => onChange([...rows, { year: "", target: null, actual: null }])}
+              sx={{ alignSelf: "flex-start" }}
+            >
+              {t("teamBoard.addYear")}
+            </Button>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>{t("common.close")}</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
 
@@ -399,7 +465,12 @@ export default function TeamPerformanceIdBoard({
         </BoardPanel>
 
         <BoardPanel title={t("teamBoard.targetsVsActuals")} sx={panel}>
-          <TargetsVsActuals rows={board.targets_vs_actuals} onChange={(v) => patch({ targets_vs_actuals: v })} readOnly={readOnly} />
+          <TargetsVsActuals
+            rows={board.targets_vs_actuals}
+            onChange={(v) => patch({ targets_vs_actuals: v })}
+            readOnly={readOnly}
+            title={t("teamBoard.targetsVsActuals")}
+          />
         </BoardPanel>
       </Stack>
 
@@ -470,10 +541,8 @@ export default function TeamPerformanceIdBoard({
             rows={board.objectives_plan}
             onChange={(v) => patch({ objectives_plan: v })}
             readOnly={readOnly}
+            title={t("teamBoard.objectives")}
           />
-          <Box sx={{ mt: 1 }}>
-            <EditableList items={board.objectives} onChange={(v) => patch({ objectives: v })} rows={3} readOnly={readOnly} dense />
-          </Box>
         </BoardPanel>
       </Stack>
 

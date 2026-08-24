@@ -743,6 +743,7 @@
     "relationQuality": "Nature de la relation",
     "toQualify": "À qualifier",
     "matrixProgress": "{{done}} / {{total}} binômes qualifiés dans l'équipe",
-    "relationWith": "Relations de {{name}} avec"
+    "relationWith": "Relations de {{name}} avec",
+    "noSeries": "Aucune année saisie."
   }
 }
