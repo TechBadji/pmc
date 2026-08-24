@@ -11,6 +11,7 @@ import {
   DialogTitle,
   IconButton,
   InputBase,
+  MenuItem,
   Paper,
   Stack,
   TextField,
@@ -497,9 +498,16 @@ export default function TeamPerformanceIdBoard({
   const previous = id3aFor(campaigns[campaigns.length - 2]?.id);
   const current = id3aFor(campaigns[campaigns.length - 1]?.id);
 
-  /** ID-TPD : performance de la dernière campagne et progression depuis la
+  /** Période de lecture de l'ID-TPD : la planche situe une équipe à un moment
+   * donné, elle ne vaut donc que rapportée à une campagne. La plus récente
+   * s'ouvre par défaut. */
+  const [tpdCampaignId, setTpdCampaignId] = useState<number | "">("");
+  const tpdCampaign = campaigns.find((c) => c.id === tpdCampaignId) ?? campaigns[campaigns.length - 1] ?? null;
+
+  /** ID-TPD : performance de la période choisie et progression depuis la
    * précédente, par membre — le feu passe au vert au-delà des objectifs. */
   const tpdRows = useMemo(() => {
+    if (!tpdCampaign) return [];
     const byUser = new Map<number, Evaluation[]>();
     teamEvaluations.forEach((e) => {
       if (!byUser.has(e.user)) byUser.set(e.user, []);
@@ -508,14 +516,26 @@ export default function TeamPerformanceIdBoard({
     return Array.from(byUser.values())
       .map((list) => {
         const sorted = [...list].sort((a, b) => a.campaign_start_date.localeCompare(b.campaign_start_date));
-        const last = sorted[sorted.length - 1];
-        const before = sorted[sorted.length - 2];
-        const performance = Number(last.altitude_percentage);
-        const progression = before ? Math.round((performance - Number(before.altitude_percentage)) * 10) / 10 : null;
-        return { id: last.user, name: last.user_name, avatar: last.user_avatar, performance, progression, rating: last.performance_rating };
+        const index = sorted.findIndex((e) => e.campaign === tpdCampaign.id);
+        if (index === -1) return null;
+        const current = sorted[index];
+        const before = index > 0 ? sorted[index - 1] : undefined;
+        const performance = Number(current.altitude_percentage);
+        const progression = before
+          ? Math.round((performance - Number(before.altitude_percentage)) * 10) / 10
+          : null;
+        return {
+          id: current.user,
+          name: current.user_name,
+          avatar: current.user_avatar,
+          performance,
+          progression,
+          rating: current.performance_rating,
+        };
       })
+      .filter((row): row is NonNullable<typeof row> => row !== null)
       .sort((a, b) => b.performance - a.performance);
-  }, [teamEvaluations]);
+  }, [teamEvaluations, tpdCampaign]);
 
   if (teamId === "") return <Alert severity="info">{t("teamBoard.noEntryHint")}</Alert>;
   if (!board) return <Alert severity="info">{t("teamBoard.noEntryHint")}</Alert>;
@@ -724,7 +744,23 @@ export default function TeamPerformanceIdBoard({
 
         {/* ID-TPD : quatre quadrants, l'objectif en abscisse et la progression
             en ordonnée, un feu par quadrant — la planche de référence. */}
-        <BoardPanel title={t("teamBoard.idTpd")} sx={panel}>
+        <BoardPanel title={`${t("teamBoard.idTpd")}${tpdCampaign ? ` ${tpdCampaign.name}` : ""}`} sx={panel}>
+          {campaigns.length > 1 && (
+            <TextField
+              select
+              size="small"
+              className="pmc-no-print"
+              value={tpdCampaign?.id ?? ""}
+              onChange={(e) => setTpdCampaignId(Number(e.target.value))}
+              sx={{ mb: 1, width: "100%", "& .MuiInputBase-input": { fontSize: 11.5, py: 0.5 } }}
+            >
+              {[...campaigns].reverse().map((c) => (
+                <MenuItem key={c.id} value={c.id} sx={{ fontSize: 12 }}>
+                  {c.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
           {tpdRows.length === 0 ? (
             <Typography variant="caption" color="text.secondary">
               {t("evaluations.notEvaluated")}
