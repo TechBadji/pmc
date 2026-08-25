@@ -146,8 +146,11 @@ function TeamOrgChart({ manager, members }: { manager: UserRecord | null; member
     <Box sx={{ width: "100%", overflowX: "auto" }}>
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" style={{ display: "block", height: "auto" }}>
         <defs>
-          <marker id="org-arrow" markerWidth="9" markerHeight="9" refX="4.5" refY="8" orient="auto" markerUnits="userSpaceOnUse">
-            <path d="M 0 0 L 9 0 L 4.5 9 z" fill="#1a1a1a" />
+          {/* Pointe dessinée vers la droite : `orient="auto"` la fait pivoter
+            * dans le sens du trait, donc vers le bas. Dessinée vers le bas,
+            * elle subissait la rotation en plus et partait de travers. */}
+          <marker id="org-arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1a1a" />
           </marker>
         </defs>
 
@@ -182,7 +185,7 @@ function TeamOrgChart({ manager, members }: { manager: UserRecord | null; member
                 x1={x}
                 y1={busY}
                 x2={x}
-                y2={memberY - R_MEMBER - 2}
+                y2={memberY - R_MEMBER - 4}
                 stroke="#1a1a1a"
                 strokeWidth={2}
                 markerEnd="url(#org-arrow)"
@@ -250,7 +253,10 @@ function TargetsVsActuals({
             * valeurs des points extrêmes sortent du cadre et se coupent. Les
             * chiffres reprennent la couleur de leur série, seul moyen de les
             * rattacher sans hésitation quand les deux courbes se croisent. */}
-          <LineChart data={data} margin={{ top: 22, right: 14, left: 6, bottom: 0 }}>
+          {/* Marges latérales : l'étiquette d'un point extrême déborde du
+            * tracé de la moitié de sa largeur — sans cette réserve, la valeur
+            * de la première et de la dernière année se fait rogner. */}
+          <LineChart data={data} margin={{ top: 22, right: 26, left: 26, bottom: 0 }}>
             <CartesianGrid stroke="#d9d9d9" vertical={false} />
             <XAxis
               dataKey="year"
@@ -258,6 +264,7 @@ function TargetsVsActuals({
               tickLine={false}
               axisLine={false}
               tickMargin={8}
+              padding={{ left: 14, right: 14 }}
             />
             <YAxis hide domain={[(min: number) => min - 6, (max: number) => max + 6]} />
             <Legend
