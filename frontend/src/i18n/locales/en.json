@@ -745,6 +745,7 @@
     "matrixProgress": "{{done}} / {{total}} pairs qualified in the team",
     "relationWith": "{{name}}'s relationships with",
     "noSeries": "No year recorded yet.",
-    "stopEditing": "Finish editing"
+    "stopEditing": "Finish editing",
+    "visionPlaceholder": "What the team aims for, and why it exists."
   }
 }

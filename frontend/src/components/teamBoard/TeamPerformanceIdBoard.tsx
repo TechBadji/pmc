@@ -817,38 +817,83 @@ export default function TeamPerformanceIdBoard({
           <EditableList items={board.business_weaknesses} onChange={(v) => patch({ business_weaknesses: v })} rows={3} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
 
-        {/* La vision au centre de la planche, comme sur la fiche de référence. */}
+        {/* La vision au centre de la planche, comme sur la fiche de référence.
+            Traitée en médaillon plutôt qu'en cadre : c'est le seul texte suivi
+            de la planche, entouré de listes et de courbes — il lui faut une
+            forme et une typographie qui le distinguent, sinon il se lit comme
+            une rubrique de plus. */}
         <Paper
           elevation={0}
           sx={{
-            p: 1.5,
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: "50% / 18%",
-            bgcolor: "#f2f3f5",
+            position: "relative",
+            overflow: "hidden",
+            px: 2,
+            py: 1.75,
+            border: "1px solid #dfe4ec",
+            borderRadius: "46% / 16%",
+            background: "radial-gradient(120% 100% at 50% 0%, #ffffff 0%, #f4f6fa 55%, #eef1f7 100%)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             alignSelf: "flex-start",
           }}
         >
-          <Typography sx={{ fontWeight: 800, fontSize: 12, textAlign: "center", mb: 0.75 }}>
+          {/* Guillemet en filigrane : il annonce un texte, pas une liste. */}
+          <Typography
+            aria-hidden
+            sx={{
+              position: "absolute",
+              top: -18,
+              left: 14,
+              fontSize: 76,
+              lineHeight: 1,
+              color: "#3b5aa0",
+              opacity: 0.09,
+              fontFamily: "Georgia, serif",
+              pointerEvents: "none",
+            }}
+          >
+            &ldquo;
+          </Typography>
+
+          <Typography
+            sx={{ fontWeight: 800, fontSize: 11.5, letterSpacing: 0.8, color: "#3b5aa0", textAlign: "center" }}
+          >
             {t("teamBoard.visionMissions").toUpperCase()}
           </Typography>
-          <InputBase
-            value={board.vision_missions}
-            readOnly={readOnly || !editing}
-            multiline
-            minRows={editing ? 3 : 1}
-            onChange={(e) => patch({ vision_missions: e.target.value })}
-            sx={{
-              width: "100%",
-              fontSize: 12,
-              lineHeight: 1.35,
-              textAlign: "center",
-              "& textarea": { textAlign: "center" },
-            }}
-          />
+          <Box sx={{ width: 34, height: 2.5, borderRadius: 2, bgcolor: "#3b5aa0", opacity: 0.55, mt: 0.5, mb: 1 }} />
+
+          {editing ? (
+            <InputBase
+              value={board.vision_missions}
+              readOnly={readOnly}
+              multiline
+              minRows={3}
+              placeholder={t("teamBoard.visionPlaceholder")}
+              onChange={(e) => patch({ vision_missions: e.target.value })}
+              sx={{
+                width: "100%",
+                fontSize: 12.5,
+                fontStyle: "italic",
+                lineHeight: 1.5,
+                textAlign: "center",
+                "& textarea": { textAlign: "center" },
+              }}
+            />
+          ) : (
+            <Typography
+              sx={{
+                fontSize: 12.5,
+                fontStyle: "italic",
+                lineHeight: 1.5,
+                textAlign: "center",
+                color: board.vision_missions ? "#2b3245" : "text.secondary",
+                px: 1,
+              }}
+            >
+              {board.vision_missions || "—"}
+            </Typography>
+          )}
         </Paper>
 
         <BoardPanel title={t("teamBoard.values").toUpperCase()}>

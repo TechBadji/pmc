@@ -745,6 +745,7 @@
     "matrixProgress": "{{done}} / {{total}} binômes qualifiés dans l'équipe",
     "relationWith": "Relations de {{name}} avec",
     "noSeries": "Aucune année saisie.",
-    "stopEditing": "Terminer la saisie"
+    "stopEditing": "Terminer la saisie",
+    "visionPlaceholder": "Ce que l'équipe vise, et pourquoi elle existe."
   }
 }
