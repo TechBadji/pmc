@@ -19,6 +19,7 @@ import { Link, useParams } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import type { Department, Evaluation, Paginated, UserRecord } from "@/api/types";
 import { performanceColors } from "@/theme";
+import { lastEvaluationByUser as lastEvalOf } from "@/utils/performance";
 
 export default function DepartmentDetailPage() {
   const { t } = useTranslation();
@@ -38,19 +39,7 @@ export default function DepartmentDetailPage() {
       .then((r) => setEvaluations(r.data.results));
   }, [id]);
 
-  const lastEvaluationByUser = useMemo(() => {
-    const byUser = new Map<number, Evaluation[]>();
-    evaluations.forEach((e) => {
-      if (!byUser.has(e.user)) byUser.set(e.user, []);
-      byUser.get(e.user)!.push(e);
-    });
-    const last = new Map<number, Evaluation>();
-    byUser.forEach((list, userId) => {
-      const sorted = [...list].sort((a, b) => a.campaign_start_date.localeCompare(b.campaign_start_date));
-      last.set(userId, sorted[sorted.length - 1]);
-    });
-    return last;
-  }, [evaluations]);
+  const lastEvaluationByUser = useMemo(() => lastEvalOf(evaluations), [evaluations]);
 
   return (
     <Stack spacing={3}>

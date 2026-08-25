@@ -552,7 +552,9 @@ class PasswordResetRequestViewSet(viewsets.ReadOnlyModelViewSet):
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     """Journal d'activité de la plateforme — réservé au Super Admin."""
 
-    queryset = AuditLog.objects.all()
+    # L'acteur et l'entreprise sont affichés sur chaque ligne : sans
+    # préchargement, une page de 50 entrées déclenchait 100 requêtes de plus.
+    queryset = AuditLog.objects.select_related("actor", "company")
     serializer_class = AuditLogSerializer
     permission_classes = [IsSuperAdmin]
     filterset_fields = ["action"]

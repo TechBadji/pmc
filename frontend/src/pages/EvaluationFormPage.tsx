@@ -28,20 +28,14 @@ import type {
   Evaluation,
   EvaluationCampaign,
   Paginated,
-  PerformanceRating,
   SkillItem,
   SkillMatrix,
   UserRecord,
 } from "@/api/types";
 import { HARD_SKILLS_COLOR as HARD_COLOR, SOFT_SKILLS_COLOR as SOFT_COLOR, performanceColors } from "@/theme";
-
-function ratingFor(pct: number): PerformanceRating {
-  if (pct < 50) return "VERY_LOW";
-  if (pct < 75) return "LOW";
-  if (pct < 90) return "AVERAGE";
-  if (pct <= 100) return "GOOD";
-  return "OUTSTANDING";
-}
+// Barème unique : recopié ici, il aurait fini par diverger de celui des
+// tableaux de bord et deux écrans auraient affiché deux paliers différents.
+import { ratingForAltitude as ratingFor } from "@/utils/performance";
 
 type ScoreState = Record<number, number | "">;
 

@@ -1,33 +1,53 @@
+import { CircularProgress, Stack } from "@mui/material";
+import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import ChangePasswordPage from "@/features/auth/ChangePasswordPage";
 import LoginPage from "@/features/auth/LoginPage";
-import ActionPlansPage from "@/pages/ActionPlansPage";
-import BulkUploadPage from "@/pages/BulkUploadPage";
-import CohesionFormPage from "@/pages/CohesionFormPage";
-import CompaniesPage from "@/pages/CompaniesPage";
-import CompanyDepartmentsPage from "@/pages/CompanyDepartmentsPage";
-import DashboardPage from "@/pages/DashboardPage";
-import DepartmentDetailPage from "@/pages/DepartmentDetailPage";
-import DirectorsPerformanceReviewPage from "@/pages/DirectorsPerformanceReviewPage";
-import EvaluationCampaignsPage from "@/pages/EvaluationCampaignsPage";
-import EvaluationFormPage from "@/pages/EvaluationFormPage";
-import EvaluationsPage from "@/pages/EvaluationsPage";
-import ID3AMatrixPage from "@/pages/ID3AMatrixPage";
-import LogsPage from "@/pages/LogsPage";
-import MyPerformancePage from "@/pages/MyPerformancePage";
-import PasswordResetRequestsPage from "@/pages/PasswordResetRequestsPage";
-import PerformancePage from "@/pages/PerformancePage";
-import ProfilePage from "@/pages/ProfilePage";
-import SkillsAdminPage from "@/pages/SkillsAdminPage";
-import TalentsDashboardPage from "@/pages/TalentsDashboardPage";
-import SkillsPage from "@/pages/SkillsPage";
-import TeamsPage from "@/pages/TeamsPage";
+
+/* Chaque écran est chargé à la demande. Les planches de cette application
+ * embarquent des bibliothèques graphiques lourdes — Recharts est importé par
+ * six écrans — et tout servir au premier affichage faisait payer à chaque
+ * utilisateur, à chaque connexion, le poids de pages qu'il n'ouvrira peut-être
+ * jamais. Seuls la connexion et le changement de mot de passe restent dans le
+ * paquet initial : ce sont les deux écrans que tout le monde traverse. */
+const ActionPlansPage = lazy(() => import("@/pages/ActionPlansPage"));
+const BulkUploadPage = lazy(() => import("@/pages/BulkUploadPage"));
+const CohesionFormPage = lazy(() => import("@/pages/CohesionFormPage"));
+const CompaniesPage = lazy(() => import("@/pages/CompaniesPage"));
+const CompanyDepartmentsPage = lazy(() => import("@/pages/CompanyDepartmentsPage"));
+const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
+const DepartmentDetailPage = lazy(() => import("@/pages/DepartmentDetailPage"));
+const DirectorsPerformanceReviewPage = lazy(() => import("@/pages/DirectorsPerformanceReviewPage"));
+const EvaluationCampaignsPage = lazy(() => import("@/pages/EvaluationCampaignsPage"));
+const EvaluationFormPage = lazy(() => import("@/pages/EvaluationFormPage"));
+const EvaluationsPage = lazy(() => import("@/pages/EvaluationsPage"));
+const ID3AMatrixPage = lazy(() => import("@/pages/ID3AMatrixPage"));
+const LogsPage = lazy(() => import("@/pages/LogsPage"));
+const MyPerformancePage = lazy(() => import("@/pages/MyPerformancePage"));
+const PasswordResetRequestsPage = lazy(() => import("@/pages/PasswordResetRequestsPage"));
+const PerformancePage = lazy(() => import("@/pages/PerformancePage"));
+const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
+const SkillsAdminPage = lazy(() => import("@/pages/SkillsAdminPage"));
+const TalentsDashboardPage = lazy(() => import("@/pages/TalentsDashboardPage"));
+const SkillsPage = lazy(() => import("@/pages/SkillsPage"));
+const TeamsPage = lazy(() => import("@/pages/TeamsPage"));
+
+/** Le temps du chargement d'un écran, on garde la place plutôt que de faire
+ * sauter la mise en page. */
+function RouteFallback() {
+  return (
+    <Stack alignItems="center" justifyContent="center" sx={{ py: 8 }}>
+      <CircularProgress />
+    </Stack>
+  );
+}
 
 export default function App() {
   return (
-    <Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<ProtectedRoute />}>
@@ -61,6 +81,7 @@ export default function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
