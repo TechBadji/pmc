@@ -831,7 +831,7 @@ export default function TeamPerformanceIdBoard({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            minHeight: 236,
+            minHeight: 250,
             zIndex: 3,
           }}
         >
@@ -839,11 +839,11 @@ export default function TeamPerformanceIdBoard({
             elevation={0}
             sx={{
               position: "relative",
-              width: 320,
-              height: 236,
+              width: 268,
+              height: 268,
               flex: "0 0 auto",
-              mx: "-32px", // débord assumé sur les blocs voisins
-              borderRadius: "50%", // largeur ≠ hauteur : le cercle devient ovale
+              mx: "-18px", // débord maîtrisé sur les blocs voisins
+              borderRadius: "50%",
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
@@ -851,25 +851,22 @@ export default function TeamPerformanceIdBoard({
               justifyContent: "center",
               textAlign: "center",
               px: 3.5,
-              // Le fond s'estompe du centre vers le bord : plein là où se lit
-              // le texte, presque effacé là où l'ovale chevauche ses voisins.
-              // Une translucidité uniforme aurait grisé toute la planche
-              // dessous ; ici seul le pourtour laisse passer.
               background:
-                "radial-gradient(closest-side, rgba(25,44,79,0.97) 0%, rgba(25,44,79,0.95) 52%, rgba(27,48,87,0.72) 76%, rgba(30,52,92,0.32) 90%, rgba(32,55,96,0.08) 100%)",
-              backdropFilter: "blur(2px)",
+                "linear-gradient(155deg, rgba(42,72,116,0.93) 0%, rgba(27,48,87,0.94) 55%, rgba(20,36,63,0.95) 100%)",
+              backdropFilter: "blur(3px)",
+              boxShadow: "0 10px 26px rgba(20,36,63,0.28)",
             }}
           >
             <Typography
               aria-hidden
               sx={{
                 position: "absolute",
-                top: 2,
-                left: 52,
-                fontSize: 78,
+                top: 4,
+                left: 34,
+                fontSize: 92,
                 lineHeight: 1,
                 color: HEADER_ORANGE,
-                opacity: 0.22,
+                opacity: 0.2,
                 fontFamily: "Georgia, serif",
                 pointerEvents: "none",
               }}
@@ -890,7 +887,7 @@ export default function TeamPerformanceIdBoard({
                 readOnly={readOnly}
                 multiline
                 minRows={3}
-                maxRows={5}
+                maxRows={6}
                 placeholder={t("teamBoard.visionPlaceholder")}
                 onChange={(e) => patch({ vision_missions: e.target.value })}
                 sx={{
@@ -913,7 +910,7 @@ export default function TeamPerformanceIdBoard({
                   color: board.vision_missions ? "#fff" : "rgba(255,255,255,0.55)",
                   // Un manifeste trop long ne doit pas déborder du cercle.
                   display: "-webkit-box",
-                  WebkitLineClamp: 5,
+                  WebkitLineClamp: 7,
                   WebkitBoxOrient: "vertical",
                   overflow: "hidden",
                 }}
