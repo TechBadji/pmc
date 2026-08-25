@@ -24,10 +24,11 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Area,
+  ComposedChart,
   LabelList,
   Legend,
   Line,
-  LineChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -84,9 +85,9 @@ function TeamOrgChart({ manager, members }: { manager: UserRecord | null; member
   function Node({ person, x, y, r: baseR }: { person: UserRecord; x: number; y: number; r: number }) {
     const name = person.full_name || person.email;
     const isHovered = hovered === person.id;
-    const r = isHovered ? baseR * 1.45 : baseR;
+    const r = isHovered ? baseR * 2 : baseR;
     const label = isHovered ? name : name.split(" ")[0];
-    const labelWidth = Math.max(48, label.length * (isHovered ? 6.8 : 6.4) + 14);
+    const labelWidth = Math.max(48, label.length * (isHovered ? 7.4 : 6.4) + 16);
     return (
       <g
         onMouseEnter={() => setHovered(person.id)}
@@ -95,7 +96,7 @@ function TeamOrgChart({ manager, members }: { manager: UserRecord | null; member
       >
         {/* Zone de survol stable : sans elle, l'agrandissement ferait fuir le
           * curseur hors de la vignette et provoquerait un clignotement. */}
-        <circle cx={x} cy={y} r={baseR * 1.5} fill="transparent" />
+        <circle cx={x} cy={y} r={baseR * 2.1} fill="transparent" />
         <circle cx={x} cy={y} r={r} fill="#eef1f6" stroke="#9aa4b2" strokeWidth={1.5} />
         {person.avatar ? (
           <>
@@ -121,16 +122,16 @@ function TeamOrgChart({ manager, members }: { manager: UserRecord | null; member
           x={x - labelWidth / 2}
           y={y + r + 4}
           width={labelWidth}
-          height={isHovered ? 18 : 15}
+          height={isHovered ? 20 : 15}
           rx={2}
           fill="#ffff66"
           stroke="#d9d33f"
         />
         <text
           x={x}
-          y={y + r + (isHovered ? 17 : 15)}
+          y={y + r + (isHovered ? 18.5 : 15)}
           textAnchor="middle"
-          fontSize={isHovered ? 11 : 9.5}
+          fontSize={isHovered ? 12 : 9.5}
           fontWeight={800}
           fill="#20242e"
         >
@@ -199,6 +200,33 @@ function TeamOrgChart({ manager, members }: { manager: UserRecord | null; member
   );
 }
 
+/** Valeur d'un point posée dans une pastille blanche : sur une grille, un
+ * chiffre nu se confond avec les lignes ; la pastille l'en détache et le
+ * rattache à sa courbe par la couleur de son liseré. */
+function ValuePill(props: any) {
+  const { x, y, value, color } = props;
+  if (value === null || value === undefined) return null;
+  const text = String(value);
+  const width = Math.max(26, text.length * 9 + 12);
+  return (
+    <g>
+      <rect
+        x={x - width / 2}
+        y={y - 20}
+        width={width}
+        height={19}
+        rx={9.5}
+        fill="#ffffff"
+        stroke={color}
+        strokeWidth={1.4}
+      />
+      <text x={x} y={y - 6} textAnchor="middle" fontSize={12.5} fontWeight={800} fill="#1a1a1a">
+        {text}
+      </text>
+    </g>
+  );
+}
+
 /**
  * Réalisations vs objectifs : la courbe seule, comme sur la planche — deux
  * séries, les valeurs au-dessus de chaque point et la légende dessous.
@@ -256,8 +284,22 @@ function TargetsVsActuals({
           {/* Marges latérales : l'étiquette d'un point extrême déborde du
             * tracé de la moitié de sa largeur — sans cette réserve, la valeur
             * de la première et de la dernière année se fait rogner. */}
-          <LineChart data={data} margin={{ top: 22, right: 26, left: 26, bottom: 0 }}>
-            <CartesianGrid stroke="#d9d9d9" vertical={false} />
+          <ComposedChart data={data} margin={{ top: 26, right: 26, left: 26, bottom: 0 }}>
+            <defs>
+              {/* Voile sous chaque courbe : il donne de la matière au tracé
+                * sans ajouter d'encre là où se lisent les valeurs. */}
+              <linearGradient id="tva-target" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#e8342a" stopOpacity={0.16} />
+                <stop offset="100%" stopColor="#e8342a" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="tva-actual" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#4a9bd8" stopOpacity={0.16} />
+                <stop offset="100%" stopColor="#4a9bd8" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="#e3e3e0" strokeDasharray="4 4" vertical={false} />
+            <Area type="linear" dataKey="target" stroke="none" fill="url(#tva-target)" isAnimationActive={false} legendType="none" />
+            <Area type="linear" dataKey="actual" stroke="none" fill="url(#tva-actual)" isAnimationActive={false} legendType="none" />
             <XAxis
               dataKey="year"
               tick={{ fontSize: 13, fontWeight: 800, fill: "#1a1a1a" }}
@@ -279,37 +321,29 @@ function TargetsVsActuals({
               dataKey="target"
               name={t("teamBoard.target")}
               stroke="#e8342a"
-              strokeWidth={4}
-              dot={{ r: 7, fill: "#e8342a", strokeWidth: 0 }}
+              strokeWidth={3.4}
+              style={{ filter: "drop-shadow(0 2px 3px rgba(232,52,42,0.25))" }}
+              dot={{ r: 6, fill: "#e8342a", stroke: "#fff", strokeWidth: 2.5 }}
               activeDot={{ r: 8 }}
               isAnimationActive={false}
             >
-              <LabelList
-                dataKey="target"
-                position="top"
-                offset={11}
-                style={{ fontSize: 14, fontWeight: 800, fill: "#1a1a1a" }}
-              />
+              <LabelList dataKey="target" position="top" offset={12} content={<ValuePill color="#e8342a" />} />
             </Line>
             <Line
               type="linear"
               dataKey="actual"
               name={t("teamBoard.actual")}
               stroke="#4a9bd8"
-              strokeWidth={4}
-              dot={{ r: 7, fill: "#4a9bd8", strokeWidth: 0 }}
+              strokeWidth={3.4}
+              style={{ filter: "drop-shadow(0 2px 3px rgba(74,155,216,0.25))" }}
+              dot={{ r: 6, fill: "#4a9bd8", stroke: "#fff", strokeWidth: 2.5 }}
               activeDot={{ r: 8 }}
               connectNulls
               isAnimationActive={false}
             >
-              <LabelList
-                dataKey="actual"
-                position="top"
-                offset={11}
-                style={{ fontSize: 14, fontWeight: 800, fill: "#1a1a1a" }}
-              />
+              <LabelList dataKey="actual" position="top" offset={12} content={<ValuePill color="#4a9bd8" />} />
             </Line>
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       )}
 
@@ -678,12 +712,7 @@ export default function TeamPerformanceIdBoard({
         }}
       >
         {/* Bandeau jaune et texte sombre : l'entête « ÉQUIPE : » de la planche. */}
-        <BoardPanel
-          title={`${t("teamBoard.team").toUpperCase()} :`}
-          bg="#ffff66"
-          titleColor={BOARD_TEXT}
-          titleAlign="left"
-        >
+        <BoardPanel title={t("teamBoard.team").toUpperCase()} bg="#ffff66" titleColor={BOARD_TEXT}>
           <TeamOrgChart manager={manager} members={others} />
         </BoardPanel>
 
