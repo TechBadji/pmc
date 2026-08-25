@@ -1,12 +1,18 @@
 from django.db import transaction
 from rest_framework import serializers
 
-from apps.core.validators import require_same_company
+from apps.core.validators import require_manages_team, require_same_company
 from apps.skills.models import SkillItem
 
 from apps.core.scoping import manages_user
 
-from .models import Evaluation, EvaluationCampaign, EvaluationSkillScore, SkillNote
+from .models import (
+    Evaluation,
+    EvaluationCampaign,
+    EvaluationSkillScore,
+    PerformanceObjective,
+    SkillNote,
+)
 
 
 class SkillNoteSerializer(serializers.ModelSerializer):
@@ -83,6 +89,7 @@ class EvaluationSerializer(serializers.ModelSerializer):
             "evaluator", "campaign", "campaign_name", "campaign_start_date",
             "campaign_end_date", "campaign_is_closed",
             "business_objectives_score", "people_objectives_score",
+            "objectives_set_on", "evaluated_on", "next_evaluation_on", "manager_visa",
             "notes", "skill_scores", "hsi", "ssi", "hso", "ssio", "altitude_percentage",
             "performance_rating", "created_at", "updated_at",
         ]
@@ -208,3 +215,44 @@ class EvaluationWriteSerializer(serializers.ModelSerializer):
                 for item in scores
             ]
         )
+
+
+class PerformanceObjectiveSerializer(serializers.ModelSerializer):
+    """Ligne de la fiche annuelle. Le taux d'atteinte est calculé, jamais saisi."""
+
+    achievement_percent = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = PerformanceObjective
+        fields = [
+            "id", "evaluation", "team", "campaign", "category", "order",
+            "label", "indicator", "reference_value", "target_value",
+            "actual_value", "weight", "achievement_percent", "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def validate(self, attrs):
+        """La ligne appartient soit à l'évaluation d'un employé, soit à la
+        fiche d'une équipe pour une campagne — jamais aux deux, jamais à
+        aucune."""
+        evaluation = attrs.get("evaluation", getattr(self.instance, "evaluation", None))
+        team = attrs.get("team", getattr(self.instance, "team", None))
+        campaign = attrs.get("campaign", getattr(self.instance, "campaign", None))
+        actor = self.context["request"].user
+
+        if evaluation is not None and team is not None:
+            raise serializers.ValidationError(
+                {"team": "Une ligne se rattache à un employé ou à une équipe, pas aux deux."}
+            )
+        if evaluation is None and team is None:
+            raise serializers.ValidationError(
+                {"evaluation": "Rattachez la ligne à une évaluation ou à une équipe."}
+            )
+        if team is not None:
+            if campaign is None:
+                raise serializers.ValidationError({"campaign": "La fiche d'équipe se rapporte à une campagne."})
+            require_same_company(actor, team=team)
+            require_manages_team(actor, team)
+        else:
+            require_same_company(actor, target_user=evaluation.user)
+        return attrs

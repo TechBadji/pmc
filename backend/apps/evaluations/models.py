@@ -88,6 +88,13 @@ class Evaluation(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(200)],
     )
     notes = models.TextField("Notes", blank=True)
+    # Entête de la fiche annuelle : les trois dates du cycle et le visa. Elles
+    # appartiennent à l'évaluation et non à la campagne — deux collaborateurs
+    # d'une même campagne ne sont pas reçus le même jour.
+    objectives_set_on = models.DateField("Date de fixation des objectifs", null=True, blank=True)
+    evaluated_on = models.DateField("Date de l'évaluation", null=True, blank=True)
+    next_evaluation_on = models.DateField("Date de la prochaine évaluation", null=True, blank=True)
+    manager_visa = models.CharField("Visa manager", max_length=150, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -255,3 +262,83 @@ class SkillNote(models.Model):
 
     def __str__(self):
         return f"{self.evaluation} — {self.get_category_display()} #{self.order}"
+
+
+class PerformanceObjective(models.Model):
+    """Une ligne de la « Fiche de fixation d'objectifs / d'évaluation annuelle ».
+
+    La même ligne sert la fiche d'un employé et celle d'une équipe : dans le
+    premier cas elle se rattache à une évaluation, dans le second au couple
+    (équipe, campagne). Deux tables auraient dupliqué le calcul du taux
+    d'atteinte et de la moyenne pondérée, qui est identique de part et d'autre.
+
+    Le pourcentage d'atteinte n'est pas stocké : il se déduit du réalisé et de
+    la cible, et une valeur figée finirait par contredire les chiffres saisis.
+    """
+
+    class Category(models.TextChoices):
+        BUSINESS = "BUSINESS", "Objectifs business"
+        MANAGERIAL = "MANAGERIAL", "Objectifs leadership et managériaux"
+
+    evaluation = models.ForeignKey(
+        "evaluations.Evaluation",
+        verbose_name="Évaluation",
+        on_delete=models.CASCADE,
+        related_name="objectives",
+        null=True,
+        blank=True,
+    )
+    team = models.ForeignKey(
+        "core.Department",
+        verbose_name="Équipe",
+        on_delete=models.CASCADE,
+        related_name="objectives",
+        null=True,
+        blank=True,
+    )
+    campaign = models.ForeignKey(
+        "evaluations.EvaluationCampaign",
+        verbose_name="Campagne",
+        on_delete=models.CASCADE,
+        related_name="team_objectives",
+        null=True,
+        blank=True,
+    )
+    category = models.CharField("Catégorie", max_length=12, choices=Category.choices)
+    order = models.PositiveSmallIntegerField("Rang", default=1)
+    label = models.CharField("Objectif", max_length=500, blank=True)
+    indicator = models.CharField("Indicateur de performance", max_length=255, blank=True)
+    reference_value = models.DecimalField(
+        "Valeur de référence", max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    target_value = models.DecimalField(
+        "Valeur cible", max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    actual_value = models.DecimalField(
+        "Réalisé", max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    weight = models.DecimalField(
+        "Coefficient de pondération", max_digits=5, decimal_places=2, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Objectif de performance"
+        verbose_name_plural = "Objectifs de performance"
+        ordering = ["category", "order", "id"]
+
+    def __str__(self):
+        return f"{self.get_category_display()} #{self.order} — {self.label[:40]}"
+
+    @property
+    def achievement_percent(self):
+        """Taux d'atteinte, cible ramenée à 100 %.
+
+        Une cible nulle ne permet aucun rapport ; une cible négative — un
+        résultat net à redresser, par exemple — inverse le sens du progrès, on
+        rapporte donc l'écart au signe de la cible.
+        """
+        if self.target_value in (None, 0) or self.actual_value is None:
+            return None
+        ratio = float(self.actual_value) / float(self.target_value)
+        return round(ratio * 100, 1)

@@ -26,13 +26,16 @@ import {
   TableRow,
   TextField,
   Typography,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
-import type { Evaluation, EvaluationCampaign, Paginated, SkillScore, UserRecord } from "@/api/types";
+import type { Department, Evaluation, EvaluationCampaign, Paginated, SkillScore, UserRecord } from "@/api/types";
+import ObjectivesSheetPanel from "@/components/objectives/ObjectivesSheetPanel";
 import StatCard from "@/components/StatCard";
 import StrengthsWeaknesses from "@/components/StrengthsWeaknesses";
 import { performanceColors } from "@/theme";
@@ -89,6 +92,10 @@ export default function EvaluationsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loadError, setLoadError] = useState(false);
+  // Trois lectures d'une même campagne : l'évaluation ID-3A, la fiche
+  // d'objectifs d'un employé, celle de son équipe.
+  const [view, setView] = useState<"id3a" | "employee" | "team">("id3a");
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   function load() {
     setLoadError(false);
@@ -96,11 +103,13 @@ export default function EvaluationsPage() {
       apiClient.get<Paginated<UserRecord>>("/users/", { params: { page_size: 500, role: evaluatedRole } }),
       apiClient.get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } }),
       apiClient.get<Paginated<EvaluationCampaign>>("/evaluation-campaigns/", { params: { page_size: 500 } }),
+      apiClient.get<Paginated<Department>>("/departments/", { params: { page_size: 500 } }),
     ])
-      .then(([membersRes, evaluationsRes, campaignsRes]) => {
+      .then(([membersRes, evaluationsRes, campaignsRes, departmentsRes]) => {
         setMembers(membersRes.data.results);
         setEvaluations(evaluationsRes.data.results);
         setCampaigns(campaignsRes.data.results);
+        setDepartments(departmentsRes.data.results);
         // La période par défaut est la campagne la plus récente qui existe
         // (pas seulement celle qui a déjà des évaluations) — une campagne
         // fraîchement créée doit être sélectionnable immédiatement, avant
@@ -293,7 +302,36 @@ export default function EvaluationsPage() {
         )}
       </Stack>
 
-      {loadError && (
+      <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap className="pmc-no-print">
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={view}
+          onChange={(_, v) => v && setView(v)}
+          sx={{
+            height: 40,
+            "& .MuiToggleButton-root": { px: 2, fontWeight: 700, borderColor: "primary.main", color: "primary.main" },
+            "& .Mui-selected": { bgcolor: "primary.main", color: "#fff !important", "&:hover": { bgcolor: "primary.dark" } },
+          }}
+        >
+          <ToggleButton value="id3a">{t("objectivesSheet.viewId3a")}</ToggleButton>
+          <ToggleButton value="employee">{t("objectivesSheet.viewEmployee")}</ToggleButton>
+          <ToggleButton value="team">{t("objectivesSheet.viewTeam")}</ToggleButton>
+        </ToggleButtonGroup>
+      </Stack>
+
+      {view !== "id3a" && (
+        <ObjectivesSheetPanel
+          mode={view}
+          people={members}
+          departments={departments}
+          campaigns={campaigns}
+          evaluations={evaluations}
+          canEdit={user?.role === "COMPANY_ADMIN" || user?.role === "MANAGER"}
+        />
+      )}
+
+      {view === "id3a" && loadError && (
         <Alert
           severity="error"
           action={
@@ -306,7 +344,7 @@ export default function EvaluationsPage() {
         </Alert>
       )}
 
-      {selectedCampaignId !== "" && members.length > 0 && (
+      {view === "id3a" && selectedCampaignId !== "" && members.length > 0 && (
         <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="stretch">
           <StatCard
             label={t("evaluations.completionLabel")}
@@ -336,6 +374,7 @@ export default function EvaluationsPage() {
         </Stack>
       )}
 
+      {view === "id3a" && (
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
         <TableContainer>
           <Table size="small">
@@ -416,8 +455,9 @@ export default function EvaluationsPage() {
           labelRowsPerPage={t("evaluations.rowsPerPage")}
         />
       </Paper>
+      )}
 
-      {selectedMember && (
+      {view === "id3a" && selectedMember && (
         <Paper elevation={0} sx={{ p: 3, border: "1px solid", borderColor: "divider" }}>
           <Stack
             direction={{ xs: "column", sm: "row" }}

@@ -169,6 +169,10 @@ export interface Evaluation {
   campaign_end_date: string;
   campaign_is_closed: boolean;
   business_objectives_score: string;
+  objectives_set_on?: string | null;
+  evaluated_on?: string | null;
+  next_evaluation_on?: string | null;
+  manager_visa?: string;
   people_objectives_score: string;
   notes: string;
   skill_scores: SkillScore[];
@@ -371,4 +375,24 @@ export interface TeamBoard {
   targets_vs_actuals: { year: string; target: number | null; actual: number | null }[];
   /** Mêmes séries, projetées sur les années à venir. */
   objectives_plan: { year: string; target: number | null; actual: number | null }[];
+}
+
+/** Ligne de la fiche de fixation d'objectifs / d'évaluation annuelle.
+ * Les valeurs numériques transitent en chaîne : la saisie est libre, la
+ * conversion se fait côté serveur. */
+export interface PerformanceObjective {
+  id: number;
+  evaluation: number | null;
+  team: number | null;
+  campaign: number | null;
+  category: "BUSINESS" | "MANAGERIAL";
+  order: number;
+  label: string;
+  indicator: string;
+  reference_value: string | null;
+  target_value: string | null;
+  actual_value: string | null;
+  weight: string | null;
+  /** Taux d'atteinte calculé par le serveur. */
+  achievement_percent: number | null;
 }

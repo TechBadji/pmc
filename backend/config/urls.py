@@ -20,7 +20,7 @@ from apps.core.views import (
     PMCTokenObtainPairView,
     UserViewSet,
 )
-from apps.evaluations.views import EvaluationCampaignViewSet, EvaluationViewSet, SkillNoteViewSet
+from apps.evaluations.views import EvaluationCampaignViewSet, EvaluationViewSet, SkillNoteViewSet, PerformanceObjectiveViewSet
 from apps.skills.views import SkillItemViewSet, SkillMatrixViewSet
 from apps.teams.views import TeamBoardViewSet, TeamCohesionAnalysisViewSet, TeamRelationshipViewSet
 
@@ -33,6 +33,7 @@ router.register("skill-items", SkillItemViewSet, basename="skill-item")
 router.register("evaluation-campaigns", EvaluationCampaignViewSet, basename="evaluation-campaign")
 router.register("evaluations", EvaluationViewSet, basename="evaluation")
 router.register("skill-notes", SkillNoteViewSet, basename="skill-note")
+router.register("performance-objectives", PerformanceObjectiveViewSet, basename="performance-objective")
 router.register("cohesion-analyses", TeamCohesionAnalysisViewSet, basename="cohesion-analysis")
 router.register("team-relationships", TeamRelationshipViewSet, basename="team-relationship")
 router.register("team-boards", TeamBoardViewSet, basename="team-board")

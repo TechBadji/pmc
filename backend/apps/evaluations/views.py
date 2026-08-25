@@ -1,4 +1,4 @@
-from django.db.models import ProtectedError
+from django.db.models import ProtectedError, Q
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -14,11 +14,12 @@ from apps.core.validators import require_same_company
 
 from apps.core.scoping import managed_department_ids
 
-from .models import Evaluation, EvaluationCampaign, SkillNote
+from .models import Evaluation, EvaluationCampaign, PerformanceObjective, SkillNote
 from .serializers import (
     EvaluationCampaignSerializer,
     EvaluationSerializer,
     EvaluationWriteSerializer,
+    PerformanceObjectiveSerializer,
     SkillNoteSerializer,
 )
 
@@ -215,3 +216,43 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         SkillNote.objects.filter(evaluation=evaluation).delete()
         SkillNote.objects.bulk_create(cleaned)
         return Response(SkillNoteSerializer(SkillNote.objects.filter(evaluation=evaluation), many=True).data)
+
+
+class PerformanceObjectiveViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
+    """Lignes de la fiche annuelle — d'un employé ou d'une équipe.
+
+    La portée suit celle des évaluations : un manager ne voit que son périmètre,
+    un membre que sa propre fiche. Les lignes d'équipe se filtrent, elles, sur
+    les départements qu'il encadre.
+    """
+
+    queryset = PerformanceObjective.objects.select_related("evaluation__user", "team", "campaign")
+    serializer_class = PerformanceObjectiveSerializer
+    company_lookup = "campaign__company_id"
+    filterset_fields = ["evaluation", "team", "campaign", "category"]
+
+    def get_permissions(self):
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            return [IsCompanyAdminOrManager()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        # `company_lookup` ne couvre pas les lignes d'un employé, dont la
+        # campagne est portée par l'évaluation : on borne donc à la main.
+        qs = PerformanceObjective.objects.select_related("evaluation__user", "team", "campaign")
+        user = self.request.user
+        if user.role == user.Role.SUPER_ADMIN:
+            return qs
+        qs = qs.filter(
+            Q(evaluation__user__company_id=user.company_id) | Q(team__company_id=user.company_id)
+        )
+        if user.role == user.Role.MANAGER:
+            scope = managed_department_ids(user)
+            qs = qs.filter(
+                Q(evaluation__user__department_id__in=scope)
+                | Q(evaluation__user=user)
+                | Q(team_id__in=scope)
+            )
+        elif user.role == user.Role.MEMBER:
+            qs = qs.filter(evaluation__user=user)
+        return qs.distinct()
