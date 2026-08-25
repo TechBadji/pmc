@@ -65,6 +65,10 @@ const YEAR_COLORS = ["#5b8ac6", "#c0504d", "#9bbb59", "#8064a2", "#4bacc6"];
  * dessin doit se réduire à la largeur de sa colonne sans se déformer.
  */
 function TeamOrgChart({ manager, members }: { manager: UserRecord | null; members: UserRecord[] }) {
+  // Survol : la vignette grossit et le nom complet s'affiche. Sur une planche
+  // qui n'affiche que le prénom, c'est le seul moyen de lever une homonymie
+  // sans encombrer le dessin.
+  const [hovered, setHovered] = useState<number | null>(null);
   const R_MANAGER = 26;
   const R_MEMBER = 21;
   const COL = 78; // pas horizontal entre deux membres
@@ -77,12 +81,21 @@ function TeamOrgChart({ manager, members }: { manager: UserRecord | null; member
   const firstX = centerX - ((members.length - 1) * COL) / 2;
 
   /** Vignette ronde + étiquette jaune, comme sur la planche. */
-  function Node({ person, x, y, r }: { person: UserRecord; x: number; y: number; r: number }) {
+  function Node({ person, x, y, r: baseR }: { person: UserRecord; x: number; y: number; r: number }) {
     const name = person.full_name || person.email;
-    const label = name.split(" ")[0];
-    const labelWidth = Math.max(48, label.length * 6.4 + 12);
+    const isHovered = hovered === person.id;
+    const r = isHovered ? baseR * 1.45 : baseR;
+    const label = isHovered ? name : name.split(" ")[0];
+    const labelWidth = Math.max(48, label.length * (isHovered ? 6.8 : 6.4) + 14);
     return (
-      <g>
+      <g
+        onMouseEnter={() => setHovered(person.id)}
+        onMouseLeave={() => setHovered((current) => (current === person.id ? null : current))}
+        style={{ cursor: "default" }}
+      >
+        {/* Zone de survol stable : sans elle, l'agrandissement ferait fuir le
+          * curseur hors de la vignette et provoquerait un clignotement. */}
+        <circle cx={x} cy={y} r={baseR * 1.5} fill="transparent" />
         <circle cx={x} cy={y} r={r} fill="#eef1f6" stroke="#9aa4b2" strokeWidth={1.5} />
         {person.avatar ? (
           <>
@@ -108,12 +121,19 @@ function TeamOrgChart({ manager, members }: { manager: UserRecord | null; member
           x={x - labelWidth / 2}
           y={y + r + 4}
           width={labelWidth}
-          height={15}
+          height={isHovered ? 18 : 15}
           rx={2}
           fill="#ffff66"
           stroke="#d9d33f"
         />
-        <text x={x} y={y + r + 15} textAnchor="middle" fontSize={9.5} fontWeight={800} fill="#20242e">
+        <text
+          x={x}
+          y={y + r + (isHovered ? 17 : 15)}
+          textAnchor="middle"
+          fontSize={isHovered ? 11 : 9.5}
+          fontWeight={800}
+          fill="#20242e"
+        >
           {label}
         </text>
       </g>
@@ -135,7 +155,7 @@ function TeamOrgChart({ manager, members }: { manager: UserRecord | null; member
           <>
             <Node person={manager} x={centerX} y={managerY} r={R_MANAGER} />
             {/* descente du responsable vers la barre de distribution */}
-            <line x1={centerX} y1={managerY + R_MANAGER + 21} x2={centerX} y2={busY} stroke="#1a1a1a" strokeWidth={2} />
+            <line x1={centerX} y1={managerY + R_MANAGER + 20} x2={centerX} y2={busY} stroke="#1a1a1a" strokeWidth={2} />
           </>
         )}
 
@@ -150,15 +170,19 @@ function TeamOrgChart({ manager, members }: { manager: UserRecord | null; member
           />
         )}
 
-        {members.map((person, i) => {
-          const x = members.length === 1 ? centerX : firstX + i * COL;
+        {[...members]
+          .map((person, i) => ({ person, x: members.length === 1 ? centerX : firstX + i * COL }))
+          // Le survolé se dessine en dernier : agrandi, il doit passer
+          // au-dessus de ses voisins et non se faire recouvrir.
+          .sort((a, b) => Number(a.person.id === hovered) - Number(b.person.id === hovered))
+          .map(({ person, x }) => {
           return (
             <g key={person.id}>
               <line
                 x1={x}
                 y1={busY}
                 x2={x}
-                y2={memberY - R_MEMBER - 12}
+                y2={memberY - R_MEMBER - 2}
                 stroke="#1a1a1a"
                 strokeWidth={2}
                 markerEnd="url(#org-arrow)"
@@ -221,61 +245,61 @@ function TargetsVsActuals({
           {t("teamBoard.noSeries")}
         </Typography>
       ) : (
-        <ResponsiveContainer width="100%" height={162}>
+        <ResponsiveContainer width="100%" height={196}>
           {/* Domaine élargi de part et d'autre : sans cette réserve, les
             * valeurs des points extrêmes sortent du cadre et se coupent. Les
             * chiffres reprennent la couleur de leur série, seul moyen de les
             * rattacher sans hésitation quand les deux courbes se croisent. */}
           <LineChart data={data} margin={{ top: 22, right: 14, left: 6, bottom: 0 }}>
-            <CartesianGrid stroke="#eceae2" vertical={false} />
+            <CartesianGrid stroke="#d9d9d9" vertical={false} />
             <XAxis
               dataKey="year"
-              tick={{ fontSize: 11.5, fontWeight: 700, fill: "#3a3a3a" }}
+              tick={{ fontSize: 13, fontWeight: 800, fill: "#1a1a1a" }}
               tickLine={false}
-              axisLine={{ stroke: "#cfcec6" }}
-              tickMargin={4}
+              axisLine={false}
+              tickMargin={8}
             />
             <YAxis hide domain={[(min: number) => min - 6, (max: number) => max + 6]} />
             <Legend
               verticalAlign="bottom"
-              height={20}
+              height={24}
               iconType="plainline"
-              iconSize={16}
-              wrapperStyle={{ fontSize: 11.5, fontWeight: 700 }}
+              iconSize={26}
+              wrapperStyle={{ fontSize: 12.5, fontWeight: 600, color: "#3a3a3a", paddingTop: 6 }}
             />
             <Line
               type="linear"
               dataKey="target"
               name={t("teamBoard.target")}
-              stroke="#e02b20"
-              strokeWidth={2.6}
-              dot={{ r: 5, fill: "#e02b20", stroke: "#fff", strokeWidth: 1.5 }}
-              activeDot={{ r: 6 }}
+              stroke="#e8342a"
+              strokeWidth={4}
+              dot={{ r: 7, fill: "#e8342a", strokeWidth: 0 }}
+              activeDot={{ r: 8 }}
               isAnimationActive={false}
             >
               <LabelList
                 dataKey="target"
                 position="top"
-                offset={9}
-                style={{ fontSize: 12, fontWeight: 800, fill: "#c22a20" }}
+                offset={11}
+                style={{ fontSize: 14, fontWeight: 800, fill: "#1a1a1a" }}
               />
             </Line>
             <Line
               type="linear"
               dataKey="actual"
               name={t("teamBoard.actual")}
-              stroke="#3d8fd0"
-              strokeWidth={2.6}
-              dot={{ r: 5, fill: "#3d8fd0", stroke: "#fff", strokeWidth: 1.5 }}
-              activeDot={{ r: 6 }}
+              stroke="#4a9bd8"
+              strokeWidth={4}
+              dot={{ r: 7, fill: "#4a9bd8", strokeWidth: 0 }}
+              activeDot={{ r: 8 }}
               connectNulls
               isAnimationActive={false}
             >
               <LabelList
                 dataKey="actual"
-                position="bottom"
-                offset={9}
-                style={{ fontSize: 12, fontWeight: 800, fill: "#2b6fa8" }}
+                position="top"
+                offset={11}
+                style={{ fontSize: 14, fontWeight: 800, fill: "#1a1a1a" }}
               />
             </Line>
           </LineChart>
@@ -636,17 +660,15 @@ export default function TeamPerformanceIdBoard({
       <Box
         sx={{
           display: "grid",
-          // Écart élargi entre les cinq blocs : ils se resserrent d'autant,
-          // sans que la ligne cesse d'occuper toute la largeur ni de s'aligner
-          // sur les bandeaux du dessous.
-          gap: 5,
+          // Cinq blocs de même largeur, côte à côte en toutes circonstances :
+          // sur écran étroit la ligne défile plutôt que de se replier, un
+          // repliement casserait la lecture d'ensemble de la planche.
+          gap: 2,
           mb: 1.5,
           alignItems: "stretch",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, minmax(0, 1fr))",
-            lg: "repeat(5, minmax(0, 1fr))",
-          },
+          gridTemplateColumns: "repeat(5, minmax(230px, 1fr))",
+          overflowX: "auto",
+          pb: 0.5,
         }}
       >
         {/* Bandeau jaune et texte sombre : l'entête « ÉQUIPE : » de la planche. */}
@@ -659,7 +681,7 @@ export default function TeamPerformanceIdBoard({
           <TeamOrgChart manager={manager} members={others} />
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.teamCohesion")}>
+        <BoardPanel title={t("teamBoard.teamCohesion").toUpperCase()}>
           {cohesionByYear.length === 0 ? (
             <Typography variant="caption" color="text.secondary">
               {t("cohesion.noHistory")}
@@ -687,7 +709,7 @@ export default function TeamPerformanceIdBoard({
           )}
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.spider")}>
+        <BoardPanel title={t("teamBoard.spider").toUpperCase()}>
           {/* Remontée mesurée : assez pour ne pas flotter bas dans le cadre,
             * pas au point de venir buter contre le bandeau du titre. */}
           <Box sx={{ mt: 0.5 }}>
@@ -703,22 +725,22 @@ export default function TeamPerformanceIdBoard({
 
         {/* Réussites et échecs se lisent ensemble : un même bloc, deux
           * sections, comme sur la planche de référence. */}
-        <BoardPanel title={t("teamBoard.achievements")}>
+        <BoardPanel title={t("teamBoard.achievements").toUpperCase()}>
           <EditableList items={board.achievements} onChange={(v) => patch({ achievements: v })} rows={5} readOnly={readOnly} dense hideEmpty asText={!editing} />
           <Box sx={{ mt: 1.25 }}>
-            <BandTitle>{t("teamBoard.failures")}</BandTitle>
+            <BandTitle>{t("teamBoard.failures").toUpperCase()}</BandTitle>
             <Box sx={{ mt: 0.75 }}>
               <EditableList items={board.failures_lessons} onChange={(v) => patch({ failures_lessons: v })} rows={4} readOnly={readOnly} dense hideEmpty asText={!editing} />
             </Box>
           </Box>
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.targetsVsActuals")}>
+        <BoardPanel title={t("teamBoard.targetsVsActuals").toUpperCase()}>
           <TargetsVsActuals
             rows={board.targets_vs_actuals}
             onChange={(v) => patch({ targets_vs_actuals: v })}
             readOnly={readOnly}
-            title={t("teamBoard.targetsVsActuals")}
+            title={t("teamBoard.targetsVsActuals").toUpperCase()}
             editable={editing}
           />
         </BoardPanel>
@@ -726,7 +748,7 @@ export default function TeamPerformanceIdBoard({
 
       {/* ---- Bandeau 2 : forces, faiblesses, vision, valeurs, objectifs ---- */}
       <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap alignItems="stretch" sx={{ mb: 1.5 }}>
-        <BoardPanel title={t("teamBoard.strengths")} sx={panel}>
+        <BoardPanel title={t("teamBoard.strengths").toUpperCase()} sx={panel}>
           <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: "#2e7d32", mb: 0.5 }}>
             {t("teamBoard.people").toUpperCase()}
           </Typography>
@@ -737,7 +759,7 @@ export default function TeamPerformanceIdBoard({
           <EditableList items={board.business_strengths} onChange={(v) => patch({ business_strengths: v })} rows={3} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.weaknesses")} sx={panel}>
+        <BoardPanel title={t("teamBoard.weaknesses").toUpperCase()} sx={panel}>
           <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: "#2e7d32", mb: 0.5 }}>
             {t("teamBoard.people").toUpperCase()}
           </Typography>
@@ -783,7 +805,7 @@ export default function TeamPerformanceIdBoard({
           />
         </Paper>
 
-        <BoardPanel title={t("teamBoard.values")} sx={panel}>
+        <BoardPanel title={t("teamBoard.values").toUpperCase()} sx={panel}>
           <EditableList items={board.values} onChange={(v) => patch({ values: v })} rows={4} readOnly={readOnly} dense hideEmpty asText={!editing} />
           <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: "#b3211f", mt: 1, mb: 0.5 }}>
             {t("teamBoard.counterValues").toUpperCase()}
@@ -793,12 +815,12 @@ export default function TeamPerformanceIdBoard({
 
         {/* Les objectifs se lisent aussi dans le temps : mêmes séries que
           * « Réalisations vs objectifs », sur les années à venir. */}
-        <BoardPanel title={t("teamBoard.objectives")} sx={panel}>
+        <BoardPanel title={t("teamBoard.objectives").toUpperCase()} sx={panel}>
           <TargetsVsActuals
             rows={board.objectives_plan}
             onChange={(v) => patch({ objectives_plan: v })}
             readOnly={readOnly}
-            title={t("teamBoard.objectives")}
+            title={t("teamBoard.objectives").toUpperCase()}
             editable={editing}
           />
         </BoardPanel>
@@ -806,7 +828,7 @@ export default function TeamPerformanceIdBoard({
 
       {/* ---- Bandeau 3 : ID-3A équipe, ID-TPD, priorités ---- */}
       <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap alignItems="stretch">
-        <BoardPanel title={t("teamBoard.id3aTeam")} sx={{ ...panel, minWidth: 340 }}>
+        <BoardPanel title={t("teamBoard.id3aTeam").toUpperCase()} sx={{ ...panel, minWidth: 340 }}>
           <Stack direction="row" spacing={1}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Id3aTeamChart
@@ -829,7 +851,7 @@ export default function TeamPerformanceIdBoard({
 
         {/* ID-TPD : quatre quadrants, l'objectif en abscisse et la progression
             en ordonnée, un feu par quadrant — la planche de référence. */}
-        <BoardPanel title={`${t("teamBoard.idTpd")}${tpdCampaign ? ` ${tpdCampaign.name}` : ""}`} sx={panel}>
+        <BoardPanel title={`${t("teamBoard.idTpd")}${tpdCampaign ? ` ${tpdCampaign.name}` : ""}`.toUpperCase()} sx={panel}>
           {campaigns.length > 1 && (
             <TextField
               select
@@ -922,11 +944,11 @@ export default function TeamPerformanceIdBoard({
           )}
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.prioritiesCohesion")} sx={panel}>
+        <BoardPanel title={t("teamBoard.prioritiesCohesion").toUpperCase()} sx={panel}>
           <EditableList items={board.priorities_cohesion} onChange={(v) => patch({ priorities_cohesion: v })} rows={5} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.prioritiesBusiness")} sx={panel}>
+        <BoardPanel title={t("teamBoard.prioritiesBusiness").toUpperCase()} sx={panel}>
           <EditableList items={board.priorities_business} onChange={(v) => patch({ priorities_business: v })} rows={5} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
       </Stack>
