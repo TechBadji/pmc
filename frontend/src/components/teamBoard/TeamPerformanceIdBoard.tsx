@@ -820,54 +820,66 @@ export default function TeamPerformanceIdBoard({
           <EditableList items={board.business_weaknesses} onChange={(v) => patch({ business_weaknesses: v })} rows={3} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
 
-        {/* Vision / missions : le manifeste de l'équipe.
-            C'est le seul texte suivi d'une planche faite de listes et de
-            courbes. Plutôt que de lui inventer une forme molle, on l'affirme :
-            fond profond, texte clair, filet orange de la charte. Il devient le
-            point d'ancrage du regard au milieu du bandeau, ce qu'il est dans
-            la démarche. */}
-        <Paper
-          elevation={0}
+        {/* Vision / missions : le manifeste de l'équipe, en médaillon.
+            Le cercle déborde volontairement sur ses voisins, comme sur la
+            planche de référence où il chevauche les bandeaux. Là où il passe
+            par-dessus, son fond reste translucide et son arrière-plan flouté :
+            on devine ce qu'il recouvre au lieu de l'effacer. */}
+        <Box
           sx={{
             position: "relative",
-            overflow: "hidden",
-            p: 2,
-            borderRadius: 2,
-            background: "linear-gradient(155deg, #2a4874 0%, #1b3057 55%, #14243f 100%)",
-            boxShadow: "0 6px 18px rgba(20,36,63,0.22)",
             display: "flex",
-            flexDirection: "column",
+            alignItems: "center",
             justifyContent: "center",
-            minHeight: 168,
+            minHeight: 250,
+            zIndex: 3,
           }}
         >
-          {/* Guillemet d'ouverture, franc et non timide : il pose le ton. */}
-          <Typography
-            aria-hidden
+          <Paper
+            elevation={0}
             sx={{
-              position: "absolute",
-              top: -26,
-              left: 10,
-              fontSize: 108,
-              lineHeight: 1,
-              color: HEADER_ORANGE,
-              opacity: 0.22,
-              fontFamily: "Georgia, serif",
-              pointerEvents: "none",
+              position: "relative",
+              width: 268,
+              height: 268,
+              flex: "0 0 auto",
+              mx: "-18px", // débord maîtrisé sur les blocs voisins
+              borderRadius: "50%",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              px: 3.5,
+              background:
+                "linear-gradient(155deg, rgba(42,72,116,0.93) 0%, rgba(27,48,87,0.94) 55%, rgba(20,36,63,0.95) 100%)",
+              backdropFilter: "blur(3px)",
+              boxShadow: "0 10px 26px rgba(20,36,63,0.28)",
             }}
           >
-            &ldquo;
-          </Typography>
+            <Typography
+              aria-hidden
+              sx={{
+                position: "absolute",
+                top: 4,
+                left: 34,
+                fontSize: 92,
+                lineHeight: 1,
+                color: HEADER_ORANGE,
+                opacity: 0.2,
+                fontFamily: "Georgia, serif",
+                pointerEvents: "none",
+              }}
+            >
+              &ldquo;
+            </Typography>
 
-          <Stack spacing={1} sx={{ position: "relative" }}>
-            <Box>
-              <Typography
-                sx={{ fontWeight: 800, fontSize: 10.5, letterSpacing: 1.4, color: "rgba(255,255,255,0.75)" }}
-              >
-                {t("teamBoard.visionMissions").toUpperCase()}
-              </Typography>
-              <Box sx={{ width: 42, height: 3, borderRadius: 2, bgcolor: HEADER_ORANGE, mt: 0.75 }} />
-            </Box>
+            <Typography
+              sx={{ fontWeight: 800, fontSize: 10.5, letterSpacing: 1.4, color: "rgba(255,255,255,0.78)", zIndex: 1 }}
+            >
+              {t("teamBoard.visionMissions").toUpperCase()}
+            </Typography>
+            <Box sx={{ width: 42, height: 3, borderRadius: 2, bgcolor: HEADER_ORANGE, my: 1, zIndex: 1 }} />
 
             {editing ? (
               <InputBase
@@ -875,30 +887,39 @@ export default function TeamPerformanceIdBoard({
                 readOnly={readOnly}
                 multiline
                 minRows={3}
+                maxRows={6}
                 placeholder={t("teamBoard.visionPlaceholder")}
                 onChange={(e) => patch({ vision_missions: e.target.value })}
                 sx={{
                   width: "100%",
-                  fontSize: 14,
-                  lineHeight: 1.55,
+                  fontSize: 13,
+                  lineHeight: 1.5,
                   color: "#fff",
+                  zIndex: 1,
+                  "& textarea": { textAlign: "center" },
                   "& textarea::placeholder": { color: "rgba(255,255,255,0.5)", opacity: 1 },
                 }}
               />
             ) : (
               <Typography
                 sx={{
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: 500,
-                  lineHeight: 1.55,
+                  lineHeight: 1.5,
+                  zIndex: 1,
                   color: board.vision_missions ? "#fff" : "rgba(255,255,255,0.55)",
+                  // Un manifeste trop long ne doit pas déborder du cercle.
+                  display: "-webkit-box",
+                  WebkitLineClamp: 7,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
                 }}
               >
                 {board.vision_missions || t("teamBoard.visionPlaceholder")}
               </Typography>
             )}
-          </Stack>
-        </Paper>
+          </Paper>
+        </Box>
 
         <BoardPanel title={t("teamBoard.values").toUpperCase()}>
           <EditableList items={board.values} onChange={(v) => patch({ values: v })} rows={4} readOnly={readOnly} dense hideEmpty asText={!editing} />
