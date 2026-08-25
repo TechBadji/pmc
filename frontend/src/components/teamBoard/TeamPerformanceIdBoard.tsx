@@ -58,38 +58,117 @@ const QUADRANTS = [
 
 const YEAR_COLORS = ["#5b8ac6", "#c0504d", "#9bbb59", "#8064a2", "#4bacc6"];
 
-/** Organigramme compact de l'équipe : le responsable, puis ses membres. */
+/**
+ * Organigramme de l'équipe, tel que la planche le présente : le responsable en
+ * tête, une barre de distribution, puis une flèche descendant vers chaque
+ * membre. Dessiné en SVG — les flèches et la barre demandent un tracé, et le
+ * dessin doit se réduire à la largeur de sa colonne sans se déformer.
+ */
 function TeamOrgChart({ manager, members }: { manager: UserRecord | null; members: UserRecord[] }) {
+  const R_MANAGER = 26;
+  const R_MEMBER = 21;
+  const COL = 78; // pas horizontal entre deux membres
+  const width = Math.max(COL * Math.max(members.length, 1), 220);
+  const height = 250;
+  const centerX = width / 2;
+  const managerY = 40;
+  const busY = 132;
+  const memberY = 186;
+  const firstX = centerX - ((members.length - 1) * COL) / 2;
+
+  /** Vignette ronde + étiquette jaune, comme sur la planche. */
+  function Node({ person, x, y, r }: { person: UserRecord; x: number; y: number; r: number }) {
+    const name = person.full_name || person.email;
+    const label = name.split(" ")[0];
+    const labelWidth = Math.max(48, label.length * 6.4 + 12);
+    return (
+      <g>
+        <circle cx={x} cy={y} r={r} fill="#eef1f6" stroke="#9aa4b2" strokeWidth={1.5} />
+        {person.avatar ? (
+          <>
+            <clipPath id={`org-clip-${person.id}`}>
+              <circle cx={x} cy={y} r={r - 1.5} />
+            </clipPath>
+            <image
+              href={person.avatar}
+              x={x - r + 1.5}
+              y={y - r + 1.5}
+              width={(r - 1.5) * 2}
+              height={(r - 1.5) * 2}
+              clipPath={`url(#org-clip-${person.id})`}
+              preserveAspectRatio="xMidYMid slice"
+            />
+          </>
+        ) : (
+          <text x={x} y={y + r / 3} textAnchor="middle" fontSize={r} fontWeight={800} fill="#5b6472">
+            {name.charAt(0).toUpperCase()}
+          </text>
+        )}
+        <rect
+          x={x - labelWidth / 2}
+          y={y + r + 4}
+          width={labelWidth}
+          height={15}
+          rx={2}
+          fill="#ffff66"
+          stroke="#d9d33f"
+        />
+        <text x={x} y={y + r + 15} textAnchor="middle" fontSize={9.5} fontWeight={800} fill="#20242e">
+          {label}
+        </text>
+      </g>
+    );
+  }
+
+  if (!manager && members.length === 0) return null;
+
   return (
-    <Stack alignItems="center" spacing={0.5}>
-      {manager && (
-        <>
-          <Avatar src={manager.avatar ?? undefined} sx={{ width: 44, height: 44, bgcolor: "primary.main" }}>
-            {(manager.full_name || manager.email).charAt(0).toUpperCase()}
-          </Avatar>
-          <Box sx={{ bgcolor: "#fdf6c8", border: "1px solid #d8d2a8", borderRadius: 0.5, px: 0.75 }}>
-            <Typography sx={{ fontSize: 10.5, fontWeight: 700, color: BOARD_TEXT }}>
-              {manager.full_name || manager.email}
-            </Typography>
-          </Box>
-          <Box sx={{ width: 2, height: 12, bgcolor: "divider" }} />
-        </>
-      )}
-      <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center" useFlexGap>
-        {members.map((m) => (
-          <Stack key={m.id} alignItems="center" spacing={0.25} sx={{ width: 62 }}>
-            <Avatar src={m.avatar ?? undefined} sx={{ width: 30, height: 30, fontSize: 13, bgcolor: "primary.light" }}>
-              {(m.full_name || m.email).charAt(0).toUpperCase()}
-            </Avatar>
-            <Box sx={{ bgcolor: "#fdf6c8", border: "1px solid #d8d2a8", borderRadius: 0.5, px: 0.4, width: "100%" }}>
-              <Typography noWrap sx={{ fontSize: 9, fontWeight: 700, textAlign: "center", color: BOARD_TEXT }}>
-                {(m.full_name || m.email).split(" ")[0]}
-              </Typography>
-            </Box>
-          </Stack>
-        ))}
-      </Stack>
-    </Stack>
+    <Box sx={{ width: "100%", overflowX: "auto" }}>
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" style={{ display: "block", height: "auto" }}>
+        <defs>
+          <marker id="org-arrow" markerWidth="9" markerHeight="9" refX="4.5" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M 0 0 L 9 0 L 4.5 9 z" fill="#1a1a1a" />
+          </marker>
+        </defs>
+
+        {manager && (
+          <>
+            <Node person={manager} x={centerX} y={managerY} r={R_MANAGER} />
+            {/* descente du responsable vers la barre de distribution */}
+            <line x1={centerX} y1={managerY + R_MANAGER + 21} x2={centerX} y2={busY} stroke="#1a1a1a" strokeWidth={2} />
+          </>
+        )}
+
+        {members.length > 0 && (
+          <line
+            x1={members.length === 1 ? centerX : firstX}
+            y1={busY}
+            x2={members.length === 1 ? centerX : firstX + (members.length - 1) * COL}
+            y2={busY}
+            stroke="#1a1a1a"
+            strokeWidth={2}
+          />
+        )}
+
+        {members.map((person, i) => {
+          const x = members.length === 1 ? centerX : firstX + i * COL;
+          return (
+            <g key={person.id}>
+              <line
+                x1={x}
+                y1={busY}
+                x2={x}
+                y2={memberY - R_MEMBER - 12}
+                stroke="#1a1a1a"
+                strokeWidth={2}
+                markerEnd="url(#org-arrow)"
+              />
+              <Node person={person} x={x} y={memberY} r={R_MEMBER} />
+            </g>
+          );
+        })}
+      </svg>
+    </Box>
   );
 }
 
@@ -570,7 +649,13 @@ export default function TeamPerformanceIdBoard({
           },
         }}
       >
-        <BoardPanel title={t("teamBoard.team")}>
+        {/* Bandeau jaune et texte sombre : l'entête « ÉQUIPE : » de la planche. */}
+        <BoardPanel
+          title={`${t("teamBoard.team").toUpperCase()} :`}
+          bg="#ffff66"
+          titleColor={BOARD_TEXT}
+          titleAlign="left"
+        >
           <TeamOrgChart manager={manager} members={others} />
         </BoardPanel>
 

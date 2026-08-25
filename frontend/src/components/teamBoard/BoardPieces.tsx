@@ -9,10 +9,21 @@ export const BOARD_GREEN = "#8faa54";
 export const BOARD_CREAM = "#f5efd6";
 export const BOARD_TEXT = "#20242e";
 
-export function BandTitle({ children, bg = BOARD_GREEN }: { children: React.ReactNode; bg?: string }) {
+export function BandTitle({
+  children,
+  bg = BOARD_GREEN,
+  color = "#fff",
+  align = "center",
+}: {
+  children: React.ReactNode;
+  bg?: string;
+  /** Le bandeau jaune de la planche porte un texte sombre, pas blanc. */
+  color?: string;
+  align?: "center" | "left";
+}) {
   return (
-    <Box sx={{ bgcolor: bg, borderRadius: 0.5, py: 0.4, px: 1, textAlign: "center" }}>
-      <Typography sx={{ color: "#fff", fontWeight: 800, fontSize: 12.5, letterSpacing: 0.4 }}>{children}</Typography>
+    <Box sx={{ bgcolor: bg, borderRadius: 0.5, py: 0.4, px: 1, textAlign: align }}>
+      <Typography sx={{ color, fontWeight: 800, fontSize: 12.5, letterSpacing: 0.4 }}>{children}</Typography>
     </Box>
   );
 }
@@ -315,17 +326,23 @@ export function TeamSpiderGraph({
 export function BoardPanel({
   title,
   bg = BOARD_GREEN,
+  titleColor,
+  titleAlign,
   children,
   sx,
 }: {
   title: React.ReactNode;
   bg?: string;
+  titleColor?: string;
+  titleAlign?: "center" | "left";
   children: React.ReactNode;
   sx?: object;
 }) {
   return (
     <Paper elevation={0} sx={{ p: 1, border: "1px solid", borderColor: "divider", height: "100%", ...sx }}>
-      <BandTitle bg={bg}>{title}</BandTitle>
+      <BandTitle bg={bg} color={titleColor} align={titleAlign}>
+        {title}
+      </BandTitle>
       <Box sx={{ mt: 1 }}>{children}</Box>
     </Paper>
   );
