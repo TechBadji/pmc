@@ -650,7 +650,6 @@ export default function TeamPerformanceIdBoard({
   if (teamId === "") return <Alert severity="info">{t("teamBoard.noEntryHint")}</Alert>;
   if (!board) return <Alert severity="info">{t("teamBoard.noEntryHint")}</Alert>;
 
-  const panel = { flex: 1, minWidth: 240 };
 
   return (
     <Paper elevation={0} sx={{ p: 1.5, border: "1px solid", borderColor: "divider", bgcolor: "#fbfbfa", color: BOARD_TEXT }}>
@@ -670,10 +669,10 @@ export default function TeamPerformanceIdBoard({
           // Cinq blocs de même largeur, côte à côte en toutes circonstances :
           // sur écran étroit la ligne défile plutôt que de se replier, un
           // repliement casserait la lecture d'ensemble de la planche.
-          gap: 2,
-          mb: 1.5,
+          gap: 1,
+          mb: 1,
           alignItems: "stretch",
-          gridTemplateColumns: "repeat(5, minmax(230px, 1fr))",
+          gridTemplateColumns: "repeat(5, minmax(250px, 1fr))",
           overflowX: "auto",
           pb: 0.5,
         }}
@@ -753,9 +752,21 @@ export default function TeamPerformanceIdBoard({
         </BoardPanel>
       </Box>
 
-      {/* ---- Bandeau 2 : forces, faiblesses, vision, valeurs, objectifs ---- */}
-      <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap alignItems="stretch" sx={{ mb: 1.5 }}>
-        <BoardPanel title={t("teamBoard.strengths").toUpperCase()} sx={panel}>
+      {/* ---- Bandeau 2 : forces, faiblesses, vision, valeurs, objectifs ----
+          Même grille serrée que la première ligne : les blocs gagnent en
+          largeur ce que les écarts leur rendent. */}
+      <Box
+        sx={{
+          display: "grid",
+          gap: 1,
+          mb: 1,
+          alignItems: "stretch",
+          gridTemplateColumns: "repeat(5, minmax(250px, 1fr))",
+          overflowX: "auto",
+          pb: 0.5,
+        }}
+      >
+        <BoardPanel title={t("teamBoard.strengths").toUpperCase()}>
           <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: "#2e7d32", mb: 0.5 }}>
             {t("teamBoard.people").toUpperCase()}
           </Typography>
@@ -766,7 +777,7 @@ export default function TeamPerformanceIdBoard({
           <EditableList items={board.business_strengths} onChange={(v) => patch({ business_strengths: v })} rows={3} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.weaknesses").toUpperCase()} sx={panel}>
+        <BoardPanel title={t("teamBoard.weaknesses").toUpperCase()}>
           <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: "#2e7d32", mb: 0.5 }}>
             {t("teamBoard.people").toUpperCase()}
           </Typography>
@@ -781,7 +792,6 @@ export default function TeamPerformanceIdBoard({
         <Paper
           elevation={0}
           sx={{
-            ...panel,
             p: 1.5,
             border: "1px solid",
             borderColor: "divider",
@@ -812,7 +822,7 @@ export default function TeamPerformanceIdBoard({
           />
         </Paper>
 
-        <BoardPanel title={t("teamBoard.values").toUpperCase()} sx={panel}>
+        <BoardPanel title={t("teamBoard.values").toUpperCase()}>
           <EditableList items={board.values} onChange={(v) => patch({ values: v })} rows={4} readOnly={readOnly} dense hideEmpty asText={!editing} />
           <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: "#b3211f", mt: 1, mb: 0.5 }}>
             {t("teamBoard.counterValues").toUpperCase()}
@@ -822,7 +832,7 @@ export default function TeamPerformanceIdBoard({
 
         {/* Les objectifs se lisent aussi dans le temps : mêmes séries que
           * « Réalisations vs objectifs », sur les années à venir. */}
-        <BoardPanel title={t("teamBoard.objectives").toUpperCase()} sx={panel}>
+        <BoardPanel title={t("teamBoard.objectives").toUpperCase()}>
           <TargetsVsActuals
             rows={board.objectives_plan}
             onChange={(v) => patch({ objectives_plan: v })}
@@ -831,11 +841,22 @@ export default function TeamPerformanceIdBoard({
             editable={editing}
           />
         </BoardPanel>
-      </Stack>
+      </Box>
 
-      {/* ---- Bandeau 3 : ID-3A équipe, ID-TPD, priorités ---- */}
-      <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap alignItems="stretch">
-        <BoardPanel title={t("teamBoard.id3aTeam").toUpperCase()} sx={{ ...panel, minWidth: 340 }}>
+      {/* ---- Bandeau 3 : ID-3A équipe, ID-TPD, priorités ----
+          L'ID-3A porte deux repères côte à côte : il lui faut une colonne et
+          demie, les trois autres se partageant le reste à parts égales. */}
+      <Box
+        sx={{
+          display: "grid",
+          gap: 1,
+          alignItems: "stretch",
+          gridTemplateColumns: "minmax(420px, 1.7fr) repeat(3, minmax(230px, 1fr))",
+          overflowX: "auto",
+          pb: 0.5,
+        }}
+      >
+        <BoardPanel title={t("teamBoard.id3aTeam").toUpperCase()}>
           <Stack direction="row" spacing={1}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Id3aTeamChart
@@ -858,7 +879,7 @@ export default function TeamPerformanceIdBoard({
 
         {/* ID-TPD : quatre quadrants, l'objectif en abscisse et la progression
             en ordonnée, un feu par quadrant — la planche de référence. */}
-        <BoardPanel title={`${t("teamBoard.idTpd")}${tpdCampaign ? ` ${tpdCampaign.name}` : ""}`.toUpperCase()} sx={panel}>
+        <BoardPanel title={`${t("teamBoard.idTpd")}${tpdCampaign ? ` ${tpdCampaign.name}` : ""}`.toUpperCase()}>
           {campaigns.length > 1 && (
             <TextField
               select
@@ -951,14 +972,14 @@ export default function TeamPerformanceIdBoard({
           )}
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.prioritiesCohesion").toUpperCase()} sx={panel}>
+        <BoardPanel title={t("teamBoard.prioritiesCohesion").toUpperCase()}>
           <EditableList items={board.priorities_cohesion} onChange={(v) => patch({ priorities_cohesion: v })} rows={5} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
 
-        <BoardPanel title={t("teamBoard.prioritiesBusiness").toUpperCase()} sx={panel}>
+        <BoardPanel title={t("teamBoard.prioritiesBusiness").toUpperCase()}>
           <EditableList items={board.priorities_business} onChange={(v) => patch({ priorities_business: v })} rows={5} readOnly={readOnly} dense hideEmpty asText={!editing} />
         </BoardPanel>
-      </Stack>
+      </Box>
     </Paper>
   );
 }
