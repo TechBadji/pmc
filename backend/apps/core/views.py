@@ -552,9 +552,12 @@ class PasswordResetRequestViewSet(viewsets.ReadOnlyModelViewSet):
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     """Journal d'activité de la plateforme — réservé au Super Admin."""
 
-    # L'acteur et l'entreprise sont affichés sur chaque ligne : sans
-    # préchargement, une page de 50 entrées déclenchait 100 requêtes de plus.
-    queryset = AuditLog.objects.select_related("actor", "company")
+    # Aucun préchargement n'est utile ici : le journal fige le nom de
+    # l'auteur et celui de l'entreprise à l'écriture (`actor_name`,
+    # `company_name`), et n'expose de la relation que l'identifiant. Une
+    # jointure n'apporterait rien — et « company » n'est même pas une
+    # relation de ce modèle.
+    queryset = AuditLog.objects.all()
     serializer_class = AuditLogSerializer
     permission_classes = [IsSuperAdmin]
     filterset_fields = ["action"]
