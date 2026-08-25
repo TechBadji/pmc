@@ -14,7 +14,13 @@ from apps.core.validators import require_same_company
 
 from apps.core.scoping import managed_department_ids
 
-from .models import Evaluation, EvaluationCampaign, PerformanceObjective, SkillNote
+from .models import (
+    Evaluation,
+    EvaluationCampaign,
+    PerformanceObjective,
+    SkillNote,
+    recompute_evaluation_scores,
+)
 from .serializers import (
     EvaluationCampaignSerializer,
     EvaluationSerializer,
@@ -256,3 +262,12 @@ class PerformanceObjectiveViewSet(CompanyScopedQuerySetMixin, viewsets.ModelView
         elif user.role == user.Role.MEMBER:
             qs = qs.filter(evaluation__user=user)
         return qs.distinct()
+
+    def perform_destroy(self, instance):
+        """Retirer une ligne change la moyenne : le report vaut aussi à la
+        suppression, sans quoi l'Altitude garderait la trace d'un objectif
+        effacé."""
+        evaluation = instance.evaluation
+        super().perform_destroy(instance)
+        if evaluation is not None:
+            recompute_evaluation_scores(evaluation)

@@ -12,6 +12,7 @@ from .models import (
     EvaluationSkillScore,
     PerformanceObjective,
     SkillNote,
+    recompute_evaluation_scores,
 )
 
 
@@ -256,3 +257,20 @@ class PerformanceObjectiveSerializer(serializers.ModelSerializer):
         else:
             require_same_company(actor, target_user=evaluation.user)
         return attrs
+
+    def create(self, validated_data):
+        line = super().create(validated_data)
+        self._report_to_evaluation(line)
+        return line
+
+    def update(self, instance, validated_data):
+        line = super().update(instance, validated_data)
+        self._report_to_evaluation(line)
+        return line
+
+    @staticmethod
+    def _report_to_evaluation(line):
+        """La fiche est la source : ses totaux redescendent dans l'évaluation,
+        d'où l'Altitude est lue par tout le reste de l'application."""
+        if line.evaluation_id:
+            recompute_evaluation_scores(line.evaluation)

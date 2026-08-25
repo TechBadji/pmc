@@ -1,5 +1,5 @@
 import { Alert, Box, Button, MenuItem, Snackbar, Stack, TextField } from "@mui/material";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import type {
@@ -120,9 +120,24 @@ export default function ObjectivesSheetPanel({
     }
   }
 
-  /** Enregistrement au fil de la frappe, la ligne étant déjà en base. */
-  async function patchRow(id: number, values: Partial<PerformanceObjective>) {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...values } : r)));
+  /**
+   * Enregistrement différé, la ligne étant déjà en base.
+   *
+   * La saisie s'affiche aussitôt, mais l'écriture attend 700 ms de silence et
+   * regroupe les champs modifiés entre-temps. Sans cela chaque frappe partirait
+   * en requête — et chacune fait recalculer la moyenne de la fiche puis
+   * l'Altitude côté serveur. Le jour où une entreprise a des centaines de
+   * collaborateurs saisis en parallèle, c'est la différence entre quelques
+   * écritures par ligne et plusieurs dizaines.
+   */
+  const pending = useRef(new Map<number, Partial<PerformanceObjective>>());
+  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+
+  const flush = useCallback(async (id: number) => {
+    const values = pending.current.get(id);
+    pending.current.delete(id);
+    timers.current.delete(id);
+    if (!values || Object.keys(values).length === 0) return;
     try {
       const { data } = await apiClient.patch<PerformanceObjective>(`/performance-objectives/${id}/`, values);
       // Le serveur renvoie le taux recalculé : on ne le devine pas côté client.
@@ -130,7 +145,31 @@ export default function ObjectivesSheetPanel({
     } catch {
       setError(true);
     }
+  }, []);
+
+  function patchRow(id: number, values: Partial<PerformanceObjective>) {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...values } : r)));
+    pending.current.set(id, { ...(pending.current.get(id) ?? {}), ...values });
+    const existing = timers.current.get(id);
+    if (existing) clearTimeout(existing);
+    timers.current.set(id, setTimeout(() => void flush(id), 700));
   }
+
+  // Quitter la page ou changer de fiche ne doit pas emporter la dernière frappe.
+  useEffect(() => {
+    const timersMap = timers.current;
+    const pendingMap = pending.current;
+    return () => {
+      timersMap.forEach((timer) => clearTimeout(timer));
+      timersMap.clear();
+      pendingMap.forEach((values, id) => {
+        if (Object.keys(values).length) {
+          void apiClient.patch(`/performance-objectives/${id}/`, values);
+        }
+      });
+      pendingMap.clear();
+    };
+  }, []);
 
   async function removeRow(id: number) {
     setRows((prev) => prev.filter((r) => r.id !== id));

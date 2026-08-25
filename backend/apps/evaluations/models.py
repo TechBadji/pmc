@@ -342,3 +342,49 @@ class PerformanceObjective(models.Model):
             return None
         ratio = float(self.actual_value) / float(self.target_value)
         return round(ratio * 100, 1)
+
+
+def recompute_evaluation_scores(evaluation):
+    """Reporte la fiche d'objectifs dans les deux scores de l'évaluation.
+
+    Choix d'architecture. L'Altitude est lue partout — matrice ID-3A, 9 Box,
+    ID-TPD, tableaux de bord, fiche Performance ID — souvent par listes de
+    plusieurs centaines de lignes. La calculer à la lecture obligerait à
+    agréger les objectifs de chaque évaluation à chaque affichage : c'est
+    exactement le motif qui avait déjà coûté 4 565 requêtes sur la liste des
+    évaluations. On garde donc les deux scores stockés comme chemin de lecture,
+    et on les recalcule à l'écriture d'une ligne d'objectif — une poignée de
+    lignes relues, un seul UPDATE, à un rythme dicté par la saisie humaine.
+
+    Tant qu'aucune ligne n'existe, les valeurs saisies à la main sont laissées
+    telles quelles : les évaluations antérieures à la fiche gardent leur sens.
+    """
+    lines = list(evaluation.objectives.all())
+    if not lines:
+        return False
+
+    def block(category):
+        scored = [
+            (line.achievement_percent, float(line.weight) if line.weight else 1.0)
+            for line in lines
+            if line.category == category and line.achievement_percent is not None
+        ]
+        if not scored:
+            return None
+        total_weight = sum(weight for _, weight in scored)
+        if total_weight == 0:
+            return None
+        return round(sum(pct * weight for pct, weight in scored) / total_weight, 1)
+
+    business = block(PerformanceObjective.Category.BUSINESS)
+    managerial = block(PerformanceObjective.Category.MANAGERIAL)
+    changed = []
+    if business is not None:
+        evaluation.business_objectives_score = business
+        changed.append("business_objectives_score")
+    if managerial is not None:
+        evaluation.people_objectives_score = managerial
+        changed.append("people_objectives_score")
+    if changed:
+        evaluation.save(update_fields=changed + ["updated_at"])
+    return bool(changed)
