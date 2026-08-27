@@ -1,4 +1,6 @@
-import { Alert, Box, Button, MenuItem, Snackbar, Stack, TextField, Typography } from "@mui/material";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import CloudDoneOutlinedIcon from "@mui/icons-material/CloudDoneOutlined";
+import { Alert, Box, Button, Chip, CircularProgress, MenuItem, Snackbar, Stack, TextField } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
@@ -295,13 +297,45 @@ export default function ObjectivesSheetPanel({
           * même une seconde après la dernière frappe. Le témoin dit où on en
           * est, faute de quoi l'absence de bouton laisse un doute. */}
         {ready && canEdit && (
-          <Typography variant="caption" color={saving ? "text.secondary" : "success.main"} sx={{ ml: "auto" }}>
-            {saving
-              ? t("objectivesSheet.saving")
-              : savedAt
-                ? t("objectivesSheet.savedAt", { time: savedAt })
-                : t("objectivesSheet.autoSave")}
-          </Typography>
+          <Chip
+            size="small"
+            icon={
+              saving ? (
+                <CircularProgress size={13} thickness={6} sx={{ color: "inherit !important" }} />
+              ) : savedAt ? (
+                <CheckCircleRoundedIcon />
+              ) : (
+                <CloudDoneOutlinedIcon />
+              )
+            }
+            label={
+              saving
+                ? t("objectivesSheet.saving")
+                : savedAt
+                  ? t("objectivesSheet.savedAt", { time: savedAt })
+                  : t("objectivesSheet.autoSave")
+            }
+            sx={{
+              ml: "auto",
+              height: 30,
+              fontWeight: 700,
+              fontSize: 12.5,
+              px: 0.5,
+              // Vert franc dès qu'une sauvegarde a eu lieu : c'est le signal
+              // que l'utilisateur cherche, il doit se voir sans être cherché.
+              bgcolor: saving ? "grey.200" : savedAt ? "#e7f5ea" : "grey.100",
+              color: saving ? "text.secondary" : savedAt ? "#1b7f3b" : "text.secondary",
+              border: "1px solid",
+              borderColor: saving ? "grey.400" : savedAt ? "#1b7f3b" : "grey.300",
+              "& .MuiChip-icon": { color: "inherit", fontSize: 17 },
+              // Bref éclat au moment où l'enregistrement aboutit.
+              animation: savedAt && !saving ? "tpdSaved 0.6s ease-out" : "none",
+              "@keyframes tpdSaved": {
+                "0%": { transform: "scale(0.94)", boxShadow: "0 0 0 0 rgba(27,127,59,0.45)" },
+                "100%": { transform: "scale(1)", boxShadow: "0 0 0 10px rgba(27,127,59,0)" },
+              },
+            }}
+          />
         )}
       </Stack>
 
