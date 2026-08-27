@@ -46,22 +46,30 @@ export interface VisioPerson {
 
 // --- Cadre -----------------------------------------------------------------
 const W = 3000;
-const H = 1760;
+const H = 1663;
 
 // --- Échelles --------------------------------------------------------------
-const PERF_MIN = 50;
-const PERF_MAX = 120;
+/**
+ * Fenêtre de performance. Le cadre est une enveloppe fixe : ce que gagne une
+ * moitié du plateau, l'autre le cède. Les compartiments de droite étaient les
+ * plus courts alors qu'ils reçoivent le gros des effectifs — l'axe s'arrêtait
+ * à 120 % à droite mais descendait jusqu'à 50 % à gauche, une bande où presque
+ * personne ne se tient. La fenêtre glisse donc de 50-120 à 55-130 : trois
+ * colonnes reprises au bas de l'échelle et rendues au haut.
+ */
+const PERF_MIN = 55;
+const PERF_MAX = 130;
 const EVO_MIN = -20;
 const EVO_MAX = 20;
 const STEP = 5;
 const PERF_ORIGIN = 90; // objectifs atteints
-const COLS = (PERF_MAX - PERF_MIN) / STEP; // 14 colonnes
+const COLS = (PERF_MAX - PERF_MIN) / STEP; // 15 colonnes
 const ROWS = (EVO_MAX - EVO_MIN) / STEP; // 8 rangées
 
 // --- Emprise du plateau ----------------------------------------------------
 const FRONT_HALF = 1400;
 const BACK_HALF = 940; // forte convergence : le regard est rasant
-const FLOOR_FRONT_Y = 1570;
+const FLOOR_FRONT_Y = 1473;
 const CENTER_X = 1440;
 const RIGHT_SHIFT = 240; // le fond glisse à droite : le plateau paraît tourné
 /**
@@ -89,7 +97,7 @@ const TEXT = "#1a2744";
 
 /**
  * Profondeur du plateau, déduite plutôt que réglée : on veut que la case du
- * premier plan soit carrée à l'écran. Sa largeur y vaut 2 × FRONT_HALF / 14 ;
+ * premier plan soit carrée à l'écran. Sa largeur y vaut 2 × FRONT_HALF / COLS ;
  * la première rangée doit donc occuper autant en hauteur. Comme la perspective
  * raccourcit les rangées à mesure qu'elles s'éloignent, la profondeur totale
  * s'obtient en divisant cette hauteur par la part de profondeur que la
