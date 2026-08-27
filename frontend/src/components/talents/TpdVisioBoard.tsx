@@ -3,17 +3,32 @@ import { useTranslation } from "react-i18next";
 import type { PerformanceRating } from "@/api/types";
 
 /* ---------------------------------------------------------------------------
- * TPD-VISIO — plateau ID-TPD en perspective.
+ * TPD-VISIO — le plateau ID-TPD.
  *
- * La planche reproduit le support ID-PMC : un sol en perspective isométrique,
- * l'axe des performances en abscisse (50 % → 120 %), l'écart avec la période
- * précédente en ordonnée (-20 % → +20 %), et chaque collaborateur posé sur le
- * plateau à l'endroit exact de ses deux valeurs.
+ * Configuration retenue, et pourquoi.
  *
- * Tout passe par `project()` : une seule fonction convertit un couple
- * (performance, écart) en pixels du dessin. Repositionner quelqu'un, changer
- * les bornes des axes ou la profondeur du plateau se fait donc en un seul
- * endroit, sans toucher au reste du tracé.
+ * 1. Un damier plutôt qu'un fond quadrillé. Le plateau se lit comme une table
+ *    de jeu : cases carrées alternées, dalle épaisse, tranche et flancs
+ *    visibles. La profondeur ne se devine plus d'un simple trapèze, elle se
+ *    voit à l'épaisseur et à l'alternance des cases.
+ *
+ * 2. Des cases réellement carrées. Le pas est de 5 % sur les deux axes, soit
+ *    14 colonnes de performance pour 8 rangées d'écart. L'emprise du plateau
+ *    suit ce rapport 14/8 : il est donc franchement rectangulaire — bien plus
+ *    large que profond — et une case reste carrée vue de dessus.
+ *
+ * 3. Quatre compartiments pleins. Ce sont eux qui portent la lecture, pas la
+ *    grille : bleu clair, bordés de marine, en retrait des axes. Toute
+ *    personne est ramenée à l'intérieur du compartiment qui la décrit — jamais
+ *    sur une ligne d'axe, jamais dehors, quelles que soient ses valeurs.
+ *
+ * 4. Les graduations bordent les axes, à l'intérieur du plateau : les
+ *    pourcentages de performance sous la ligne horizontale, les écarts à
+ *    gauche de la verticale, dans la gouttière laissée libre entre les axes et
+ *    les compartiments.
+ *
+ * Toute la géométrie passe par `plan(u, v)` : changer l'inclinaison, la
+ * rotation ou l'emprise se fait en un seul endroit.
  * ------------------------------------------------------------------------- */
 
 export interface VisioPerson {
@@ -29,172 +44,125 @@ export interface VisioPerson {
   rating: PerformanceRating;
 }
 
-// --- Repère du dessin ------------------------------------------------------
-// Cadre élargi pour loger les compartiments de droite, allongés d'un tiers.
+// --- Cadre -----------------------------------------------------------------
 const W = 3000;
-const H = 1680;
+const H = 1420;
 
+// --- Échelles --------------------------------------------------------------
 const PERF_MIN = 50;
 const PERF_MAX = 120;
 const EVO_MIN = -20;
 const EVO_MAX = 20;
+const STEP = 5;
+const PERF_ORIGIN = 90; // objectifs atteints
+const COLS = (PERF_MAX - PERF_MIN) / STEP; // 14 colonnes
+const ROWS = (EVO_MAX - EVO_MIN) / STEP; // 8 rangées
 
-/** Origine du repère : la performance de référence, objectifs atteints. */
-const PERF_ORIGIN = 90;
-
-// Trapèze du sol : le fond est plus étroit et plus haut que le devant.
-// Le plateau garde sa profondeur agrandie (915 px). Les silhouettes gardent
-// toujours l'échelle de la perspective : c'est le cadre qui s'ouvre pour les
-// contenir, jamais elles qui rapetissent.
-// Le plateau occupe toute la largeur et les trois quarts de la hauteur : son
-// bord supérieur EST la ligne des +20 %. Sa profondeur a encore été augmentée
-// d'un tiers ; la bande laissée libre au-dessus est celle, réduite d'autant,
-// où se dressent les silhouettes posées au fond des compartiments.
-const FLOOR_FRONT_Y = 1600;
-const FLOOR_BACK_Y = 330; // ligne des +20 %, sommet du plateau
-const FLOOR_FRONT_HALF = 1180; // demi-largeur au premier plan
-const FLOOR_BACK_HALF = 760; // demi-largeur au sommet — forte convergence
-/**
- * Décalage du fond vers la droite : le point de fuite n'est pas au centre, si
- * bien que le plateau paraît tourné, vu depuis sa gauche. Une perspective
- * frontale donne une planche figée ; celle-ci a du relief.
- */
-const RIGHT_SHIFT = 210;
-/**
- * Inclinaison du plateau. Un plan vu de bas resserre ses rangées à mesure
- * qu'elles s'éloignent : la profondeur ne progresse donc pas linéairement.
- * Plus `TILT` est grand, plus le regard est rasant et le plateau incliné.
- */
-const TILT = 1.9;
-// Le plateau est tiré vers la gauche : la place gagnée à droite laisse voir
-// les compartiments allongés en entier.
-const CENTER_X = 1360;
+// --- Emprise du plateau ----------------------------------------------------
+const FRONT_HALF = 1400;
+const BACK_HALF = 940; // forte convergence : le regard est rasant
+const FLOOR_FRONT_Y = 1210;
+const CENTER_X = 1440;
+const RIGHT_SHIFT = 240; // le fond glisse à droite : le plateau paraît tourné
+const TILT = 1.5; // resserrement des rangées lointaines
+const SLAB = 34; // épaisseur de la dalle
 
 // --- Palette ---------------------------------------------------------------
-// Bleu des compartiments et des axes : allégé, il laisse la grille et les
-// silhouettes au premier plan de la lecture.
-const NAVY = "#4a6fa5";
-const GRID = "#d0d0d0";
+const NAVY = "#31527f";
+const NAVY_DEEP = "#1f3760";
+const CELL_LIGHT = "#f8fafd";
+const CELL_DARK = "#e9eff7";
+const COMPARTMENT = "#d7e6f8";
+const COMPARTMENT_EDGE = "#4a6fa5";
 const POSTIT = "#f5e050";
 const GREEN = "#7cb342";
-const TEXT_DARK = "#1a2744"; // texte : le bleu profond reste le plus lisible
+const TEXT = "#1a2744";
 
-/** Fraction 0→1 d'une valeur sur son axe. */
+/**
+ * Profondeur du plateau, déduite plutôt que réglée : on veut que la case du
+ * premier plan soit carrée à l'écran. Sa largeur y vaut 2 × FRONT_HALF / 14 ;
+ * la première rangée doit donc occuper autant en hauteur. Comme la perspective
+ * raccourcit les rangées à mesure qu'elles s'éloignent, la profondeur totale
+ * s'obtient en divisant cette hauteur par la part de profondeur que la
+ * première rangée occupe réellement.
+ */
+const FRONT_CELL = (FRONT_HALF * 2) / COLS;
+
 function ratio(value: number, min: number, max: number) {
   return (Math.min(max, Math.max(min, value)) - min) / (max - min);
 }
 
-/**
- * Conversion (performance %, écart %) → pixels du dessin.
- * `v` est la profondeur : 0 au premier plan (-20 %), 1 au fond (+20 %).
- */
-/** Profondeur perçue : 0 au premier plan, 1 au fond, resserrée vers le fond. */
+/** Profondeur perçue : 0 devant, 1 au fond, resserrée vers le fond. */
 function perspective(v: number) {
   return (v * (1 + TILT)) / (1 + TILT * v);
 }
 
-function depthPoint(u: number, v: number) {
+/** Point du plateau : `u` le long des performances, `v` en profondeur. */
+function plan(u: number, v: number) {
   const d = perspective(v);
-  const half = FLOOR_FRONT_HALF + (FLOOR_BACK_HALF - FLOOR_FRONT_HALF) * d;
+  const half = FRONT_HALF + (BACK_HALF - FRONT_HALF) * d;
   return {
     x: CENTER_X + RIGHT_SHIFT * d + (u - 0.5) * 2 * half,
     y: FLOOR_FRONT_Y - (FLOOR_FRONT_Y - FLOOR_BACK_Y) * d,
-    /** Échelle des silhouettes : plus petites au fond, comme en perspective. */
-    scale: 1.06 - 0.3 * d,
+    scale: 1.02 - 0.34 * d,
   };
 }
+
+const DEPTH = FRONT_CELL / perspective(1 / ROWS);
+const FLOOR_BACK_Y = FLOOR_FRONT_Y - DEPTH;
 
 function project(perf: number, evo: number) {
-  return depthPoint(ratio(perf, PERF_MIN, PERF_MAX), ratio(evo, EVO_MIN, EVO_MAX));
+  return plan(ratio(perf, PERF_MIN, PERF_MAX), ratio(evo, EVO_MIN, EVO_MAX));
 }
 
-/** Point du plateau dessiné, `v` pouvant dépasser 1 dans la bande haute. */
-function floorPoint(u: number, v: number) {
-  return depthPoint(u, v);
-}
+const U_ORIGIN = ratio(PERF_ORIGIN, PERF_MIN, PERF_MAX);
+const V_ORIGIN = ratio(0, EVO_MIN, EVO_MAX);
+/** Gouttière le long des axes, où se logent les graduations. */
+const GUTTER_U = 0.55 / COLS;
+const GUTTER_V = 0.55 / ROWS;
 
-/** Coordonnées des quatre compartiments sur le plateau. */
-const U_ORIGIN = (PERF_ORIGIN - PERF_MIN) / (PERF_MAX - PERF_MIN);
-const V_ORIGIN = (0 - EVO_MIN) / (EVO_MAX - EVO_MIN);
-const LANE = {
-  left0: 0,
-  left1: U_ORIGIN - 0.03,
-  right0: U_ORIGIN + 0.03,
-  // Allongés d'un tiers : les compartiments de droite étaient plus courts que
-  // ceux de gauche, la performance de référence n'étant pas au milieu de
-  // l'échelle.
-  right1: U_ORIGIN + 0.03 + (1 - U_ORIGIN - 0.03) * 1.3,
-  topStart: V_ORIGIN + 0.02,
-  topEnd: 1,
-  bottomStart: V_ORIGIN - 0.02,
-  // Raccourcis de 30 % : ils descendaient jusqu'au bord avant du plateau.
-  bottomEnd: (V_ORIGIN - 0.02) * 0.3,
-};
+/** Les quatre compartiments, en coordonnées du plateau. */
+const COMPARTMENTS = [
+  { key: "tl", above: false, rising: true, u0: 0, u1: U_ORIGIN - GUTTER_U, v0: V_ORIGIN + GUTTER_V, v1: 1 },
+  { key: "tr", above: true, rising: true, u0: U_ORIGIN + GUTTER_U, u1: 1, v0: V_ORIGIN + GUTTER_V, v1: 1 },
+  { key: "bl", above: false, rising: false, u0: 0, u1: U_ORIGIN - GUTTER_U, v0: 0, v1: V_ORIGIN - GUTTER_V },
+  { key: "br", above: true, rising: false, u0: U_ORIGIN + GUTTER_U, u1: 1, v0: 0, v1: V_ORIGIN - GUTTER_V },
+];
 
-const PERF_TICKS = Array.from({ length: (PERF_MAX - PERF_MIN) / 5 + 1 }, (_, i) => PERF_MIN + i * 5);
-const EVO_TICKS = [-20, -15, -10, -5, 5, 10, 15, 20];
-
-/**
- * Contour d'un compartiment, décrit dans les coordonnées du plateau (`u` le
- * long des performances, `v` en profondeur). Les quatre coins passent par la
- * même projection que la grille : le compartiment épouse donc l'inclinaison du
- * plateau, et ses côtés restent parallèles à ses lignes. Un rectangle posé sur
- * un plan incliné se lit en trapèze — les angles restent vifs, sans arrondi.
- */
-function lanePath(u0: number, u1: number, v0: number, v1: number, radius = 46) {
-  return roundedPath(
-    [
-      floorPoint(u0, v1), // haut gauche
-      floorPoint(u1, v1), // haut droit
-      floorPoint(u1, v0), // bas droit
-      floorPoint(u0, v0), // bas gauche
-    ],
-    radius
-  );
+function polygon(u0: number, u1: number, v0: number, v1: number) {
+  const a = plan(u0, v1);
+  const b = plan(u1, v1);
+  const c = plan(u1, v0);
+  const d = plan(u0, v0);
+  return `${a.x},${a.y} ${b.x},${b.y} ${c.x},${c.y} ${d.x},${d.y}`;
 }
 
 /**
- * Contour arrondi d'un polygone quelconque. Chaque angle est repris à
- * `radius` de son sommet sur les deux côtés adjacents, puis raccordé par une
- * courbe passant par le sommet. Écrit ainsi, l'arrondi vaut pour un trapèze
- * en perspective comme pour un rectangle : les côtés restent ceux du plateau.
+ * Place une personne à l'intérieur du compartiment qui la décrit.
+ *
+ * Sa position reste celle de ses deux valeurs, mais ramenée dans les bornes du
+ * compartiment : quelqu'un pile sur la barre des 90 % ou des 0 % tomberait
+ * sinon sur un axe, et une valeur extrême sur le bord du plateau.
  */
-function roundedPath(points: { x: number; y: number }[], radius: number) {
-  const n = points.length;
-  const towards = (from: { x: number; y: number }, to: { x: number; y: number }, distance: number) => {
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    const length = Math.hypot(dx, dy) || 1;
-    const step = Math.min(distance, length / 2);
-    return { x: from.x + (dx / length) * step, y: from.y + (dy / length) * step };
-  };
-  let d = "";
-  for (let i = 0; i < n; i += 1) {
-    const previous = points[(i - 1 + n) % n];
-    const corner = points[i];
-    const next = points[(i + 1) % n];
-    const entry = towards(corner, previous, radius);
-    const exit = towards(corner, next, radius);
-    d += i === 0 ? `M ${entry.x} ${entry.y}` : ` L ${entry.x} ${entry.y}`;
-    d += ` Q ${corner.x} ${corner.y} ${exit.x} ${exit.y}`;
-  }
-  return `${d} Z`;
+function seat(perf: number, evo: number) {
+  const zone =
+    COMPARTMENTS.find((c) => c.above === perf >= PERF_ORIGIN && c.rising === (evo >= 0)) ?? COMPARTMENTS[0];
+  const padU = 0.04;
+  const padV = 0.1;
+  const u = Math.min(zone.u1 - padU, Math.max(zone.u0 + padU, ratio(perf, PERF_MIN, PERF_MAX)));
+  const v = Math.min(zone.v1 - padV, Math.max(zone.v0 + padV, ratio(evo, EVO_MIN, EVO_MAX)));
+  return plan(u, v);
 }
 
-/**
- * Écarte les silhouettes qui tomberaient l'une sur l'autre. Deux personnes au
- * même score se superposeraient sinon, et la planche perdrait justement ce
- * qu'elle apporte : voir tout le monde d'un coup d'œil.
- */
+/** Écarte les silhouettes qui se poseraient l'une sur l'autre. */
 function spread(people: VisioPerson[]) {
   const placed: { person: VisioPerson; x: number; y: number; scale: number }[] = [];
   people.forEach((person) => {
-    const point = project(person.performance, person.progression ?? 0);
+    const point = seat(person.performance, person.progression ?? 0);
     let x = point.x;
     let guard = 0;
-    while (placed.some((p) => Math.abs(p.x - x) < 190 && Math.abs(p.y - point.y) < 260) && guard < 12) {
-      // On décale alternativement à droite puis à gauche, de plus en plus loin.
-      const step = 200 * Math.ceil((guard + 1) / 2);
+    while (placed.some((p) => Math.abs(p.x - x) < 165 && Math.abs(p.y - point.y) < 220) && guard < 12) {
+      const step = 175 * Math.ceil((guard + 1) / 2);
       x = point.x + (guard % 2 === 0 ? step : -step);
       guard += 1;
     }
@@ -205,47 +173,31 @@ function spread(people: VisioPerson[]) {
 
 export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPerson[]; periodLabel: string }) {
   const { t } = useTranslation();
-  const origin = project(PERF_ORIGIN, 0);
-  const axisTop = project(PERF_ORIGIN, EVO_MAX);
-  // Dalle : la surface déborde légèrement de la grille, et son épaisseur se
-  // voit au premier plan — c'est ce qui la fait lire comme un volume.
-  const SLAB = 26;
-  const slab = {
-    backLeft: floorPoint(-0.03, 1),
-    backRight: floorPoint(LANE.right1 + 0.03, 1),
-    frontLeft: { x: floorPoint(0, 0).x - 46, y: floorPoint(0, 0).y + 52 },
-    frontRight: { x: floorPoint(LANE.right1 + 0.03, 0).x + 46, y: floorPoint(1, 0).y + 52 },
-  };
   const positioned = spread(people);
-  // Hauteur de référence d'un portrait. Réduite en proportion de
-  // l'agrandissement des compartiments : ce sont eux qui doivent porter la
-  // lecture, les silhouettes s'y inscrivant sans les écraser.
-  const PHOTO_H = 310;
-  /** Marge intérieure du cadre : rien n'est dessiné au-delà. */
+  const PHOTO_H = 290;
   const EDGE = 24;
 
-  /**
-   * Haut du cadre : le plateau remonte sous le sous-titre quand personne
-   * n'occupe le fond. La bande au-dessus du plateau n'existe que pour les
-   * silhouettes qui s'y dressent ; on ne garde donc que la hauteur qu'elles
-   * réclament vraiment, au lieu de la réserver en toutes circonstances.
-   */
-  const highestDrawing = positioned.reduce((top, { person, y, scale }) => {
-    const height = person.photo ? PHOTO_H * scale : PHOTO_H * scale * 0.42;
+  const frontLeft = plan(0, 0);
+  const frontRight = plan(1, 0);
+  const backLeft = plan(0, 1);
+  const backRight = plan(1, 1);
+  const origin = project(PERF_ORIGIN, 0);
+  const axisTop = plan(U_ORIGIN, 1.03);
+
+  // Le cadre ne garde en haut que la place réclamée par les silhouettes.
+  const highest = positioned.reduce((top, { person, y, scale }) => {
+    const height = person.photo ? PHOTO_H * scale : PHOTO_H * scale * 0.44;
     return Math.min(top, y - height - 40);
   }, FLOOR_BACK_Y);
-  const viewTop = Math.max(0, Math.min(FLOOR_BACK_Y - 20, highestDrawing - EDGE));
-
+  const viewTop = Math.max(0, Math.min(FLOOR_BACK_Y - 24, highest - EDGE));
 
   return (
     <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider", bgcolor: "#fff" }}>
       <Stack spacing={0.25} sx={{ mb: 1 }}>
-        <Typography sx={{ fontWeight: 800, fontSize: 22, textAlign: "center", color: TEXT_DARK }}>
+        <Typography sx={{ fontWeight: 800, fontSize: 22, textAlign: "center", color: TEXT }}>
           {t("talents.visioTitle").toUpperCase()}
         </Typography>
-        <Typography sx={{ fontWeight: 700, fontSize: 16, textAlign: "center", color: TEXT_DARK }}>
-          {periodLabel}
-        </Typography>
+        <Typography sx={{ fontWeight: 700, fontSize: 16, textAlign: "center", color: TEXT }}>{periodLabel}</Typography>
       </Stack>
 
       <svg
@@ -255,177 +207,137 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
         role="img"
         aria-label={t("talents.visioTitle")}
       >
-        {/* ---- Sol en perspective, avec son épaisseur -------------------
-            Le plateau est dessiné comme une dalle : face supérieure en léger
-            dégradé (plus clair au fond, comme une surface qui fuit), puis la
-            tranche avant et les deux côtés en teintes plus soutenues. C'est
-            cette épaisseur, avec l'ombre portée sous chaque personne, qui
-            donne l'impression qu'on se tient dessus. */}
-        <g id="floor">
-          <polygon
-            points={`${slab.backLeft.x},${slab.backLeft.y} ${slab.backRight.x},${slab.backRight.y} ${slab.frontRight.x},${slab.frontRight.y} ${slab.frontLeft.x},${slab.frontLeft.y}`}
-            fill="url(#tpd-floor)"
-            stroke="#dcdcdc"
-            strokeWidth={3}
-          />
-          {/* tranche avant */}
-          <polygon
-            points={`${slab.frontLeft.x},${slab.frontLeft.y} ${slab.frontRight.x},${slab.frontRight.y} ${slab.frontRight.x},${slab.frontRight.y + SLAB} ${slab.frontLeft.x},${slab.frontLeft.y + SLAB}`}
-            fill="#e4e6ea"
-            stroke="#cfd2d8"
-            strokeWidth={2}
-          />
-          {/* côtés, qui filent vers le fond */}
-          <polygon
-            points={`${slab.frontLeft.x},${slab.frontLeft.y} ${slab.frontLeft.x},${slab.frontLeft.y + SLAB} ${slab.backLeft.x},${slab.backLeft.y + SLAB * 0.5} ${slab.backLeft.x},${slab.backLeft.y}`}
-            fill="#eceef1"
-            stroke="#dcdee2"
-            strokeWidth={2}
-          />
-          <polygon
-            points={`${slab.frontRight.x},${slab.frontRight.y} ${slab.frontRight.x},${slab.frontRight.y + SLAB} ${slab.backRight.x},${slab.backRight.y + SLAB * 0.5} ${slab.backRight.x},${slab.backRight.y}`}
-            fill="#eceef1"
-            stroke="#dcdee2"
-            strokeWidth={2}
-          />
-        </g>
-
-        {/* ---- Grille : un trait par graduation ------------------------ */}
-        <g id="grid" stroke={GRID} strokeWidth={1.6} fill="none">
-          {PERF_TICKS.map((perf) => {
-            const a = project(perf, EVO_MIN);
-            const b = project(perf, EVO_MAX);
-            return <line key={`v-${perf}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />;
-          })}
-          {[...EVO_TICKS, 0].map((evo) => {
-            const a = project(PERF_MIN, evo);
-            const b = project(PERF_MAX, evo);
-            return <line key={`h-${evo}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />;
-          })}
-        </g>
-
-        {/* ---- Les quatre compartiments -------------------------------
-            Décrits en coordonnées du plateau : ceux de droite sont allongés
-            d'un tiers au-delà de la dernière graduation, ceux du bas raccourcis
-            d'autant — le plateau est dessiné assez large pour les porter. */}
-        <g id="lanes" fill="none" stroke={NAVY} strokeWidth={7}>
-          <path d={lanePath(LANE.left0, LANE.left1, LANE.topStart, LANE.topEnd)} />
-          <path d={lanePath(LANE.right0, LANE.right1, LANE.topStart, LANE.topEnd)} />
-          <path d={lanePath(LANE.left0, LANE.left1, LANE.bottomEnd, LANE.bottomStart)} />
-          <path d={lanePath(LANE.right0, LANE.right1, LANE.bottomEnd, LANE.bottomStart)} />
-        </g>
-
-        {/* ---- Axes ---------------------------------------------------- */}
-        <g id="axes" stroke={NAVY} strokeWidth={6} fill="none">
-          {/* Les deux axes sont tracés dans les coordonnées du plateau, et
-            * prolongés dans ces mêmes coordonnées : ils restent donc parallèles
-            * à ses lignes, au lieu de repartir à l'horizontale ou à la
-            * verticale dès qu'ils dépassent la grille. */}
-          <line
-            x1={floorPoint(-0.05, V_ORIGIN).x}
-            y1={floorPoint(-0.05, V_ORIGIN).y}
-            x2={floorPoint(LANE.right1 + 0.05, V_ORIGIN).x}
-            y2={floorPoint(LANE.right1 + 0.05, V_ORIGIN).y}
-          />
-          <line
-            x1={floorPoint(U_ORIGIN, -0.05).x}
-            y1={floorPoint(U_ORIGIN, -0.05).y}
-            x2={floorPoint(U_ORIGIN, 1.06).x}
-            y2={floorPoint(U_ORIGIN, 1.06).y}
-            markerEnd="url(#tpd-arrow)"
-          />
-        </g>
         <defs>
-          {/* Surface du plateau : la lumière vient du fond. */}
-          <linearGradient id="tpd-floor" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="100%" stopColor="#f2f3f5" />
+          <linearGradient id="tpd-slab-front" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#93a0b6" />
+            <stop offset="100%" stopColor="#5b6980" />
           </linearGradient>
-          {/* Ombre portée sous les pieds : franche au contact, diffuse ensuite. */}
           <radialGradient id="tpd-shadow">
-            <stop offset="0%" stopColor="#2b3245" stopOpacity="0.42" />
-            <stop offset="70%" stopColor="#2b3245" stopOpacity="0.16" />
-            <stop offset="100%" stopColor="#2b3245" stopOpacity="0" />
+            <stop offset="0%" stopColor="#22304a" stopOpacity="0.42" />
+            <stop offset="70%" stopColor="#22304a" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="#22304a" stopOpacity="0" />
           </radialGradient>
-          <marker id="tpd-arrow" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto" markerUnits="userSpaceOnUse">
-            <path d="M 0 0 L 12 6 L 0 12 z" fill={NAVY} />
+          <marker id="tpd-arrow" markerWidth="16" markerHeight="16" refX="15" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M 0 0 L 16 8 L 0 16 z" fill={NAVY_DEEP} />
           </marker>
         </defs>
 
-        {/* ---- Graduations ---------------------------------------------- */}
-        <g id="tick-labels" fill={TEXT_DARK} fontSize={26} fontWeight={700}>
-          {PERF_TICKS.map((perf) => {
-            const p = project(perf, 0);
-            // La graduation des 90 % est portée par le bloc vert de l'origine.
+        {/* ---- Dalle : tranche avant et flancs, d'où vient l'épaisseur ----- */}
+        <g id="slab">
+          <polygon
+            points={`${frontLeft.x},${frontLeft.y} ${frontRight.x},${frontRight.y} ${frontRight.x},${frontRight.y + SLAB} ${frontLeft.x},${frontLeft.y + SLAB}`}
+            fill="url(#tpd-slab-front)"
+          />
+          <polygon
+            points={`${frontLeft.x},${frontLeft.y} ${frontLeft.x},${frontLeft.y + SLAB} ${backLeft.x},${backLeft.y + SLAB * 0.45} ${backLeft.x},${backLeft.y}`}
+            fill="#74829a"
+          />
+          <polygon
+            points={`${frontRight.x},${frontRight.y} ${frontRight.x},${frontRight.y + SLAB} ${backRight.x},${backRight.y + SLAB * 0.45} ${backRight.x},${backRight.y}`}
+            fill="#74829a"
+          />
+        </g>
+
+        {/* ---- Damier : une case par pas de 5 % sur les deux axes ---------- */}
+        <g id="board">
+          {Array.from({ length: COLS }).map((_, col) =>
+            Array.from({ length: ROWS }).map((_, row) => (
+              <polygon
+                key={`c-${col}-${row}`}
+                points={polygon(col / COLS, (col + 1) / COLS, row / ROWS, (row + 1) / ROWS)}
+                fill={(col + row) % 2 === 0 ? CELL_LIGHT : CELL_DARK}
+                stroke="#d3dbe6"
+                strokeWidth={1.2}
+              />
+            ))
+          )}
+          <polygon points={polygon(0, 1, 0, 1)} fill="none" stroke={NAVY_DEEP} strokeWidth={4} />
+        </g>
+
+        {/* ---- Les quatre compartiments, pleins ---------------------------- */}
+        <g id="compartments">
+          {COMPARTMENTS.map((c) => (
+            <polygon
+              key={c.key}
+              points={polygon(c.u0, c.u1, c.v0, c.v1)}
+              fill={COMPARTMENT}
+              fillOpacity={0.75}
+              stroke={COMPARTMENT_EDGE}
+              strokeWidth={3}
+            />
+          ))}
+        </g>
+
+        {/* ---- Axes -------------------------------------------------------- */}
+        <g id="axes" stroke={NAVY_DEEP} fill="none" strokeWidth={5}>
+          <line x1={plan(0, V_ORIGIN).x} y1={plan(0, V_ORIGIN).y} x2={plan(1, V_ORIGIN).x} y2={plan(1, V_ORIGIN).y} />
+          <line
+            x1={plan(U_ORIGIN, 0).x}
+            y1={plan(U_ORIGIN, 0).y}
+            x2={axisTop.x}
+            y2={axisTop.y}
+            markerEnd="url(#tpd-arrow)"
+          />
+        </g>
+
+        {/* ---- Graduations, dans la gouttière longeant les axes ------------ */}
+        <g id="ticks" fill={TEXT} fontWeight={700}>
+          {Array.from({ length: COLS + 1 }).map((_, i) => {
+            const perf = PERF_MIN + i * STEP;
             if (perf === PERF_ORIGIN) return null;
+            const p = plan(i / COLS, V_ORIGIN - GUTTER_V * 0.5);
             return (
-              <text key={`xt-${perf}`} x={p.x} y={p.y + 40} textAnchor="middle">
+              <text key={`tx-${perf}`} x={p.x} y={p.y + 8} textAnchor="middle" fontSize={25}>
                 {perf}%
               </text>
             );
           })}
-          {EVO_TICKS.map((evo) => {
-            const p = project(PERF_ORIGIN, evo);
+          {Array.from({ length: ROWS + 1 }).map((_, i) => {
+            const evo = EVO_MIN + i * STEP;
+            if (evo === 0) return null;
+            const p = plan(U_ORIGIN - GUTTER_U * 0.5, i / ROWS);
             return (
-              <text key={`yt-${evo}`} x={p.x + 26} y={p.y + 9} textAnchor="start">
+              <text key={`ty-${evo}`} x={p.x - 10} y={p.y + 9} textAnchor="end" fontSize={25}>
                 {evo > 0 ? `+${evo}%` : `${evo}%`}
               </text>
             );
           })}
         </g>
 
-        {/* ---- Étiquettes post-it --------------------------------------- */}
-        <g id="postits">
-          <g transform={`translate(${project(PERF_MAX, 0).x - 250} ${project(PERF_MAX, 0).y - 60}) skewY(-4)`}>
-            <rect width="360" height="86" rx="6" fill={POSTIT} stroke="#d9c53f" strokeWidth={2} />
-            <text x="18" y="36" fontSize="24" fontWeight="800" fill={TEXT_DARK}>
-              %
-            </text>
-            <text x="18" y="66" fontSize="24" fontWeight="800" fill={TEXT_DARK}>
-              {t("talents.performanceAxisShort")}
+        {/* ---- Étiquettes d'axes et repère des 90 % ------------------------ */}
+        <g id="labels">
+          <g
+            transform={`translate(${plan(0.72, V_ORIGIN - GUTTER_V * 3.4).x} ${plan(0.72, V_ORIGIN - GUTTER_V * 3.4).y}) skewY(-3)`}
+          >
+            <rect width="404" height="54" rx="6" fill={POSTIT} stroke="#d9c53f" strokeWidth={2} />
+            <text x="16" y="36" fontSize="25" fontWeight="800" fill={TEXT}>
+              % {t("talents.performanceAxisShort")}
             </text>
           </g>
-          <g transform={`translate(${axisTop.x - 78} ${axisTop.y - 30})`}>
-            <rect width="52" height="190" rx="6" fill={POSTIT} stroke="#d9c53f" strokeWidth={2} />
-            <text
-              x="26"
-              y="95"
-              fontSize="24"
-              fontWeight="800"
-              fill={TEXT_DARK}
-              textAnchor="middle"
-              transform={`rotate(90 26 95)`}
-            >
+          <g transform={`translate(${axisTop.x - 96} ${axisTop.y + 16})`}>
+            <rect width="56" height="200" rx="6" fill={POSTIT} stroke="#d9c53f" strokeWidth={2} />
+            <text x="28" y="100" fontSize="25" fontWeight="800" fill={TEXT} textAnchor="middle" transform="rotate(90 28 100)">
               {t("talents.progressionAxisShort")}
             </text>
           </g>
+          <g transform={`translate(${origin.x - 56} ${origin.y - 29})`}>
+            <rect x="6" y="8" width="106" height="56" rx="4" fill="#5e8f31" />
+            <rect width="106" height="56" rx="4" fill={GREEN} />
+            <text x="53" y="39" textAnchor="middle" fontSize="29" fontWeight="800" fill="#fff">
+              {PERF_ORIGIN}%
+            </text>
+          </g>
         </g>
 
-        {/* ---- Bloc d'origine : 90 %, en relief -------------------------- */}
-        <g id="origin-block" transform={`translate(${origin.x - 54} ${origin.y - 44})`}>
-          <rect x="6" y="8" width="104" height="76" rx="4" fill="#5e8f31" />
-          <rect width="104" height="76" rx="4" fill={GREEN} />
-          <text x="52" y="48" textAnchor="middle" fontSize="30" fontWeight="800" fill="#fff">
-            {PERF_ORIGIN}%
-          </text>
-        </g>
-
-        {/* ---- Collaborateurs -------------------------------------------
-            Un groupe par personne, nommé et portant ses valeurs : la planche
-            se met à jour en changeant les données, sans retoucher le dessin. */}
+        {/* ---- Collaborateurs, chacun dans son compartiment ---------------- */}
         <g id="people">
           {positioned.map(({ person, x: rawX, y, scale }) => {
             const hasPhoto = Boolean(person.photo);
-            // Sans portrait en pied, on s'en tient à la vignette ronde : une
-            // silhouette dessinée à la place laisserait croire à une photo.
-            const height = hasPhoto ? PHOTO_H * scale : PHOTO_H * scale * 0.42;
+            const height = hasPhoto ? PHOTO_H * scale : PHOTO_H * scale * 0.44;
             const width = hasPhoto ? height * 0.34 : height;
-            // Rien ne sort du cadre : ni le portrait, ni la vignette, ni leurs
-            // étiquettes. Le point de pose glisse le long de l'axe plutôt que
-            // de laisser déborder le dessin.
             const halfSpan = Math.max(width / 2, 90);
             const x = Math.min(W - EDGE - halfSpan, Math.max(EDGE + halfSpan, rawX));
-            const top = Math.max(EDGE + 34, y - height);
+            const top = Math.max(viewTop + EDGE + 34, y - height);
             const progression = person.progression;
             const progressionColor = progression === null ? "#7a7a7a" : progression >= 0 ? "#2e7d32" : "#c62828";
             return (
@@ -441,13 +353,14 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                   {`${t("talents.performance")} ${person.performance}%`}
                   {progression !== null ? ` · ${progression > 0 ? "+" : ""}${progression}%` : ""}
                 </title>
-                {/* Ombre portée : le contact avec le sol, sans lequel une
-                  * silhouette semble flotter au-dessus du plateau. */}
-                <ellipse cx={x} cy={y + 4} rx={Math.max(width * 0.62, 42)} ry={Math.max(width * 0.19, 13)} fill="url(#tpd-shadow)" />
+                <ellipse
+                  cx={x}
+                  cy={y + 3}
+                  rx={Math.max(width * 0.6, 40)}
+                  ry={Math.max(width * 0.18, 12)}
+                  fill="url(#tpd-shadow)"
+                />
                 {hasPhoto ? (
-                  // `multiply` laisse la grille traverser le fond clair d'un
-                  // portrait : les photos détourées gardent leur transparence,
-                  // et celles restées sur fond blanc se fondent pareillement.
                   <image
                     href={person.photo as string}
                     x={x - width / 2}
@@ -464,14 +377,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                         <circle cx={x} cy={top + height / 2} r={height / 2} />
                       </clipPath>
                     )}
-                    <circle
-                      cx={x}
-                      cy={top + height / 2}
-                      r={height / 2}
-                      fill="#e9edf4"
-                      stroke={NAVY}
-                      strokeWidth={4}
-                    />
+                    <circle cx={x} cy={top + height / 2} r={height / 2} fill="#e9edf4" stroke={NAVY} strokeWidth={4} />
                     {person.avatar ? (
                       <image
                         href={person.avatar}
@@ -496,7 +402,6 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                     )}
                   </g>
                 )}
-                {/* Valeurs au-dessus de la tête, comme sur la planche. */}
                 <text x={x} y={top - 32} textAnchor="middle" fontSize={26} fontWeight="800" fill="#6d6d6d">
                   {person.performance}%
                 </text>
@@ -505,7 +410,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                     {progression > 0 ? `+${progression}` : progression}
                   </text>
                 )}
-                <text x={x} y={y + 30} textAnchor="middle" fontSize={22} fontWeight="700" fill={TEXT_DARK}>
+                <text x={x} y={y + 34} textAnchor="middle" fontSize={22} fontWeight="700" fill={TEXT}>
                   {person.name.split(" ")[0]}
                 </text>
               </g>
@@ -513,24 +418,24 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           })}
         </g>
 
-        {/* ---- Repères de lecture des quatre couloirs -------------------- */}
+        {/* ---- Repères de lecture des quatre compartiments ----------------- */}
         <g id="quadrant-marks" fontSize={44} fontWeight="800">
-          <text x={project(PERF_MIN, EVO_MAX).x - 120} y={project(PERF_MIN, EVO_MAX).y + 120} fill="#c62828">
+          <text x={plan(0.015, 0.94).x} y={plan(0.015, 0.94).y} fill="#c62828">
             −
           </text>
-          <text x={project(PERF_MIN, EVO_MAX).x - 60} y={project(PERF_MIN, EVO_MAX).y + 120} fill={GREEN}>
+          <text x={plan(0.055, 0.94).x} y={plan(0.055, 0.94).y} fill={GREEN}>
             +
           </text>
-          <text x={project(PERF_MAX, EVO_MAX).x + 40} y={project(PERF_MAX, EVO_MAX).y + 120} fill={GREEN}>
+          <text x={plan(0.93, 0.94).x} y={plan(0.93, 0.94).y} fill={GREEN}>
             ++
           </text>
-          <text x={project(PERF_MIN, EVO_MIN).x - 120} y={project(PERF_MIN, EVO_MIN).y - 200} fill="#c62828">
+          <text x={plan(0.015, 0.05).x} y={plan(0.015, 0.05).y} fill="#c62828">
             −−
           </text>
-          <text x={project(PERF_MAX, EVO_MIN).x + 40} y={project(PERF_MAX, EVO_MIN).y - 200} fill={GREEN}>
+          <text x={plan(0.92, 0.05).x} y={plan(0.92, 0.05).y} fill={GREEN}>
             +
           </text>
-          <text x={project(PERF_MAX, EVO_MIN).x + 96} y={project(PERF_MAX, EVO_MIN).y - 200} fill="#c62828">
+          <text x={plan(0.965, 0.05).x} y={plan(0.965, 0.05).y} fill="#c62828">
             −
           </text>
         </g>
