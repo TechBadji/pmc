@@ -367,16 +367,31 @@ export default function AnnualObjectivesSheet({
             border: BORDER,
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 0.5,
+            alignItems: "stretch",
+            justifyContent: "flex-start",
             p: 0.5,
+            gap: 0.5,
           }}
         >
-          <Avatar src={identity.photo ?? undefined} variant="rounded" sx={{ width: 54, height: 62 }}>
+          {/* La photo occupe toute la case qui lui revient : trois lignes
+            * d'entête, moins la ligne du nom. Recadrée en « cover », elle
+            * remplit le carré sans se déformer. */}
+          <Avatar
+            src={identity.photo ?? undefined}
+            variant="rounded"
+            sx={{
+              width: "100%",
+              flex: 1,
+              minHeight: 92,
+              fontSize: 34,
+              bgcolor: "#e9edf4",
+              color: "#5b6472",
+              "& img": { objectFit: "cover" },
+            }}
+          >
             {identity.name.charAt(0).toUpperCase()}
           </Avatar>
-          <Typography sx={{ fontSize: 10, fontWeight: 700, textAlign: "center", lineHeight: 1.15 }}>
+          <Typography sx={{ fontSize: 10.5, fontWeight: 700, textAlign: "center", lineHeight: 1.15 }}>
             {identity.name || t("objectivesSheet.photo")}
           </Typography>
         </Box>
