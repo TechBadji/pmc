@@ -70,9 +70,10 @@ const SLAB = 34; // épaisseur de la dalle
 // --- Palette ---------------------------------------------------------------
 const NAVY = "#31527f";
 const NAVY_DEEP = "#1f3760";
-const CELL_LIGHT = "#f8fafd";
-const CELL_DARK = "#e9eff7";
-const COMPARTMENT = "#d7e6f8";
+const CELL_LIGHT = "#f2f7fd";
+const CELL_DARK = "#dbe6f4"; // contraste assumé : le damier doit se voir
+const CELL_EDGE = "#b7c8de";
+const COMPARTMENT = "#cfe1f7";
 const COMPARTMENT_EDGE = "#4a6fa5";
 const POSTIT = "#f5e050";
 const GREEN = "#7cb342";
@@ -104,7 +105,7 @@ function plan(u: number, v: number) {
   return {
     x: CENTER_X + RIGHT_SHIFT * d + (u - 0.5) * 2 * half,
     y: FLOOR_FRONT_Y - (FLOOR_FRONT_Y - FLOOR_BACK_Y) * d,
-    scale: 1.02 - 0.34 * d,
+    scale: 1.16 - 0.54 * d, // raccourci franc : le fond paraît loin
   };
 }
 
@@ -128,6 +129,31 @@ const COMPARTMENTS = [
   { key: "bl", above: false, rising: false, u0: 0, u1: U_ORIGIN - GUTTER_U, v0: 0, v1: V_ORIGIN - GUTTER_V },
   { key: "br", above: true, rising: false, u0: U_ORIGIN + GUTTER_U, u1: 1, v0: 0, v1: V_ORIGIN - GUTTER_V },
 ];
+
+/** Contour arrondi d'un quadrilatère en perspective : chaque angle est repris
+ * à `radius` sur ses deux côtés puis raccordé par une courbe passant par le
+ * sommet. Les côtés restent ceux du plateau, seuls les angles s'adoucissent. */
+function roundedQuad(u0: number, u1: number, v0: number, v1: number, radius: number) {
+  const corners = [plan(u0, v1), plan(u1, v1), plan(u1, v0), plan(u0, v0)];
+  const towards = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const length = Math.hypot(dx, dy) || 1;
+    const step = Math.min(radius, length / 2);
+    return { x: from.x + (dx / length) * step, y: from.y + (dy / length) * step };
+  };
+  let d = "";
+  for (let i = 0; i < 4; i += 1) {
+    const previous = corners[(i + 3) % 4];
+    const corner = corners[i];
+    const next = corners[(i + 1) % 4];
+    const entry = towards(corner, previous);
+    const exit = towards(corner, next);
+    d += i === 0 ? `M ${entry.x} ${entry.y}` : ` L ${entry.x} ${entry.y}`;
+    d += ` Q ${corner.x} ${corner.y} ${exit.x} ${exit.y}`;
+  }
+  return `${d} Z`;
+}
 
 function polygon(u0: number, u1: number, v0: number, v1: number) {
   const a = plan(u0, v1);
@@ -246,8 +272,8 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                 key={`c-${col}-${row}`}
                 points={polygon(col / COLS, (col + 1) / COLS, row / ROWS, (row + 1) / ROWS)}
                 fill={(col + row) % 2 === 0 ? CELL_LIGHT : CELL_DARK}
-                stroke="#d3dbe6"
-                strokeWidth={1.2}
+                stroke={CELL_EDGE}
+                strokeWidth={1.4}
               />
             ))
           )}
@@ -257,13 +283,13 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
         {/* ---- Les quatre compartiments, pleins ---------------------------- */}
         <g id="compartments">
           {COMPARTMENTS.map((c) => (
-            <polygon
+            <path
               key={c.key}
-              points={polygon(c.u0, c.u1, c.v0, c.v1)}
+              d={roundedQuad(c.u0, c.u1, c.v0, c.v1, 54)}
               fill={COMPARTMENT}
-              fillOpacity={0.75}
+              fillOpacity={0.62}
               stroke={COMPARTMENT_EDGE}
-              strokeWidth={3}
+              strokeWidth={5}
             />
           ))}
         </g>
@@ -285,9 +311,9 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           {Array.from({ length: COLS + 1 }).map((_, i) => {
             const perf = PERF_MIN + i * STEP;
             if (perf === PERF_ORIGIN) return null;
-            const p = plan(i / COLS, V_ORIGIN - GUTTER_V * 0.5);
+            const p = plan(i / COLS, V_ORIGIN - GUTTER_V * 0.22);
             return (
-              <text key={`tx-${perf}`} x={p.x} y={p.y + 8} textAnchor="middle" fontSize={25}>
+              <text key={`tx-${perf}`} x={p.x} y={p.y + 26} textAnchor="middle" fontSize={26}>
                 {perf}%
               </text>
             );
@@ -295,9 +321,9 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           {Array.from({ length: ROWS + 1 }).map((_, i) => {
             const evo = EVO_MIN + i * STEP;
             if (evo === 0) return null;
-            const p = plan(U_ORIGIN - GUTTER_U * 0.5, i / ROWS);
+            const p = plan(U_ORIGIN - GUTTER_U * 0.2, i / ROWS);
             return (
-              <text key={`ty-${evo}`} x={p.x - 10} y={p.y + 9} textAnchor="end" fontSize={25}>
+              <text key={`ty-${evo}`} x={p.x - 12} y={p.y + 9} textAnchor="end" fontSize={26}>
                 {evo > 0 ? `+${evo}%` : `${evo}%`}
               </text>
             );
@@ -307,7 +333,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
         {/* ---- Étiquettes d'axes et repère des 90 % ------------------------ */}
         <g id="labels">
           <g
-            transform={`translate(${plan(0.72, V_ORIGIN - GUTTER_V * 3.4).x} ${plan(0.72, V_ORIGIN - GUTTER_V * 3.4).y}) skewY(-3)`}
+            transform={`translate(${plan(0.86, V_ORIGIN + GUTTER_V * 1.4).x} ${plan(0.86, V_ORIGIN + GUTTER_V * 1.4).y}) skewY(-3)`}
           >
             <rect width="404" height="54" rx="6" fill={POSTIT} stroke="#d9c53f" strokeWidth={2} />
             <text x="16" y="36" fontSize="25" fontWeight="800" fill={TEXT}>
@@ -418,26 +444,29 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           })}
         </g>
 
-        {/* ---- Repères de lecture des quatre compartiments ----------------- */}
-        <g id="quadrant-marks" fontSize={44} fontWeight="800">
-          <text x={plan(0.015, 0.94).x} y={plan(0.015, 0.94).y} fill="#c62828">
-            −
-          </text>
-          <text x={plan(0.055, 0.94).x} y={plan(0.055, 0.94).y} fill={GREEN}>
-            +
-          </text>
-          <text x={plan(0.93, 0.94).x} y={plan(0.93, 0.94).y} fill={GREEN}>
-            ++
-          </text>
-          <text x={plan(0.015, 0.05).x} y={plan(0.015, 0.05).y} fill="#c62828">
-            −−
-          </text>
-          <text x={plan(0.92, 0.05).x} y={plan(0.92, 0.05).y} fill={GREEN}>
-            +
-          </text>
-          <text x={plan(0.965, 0.05).x} y={plan(0.965, 0.05).y} fill="#c62828">
-            −
-          </text>
+        {/* ---- Repères de lecture, posés hors du plateau ------------------
+            Dans les compartiments, ils se perdaient derrière les silhouettes ;
+            en marge, ils qualifient chaque quart d'un coup d'œil. */}
+        <g id="quadrant-marks" fontWeight="800" fontSize={58}>
+          {[
+            // Les marges gauche et droite se resserrent avec la profondeur :
+            // les repères du fond peuvent s'écarter davantage que ceux du
+            // premier plan, qui longeraient sinon le bord du cadre.
+            { u: -0.075, v: 0.86, text: "−", fill: "#c62828" },
+            { u: -0.032, v: 0.86, text: "+", fill: GREEN },
+            { u: 1.05, v: 0.86, text: "++", fill: GREEN },
+            { u: -0.05, v: 0.12, text: "−", fill: "#c62828" },
+            { u: -0.022, v: 0.12, text: "−", fill: "#c62828" },
+            { u: 1.018, v: 0.12, text: "+", fill: GREEN },
+            { u: 1.046, v: 0.12, text: "−", fill: "#c62828" },
+          ].map((mark, i) => {
+            const p = plan(mark.u, mark.v);
+            return (
+              <text key={i} x={p.x} y={p.y} textAnchor="middle" fill={mark.fill}>
+                {mark.text}
+              </text>
+            );
+          })}
         </g>
       </svg>
     </Paper>
