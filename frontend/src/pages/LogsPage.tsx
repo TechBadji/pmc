@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/layout/PageHeader";
 import { apiClient } from "@/api/client";
 import type { AuditLog, Paginated } from "@/api/types";
 
@@ -81,9 +82,7 @@ export default function LogsPage() {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>
-            {t("logs.title")}
-          </Typography>
+          <PageHeader title={t("logs.title")} />
           <Typography variant="body2" color="text.secondary">
             {t("logs.subtitle")}
           </Typography>

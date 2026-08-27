@@ -29,6 +29,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState, type MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/layout/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import type { Company, Paginated, Plan } from "@/api/types";
@@ -148,9 +149,7 @@ export default function CompaniesPage() {
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h5" fontWeight={700}>
-          {t("companies.title")}
-        </Typography>
+        <PageHeader title={t("companies.title")} />
         <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setOpen(true)}>
           {t("companies.newCompany")}
         </Button>

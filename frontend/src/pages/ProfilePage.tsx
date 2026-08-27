@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/layout/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
@@ -120,9 +121,7 @@ export default function ProfilePage() {
 
   return (
     <Stack spacing={3} maxWidth={640}>
-      <Typography variant="h5" fontWeight={700}>
-        {t("profile.title")}
-      </Typography>
+      <PageHeader title={t("profile.title")} />
 
       {message && (
         <Alert severity="success" onClose={() => setMessage(null)}>

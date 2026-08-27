@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/layout/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
@@ -94,9 +95,7 @@ export default function ManagerDashboard() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5" fontWeight={700}>
-        {departmentName ? `${t("dashboard.manager.title")} — ${departmentName}` : t("dashboard.manager.title")}
-      </Typography>
+      <PageHeader title={departmentName ? `${t("dashboard.manager.title")} — ${departmentName}` : t("dashboard.manager.title")} />
 
       {managerRecord && (
         <LeadershipOverview

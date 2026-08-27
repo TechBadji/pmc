@@ -29,6 +29,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
+import PageHeader from "@/components/layout/PageHeader";
 import ManagerDevelopmentPlan from "@/components/ManagerDevelopmentPlan";
 import type { ActionPlan, Department, Evaluation, Paginated, UserRecord } from "@/api/types";
 import { performanceColors } from "@/theme";
@@ -175,9 +176,22 @@ export default function ActionPlansPage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5" fontWeight={700}>
-        {t("actionPlans.title")}
-      </Typography>
+      <PageHeader
+        title={t("actionPlans.title")}
+        view={
+          canEdit
+            ? t(
+                view === "individual"
+                  ? isCompanyAdmin
+                    ? "actionPlans.viewIndividualManagers"
+                    : "actionPlans.viewIndividualMembers"
+                  : isCompanyAdmin
+                    ? "actionPlans.viewTeam"
+                    : "actionPlans.viewTeamDepartment"
+              )
+            : undefined
+        }
+      />
 
       {canEdit && (
         <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>

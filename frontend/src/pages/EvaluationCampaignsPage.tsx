@@ -26,6 +26,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/layout/PageHeader";
 import { apiClient } from "@/api/client";
 import type { EvaluationCampaign, Paginated } from "@/api/types";
 
@@ -105,9 +106,7 @@ export default function EvaluationCampaignsPage() {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Stack>
-          <Typography variant="h5" fontWeight={700}>
-            {t("evaluationCampaigns.title")}
-          </Typography>
+          <PageHeader title={t("evaluationCampaigns.title")} />
           <Typography variant="body2" color="text.secondary">
             {t("evaluationCampaigns.subtitle")}
           </Typography>

@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/layout/PageHeader";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Paginated, PasswordResetRequest } from "@/api/types";
@@ -45,9 +46,7 @@ export default function PasswordResetRequestsPage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5" fontWeight={700}>
-        {t("passwordRequests.title")}
-      </Typography>
+      <PageHeader title={t("passwordRequests.title")} />
       <Typography variant="body2" color="text.secondary">
         {user?.role === "SUPER_ADMIN"
           ? t("passwordRequests.subtitleSuperAdmin")

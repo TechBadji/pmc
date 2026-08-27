@@ -1,8 +1,9 @@
-import { Alert, Button, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Alert, Box, Button, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
+import PageHeader from "@/components/layout/PageHeader";
 import PersonPerformanceId from "@/components/PersonPerformanceId";
 import { BoardPeriodBar } from "@/components/teamBoard/BoardPieces";
 import TeamPerformanceIdBoard from "@/components/teamBoard/TeamPerformanceIdBoard";
@@ -45,9 +46,18 @@ export default function PerformancePage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5" fontWeight={700} className="pmc-no-print">
-        {t("performanceId.pageTitle")}
-      </Typography>
+      <Box className="pmc-no-print">
+        <PageHeader
+          title={t("performanceId.pageTitle")}
+          view={t(
+            view === "person"
+              ? isCompanyAdmin
+                ? "performanceId.viewManager"
+                : "performanceId.viewMember"
+              : "performanceId.viewTeam"
+          )}
+        />
+      </Box>
 
       <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap className="pmc-no-print">
         <ToggleButtonGroup

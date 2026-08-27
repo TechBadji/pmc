@@ -340,7 +340,8 @@
     "viewSheet": "Fiche de cohésion",
     "viewStrengths": "Forces & faiblesses",
     "viewRelationship": "Dynamique relationnelle",
-    "noHistory": "Aucune mesure de cohésion enregistrée pour cette équipe."
+    "noHistory": "Aucune mesure de cohésion enregistrée pour cette équipe.",
+    "subtitle": "Mesure de la cohésion, forces et faiblesses, et dynamique relationnelle de l'équipe."
   },
   "evaluations": {
     "title": "Évaluations ID-3A",
@@ -561,7 +562,9 @@
     "detailByPeriod": "Détail par période",
     "tier": "Palier",
     "allDepartments": "Tous les départements",
-    "noDepartment": "Sans département"
+    "noDepartment": "Sans département",
+    "viewMatrix": "Matrice",
+    "viewObjectives": "Objectifs"
   },
   "myPerformance": {
     "greeting": "Bonjour {{name}}",
@@ -694,7 +697,8 @@
     "legendRange": "Performance = Altitude de la période affichée. Progression = marge relative entre {{from}} et {{to}}, calculée sur toute la plage et non d'une période à l'autre.",
     "errorNoBaseline": "Personne n'a d'évaluation sur « {{period}} » : la progression ne peut pas être calculée depuis cette période. Choisissez-en une autre.",
     "viewVisio": "TPD-VISIO",
-    "visioTitle": "Talents Performance Dashboard"
+    "visioTitle": "Talents Performance Dashboard",
+    "subtitle": "Position de chacun selon sa performance et sa progression sur la période."
   },
   "teamBoard": {
     "period": "Saisie du",

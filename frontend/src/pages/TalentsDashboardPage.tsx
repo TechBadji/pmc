@@ -29,6 +29,7 @@ import {
 } from "recharts";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
+import PageHeader from "@/components/layout/PageHeader";
 import type { Department, Evaluation, Paginated, PerformanceRating, UserRecord } from "@/api/types";
 import PersonOption, { rankPeopleByHierarchy } from "@/components/PersonOption";
 import StatCard from "@/components/StatCard";
@@ -998,9 +999,13 @@ export default function TalentsDashboardPage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5" fontWeight={700}>
-        {t("talents.title")}
-      </Typography>
+      <PageHeader
+        title={t("talents.title")}
+        view={t(
+          view === "boxes" ? "talents.viewBoxes" : view === "trajectory" ? "talents.viewTrajectory" : "talents.viewVisio"
+        )}
+        subtitle={t("talents.subtitle")}
+      />
 
       {/* Deux lignes de commandes : le choix de la planche d'abord, seul sur
         * sa ligne, puis les filtres — de la période au collaborateur. Mêlés,

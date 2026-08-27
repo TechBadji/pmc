@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/layout/PageHeader";
 import { apiClient } from "@/api/client";
 import type { Paginated, SkillMatrix } from "@/api/types";
 
@@ -32,9 +33,7 @@ export default function SkillsPage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5" fontWeight={700}>
-        {t("nav.skillMatrices")}
-      </Typography>
+      <PageHeader title={t("nav.skillMatrices")} />
 
       {Object.entries(byPosition).map(([position, group]) => (
         <Accordion key={position} elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>

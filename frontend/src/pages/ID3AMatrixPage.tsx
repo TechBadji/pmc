@@ -46,6 +46,7 @@ import {
 } from "recharts";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
+import PageHeader from "@/components/layout/PageHeader";
 import type { Department, Evaluation, Paginated, PerformanceRating } from "@/api/types";
 import PersonOption, { rankPeopleByHierarchy } from "@/components/PersonOption";
 import { departmentScopeNames, orderedDepartmentOptions } from "@/utils/departments";
@@ -900,14 +901,11 @@ export default function ID3AMatrixPage() {
 
   return (
     <Stack spacing={3}>
-      <Box>
-        <Typography variant="h5" fontWeight={700}>
-          {t("id3aMatrix.title")}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {viewMode === "matrix" ? t("id3aMatrix.subtitleMatrix") : t("id3aMatrix.subtitleObjectives")}
-        </Typography>
-      </Box>
+      <PageHeader
+        title={t("id3aMatrix.title")}
+        view={t(viewMode === "matrix" ? "id3aMatrix.viewMatrix" : "id3aMatrix.viewObjectives")}
+        subtitle={viewMode === "matrix" ? t("id3aMatrix.subtitleMatrix") : t("id3aMatrix.subtitleObjectives")}
+      />
 
       {canFilterLeadership && viewMode === "matrix" && teamKpis && (
         <Stack direction="row" spacing={2} flexWrap="wrap">

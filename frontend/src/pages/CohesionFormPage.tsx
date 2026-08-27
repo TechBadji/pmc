@@ -27,6 +27,7 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/layout/PageHeader";
 import {
   Bar,
   BarChart,
@@ -391,9 +392,17 @@ export default function CohesionFormPage() {
       {/* Titre de page aligné sur les autres rubriques (Référentiel, Matrice
        * ID-3A) : le bandeau centré faisait doublon avec l'entête du tableau
        * des critères, juste en dessous. */}
-      <Typography variant="h5" fontWeight={700}>
-        {t("nav.cohesion")}
-      </Typography>
+      <PageHeader
+        title={t("nav.cohesion")}
+        view={t(
+          view === "cohesion"
+            ? "cohesion.viewSheet"
+            : view === "strengths"
+              ? "cohesion.viewStrengths"
+              : "cohesion.viewRelationship"
+        )}
+        subtitle={t("cohesion.subtitle")}
+      />
 
       <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap className="pmc-no-print">
         <ToggleButtonGroup

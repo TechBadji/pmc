@@ -5,7 +5,6 @@ import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
 import TrendingFlatOutlinedIcon from "@mui/icons-material/TrendingFlatOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import {
-  Breadcrumbs,
   Alert,
   Avatar,
   Box,
@@ -36,6 +35,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, EvaluationCampaign, Paginated, SkillScore, UserRecord } from "@/api/types";
+import PageHeader from "@/components/layout/PageHeader";
 import ObjectivesSheetPanel from "@/components/objectives/ObjectivesSheetPanel";
 import StatCard from "@/components/StatCard";
 import StrengthsWeaknesses from "@/components/StrengthsWeaknesses";
@@ -277,33 +277,21 @@ export default function EvaluationsPage() {
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
-        <Box>
-          {/* Fil d'Ariane : la rubrique, puis la vue ouverte. Le titre seul ne
-            * bougeait pas d'une vue à l'autre, et l'on ne savait plus où l'on
-            * se trouvait après avoir basculé. */}
-          <Breadcrumbs separator="›" sx={{ mb: 0.25, "& .MuiBreadcrumbs-li": { fontSize: 12.5 } }}>
-            <Typography variant="caption" color="text.secondary">
-              {t("nav.evaluations")}
-            </Typography>
-            <Typography variant="caption" color="primary.main" fontWeight={700}>
-              {t(
-                view === "id3a"
-                  ? "objectivesSheet.viewId3a"
-                  : view === "employee"
-                    ? "objectivesSheet.viewEmployee"
-                    : "objectivesSheet.viewTeam"
-              )}
-            </Typography>
-          </Breadcrumbs>
-          <Typography variant="h5" fontWeight={700}>
-            {view === "id3a"
+        <PageHeader
+          title={
+            view === "id3a"
               ? t("evaluations.title")
-              : t(view === "employee" ? "objectivesSheet.title" : "objectivesSheet.titleTeam")}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {view === "id3a" ? t("evaluations.clickHint") : t("objectivesSheet.sheetHint")}
-          </Typography>
-        </Box>
+              : t(view === "employee" ? "objectivesSheet.title" : "objectivesSheet.titleTeam")
+          }
+          view={t(
+            view === "id3a"
+              ? "objectivesSheet.viewId3a"
+              : view === "employee"
+                ? "objectivesSheet.viewEmployee"
+                : "objectivesSheet.viewTeam"
+          )}
+          subtitle={view === "id3a" ? t("evaluations.clickHint") : t("objectivesSheet.sheetHint")}
+        />
         {view === "id3a" && campaignOptions.length > 0 && (
           <TextField
             select

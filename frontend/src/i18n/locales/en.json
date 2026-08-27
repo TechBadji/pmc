@@ -340,7 +340,8 @@
     "viewSheet": "Cohesion sheet",
     "viewStrengths": "Strengths & weaknesses",
     "viewRelationship": "Relationship dynamic",
-    "noHistory": "No cohesion measurement recorded for this team."
+    "noHistory": "No cohesion measurement recorded for this team.",
+    "subtitle": "Cohesion score, strengths and weaknesses, and relationship dynamic of the team."
   },
   "evaluations": {
     "title": "ID-3A Evaluations",
@@ -561,7 +562,9 @@
     "detailByPeriod": "Detail by period",
     "tier": "Tier",
     "allDepartments": "All departments",
-    "noDepartment": "No department"
+    "noDepartment": "No department",
+    "viewMatrix": "Matrix",
+    "viewObjectives": "Objectives"
   },
   "myPerformance": {
     "greeting": "Hello {{name}}",
@@ -694,7 +697,8 @@
     "legendRange": "Performance = Altitude for the displayed period. Progression = relative change between {{from}} and {{to}}, measured across the whole range rather than period to period.",
     "errorNoBaseline": "Nobody has an evaluation for “{{period}}”: progression cannot be measured from it. Pick another period.",
     "viewVisio": "TPD-VISIO",
-    "visioTitle": "Talents Performance Dashboard"
+    "visioTitle": "Talents Performance Dashboard",
+    "subtitle": "Where each person stands by performance and progression over the period."
   },
   "teamBoard": {
     "period": "Entry of",

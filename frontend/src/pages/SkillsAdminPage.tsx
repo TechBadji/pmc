@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/layout/PageHeader";
 import { apiClient } from "@/api/client";
 import type { Company, Paginated, SkillMatrix } from "@/api/types";
 import { HARD_SKILLS_COLOR as HARD_COLOR, SOFT_SKILLS_COLOR as SOFT_COLOR } from "@/theme";
@@ -86,9 +87,7 @@ export default function SkillsAdminPage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5" fontWeight={700}>
-        {t("skillsAdmin.title")}
-      </Typography>
+      <PageHeader title={t("skillsAdmin.title")} />
 
       <Stack direction="row" spacing={2} alignItems="center">
         <TextField
