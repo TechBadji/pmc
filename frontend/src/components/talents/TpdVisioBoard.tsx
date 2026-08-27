@@ -12,10 +12,13 @@ import type { PerformanceRating } from "@/api/types";
  *    visibles. La profondeur ne se devine plus d'un simple trapèze, elle se
  *    voit à l'épaisseur et à l'alternance des cases.
  *
- * 2. Des cases réellement carrées. Le pas est de 5 % sur les deux axes, soit
- *    14 colonnes de performance pour 8 rangées d'écart. L'emprise du plateau
- *    suit ce rapport 14/8 : il est donc franchement rectangulaire — bien plus
- *    large que profond — et une case reste carrée vue de dessus.
+ * 2. Un rectangle, penché et glissé vers la droite. La projection est oblique
+ *    et non perspective : les fuyantes restent parallèles, si bien que le
+ *    plateau garde sa forme rectangulaire au lieu de se lire en trapèze. Le
+ *    pas est de 5 % sur les deux axes, soit 14 colonnes de performance pour
+ *    8 rangées d'écart, et la fuyante avance d'une case entière par rangée :
+ *    les cases sont donc des losanges de côté égal, ce que l'œil lit comme
+ *    des carrés posés à plat.
  *
  * 3. Quatre compartiments pleins. Ce sont eux qui portent la lecture, pas la
  *    grille : bleu clair, bordés de marine, en retrait des axes. Toute
@@ -46,7 +49,12 @@ export interface VisioPerson {
 
 // --- Cadre -----------------------------------------------------------------
 const W = 3000;
-const H = 1760;
+/** Marge libre de part et d'autre du plateau. */
+const SIDE_MARGIN = 120;
+/** Air au-dessus du fond, recadrée si les silhouettes ne l'occupent pas. */
+const TOP_ROOM = 210;
+/** Air sous la tranche avant. */
+const BOTTOM_ROOM = 90;
 
 // --- Échelles --------------------------------------------------------------
 const PERF_MIN = 50;
@@ -59,20 +67,37 @@ const COLS = (PERF_MAX - PERF_MIN) / STEP; // 14 colonnes
 const ROWS = (EVO_MAX - EVO_MIN) / STEP; // 8 rangées
 
 // --- Emprise du plateau ----------------------------------------------------
-const FRONT_HALF = 1400;
-const BACK_HALF = 940; // forte convergence : le regard est rasant
-const FLOOR_FRONT_Y = 1570;
-const CENTER_X = 1440;
-const RIGHT_SHIFT = 240; // le fond glisse à droite : le plateau paraît tourné
 /**
- * Inclinaison. C'est elle qui décide de la taille des compartiments du fond :
- * plus elle est forte, plus les rangées lointaines s'écrasent. À 1,5 le haut
- * tombait à 149 px contre 351 px pour le bas ; à 0,3 il remontait à 383 contre
- * 492. À 0,12, les compartiments du haut atteignent 471 px pour 525 en bas —
- * neuf dixièmes de ceux du premier plan. La profondeur reste lisible, la
- * perspective se voit encore, et aucun compartiment n'est sacrifié.
+ * Projection oblique — dite cavalière — plutôt que perspective.
+ *
+ * La perspective faisait converger les côtés : le plateau se lisait en
+ * trapèze, le fond plus étroit que l'avant, et les compartiments du fond plus
+ * petits que ceux du premier plan. En projection oblique les fuyantes restent
+ * parallèles : le plateau garde sa forme de rectangle, simplement penché et
+ * glissé vers la droite à mesure qu'il s'éloigne. Le relief ne vient plus du
+ * rétrécissement mais du décalage et de l'épaisseur de la dalle — c'est le
+ * regard porté sur une table de jeu, non l'objectif grand angle.
+ *
+ * Deux conséquences directes : les quatre compartiments deviennent
+ * rigoureusement identiques, et les cases du damier aussi.
  */
-const TILT = 0.12;
+const DEPTH_ANGLE = (67 * Math.PI) / 180; // fuyante, au-dessus de l'horizontale
+/**
+ * Largeur du plateau, résolue plutôt que réglée. Le décalage oblique consomme
+ * de la largeur : le fond déborde à droite d'autant que les rangées avancent.
+ * On cherche donc la largeur pour laquelle l'ensemble — avant plus décalage —
+ * tient exactement dans le cadre, marges comprises.
+ */
+const FRONT_WIDTH = (W - 2 * SIDE_MARGIN) / (1 + (ROWS / COLS) * Math.cos(DEPTH_ANGLE));
+/** Pas du damier : une case par 5 %, carrée avant projection. */
+const FRONT_CELL = FRONT_WIDTH / COLS;
+/** La fuyante, sans raccourci : ce que le fond gagne à droite et en hauteur. */
+const RIGHT_SHIFT = ROWS * FRONT_CELL * Math.cos(DEPTH_ANGLE);
+const DEPTH = ROWS * FRONT_CELL * Math.sin(DEPTH_ANGLE);
+const CENTER_X = W / 2 - RIGHT_SHIFT / 2;
+const FLOOR_BACK_Y = TOP_ROOM;
+const FLOOR_FRONT_Y = TOP_ROOM + DEPTH;
+const H = FLOOR_FRONT_Y + BOTTOM_ROOM;
 const SLAB = 34; // épaisseur de la dalle
 
 // --- Palette ---------------------------------------------------------------
@@ -87,38 +112,25 @@ const POSTIT = "#f5e050";
 const GREEN = "#7cb342";
 const TEXT = "#1a2744";
 
-/**
- * Profondeur du plateau, déduite plutôt que réglée : on veut que la case du
- * premier plan soit carrée à l'écran. Sa largeur y vaut 2 × FRONT_HALF / 14 ;
- * la première rangée doit donc occuper autant en hauteur. Comme la perspective
- * raccourcit les rangées à mesure qu'elles s'éloignent, la profondeur totale
- * s'obtient en divisant cette hauteur par la part de profondeur que la
- * première rangée occupe réellement.
- */
-const FRONT_CELL = (FRONT_HALF * 2) / COLS;
-
 function ratio(value: number, min: number, max: number) {
   return (Math.min(max, Math.max(min, value)) - min) / (max - min);
 }
 
-/** Profondeur perçue : 0 devant, 1 au fond, resserrée vers le fond. */
-function perspective(v: number) {
-  return (v * (1 + TILT)) / (1 + TILT * v);
-}
-
-/** Point du plateau : `u` le long des performances, `v` en profondeur. */
+/**
+ * Point du plateau : `u` le long des performances, `v` en profondeur.
+ *
+ * Transformation affine — chaque rangée décale du même pas et monte de la même
+ * hauteur, sans jamais rétrécir. Les silhouettes, elles, diminuent un peu avec
+ * l'éloignement : la géométrie du plateau n'a plus à porter seule la lecture
+ * de la profondeur, un léger dégradé de taille suffit à la dire.
+ */
 function plan(u: number, v: number) {
-  const d = perspective(v);
-  const half = FRONT_HALF + (BACK_HALF - FRONT_HALF) * d;
   return {
-    x: CENTER_X + RIGHT_SHIFT * d + (u - 0.5) * 2 * half,
-    y: FLOOR_FRONT_Y - (FLOOR_FRONT_Y - FLOOR_BACK_Y) * d,
-    scale: 1.16 - 0.54 * d, // raccourci franc : le fond paraît loin
+    x: CENTER_X + RIGHT_SHIFT * v + (u - 0.5) * FRONT_WIDTH,
+    y: FLOOR_FRONT_Y - DEPTH * v,
+    scale: 1.14 - 0.3 * v,
   };
 }
-
-const DEPTH = FRONT_CELL / perspective(1 / ROWS);
-const FLOOR_BACK_Y = FLOOR_FRONT_Y - DEPTH;
 
 function project(perf: number, evo: number) {
   return plan(ratio(perf, PERF_MIN, PERF_MAX), ratio(evo, EVO_MIN, EVO_MAX));
@@ -133,12 +145,10 @@ const GUTTER_V = 0.55 / ROWS;
  * Marge entre un compartiment et le bord du plateau, comptée en rangées et en
  * colonnes — donc identique pour les quatre compartiments.
  *
- * Elle avait d'abord été élargie au fond pour compenser l'écrasement de la
- * perspective ; c'était une erreur : trois rangées de marge sur une moitié qui
- * n'en compte que quatre réduisaient les compartiments du haut à une bande.
- * Une marge égale donne quatre compartiments de même taille sur le plateau ;
- * qu'ils paraissent plus petits au fond est précisément ce que la perspective
- * doit montrer.
+ * Elle avait un temps été élargie au fond pour compenser l'écrasement de la
+ * perspective ; celle-ci a cédé la place à une projection oblique, où les
+ * rangées ne s'écrasent plus. Une marge égale donne donc quatre compartiments
+ * strictement identiques, au fond comme au premier plan.
  */
 const MARGIN_U = 0.7 / COLS;
 const MARGIN_V = 0.55 / ROWS;
@@ -227,7 +237,6 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const frontLeft = plan(0, 0);
   const frontRight = plan(1, 0);
   const backLeft = plan(0, 1);
-  const backRight = plan(1, 1);
   const origin = project(PERF_ORIGIN, 0);
   const axisTop = plan(U_ORIGIN, 1.03);
 
@@ -269,19 +278,19 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           </marker>
         </defs>
 
-        {/* ---- Dalle : tranche avant et flancs, d'où vient l'épaisseur ----- */}
+        {/* ---- Dalle : tranche avant et flanc gauche ------------------------
+            Le plateau s'éloigne vers la droite : c'est son flanc gauche qui se
+            présente au regard, le droit se détourne. N'en dessiner qu'un est
+            ce qui donne à la dalle son épaisseur de vraie table — deux flancs
+            symétriques rendraient l'objet plat et contredisaient l'oblique. */}
         <g id="slab">
+          <polygon
+            points={`${frontLeft.x},${frontLeft.y} ${backLeft.x},${backLeft.y} ${backLeft.x},${backLeft.y + SLAB} ${frontLeft.x},${frontLeft.y + SLAB}`}
+            fill="#74829a"
+          />
           <polygon
             points={`${frontLeft.x},${frontLeft.y} ${frontRight.x},${frontRight.y} ${frontRight.x},${frontRight.y + SLAB} ${frontLeft.x},${frontLeft.y + SLAB}`}
             fill="url(#tpd-slab-front)"
-          />
-          <polygon
-            points={`${frontLeft.x},${frontLeft.y} ${frontLeft.x},${frontLeft.y + SLAB} ${backLeft.x},${backLeft.y + SLAB * 0.45} ${backLeft.x},${backLeft.y}`}
-            fill="#74829a"
-          />
-          <polygon
-            points={`${frontRight.x},${frontRight.y} ${frontRight.x},${frontRight.y + SLAB} ${backRight.x},${backRight.y + SLAB * 0.45} ${backRight.x},${backRight.y}`}
-            fill="#74829a"
           />
         </g>
 
@@ -472,12 +481,13 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
             en marge, ils qualifient chaque quart d'un coup d'œil. */}
         <g id="quadrant-marks" fontWeight="800" fontSize={58}>
           {[
-            // Les marges gauche et droite se resserrent avec la profondeur :
-            // les repères du fond peuvent s'écarter davantage que ceux du
-            // premier plan, qui longeraient sinon le bord du cadre.
+            // Le plateau glissant vers la droite en s'éloignant, la place libre
+            // bascule d'un bord à l'autre : large à gauche au fond, large à
+            // droite au premier plan. Les repères suivent ce mouvement plutôt
+            // que de longer le cadre.
             { u: -0.075, v: 0.86, text: "−", fill: "#c62828" },
             { u: -0.032, v: 0.86, text: "+", fill: GREEN },
-            { u: 1.05, v: 0.86, text: "++", fill: GREEN },
+            { u: 1.035, v: 0.86, text: "++", fill: GREEN },
             { u: -0.05, v: 0.12, text: "−", fill: "#c62828" },
             { u: -0.022, v: 0.12, text: "−", fill: "#c62828" },
             { u: 1.018, v: 0.12, text: "+", fill: GREEN },
