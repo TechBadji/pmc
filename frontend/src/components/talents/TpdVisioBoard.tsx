@@ -46,7 +46,7 @@ export interface VisioPerson {
 
 // --- Cadre -----------------------------------------------------------------
 const W = 3000;
-const H = 1620;
+const H = 1760;
 
 // --- Échelles --------------------------------------------------------------
 const PERF_MIN = 50;
@@ -61,17 +61,18 @@ const ROWS = (EVO_MAX - EVO_MIN) / STEP; // 8 rangées
 // --- Emprise du plateau ----------------------------------------------------
 const FRONT_HALF = 1400;
 const BACK_HALF = 940; // forte convergence : le regard est rasant
-const FLOOR_FRONT_Y = 1430;
+const FLOOR_FRONT_Y = 1570;
 const CENTER_X = 1440;
 const RIGHT_SHIFT = 240; // le fond glisse à droite : le plateau paraît tourné
 /**
- * Inclinaison. À 1,5, le fond était écrasé de moitié : les compartiments du
- * haut tombaient à 149 px contre 351 px pour ceux du bas. À 0,3 le rapport
- * remonte à 0,78 — le plateau garde sa profondeur, les quatre compartiments
- * restent comparables, et l'on voit encore que le fond s'éloigne. C'est
- * l'équilibre de la planche de référence.
+ * Inclinaison. C'est elle qui décide de la taille des compartiments du fond :
+ * plus elle est forte, plus les rangées lointaines s'écrasent. À 1,5 le haut
+ * tombait à 149 px contre 351 px pour le bas ; à 0,3 il remontait à 383 contre
+ * 492. À 0,12, les compartiments du haut atteignent 471 px pour 525 en bas —
+ * neuf dixièmes de ceux du premier plan. La profondeur reste lisible, la
+ * perspective se voit encore, et aucun compartiment n'est sacrifié.
  */
-const TILT = 0.3;
+const TILT = 0.12;
 const SLAB = 34; // épaisseur de la dalle
 
 // --- Palette ---------------------------------------------------------------
@@ -140,7 +141,7 @@ const GUTTER_V = 0.55 / ROWS;
  * doit montrer.
  */
 const MARGIN_U = 0.7 / COLS;
-const MARGIN_V = 0.7 / ROWS;
+const MARGIN_V = 0.55 / ROWS;
 
 /** Les quatre compartiments, en coordonnées du plateau. */
 const COMPARTMENTS = [
