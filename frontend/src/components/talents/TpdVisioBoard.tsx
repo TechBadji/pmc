@@ -46,7 +46,7 @@ export interface VisioPerson {
 
 // --- Cadre -----------------------------------------------------------------
 const W = 3000;
-const H = 1480;
+const H = 1620;
 
 // --- Échelles --------------------------------------------------------------
 const PERF_MIN = 50;
@@ -61,10 +61,17 @@ const ROWS = (EVO_MAX - EVO_MIN) / STEP; // 8 rangées
 // --- Emprise du plateau ----------------------------------------------------
 const FRONT_HALF = 1400;
 const BACK_HALF = 940; // forte convergence : le regard est rasant
-const FLOOR_FRONT_Y = 1210;
+const FLOOR_FRONT_Y = 1430;
 const CENTER_X = 1440;
 const RIGHT_SHIFT = 240; // le fond glisse à droite : le plateau paraît tourné
-const TILT = 1.5; // resserrement des rangées lointaines
+/**
+ * Inclinaison. À 1,5, le fond était écrasé de moitié : les compartiments du
+ * haut tombaient à 149 px contre 351 px pour ceux du bas. À 0,3 le rapport
+ * remonte à 0,78 — le plateau garde sa profondeur, les quatre compartiments
+ * restent comparables, et l'on voit encore que le fond s'éloigne. C'est
+ * l'équilibre de la planche de référence.
+ */
+const TILT = 0.3;
 const SLAB = 34; // épaisseur de la dalle
 
 // --- Palette ---------------------------------------------------------------
@@ -121,24 +128,26 @@ const V_ORIGIN = ratio(0, EVO_MIN, EVO_MAX);
 /** Gouttière le long des axes, où se logent les graduations. */
 const GUTTER_U = 0.55 / COLS;
 const GUTTER_V = 0.55 / ROWS;
-/** Marge entre un compartiment et le bord du plateau. Sans elle, la bordure
- * du compartiment se confondait avec le cadre du damier et l'on ne voyait
- * plus qu'un seul trait pour deux tracés.
+/**
+ * Marge entre un compartiment et le bord du plateau, comptée en rangées et en
+ * colonnes — donc identique pour les quatre compartiments.
  *
- * La marge arrière vaut trois rangées quand celle de devant n'en vaut qu'une :
- * la perspective écrase les rangées lointaines, si bien qu'une marge exprimée
- * en rangées donnerait 147 px devant et 28 px au fond. Comptées ainsi, les
- * deux valent environ 145 px à l'écran. */
+ * Elle avait d'abord été élargie au fond pour compenser l'écrasement de la
+ * perspective ; c'était une erreur : trois rangées de marge sur une moitié qui
+ * n'en compte que quatre réduisaient les compartiments du haut à une bande.
+ * Une marge égale donne quatre compartiments de même taille sur le plateau ;
+ * qu'ils paraissent plus petits au fond est précisément ce que la perspective
+ * doit montrer.
+ */
 const MARGIN_U = 0.7 / COLS;
-const MARGIN_V_FRONT = 0.7 / ROWS;
-const MARGIN_V_BACK = 3 / ROWS;
+const MARGIN_V = 0.7 / ROWS;
 
 /** Les quatre compartiments, en coordonnées du plateau. */
 const COMPARTMENTS = [
-  { key: "tl", above: false, rising: true, u0: MARGIN_U, u1: U_ORIGIN - GUTTER_U, v0: V_ORIGIN + GUTTER_V, v1: 1 - MARGIN_V_BACK },
-  { key: "tr", above: true, rising: true, u0: U_ORIGIN + GUTTER_U, u1: 1 - MARGIN_U, v0: V_ORIGIN + GUTTER_V, v1: 1 - MARGIN_V_BACK },
-  { key: "bl", above: false, rising: false, u0: MARGIN_U, u1: U_ORIGIN - GUTTER_U, v0: MARGIN_V_FRONT, v1: V_ORIGIN - GUTTER_V },
-  { key: "br", above: true, rising: false, u0: U_ORIGIN + GUTTER_U, u1: 1 - MARGIN_U, v0: MARGIN_V_FRONT, v1: V_ORIGIN - GUTTER_V },
+  { key: "tl", above: false, rising: true, u0: MARGIN_U, u1: U_ORIGIN - GUTTER_U, v0: V_ORIGIN + GUTTER_V, v1: 1 - MARGIN_V },
+  { key: "tr", above: true, rising: true, u0: U_ORIGIN + GUTTER_U, u1: 1 - MARGIN_U, v0: V_ORIGIN + GUTTER_V, v1: 1 - MARGIN_V },
+  { key: "bl", above: false, rising: false, u0: MARGIN_U, u1: U_ORIGIN - GUTTER_U, v0: MARGIN_V, v1: V_ORIGIN - GUTTER_V },
+  { key: "br", above: true, rising: false, u0: U_ORIGIN + GUTTER_U, u1: 1 - MARGIN_U, v0: MARGIN_V, v1: V_ORIGIN - GUTTER_V },
 ];
 
 /** Contour arrondi d'un quadrilatère en perspective : chaque angle est repris
@@ -332,9 +341,11 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           {Array.from({ length: ROWS + 1 }).map((_, i) => {
             const evo = EVO_MIN + i * STEP;
             if (evo === 0) return null;
-            const p = plan(U_ORIGIN - GUTTER_U * 0.2, i / ROWS);
+            // À droite de l'axe : à gauche, elles se perdaient sur la bordure
+            // du compartiment voisin.
+            const p = plan(U_ORIGIN + GUTTER_U * 0.25, i / ROWS);
             return (
-              <text key={`ty-${evo}`} x={p.x - 12} y={p.y + 9} textAnchor="end" fontSize={26}>
+              <text key={`ty-${evo}`} x={p.x + 10} y={p.y + 9} textAnchor="start" fontSize={26}>
                 {evo > 0 ? `+${evo}%` : `${evo}%`}
               </text>
             );
