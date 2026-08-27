@@ -8,15 +8,14 @@ import type { PerformanceRating } from "@/api/types";
  * Configuration retenue, et pourquoi.
  *
  * 1. Un damier plutôt qu'un fond quadrillé. Le plateau se lit comme une table
- *    de jeu : 8 × 8 cases alternées, dalle épaisse, tranche et flanc gauche
- *    visibles. La profondeur ne se devine plus d'un simple trapèze, elle se
- *    voit à l'épaisseur et à l'alternance des cases.
+ *    de jeu : 12 × 8 cases carrées alternées, posées sur un socle. C'est
+ *    l'alternance des cases qui donne l'échelle, sans qu'aucun artifice de
+ *    volume n'ait à s'en mêler.
  *
- * 2. Un rectangle, penché et glissé vers la droite. La projection est oblique
- *    et non perspective : les fuyantes restent parallèles, si bien que le
- *    plateau garde sa forme rectangulaire au lieu de se lire en trapèze. La
- *    fuyante avance d'une case entière par rangée : les cases sont des
- *    losanges de côté égal, ce que l'œil lit comme des carrés posés à plat.
+ * 2. Un rectangle droit. Le plateau a été successivement mis en perspective,
+ *    où les côtés convergeaient, puis en projection oblique, où il partait en
+ *    biais ; il est maintenant vu de face. Les côtés sont verticaux, les bords
+ *    horizontaux, les cases carrées, et rien ne se déforme.
  *
  * 3. Quatre compartiments identiques. Ce sont eux qui portent la lecture, pas
  *    la grille : bleu clair, bordés de marine, en retrait des axes. L'origine
@@ -30,8 +29,8 @@ import type { PerformanceRating } from "@/api/types";
  *    gauche de la verticale, dans la gouttière laissée libre entre les axes et
  *    les compartiments.
  *
- * Toute la géométrie passe par `plan(u, v)` : changer l'inclinaison, la
- * rotation ou l'emprise se fait en un seul endroit.
+ * Toute la géométrie passe par `plan(u, v)` : l'emprise du plateau, et le cas
+ * échéant son inclinaison, se règlent en un seul endroit.
  * ------------------------------------------------------------------------- */
 
 export interface VisioPerson {
@@ -49,8 +48,8 @@ export interface VisioPerson {
 
 // --- Cadre -----------------------------------------------------------------
 const W = 2900;
-/** Marge libre de part et d'autre du plateau. */
-const SIDE_MARGIN = 120;
+/** Marge libre de part et d'autre du plateau, où se posent les repères. */
+const SIDE_MARGIN = 200;
 /** Air au-dessus du fond du plateau. */
 const TOP_ROOM = 90;
 /** Air sous la tranche avant. */
@@ -68,56 +67,46 @@ const BOTTOM_ROOM = 70;
  * performance et les mêmes 20 points d'écart. Ils sont identiques par
  * construction, pas par réglage.
  */
-const PERF_MIN = 50;
-const PERF_MAX = 130;
+const PERF_MIN = 60;
+const PERF_MAX = 120;
 const PERF_ORIGIN = 90; // objectifs atteints, au centre
 const EVO_MIN = -20;
 const EVO_MAX = 20;
 /**
- * Pas des graduations. Dix points de performance pour cinq points d'écart :
- * c'est ce qui donne au plateau ses 8 × 8 cases, donc un damier carré et des
- * compartiments carrés. Un pas de 5 % en performance doublerait le nombre de
- * colonnes et rendrait le plateau deux fois plus large que profond — les
- * silhouettes n'y tiendraient plus. Les graduations se lisent de dix en dix ;
- * chacun reste placé à sa valeur exacte, qui n'a pas à tomber sur un trait.
+ * Pas des graduations : 5 % sur les deux axes, soit 12 colonnes pour 8 rangées.
+ *
+ * Le plateau incliné avait dû se contenter d'un pas de 10 % en performance :
+ * le décalage oblique mangeait tant de largeur qu'il fallait de grosses cases
+ * pour garder des compartiments capables d'accueillir une silhouette. Redressé,
+ * le plateau récupère cette largeur et retrouve la lecture de 5 en 5.
  */
-const PERF_STEP = 10;
+const PERF_STEP = 5;
 const EVO_STEP = 5;
-const COLS = (PERF_MAX - PERF_MIN) / PERF_STEP; // 8 colonnes
+const COLS = (PERF_MAX - PERF_MIN) / PERF_STEP; // 12 colonnes
 const ROWS = (EVO_MAX - EVO_MIN) / EVO_STEP; // 8 rangées
 
 // --- Emprise du plateau ----------------------------------------------------
 /**
- * Projection oblique — dite cavalière — plutôt que perspective.
+ * Plateau droit, vu de face.
  *
- * La perspective faisait converger les côtés : le plateau se lisait en
- * trapèze, le fond plus étroit que l'avant, et les compartiments du fond plus
- * petits que ceux du premier plan. En projection oblique les fuyantes restent
- * parallèles : le plateau garde sa forme de rectangle, simplement penché et
- * glissé vers la droite à mesure qu'il s'éloigne. Le relief ne vient plus du
- * rétrécissement mais du décalage et de l'épaisseur de la dalle — c'est le
- * regard porté sur une table de jeu, non l'objectif grand angle.
+ * Il a été successivement mis en perspective, où les côtés convergeaient et le
+ * fond s'écrasait, puis en projection oblique, où il gardait sa forme mais
+ * partait en biais. Il est maintenant simplement droit : les axes sont
+ * horizontal et vertical, les côtés d'équerre, et rien ne se déforme. Ce que
+ * l'inclinaison prenait en largeur est rendu aux compartiments.
  *
- * Deux conséquences directes : les quatre compartiments deviennent
- * rigoureusement identiques, et les cases du damier aussi.
+ * La largeur remplit le cadre moins les marges ; la profondeur en découle,
+ * puisqu'une case doit rester carrée : autant de hauteur par rangée que de
+ * largeur par colonne.
  */
-const DEPTH_ANGLE = (67 * Math.PI) / 180; // fuyante, au-dessus de l'horizontale
-/**
- * Largeur du plateau, résolue plutôt que réglée. Le décalage oblique consomme
- * de la largeur : le fond déborde à droite d'autant que les rangées avancent.
- * On cherche donc la largeur pour laquelle l'ensemble — avant plus décalage —
- * tient exactement dans le cadre, marges comprises.
- */
-const FRONT_WIDTH = (W - 2 * SIDE_MARGIN) / (1 + (ROWS / COLS) * Math.cos(DEPTH_ANGLE));
-/** Côté d'une case, carrée avant projection. */
+const FRONT_WIDTH = W - 2 * SIDE_MARGIN;
+/** Côté d'une case du damier. */
 const FRONT_CELL = FRONT_WIDTH / COLS;
-/** La fuyante, sans raccourci : ce que le fond gagne à droite et en hauteur. */
-const RIGHT_SHIFT = ROWS * FRONT_CELL * Math.cos(DEPTH_ANGLE);
-const DEPTH = ROWS * FRONT_CELL * Math.sin(DEPTH_ANGLE);
-const CENTER_X = W / 2 - RIGHT_SHIFT / 2;
+const DEPTH = ROWS * FRONT_CELL;
+const CENTER_X = W / 2;
 const FLOOR_FRONT_Y = TOP_ROOM + DEPTH;
 const H = FLOOR_FRONT_Y + BOTTOM_ROOM;
-const SLAB = 34; // épaisseur de la dalle
+const SLAB = 26; // socle sous la tranche basse
 
 // --- Palette ---------------------------------------------------------------
 const NAVY = "#31527f";
@@ -136,18 +125,17 @@ function ratio(value: number, min: number, max: number) {
 }
 
 /**
- * Point du plateau : `u` le long des performances, `v` en profondeur.
+ * Point du plateau : `u` le long des performances, `v` le long des écarts.
  *
- * Transformation affine — chaque rangée décale du même pas et monte de la même
- * hauteur, sans jamais rétrécir. Les silhouettes, elles, diminuent un peu avec
- * l'éloignement : la géométrie du plateau n'a plus à porter seule la lecture
- * de la profondeur, un léger dégradé de taille suffit à la dire.
+ * Le plateau étant droit, les deux axes sont indépendants et rien ne se
+ * déforme. Les silhouettes gardent donc toutes la même taille : les faire
+ * varier n'avait de sens que pour dire une profondeur, et il n'y en a plus.
  */
 function plan(u: number, v: number) {
   return {
-    x: CENTER_X + RIGHT_SHIFT * v + (u - 0.5) * FRONT_WIDTH,
+    x: CENTER_X + (u - 0.5) * FRONT_WIDTH,
     y: FLOOR_FRONT_Y - DEPTH * v,
-    scale: 1.14 - 0.3 * v,
+    scale: 1,
   };
 }
 
@@ -242,28 +230,23 @@ function confine(value: number, low: number, high: number) {
  * compartiment dépassait par le toit. On réserve donc, au-dessus des pieds, la
  * hauteur qu'occupera réellement la silhouette, et en dessous celle du prénom.
  *
- * Deux subtilités de l'oblique. La taille d'une silhouette dépend de sa
- * profondeur, laquelle dépend de la place qu'on lui réserve : on romprait le
- * cercle par approximations successives, mais il suffit de calculer
- * l'encombrement à l'échelle la plus grande du compartiment — celle de son
- * bord avant. La réserve est alors toujours suffisante, où que la personne se
- * pose ensuite. Et les côtés étant penchés, le bord gauche du compartiment se
- * dérobe vers la droite à mesure qu'on monte, le bord droit vers la gauche à
- * mesure qu'on descend : les marges latérales valent donc la dérive du bord
- * sur toute la hauteur de la silhouette, et pas seulement sa demi-largeur.
+ * Les bords du compartiment étant d'équerre, il suffit de retrancher de part
+ * et d'autre l'encombrement de la silhouette : sa demi-largeur sur les côtés,
+ * sa hauteur au-dessus, celle du prénom en dessous.
  */
 function seat(perf: number, evo: number, hasPhoto: boolean) {
   const zone =
     COMPARTMENTS.find((c) => c.above === perf >= PERF_ORIGIN && c.rising === (evo >= 0)) ?? COMPARTMENTS[0];
   const { height, width } = figureSize(hasPhoto, plan(0, zone.v0).scale);
-  const above = (height + LABEL_ABOVE) / DEPTH;
-  const below = LABEL_BELOW / DEPTH;
   const halfU = width / (2 * FRONT_WIDTH);
-  const lean = RIGHT_SHIFT / FRONT_WIDTH; // pente des côtés, en `u` par `v`
 
-  const v = confine(ratio(evo, EVO_MIN, EVO_MAX), zone.v0 + below, zone.v1 - above);
-  const lowU = zone.u0 + halfU + lean * above;
-  const highU = zone.u1 - halfU - lean * below;
+  const v = confine(
+    ratio(evo, EVO_MIN, EVO_MAX),
+    zone.v0 + LABEL_BELOW / DEPTH,
+    zone.v1 - (height + LABEL_ABOVE) / DEPTH
+  );
+  const lowU = zone.u0 + halfU;
+  const highU = zone.u1 - halfU;
   const u = confine(ratio(perf, PERF_MIN, PERF_MAX), lowU, highU);
 
   return { ...plan(u, v), minX: plan(lowU, v).x, maxX: plan(highU, v).x };
@@ -294,8 +277,6 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const EDGE = 24;
 
   const frontLeft = plan(0, 0);
-  const frontRight = plan(1, 0);
-  const backLeft = plan(0, 1);
   const origin = project(PERF_ORIGIN, 0);
   const axisTop = plan(U_ORIGIN, 1.03);
 
@@ -330,21 +311,10 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           </marker>
         </defs>
 
-        {/* ---- Dalle : tranche avant et flanc gauche ------------------------
-            Le plateau s'éloigne vers la droite : c'est son flanc gauche qui se
-            présente au regard, le droit se détourne. N'en dessiner qu'un est
-            ce qui donne à la dalle son épaisseur de vraie table — deux flancs
-            symétriques rendraient l'objet plat et contredisaient l'oblique. */}
-        <g id="slab">
-          <polygon
-            points={`${frontLeft.x},${frontLeft.y} ${backLeft.x},${backLeft.y} ${backLeft.x},${backLeft.y + SLAB} ${frontLeft.x},${frontLeft.y + SLAB}`}
-            fill="#74829a"
-          />
-          <polygon
-            points={`${frontLeft.x},${frontLeft.y} ${frontRight.x},${frontRight.y} ${frontRight.x},${frontRight.y + SLAB} ${frontLeft.x},${frontLeft.y + SLAB}`}
-            fill="url(#tpd-slab-front)"
-          />
-        </g>
+        {/* ---- Socle : une tranche sous le bord bas -------------------------
+            Le plateau étant droit, il n'a plus de flanc à présenter. Reste ce
+            liseré, qui l'assied sans prétendre au volume. */}
+        <rect x={frontLeft.x} y={frontLeft.y} width={FRONT_WIDTH} height={SLAB} fill="url(#tpd-slab-front)" />
 
         {/* ---- Damier : une case par pas de 5 % sur les deux axes ---------- */}
         <g id="board">
@@ -532,21 +502,21 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
             en marge, ils qualifient chaque quart d'un coup d'œil. */}
         <g id="quadrant-marks" fontWeight="800" fontSize={58}>
           {[
-            // Le plateau glissant vers la droite en s'éloignant, la place libre
-            // bascule d'un bord à l'autre : large à gauche au fond, large à
-            // droite au premier plan. Les repères suivent ce mouvement plutôt
-            // que de longer le cadre.
-            { u: -0.075, v: 0.86, text: "−", fill: "#c62828" },
-            { u: -0.032, v: 0.86, text: "+", fill: GREEN },
-            { u: 1.035, v: 0.86, text: "++", fill: GREEN },
-            { u: -0.05, v: 0.12, text: "−", fill: "#c62828" },
-            { u: -0.022, v: 0.12, text: "−", fill: "#c62828" },
-            { u: 1.018, v: 0.12, text: "+", fill: GREEN },
-            { u: 1.046, v: 0.12, text: "−", fill: "#c62828" },
+            // Les bords étant maintenant verticaux, les repères se posent à
+            // une distance fixe du plateau, dans la marge du cadre : `dx`
+            // compte depuis le bord gauche s'il est négatif, depuis le droit
+            // s'il est positif.
+            { dx: -148, v: 0.86, text: "−", fill: "#c62828" },
+            { dx: -62, v: 0.86, text: "+", fill: GREEN },
+            { dx: 68, v: 0.86, text: "++", fill: GREEN },
+            { dx: -148, v: 0.12, text: "−", fill: "#c62828" },
+            { dx: -62, v: 0.12, text: "−", fill: "#c62828" },
+            { dx: 62, v: 0.12, text: "+", fill: GREEN },
+            { dx: 148, v: 0.12, text: "−", fill: "#c62828" },
           ].map((mark, i) => {
-            const p = plan(mark.u, mark.v);
+            const edge = plan(mark.dx < 0 ? 0 : 1, mark.v);
             return (
-              <text key={i} x={p.x} y={p.y} textAnchor="middle" fill={mark.fill}>
+              <text key={i} x={edge.x + mark.dx} y={edge.y} textAnchor="middle" fill={mark.fill}>
                 {mark.text}
               </text>
             );
