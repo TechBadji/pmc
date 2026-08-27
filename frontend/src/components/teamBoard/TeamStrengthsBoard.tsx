@@ -18,11 +18,11 @@ function SideLabel({ text, color }: { text: string; color: string }) {
       sx={{
         bgcolor: color,
         borderRadius: 1,
-        width: 34,
+        width: "100%",
+        height: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        py: 2,
       }}
     >
       <Typography
@@ -98,57 +98,65 @@ export default function TeamStrengthsBoard({
         </Typography>
       </Stack>
 
-      <Stack direction="row" spacing={1}>
-        <Stack spacing={1} sx={{ width: 34 }}>
-          <SideLabel text={t("teamBoard.people").toUpperCase()} color={PEOPLE_BAR} />
-          <SideLabel text={t("teamBoard.business").toUpperCase()} color={BUSINESS_BAR} />
+      {/* Grille à deux colonnes et trois lignes : la bande latérale occupe
+          exactement la hauteur de sa rangée de compartiments, et son texte s'y
+          centre. Empilées à part, les deux bandes ne pouvaient pas suivre la
+          hauteur des blocs qu'elles désignent. */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "38px minmax(0, 1fr)",
+          gridTemplateRows: "auto auto auto",
+          columnGap: 1,
+          rowGap: 1,
+          alignItems: "stretch",
+        }}
+      >
+        {/* Ligne 1 : rien à gauche, les deux entêtes à droite */}
+        <Box />
+        <Stack direction="row" spacing={1}>
+          <Box sx={{ flex: 1, minWidth: 0, bgcolor: PEOPLE_BAR, borderRadius: 1, py: 0.4, textAlign: "center" }}>
+            <Typography sx={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{t("teamBoard.strengths")}</Typography>
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0, bgcolor: "#a52a2a", borderRadius: 1, py: 0.4, textAlign: "center" }}>
+            <Typography sx={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{t("teamBoard.weaknesses")}</Typography>
+          </Box>
         </Stack>
 
-        <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
-          <Stack direction="row" spacing={1}>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box sx={{ bgcolor: PEOPLE_BAR, borderRadius: 1, py: 0.4, mb: 0.75, textAlign: "center" }}>
-                <Typography sx={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{t("teamBoard.strengths")}</Typography>
-              </Box>
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box sx={{ bgcolor: "#a52a2a", borderRadius: 1, py: 0.4, mb: 0.75, textAlign: "center" }}>
-                <Typography sx={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{t("teamBoard.weaknesses")}</Typography>
-              </Box>
-            </Box>
-          </Stack>
-
-          <Stack direction="row" spacing={1}>
-            <Quadrant
-              bg={PEOPLE_STRENGTH_BG}
-              items={board.people_strengths}
-              onChange={(v) => patch({ people_strengths: v })}
-              readOnly={readOnly}
-            />
-            <Quadrant
-              bg={PEOPLE_WEAKNESS_BG}
-              items={board.people_weaknesses}
-              onChange={(v) => patch({ people_weaknesses: v })}
-              readOnly={readOnly}
-            />
-          </Stack>
-
-          <Stack direction="row" spacing={1}>
-            <Quadrant
-              bg={BUSINESS_STRENGTH_BG}
-              items={board.business_strengths}
-              onChange={(v) => patch({ business_strengths: v })}
-              readOnly={readOnly}
-            />
-            <Quadrant
-              bg={BUSINESS_WEAKNESS_BG}
-              items={board.business_weaknesses}
-              onChange={(v) => patch({ business_weaknesses: v })}
-              readOnly={readOnly}
-            />
-          </Stack>
+        {/* Ligne 2 : People, en vert */}
+        <SideLabel text={t("teamBoard.people").toUpperCase()} color={PEOPLE_BAR} />
+        <Stack direction="row" spacing={1}>
+          <Quadrant
+            bg={PEOPLE_STRENGTH_BG}
+            items={board.people_strengths}
+            onChange={(v) => patch({ people_strengths: v })}
+            readOnly={readOnly}
+          />
+          <Quadrant
+            bg={PEOPLE_WEAKNESS_BG}
+            items={board.people_weaknesses}
+            onChange={(v) => patch({ people_weaknesses: v })}
+            readOnly={readOnly}
+          />
         </Stack>
-      </Stack>
+
+        {/* Ligne 3 : Business, en bleu */}
+        <SideLabel text={t("teamBoard.business").toUpperCase()} color={BUSINESS_BAR} />
+        <Stack direction="row" spacing={1}>
+          <Quadrant
+            bg={BUSINESS_STRENGTH_BG}
+            items={board.business_strengths}
+            onChange={(v) => patch({ business_strengths: v })}
+            readOnly={readOnly}
+          />
+          <Quadrant
+            bg={BUSINESS_WEAKNESS_BG}
+            items={board.business_weaknesses}
+            onChange={(v) => patch({ business_weaknesses: v })}
+            readOnly={readOnly}
+          />
+        </Stack>
+      </Box>
     </Paper>
   );
 }
