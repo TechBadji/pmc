@@ -351,8 +351,16 @@ export default function AnnualObjectivesSheet({
         </Typography>
       </Box>
 
-      {/* Entête : photo, identité, dates et visa */}
-      <Box sx={{ display: "grid", gridTemplateColumns: "132px repeat(2, 150px 1fr)", mb: 1.5 }}>
+      {/* Entête, disposée comme la feuille : la photo tient les trois lignes,
+          puis quatre couples intitulé/valeur par ligne — identité à gauche,
+          dates au centre, taux et visa à droite. */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "132px 118px minmax(120px, 1fr) 132px minmax(96px, 1fr) 152px minmax(84px, 1fr) 132px minmax(84px, 1fr)",
+          mb: 1.5,
+        }}
+      >
         <Box
           sx={{
             gridRow: "span 3",
@@ -365,16 +373,26 @@ export default function AnnualObjectivesSheet({
             p: 0.5,
           }}
         >
-          <Avatar src={identity.photo ?? undefined} variant="rounded" sx={{ width: 56, height: 66 }}>
+          <Avatar src={identity.photo ?? undefined} variant="rounded" sx={{ width: 54, height: 62 }}>
             {identity.name.charAt(0).toUpperCase()}
           </Avatar>
-          <Typography sx={{ fontSize: 10.5, fontWeight: 700, textAlign: "center", lineHeight: 1.2 }}>
-            {identity.name}
+          <Typography sx={{ fontSize: 10, fontWeight: 700, textAlign: "center", lineHeight: 1.15 }}>
+            {identity.name || t("objectivesSheet.photo")}
           </Typography>
         </Box>
 
+        {/* Ligne 1 */}
         <HeaderPair label={t("objectivesSheet.company")} value={identity.company} />
         <HeaderPair label={t("objectivesSheet.manager")} value={identity.managerName} />
+        <HeaderPair label={t("objectivesSheet.previousEvaluation")} value={dates.previous_evaluated_on} />
+        <HeaderPair
+          label={t("objectivesSheet.nextEvaluation")}
+          value={dates.next_evaluation_on}
+          field="next_evaluation_on"
+          type="date"
+        />
+
+        {/* Ligne 2 */}
         <HeaderPair label={t("objectivesSheet.department")} value={identity.department} />
         <HeaderPair
           label={t("objectivesSheet.objectivesSetOn")}
@@ -382,25 +400,19 @@ export default function AnnualObjectivesSheet({
           field="objectives_set_on"
           type="date"
         />
+        <HeaderPair
+          label={t("objectivesSheet.previousAchievement")}
+          value={previousPercent === null ? "—" : `${Math.round(previousPercent)}%`}
+        />
+        <Cell bg={HEADER_PEACH} />
+        <Cell />
+
+        {/* Ligne 3 */}
         <HeaderPair label={t("objectivesSheet.position")} value={identity.position} />
         <HeaderPair
           label={t("objectivesSheet.evaluatedOn")}
           value={dates.evaluated_on}
           field="evaluated_on"
-          type="date"
-        />
-      </Box>
-
-      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 190px 1fr)", mb: 1.5 }}>
-        <HeaderPair label={t("objectivesSheet.previousEvaluation")} value={dates.previous_evaluated_on} />
-        <HeaderPair
-          label={t("objectivesSheet.previousAchievement")}
-          value={previousPercent === null ? "—" : `${Math.round(previousPercent)}%`}
-        />
-        <HeaderPair
-          label={t("objectivesSheet.nextEvaluation")}
-          value={dates.next_evaluation_on}
-          field="next_evaluation_on"
           type="date"
         />
         <HeaderPair

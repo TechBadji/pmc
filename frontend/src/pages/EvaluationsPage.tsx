@@ -5,6 +5,7 @@ import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
 import TrendingFlatOutlinedIcon from "@mui/icons-material/TrendingFlatOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import {
+  Breadcrumbs,
   Alert,
   Avatar,
   Box,
@@ -277,14 +278,33 @@ export default function EvaluationsPage() {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
         <Box>
+          {/* Fil d'Ariane : la rubrique, puis la vue ouverte. Le titre seul ne
+            * bougeait pas d'une vue à l'autre, et l'on ne savait plus où l'on
+            * se trouvait après avoir basculé. */}
+          <Breadcrumbs separator="›" sx={{ mb: 0.25, "& .MuiBreadcrumbs-li": { fontSize: 12.5 } }}>
+            <Typography variant="caption" color="text.secondary">
+              {t("nav.evaluations")}
+            </Typography>
+            <Typography variant="caption" color="primary.main" fontWeight={700}>
+              {t(
+                view === "id3a"
+                  ? "objectivesSheet.viewId3a"
+                  : view === "employee"
+                    ? "objectivesSheet.viewEmployee"
+                    : "objectivesSheet.viewTeam"
+              )}
+            </Typography>
+          </Breadcrumbs>
           <Typography variant="h5" fontWeight={700}>
-            {t("evaluations.title")}
+            {view === "id3a"
+              ? t("evaluations.title")
+              : t(view === "employee" ? "objectivesSheet.title" : "objectivesSheet.titleTeam")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {t("evaluations.clickHint")}
+            {view === "id3a" ? t("evaluations.clickHint") : t("objectivesSheet.sheetHint")}
           </Typography>
         </Box>
-        {campaignOptions.length > 0 && (
+        {view === "id3a" && campaignOptions.length > 0 && (
           <TextField
             select
             size="small"
@@ -328,6 +348,7 @@ export default function EvaluationsPage() {
           campaigns={campaigns}
           evaluations={evaluations}
           canEdit={user?.role === "COMPANY_ADMIN" || user?.role === "MANAGER"}
+          companyName={user?.company_name ?? ""}
         />
       )}
 

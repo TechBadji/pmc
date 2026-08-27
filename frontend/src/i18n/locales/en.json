@@ -785,6 +785,11 @@
     "pickPerson": "Pick a team member and a period to open their sheet.",
     "pickTeam": "Pick a team and a period to open the sheet.",
     "noEvaluation": "No evaluation for this person in this period: the sheet opens as soon as one exists.",
-    "saved": "Sheet saved."
+    "saved": "Sheet saved.",
+    "photo": "Employee photo",
+    "saving": "Saving…",
+    "savedAt": "Saved at {{time}}",
+    "autoSave": "Saved automatically as you type",
+    "sheetHint": "Objectives set at the start of the cycle, results at the end: overall performance follows."
   }
 }

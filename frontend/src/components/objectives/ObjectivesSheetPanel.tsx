@@ -1,4 +1,4 @@
-import { Alert, Box, Button, MenuItem, Snackbar, Stack, TextField } from "@mui/material";
+import { Alert, Box, Button, MenuItem, Snackbar, Stack, TextField, Typography } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
@@ -30,6 +30,7 @@ export default function ObjectivesSheetPanel({
   campaigns,
   evaluations,
   canEdit,
+  companyName,
 }: {
   mode: "employee" | "team";
   people: UserRecord[];
@@ -37,14 +38,18 @@ export default function ObjectivesSheetPanel({
   campaigns: EvaluationCampaign[];
   evaluations: Evaluation[];
   canEdit: boolean;
+  companyName: string;
 }) {
   const { t } = useTranslation();
   const [personId, setPersonId] = useState<number | "">("");
   const [teamId, setTeamId] = useState<number | "">("");
   const [campaignId, setCampaignId] = useState<number | "">("");
   const [rows, setRows] = useState<PerformanceObjective[]>([]);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState(false);
+  // Témoin de sauvegarde : la fiche s'enregistre seule, encore faut-il le
+  // montrer. Sans repère visible, l'absence de bouton inquiète à juste titre.
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Période la plus récente par défaut : c'est celle qu'on ouvre en arrivant.
   useEffect(() => {
@@ -138,12 +143,16 @@ export default function ObjectivesSheetPanel({
     pending.current.delete(id);
     timers.current.delete(id);
     if (!values || Object.keys(values).length === 0) return;
+    setSaving(true);
     try {
       const { data } = await apiClient.patch<PerformanceObjective>(`/performance-objectives/${id}/`, values);
       // Le serveur renvoie le taux recalculé : on ne le devine pas côté client.
       setRows((prev) => prev.map((r) => (r.id === id ? data : r)));
+      setSavedAt(new Date().toLocaleTimeString());
     } catch {
       setError(true);
+    } finally {
+      setSaving(false);
     }
   }, []);
 
@@ -185,7 +194,7 @@ export default function ObjectivesSheetPanel({
     if (!evaluation) return;
     try {
       await apiClient.patch(`/evaluations/${evaluation.id}/`, { [field]: value || null });
-      setSaved(true);
+      setSavedAt(new Date().toLocaleTimeString());
     } catch {
       setError(true);
     }
@@ -195,15 +204,22 @@ export default function ObjectivesSheetPanel({
   const team = departments.find((d) => d.id === teamId) ?? null;
   const teamManager = team ? people.find((p) => p.id === team.manager) ?? null : null;
 
+  /** Responsable direct : celui du département de la personne. Le champ
+   * `manager` d'un compte ne suffit pas — il n'est pas toujours renseigné, et
+   * la liste chargée ici ne contient pas forcément le responsable lui-même. */
+  const personDepartment = departments.find((d) => d.id === person?.department) ?? null;
+  const directManager =
+    people.find((p) => p.id === person?.manager)?.full_name ?? personDepartment?.manager_name ?? "";
+
   const identity =
     mode === "employee"
       ? {
           photo: person?.avatar ?? null,
           name: person ? person.full_name || person.email : "",
-          company: person?.department_name ? "" : "",
+          company: companyName,
           department: person?.department_name ?? "",
           position: person?.position ?? "",
-          managerName: people.find((p) => p.id === person?.manager)?.full_name ?? "",
+          managerName: directManager,
         }
       : {
           photo: teamManager?.avatar ?? null,
@@ -274,6 +290,19 @@ export default function ObjectivesSheetPanel({
             {t("performanceId.print")}
           </Button>
         )}
+
+        {/* La fiche n'a pas de bouton Enregistrer : chaque cellule part d'elle
+          * même une seconde après la dernière frappe. Le témoin dit où on en
+          * est, faute de quoi l'absence de bouton laisse un doute. */}
+        {ready && canEdit && (
+          <Typography variant="caption" color={saving ? "text.secondary" : "success.main"} sx={{ ml: "auto" }}>
+            {saving
+              ? t("objectivesSheet.saving")
+              : savedAt
+                ? t("objectivesSheet.savedAt", { time: savedAt })
+                : t("objectivesSheet.autoSave")}
+          </Typography>
+        )}
       </Stack>
 
       {!ready && (
@@ -309,7 +338,6 @@ export default function ObjectivesSheetPanel({
         </Box>
       )}
 
-      <Snackbar open={saved} autoHideDuration={2000} onClose={() => setSaved(false)} message={t("objectivesSheet.saved")} />
       <Snackbar open={error} autoHideDuration={4000} onClose={() => setError(false)} message={t("teamBoard.saveFailed")} />
     </Stack>
   );

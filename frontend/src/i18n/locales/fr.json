@@ -785,6 +785,11 @@
     "pickPerson": "Choisissez un collaborateur et une période pour ouvrir sa fiche.",
     "pickTeam": "Choisissez une équipe et une période pour ouvrir la fiche.",
     "noEvaluation": "Aucune évaluation pour ce collaborateur sur cette période : la fiche s'ouvrira dès qu'elle existera.",
-    "saved": "Fiche enregistrée."
+    "saved": "Fiche enregistrée.",
+    "photo": "Photo employé",
+    "saving": "Enregistrement…",
+    "savedAt": "Enregistré à {{time}}",
+    "autoSave": "Enregistrement automatique à chaque saisie",
+    "sheetHint": "Objectifs fixés en début de cycle, résultats en fin : la performance globale en découle."
   }
 }
