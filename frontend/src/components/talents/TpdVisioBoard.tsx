@@ -8,22 +8,22 @@ import type { PerformanceRating } from "@/api/types";
  * Configuration retenue, et pourquoi.
  *
  * 1. Un damier plutôt qu'un fond quadrillé. Le plateau se lit comme une table
- *    de jeu : cases carrées alternées, dalle épaisse, tranche et flancs
+ *    de jeu : 8 × 8 cases alternées, dalle épaisse, tranche et flanc gauche
  *    visibles. La profondeur ne se devine plus d'un simple trapèze, elle se
  *    voit à l'épaisseur et à l'alternance des cases.
  *
  * 2. Un rectangle, penché et glissé vers la droite. La projection est oblique
  *    et non perspective : les fuyantes restent parallèles, si bien que le
- *    plateau garde sa forme rectangulaire au lieu de se lire en trapèze. Le
- *    pas est de 5 % sur les deux axes, soit 14 colonnes de performance pour
- *    8 rangées d'écart, et la fuyante avance d'une case entière par rangée :
- *    les cases sont donc des losanges de côté égal, ce que l'œil lit comme
- *    des carrés posés à plat.
+ *    plateau garde sa forme rectangulaire au lieu de se lire en trapèze. La
+ *    fuyante avance d'une case entière par rangée : les cases sont des
+ *    losanges de côté égal, ce que l'œil lit comme des carrés posés à plat.
  *
- * 3. Quatre compartiments pleins. Ce sont eux qui portent la lecture, pas la
- *    grille : bleu clair, bordés de marine, en retrait des axes. Toute
- *    personne est ramenée à l'intérieur du compartiment qui la décrit — jamais
- *    sur une ligne d'axe, jamais dehors, quelles que soient ses valeurs.
+ * 3. Quatre compartiments identiques. Ce sont eux qui portent la lecture, pas
+ *    la grille : bleu clair, bordés de marine, en retrait des axes. L'origine
+ *    étant au centre du plateau, ils couvrent les mêmes 40 points de
+ *    performance et les mêmes 20 points d'écart, et se valent donc au pixel
+ *    près. Toute personne y est contenue entièrement — portrait et libellés
+ *    compris, pas seulement les pieds — quelles que soient ses valeurs.
  *
  * 4. Les graduations bordent les axes, à l'intérieur du plateau : les
  *    pourcentages de performance sous la ligne horizontale, les écarts à
@@ -48,23 +48,43 @@ export interface VisioPerson {
 }
 
 // --- Cadre -----------------------------------------------------------------
-const W = 3000;
+const W = 2900;
 /** Marge libre de part et d'autre du plateau. */
 const SIDE_MARGIN = 120;
-/** Air au-dessus du fond, recadrée si les silhouettes ne l'occupent pas. */
-const TOP_ROOM = 210;
+/** Air au-dessus du fond du plateau. */
+const TOP_ROOM = 90;
 /** Air sous la tranche avant. */
-const BOTTOM_ROOM = 90;
+const BOTTOM_ROOM = 70;
 
 // --- Échelles --------------------------------------------------------------
+/**
+ * Fenêtre de performance, centrée sur l'objectif.
+ *
+ * Elle allait de 50 à 120 %, soit huit colonnes sous les 90 % et six au-dessus
+ * — c'est de là que venait la différence de taille entre les compartiments de
+ * gauche et ceux de droite, et aucun réglage de perspective ne pouvait la
+ * corriger. Une fenêtre symétrique, 50-130, place l'origine au milieu exact du
+ * plateau : les quatre compartiments couvrent alors les mêmes 40 points de
+ * performance et les mêmes 20 points d'écart. Ils sont identiques par
+ * construction, pas par réglage.
+ */
 const PERF_MIN = 50;
-const PERF_MAX = 120;
+const PERF_MAX = 130;
+const PERF_ORIGIN = 90; // objectifs atteints, au centre
 const EVO_MIN = -20;
 const EVO_MAX = 20;
-const STEP = 5;
-const PERF_ORIGIN = 90; // objectifs atteints
-const COLS = (PERF_MAX - PERF_MIN) / STEP; // 14 colonnes
-const ROWS = (EVO_MAX - EVO_MIN) / STEP; // 8 rangées
+/**
+ * Pas des graduations. Dix points de performance pour cinq points d'écart :
+ * c'est ce qui donne au plateau ses 8 × 8 cases, donc un damier carré et des
+ * compartiments carrés. Un pas de 5 % en performance doublerait le nombre de
+ * colonnes et rendrait le plateau deux fois plus large que profond — les
+ * silhouettes n'y tiendraient plus. Les graduations se lisent de dix en dix ;
+ * chacun reste placé à sa valeur exacte, qui n'a pas à tomber sur un trait.
+ */
+const PERF_STEP = 10;
+const EVO_STEP = 5;
+const COLS = (PERF_MAX - PERF_MIN) / PERF_STEP; // 8 colonnes
+const ROWS = (EVO_MAX - EVO_MIN) / EVO_STEP; // 8 rangées
 
 // --- Emprise du plateau ----------------------------------------------------
 /**
@@ -89,13 +109,12 @@ const DEPTH_ANGLE = (67 * Math.PI) / 180; // fuyante, au-dessus de l'horizontale
  * tient exactement dans le cadre, marges comprises.
  */
 const FRONT_WIDTH = (W - 2 * SIDE_MARGIN) / (1 + (ROWS / COLS) * Math.cos(DEPTH_ANGLE));
-/** Pas du damier : une case par 5 %, carrée avant projection. */
+/** Côté d'une case, carrée avant projection. */
 const FRONT_CELL = FRONT_WIDTH / COLS;
 /** La fuyante, sans raccourci : ce que le fond gagne à droite et en hauteur. */
 const RIGHT_SHIFT = ROWS * FRONT_CELL * Math.cos(DEPTH_ANGLE);
 const DEPTH = ROWS * FRONT_CELL * Math.sin(DEPTH_ANGLE);
 const CENTER_X = W / 2 - RIGHT_SHIFT / 2;
-const FLOOR_BACK_Y = TOP_ROOM;
 const FLOOR_FRONT_Y = TOP_ROOM + DEPTH;
 const H = FLOOR_FRONT_Y + BOTTOM_ROOM;
 const SLAB = 34; // épaisseur de la dalle
@@ -194,33 +213,74 @@ function polygon(u0: number, u1: number, v0: number, v1: number) {
   return `${a.x},${a.y} ${b.x},${b.y} ${c.x},${c.y} ${d.x},${d.y}`;
 }
 
-/**
- * Place une personne à l'intérieur du compartiment qui la décrit.
- *
- * Sa position reste celle de ses deux valeurs, mais ramenée dans les bornes du
- * compartiment : quelqu'un pile sur la barre des 90 % ou des 0 % tomberait
- * sinon sur un axe, et une valeur extrême sur le bord du plateau.
- */
-function seat(perf: number, evo: number) {
-  const zone =
-    COMPARTMENTS.find((c) => c.above === perf >= PERF_ORIGIN && c.rising === (evo >= 0)) ?? COMPARTMENTS[0];
-  const padU = 0.04;
-  const padV = 0.1;
-  const u = Math.min(zone.u1 - padU, Math.max(zone.u0 + padU, ratio(perf, PERF_MIN, PERF_MAX)));
-  const v = Math.min(zone.v1 - padV, Math.max(zone.v0 + padV, ratio(evo, EVO_MIN, EVO_MAX)));
-  return plan(u, v);
+/** Hauteur d'un portrait en pied, avant mise à l'échelle par la profondeur. */
+const PHOTO_H = 360;
+/** Ce que la silhouette occupe au-dessus des pieds, en plus du portrait :
+ *  le pourcentage de performance et l'écart. */
+const LABEL_ABOVE = 70;
+/** Et en dessous : le prénom, plus l'ombre portée. */
+const LABEL_BELOW = 44;
+
+/** Encombrement d'une silhouette posée à une profondeur donnée. */
+function figureSize(hasPhoto: boolean, scale: number) {
+  const height = hasPhoto ? PHOTO_H * scale : PHOTO_H * scale * 0.44;
+  return { height, width: hasPhoto ? height * 0.34 : height };
 }
 
-/** Écarte les silhouettes qui se poseraient l'une sur l'autre. */
+/** Ramène une valeur entre deux bornes, en se plaçant au milieu si l'intervalle
+ *  s'est refermé — mieux vaut le centre du compartiment qu'un bord dépassé. */
+function confine(value: number, low: number, high: number) {
+  return high < low ? (low + high) / 2 : Math.min(high, Math.max(low, value));
+}
+
+/**
+ * Place une personne à l'intérieur du compartiment qui la décrit — non pas
+ * ses pieds seulement, mais toute sa silhouette, portrait et libellés compris.
+ *
+ * Poser les pieds dans le compartiment ne suffisait pas : le portrait s'élève
+ * de près de 400 px au-dessus, si bien qu'une personne assise en haut de son
+ * compartiment dépassait par le toit. On réserve donc, au-dessus des pieds, la
+ * hauteur qu'occupera réellement la silhouette, et en dessous celle du prénom.
+ *
+ * Deux subtilités de l'oblique. La taille d'une silhouette dépend de sa
+ * profondeur, laquelle dépend de la place qu'on lui réserve : on romprait le
+ * cercle par approximations successives, mais il suffit de calculer
+ * l'encombrement à l'échelle la plus grande du compartiment — celle de son
+ * bord avant. La réserve est alors toujours suffisante, où que la personne se
+ * pose ensuite. Et les côtés étant penchés, le bord gauche du compartiment se
+ * dérobe vers la droite à mesure qu'on monte, le bord droit vers la gauche à
+ * mesure qu'on descend : les marges latérales valent donc la dérive du bord
+ * sur toute la hauteur de la silhouette, et pas seulement sa demi-largeur.
+ */
+function seat(perf: number, evo: number, hasPhoto: boolean) {
+  const zone =
+    COMPARTMENTS.find((c) => c.above === perf >= PERF_ORIGIN && c.rising === (evo >= 0)) ?? COMPARTMENTS[0];
+  const { height, width } = figureSize(hasPhoto, plan(0, zone.v0).scale);
+  const above = (height + LABEL_ABOVE) / DEPTH;
+  const below = LABEL_BELOW / DEPTH;
+  const halfU = width / (2 * FRONT_WIDTH);
+  const lean = RIGHT_SHIFT / FRONT_WIDTH; // pente des côtés, en `u` par `v`
+
+  const v = confine(ratio(evo, EVO_MIN, EVO_MAX), zone.v0 + below, zone.v1 - above);
+  const lowU = zone.u0 + halfU + lean * above;
+  const highU = zone.u1 - halfU - lean * below;
+  const u = confine(ratio(perf, PERF_MIN, PERF_MAX), lowU, highU);
+
+  return { ...plan(u, v), minX: plan(lowU, v).x, maxX: plan(highU, v).x };
+}
+
+/** Écarte les silhouettes qui se poseraient l'une sur l'autre — sans jamais
+ *  pousser personne hors de son compartiment : l'écartement se replie sur les
+ *  bornes que l'assise a calculées. */
 function spread(people: VisioPerson[]) {
   const placed: { person: VisioPerson; x: number; y: number; scale: number }[] = [];
   people.forEach((person) => {
-    const point = seat(person.performance, person.progression ?? 0);
+    const point = seat(person.performance, person.progression ?? 0, Boolean(person.photo));
     let x = point.x;
     let guard = 0;
-    while (placed.some((p) => Math.abs(p.x - x) < 165 && Math.abs(p.y - point.y) < 220) && guard < 12) {
-      const step = 175 * Math.ceil((guard + 1) / 2);
-      x = point.x + (guard % 2 === 0 ? step : -step);
+    while (placed.some((p) => Math.abs(p.x - x) < 150 && Math.abs(p.y - point.y) < 200) && guard < 12) {
+      const step = 160 * Math.ceil((guard + 1) / 2);
+      x = confine(point.x + (guard % 2 === 0 ? step : -step), point.minX, point.maxX);
       guard += 1;
     }
     placed.push({ person, x, y: point.y, scale: point.scale });
@@ -231,7 +291,6 @@ function spread(people: VisioPerson[]) {
 export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPerson[]; periodLabel: string }) {
   const { t } = useTranslation();
   const positioned = spread(people);
-  const PHOTO_H = 350;
   const EDGE = 24;
 
   const frontLeft = plan(0, 0);
@@ -239,13 +298,6 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const backLeft = plan(0, 1);
   const origin = project(PERF_ORIGIN, 0);
   const axisTop = plan(U_ORIGIN, 1.03);
-
-  // Le cadre ne garde en haut que la place réclamée par les silhouettes.
-  const highest = positioned.reduce((top, { person, y, scale }) => {
-    const height = person.photo ? PHOTO_H * scale : PHOTO_H * scale * 0.44;
-    return Math.min(top, y - height - 40);
-  }, FLOOR_BACK_Y);
-  const viewTop = Math.max(0, Math.min(FLOOR_BACK_Y - 24, highest - EDGE));
 
   return (
     <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider", bgcolor: "#fff" }}>
@@ -257,7 +309,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
       </Stack>
 
       <svg
-        viewBox={`0 ${viewTop} ${W} ${H - viewTop}`}
+        viewBox={`0 0 ${W} ${H}`}
         width="100%"
         style={{ display: "block", height: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}
         role="img"
@@ -339,7 +391,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
         {/* ---- Graduations, dans la gouttière longeant les axes ------------ */}
         <g id="ticks" fill={TEXT} fontWeight={700}>
           {Array.from({ length: COLS + 1 }).map((_, i) => {
-            const perf = PERF_MIN + i * STEP;
+            const perf = PERF_MIN + i * PERF_STEP;
             if (perf === PERF_ORIGIN) return null;
             const p = plan(i / COLS, V_ORIGIN - GUTTER_V * 0.22);
             return (
@@ -349,7 +401,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
             );
           })}
           {Array.from({ length: ROWS + 1 }).map((_, i) => {
-            const evo = EVO_MIN + i * STEP;
+            const evo = EVO_MIN + i * EVO_STEP;
             if (evo === 0) return null;
             // À droite de l'axe : à gauche, elles se perdaient sur la bordure
             // du compartiment voisin.
@@ -391,11 +443,10 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
         <g id="people">
           {positioned.map(({ person, x: rawX, y, scale }) => {
             const hasPhoto = Boolean(person.photo);
-            const height = hasPhoto ? PHOTO_H * scale : PHOTO_H * scale * 0.44;
-            const width = hasPhoto ? height * 0.34 : height;
+            const { height, width } = figureSize(hasPhoto, scale);
             const halfSpan = Math.max(width / 2, 90);
             const x = Math.min(W - EDGE - halfSpan, Math.max(EDGE + halfSpan, rawX));
-            const top = Math.max(viewTop + EDGE + 34, y - height);
+            const top = Math.max(EDGE, y - height);
             const progression = person.progression;
             const progressionColor = progression === null ? "#7a7a7a" : progression >= 0 ? "#2e7d32" : "#c62828";
             return (
