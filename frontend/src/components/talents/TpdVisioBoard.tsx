@@ -46,7 +46,7 @@ export interface VisioPerson {
 
 // --- Cadre -----------------------------------------------------------------
 const W = 3000;
-const H = 1420;
+const H = 1480;
 
 // --- Échelles --------------------------------------------------------------
 const PERF_MIN = 50;
@@ -121,13 +121,24 @@ const V_ORIGIN = ratio(0, EVO_MIN, EVO_MAX);
 /** Gouttière le long des axes, où se logent les graduations. */
 const GUTTER_U = 0.55 / COLS;
 const GUTTER_V = 0.55 / ROWS;
+/** Marge entre un compartiment et le bord du plateau. Sans elle, la bordure
+ * du compartiment se confondait avec le cadre du damier et l'on ne voyait
+ * plus qu'un seul trait pour deux tracés.
+ *
+ * La marge arrière vaut trois rangées quand celle de devant n'en vaut qu'une :
+ * la perspective écrase les rangées lointaines, si bien qu'une marge exprimée
+ * en rangées donnerait 147 px devant et 28 px au fond. Comptées ainsi, les
+ * deux valent environ 145 px à l'écran. */
+const MARGIN_U = 0.7 / COLS;
+const MARGIN_V_FRONT = 0.7 / ROWS;
+const MARGIN_V_BACK = 3 / ROWS;
 
 /** Les quatre compartiments, en coordonnées du plateau. */
 const COMPARTMENTS = [
-  { key: "tl", above: false, rising: true, u0: 0, u1: U_ORIGIN - GUTTER_U, v0: V_ORIGIN + GUTTER_V, v1: 1 },
-  { key: "tr", above: true, rising: true, u0: U_ORIGIN + GUTTER_U, u1: 1, v0: V_ORIGIN + GUTTER_V, v1: 1 },
-  { key: "bl", above: false, rising: false, u0: 0, u1: U_ORIGIN - GUTTER_U, v0: 0, v1: V_ORIGIN - GUTTER_V },
-  { key: "br", above: true, rising: false, u0: U_ORIGIN + GUTTER_U, u1: 1, v0: 0, v1: V_ORIGIN - GUTTER_V },
+  { key: "tl", above: false, rising: true, u0: MARGIN_U, u1: U_ORIGIN - GUTTER_U, v0: V_ORIGIN + GUTTER_V, v1: 1 - MARGIN_V_BACK },
+  { key: "tr", above: true, rising: true, u0: U_ORIGIN + GUTTER_U, u1: 1 - MARGIN_U, v0: V_ORIGIN + GUTTER_V, v1: 1 - MARGIN_V_BACK },
+  { key: "bl", above: false, rising: false, u0: MARGIN_U, u1: U_ORIGIN - GUTTER_U, v0: MARGIN_V_FRONT, v1: V_ORIGIN - GUTTER_V },
+  { key: "br", above: true, rising: false, u0: U_ORIGIN + GUTTER_U, u1: 1 - MARGIN_U, v0: MARGIN_V_FRONT, v1: V_ORIGIN - GUTTER_V },
 ];
 
 /** Contour arrondi d'un quadrilatère en perspective : chaque angle est repris
@@ -200,7 +211,7 @@ function spread(people: VisioPerson[]) {
 export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPerson[]; periodLabel: string }) {
   const { t } = useTranslation();
   const positioned = spread(people);
-  const PHOTO_H = 290;
+  const PHOTO_H = 350;
   const EDGE = 24;
 
   const frontLeft = plan(0, 0);
