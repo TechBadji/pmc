@@ -9,11 +9,11 @@ import type { PerformanceRating } from "@/api/types";
  *
  * 1. Un damier plutôt qu'un fond quadrillé. Le plateau se lit comme une table
  *    de jeu : 8 × 8 cases alternées, une dalle épaisse, une ombre portée. Les
- *    cases sont carrées dans le plan du plateau et se voient couchées, l'
- *    inclinaison les écrasant d'un facteur sin(35°) — c'est l'alternance du
- *    damier qui donne à lire la fuite.
+ *    cases sont carrées dans le plan du plateau et se voient deux fois plus
+ *    larges que hautes, l'inclinaison les écrasant d'un facteur sin(30°) —
+ *    c'est l'alternance du damier qui donne à lire la fuite.
  *
- * 2. Un rectangle basculé de 35° vers l'avant. Le basculement est une simple
+ * 2. Un rectangle basculé de 30° vers l'avant. Le basculement est une simple
  *    rotation autour de l'horizontale : les côtés restent verticaux, les bords
  *    horizontaux, les angles droits. La perspective conique a été essayée puis
  *    écartée — elle faisait converger les côtés et rétrécissait les
@@ -56,7 +56,7 @@ const SIDE_MARGIN = 200;
 /** Air au-dessus du fond du plateau. */
 const TOP_ROOM = 90;
 /** Air sous la tranche basse, pour l'épaisseur de la dalle et son ombre. */
-const BOTTOM_ROOM = 124;
+const BOTTOM_ROOM = 128;
 
 // --- Échelles --------------------------------------------------------------
 /**
@@ -79,7 +79,7 @@ const EVO_MAX = 20;
  * Pas des graduations : 10 % en performance, 5 % en écart.
  *
  * L'inclinaison décide de ce pas. Elle écrase la profondeur d'écran d'un
- * facteur sin(35°), soit un peu moins de six dixièmes ; à colonnes inchangées
+ * facteur sin(30°), soit la moitié ; à colonnes inchangées
  * les compartiments perdaient presque la moitié de leur hauteur et une
  * silhouette n'y tenait plus. De plus grosses cases — huit colonnes au lieu de
  * douze — rendent au plateau la profondeur que l'inclinaison lui prend.
@@ -96,10 +96,11 @@ const ROWS = (EVO_MAX - EVO_MIN) / EVO_STEP; // 8 rangées
  *
  * C'est une rotation autour de l'axe horizontal, et rien d'autre : le plateau
  * reste un rectangle vu de face, ses bords restent d'équerre, ses côtés
- * parallèles. Seule la profondeur se raccourcit à l'écran, du facteur sin(35°)
- * — c'est l'effet de fuite. Les cases, carrées dans le plan du plateau,
- * s'écrasent donc en rectangles couchés, et c'est précisément ce qui donne à
- * lire l'inclinaison.
+ * parallèles. Seule la profondeur se raccourcit à l'écran, du facteur sin(30°)
+ * — c'est l'effet de fuite : une rangée profonde d'une case ne se voit plus que
+ * sur la moitié de sa hauteur. Les cases, carrées dans le plan du plateau,
+ * s'écrasent donc en rectangles deux fois plus larges que hauts, et c'est
+ * précisément ce qui donne à lire l'inclinaison.
  *
  * Ce choix écarte volontairement la perspective conique, essayée puis
  * abandonnée : elle faisait converger les côtés et rétrécissait les
@@ -107,7 +108,7 @@ const ROWS = (EVO_MAX - EVO_MIN) / EVO_STEP; // 8 rangées
  * quatre compartiments égaux. Le relief est ici porté par l'épaisseur de la
  * dalle et l'ombre portée, non par une déformation du plateau.
  */
-const TILT_DEG = 35;
+const TILT_DEG = 30;
 const FORESHORTEN = Math.sin((TILT_DEG * Math.PI) / 180);
 const FRONT_WIDTH = W - 2 * SIDE_MARGIN;
 /** Côté d'une case, dans le plan du plateau — avant que l'inclinaison ne
