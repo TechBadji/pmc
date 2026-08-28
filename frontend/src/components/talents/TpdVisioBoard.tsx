@@ -53,11 +53,11 @@ export interface VisioPerson {
 const W = 2900;
 /** Marge devant, au plus près du cadre : c'est la convergence qui dégage,
  *  vers le fond, la place où se posent les repères de quadrant. */
-const SIDE_MARGIN = 60;
+const SIDE_MARGIN = 30;
 /** Air au-dessus du fond de la table : les silhouettes qui s'y tiennent
  *  dépassent du plateau, puisqu'elles sont debout dessus. Recadrée si
  *  personne ne l'occupe. */
-const TOP_ROOM = 380;
+const TOP_ROOM = 344;
 /** Air sous la tranche basse, pour l'épaisseur de la dalle et son ombre. */
 const BOTTOM_ROOM = 120;
 
@@ -106,8 +106,12 @@ const FRONT_WIDTH = W - 2 * SIDE_MARGIN;
 /** Le fond ne fait plus que ces trois quarts : toute la fuite est là. */
 const BACK_RATIO = 0.753;
 const BACK_WIDTH = FRONT_WIDTH * BACK_RATIO;
-/** Profondeur vue, rapportée à la largeur comme sur le modèle. */
-const DEPTH = FRONT_WIDTH * 0.325;
+/**
+ * Profondeur vue, rapportée à la largeur. Le modèle la donne à 0,325 ; elle
+ * est portée à 0,37 pour que les compartiments respirent — c'est elle, et non
+ * les marges déjà au plus juste, qui commande leur hauteur.
+ */
+const DEPTH = FRONT_WIDTH * 0.37;
 const CENTER_X = W / 2;
 const FLOOR_FRONT_Y = TOP_ROOM + DEPTH;
 const H = FLOOR_FRONT_Y + BOTTOM_ROOM;
@@ -160,14 +164,20 @@ const V_ORIGIN = ratio(0, EVO_MIN, EVO_MAX);
  * plutôt qu'en cases, puisque c'est un encombrement de texte qu'elle doit
  * loger, et non une fraction du plateau.
  *
- * Elle est plus large le long de l'axe vertical : les écarts s'y écrivent à
- * côté de la ligne (« +15 % »), tandis que les pourcentages de performance se
- * glissent sous elle et ne coûtent que leur hauteur. Une gouttière au plus
- * juste rapproche d'autant les compartiments des axes.
+ * Elle est dissymétrique de part et d'autre de l'axe vertical, et c'est
+ * volontaire : les écarts s'écrivent à sa droite (« +15 % ») et réclament 84 px,
+ * tandis qu'à sa gauche rien n'est écrit — 34 px y suffisent à ne pas coller la
+ * bordure du compartiment contre l'axe. Les compartiments de gauche gagnent
+ * ainsi 50 px de largeur que rien ne justifiait de leur prendre.
+ *
+ * Sous l'axe horizontal, les pourcentages de performance ne coûtent que leur
+ * hauteur.
  */
-const GUTTER_X = 84;
-const GUTTER_Y = 46;
-const GUTTER_U = GUTTER_X / FRONT_WIDTH;
+const GUTTER_X_RIGHT = 84;
+const GUTTER_X_LEFT = 34;
+const GUTTER_Y = 36;
+const GUTTER_U_RIGHT = GUTTER_X_RIGHT / FRONT_WIDTH;
+const GUTTER_U_LEFT = GUTTER_X_LEFT / FRONT_WIDTH;
 const GUTTER_V = GUTTER_Y / DEPTH;
 /**
  * Marge entre un compartiment et le bord du plateau. Identique pour les quatre
@@ -180,8 +190,8 @@ const GUTTER_V = GUTTER_Y / DEPTH;
  * commence la marge du cadre, qu'occupent les repères de quadrant, lesquels
  * doivent rester dehors pour se voir.
  */
-const MARGIN_X = 32;
-const MARGIN_Y = 32;
+const MARGIN_X = 12;
+const MARGIN_Y = 22;
 const MARGIN_U = MARGIN_X / FRONT_WIDTH;
 const MARGIN_V = MARGIN_Y / DEPTH;
 /** Débord du liseré clair autour de la grille. */
@@ -202,10 +212,10 @@ const QUADRANT_MARKS: Record<string, { text: string; fill: string }[]> = {
 
 /** Les quatre compartiments, en coordonnées du plateau. */
 const COMPARTMENTS = [
-  { key: "tl", above: false, rising: true, u0: MARGIN_U, u1: U_ORIGIN - GUTTER_U, v0: V_ORIGIN + GUTTER_V, v1: 1 - MARGIN_V },
-  { key: "tr", above: true, rising: true, u0: U_ORIGIN + GUTTER_U, u1: 1 - MARGIN_U, v0: V_ORIGIN + GUTTER_V, v1: 1 - MARGIN_V },
-  { key: "bl", above: false, rising: false, u0: MARGIN_U, u1: U_ORIGIN - GUTTER_U, v0: MARGIN_V, v1: V_ORIGIN - GUTTER_V },
-  { key: "br", above: true, rising: false, u0: U_ORIGIN + GUTTER_U, u1: 1 - MARGIN_U, v0: MARGIN_V, v1: V_ORIGIN - GUTTER_V },
+  { key: "tl", above: false, rising: true, u0: MARGIN_U, u1: U_ORIGIN - GUTTER_U_LEFT, v0: V_ORIGIN + GUTTER_V, v1: 1 - MARGIN_V },
+  { key: "tr", above: true, rising: true, u0: U_ORIGIN + GUTTER_U_RIGHT, u1: 1 - MARGIN_U, v0: V_ORIGIN + GUTTER_V, v1: 1 - MARGIN_V },
+  { key: "bl", above: false, rising: false, u0: MARGIN_U, u1: U_ORIGIN - GUTTER_U_LEFT, v0: MARGIN_V, v1: V_ORIGIN - GUTTER_V },
+  { key: "br", above: true, rising: false, u0: U_ORIGIN + GUTTER_U_RIGHT, u1: 1 - MARGIN_U, v0: MARGIN_V, v1: V_ORIGIN - GUTTER_V },
 ];
 
 /** Contour arrondi d'un quadrilatère en perspective : chaque angle est repris
@@ -588,7 +598,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
             return QUADRANT_MARKS[c.key].map((mark, i) => (
               <text
                 key={`${c.key}-${i}`}
-                x={edge.x + away * (56 + 74 * i)}
+                x={edge.x + away * (48 + 56 * i)}
                 y={edge.y}
                 textAnchor="middle"
                 fill={mark.fill}
