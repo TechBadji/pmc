@@ -52,8 +52,8 @@ const W = 2900;
 const SIDE_MARGIN = 200;
 /** Air au-dessus du fond du plateau. */
 const TOP_ROOM = 90;
-/** Air sous la tranche avant. */
-const BOTTOM_ROOM = 70;
+/** Air sous la tranche basse, où se pose le repère des 90 %. */
+const BOTTOM_ROOM = 130;
 
 // --- Échelles --------------------------------------------------------------
 /**
@@ -139,26 +139,30 @@ function plan(u: number, v: number) {
   };
 }
 
-function project(perf: number, evo: number) {
-  return plan(ratio(perf, PERF_MIN, PERF_MAX), ratio(evo, EVO_MIN, EVO_MAX));
-}
-
 const U_ORIGIN = ratio(PERF_ORIGIN, PERF_MIN, PERF_MAX);
 const V_ORIGIN = ratio(0, EVO_MIN, EVO_MAX);
-/** Gouttière le long des axes, où se logent les graduations. */
-const GUTTER_U = 0.55 / COLS;
-const GUTTER_V = 0.55 / ROWS;
 /**
- * Marge entre un compartiment et le bord du plateau, comptée en rangées et en
- * colonnes — donc identique pour les quatre compartiments.
+ * Gouttière le long des axes, où se logent les graduations — mesurée en pixels
+ * plutôt qu'en cases, puisque c'est un encombrement de texte qu'elle doit
+ * loger, et non une fraction du plateau.
  *
- * Elle avait un temps été élargie au fond pour compenser l'écrasement de la
- * perspective ; celle-ci a cédé la place à une projection oblique, où les
- * rangées ne s'écrasent plus. Une marge égale donne donc quatre compartiments
- * strictement identiques, au fond comme au premier plan.
+ * Elle est plus large le long de l'axe vertical : les écarts s'y écrivent à
+ * côté de la ligne (« +15 % »), tandis que les pourcentages de performance se
+ * glissent sous elle et ne coûtent que leur hauteur. Une gouttière au plus
+ * juste rapproche d'autant les compartiments des axes.
  */
-const MARGIN_U = 0.7 / COLS;
-const MARGIN_V = 0.55 / ROWS;
+const GUTTER_X = 84;
+const GUTTER_Y = 46;
+const GUTTER_U = GUTTER_X / FRONT_WIDTH;
+const GUTTER_V = GUTTER_Y / DEPTH;
+/**
+ * Marge entre un compartiment et le bord du plateau. Identique pour les quatre
+ * compartiments, comme la gouttière — c'est ce qui les garde de même taille.
+ */
+const MARGIN_X = 110;
+const MARGIN_Y = 96;
+const MARGIN_U = MARGIN_X / FRONT_WIDTH;
+const MARGIN_V = MARGIN_Y / DEPTH;
 
 /** Les quatre compartiments, en coordonnées du plateau. */
 const COMPARTMENTS = [
@@ -277,8 +281,11 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const EDGE = 24;
 
   const frontLeft = plan(0, 0);
-  const origin = project(PERF_ORIGIN, 0);
-  const axisTop = plan(U_ORIGIN, 1.03);
+  // Les deux flèches débordent légèrement du plateau : leur pointe est le
+  // point d'ancrage des étiquettes.
+  const axisTop = plan(U_ORIGIN, 1 + 54 / DEPTH);
+  const axisRight = plan(1 + 62 / FRONT_WIDTH, V_ORIGIN);
+  const axisFoot = plan(U_ORIGIN, 0);
 
   return (
     <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider", bgcolor: "#fff" }}>
@@ -346,9 +353,15 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           ))}
         </g>
 
-        {/* ---- Axes -------------------------------------------------------- */}
+        {/* ---- Axes, tous deux fléchés ------------------------------------- */}
         <g id="axes" stroke={NAVY_DEEP} fill="none" strokeWidth={5}>
-          <line x1={plan(0, V_ORIGIN).x} y1={plan(0, V_ORIGIN).y} x2={plan(1, V_ORIGIN).x} y2={plan(1, V_ORIGIN).y} />
+          <line
+            x1={plan(0, V_ORIGIN).x}
+            y1={plan(0, V_ORIGIN).y}
+            x2={axisRight.x}
+            y2={axisRight.y}
+            markerEnd="url(#tpd-arrow)"
+          />
           <line
             x1={plan(U_ORIGIN, 0).x}
             y1={plan(U_ORIGIN, 0).y}
@@ -358,14 +371,18 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           />
         </g>
 
-        {/* ---- Graduations, dans la gouttière longeant les axes ------------ */}
+        {/* ---- Graduations, serrées contre leur ligne ----------------------
+            Elles longent l'axe d'aussi près que leur hauteur le permet : les
+            pourcentages de performance juste sous l'horizontale, les écarts
+            juste à droite de la verticale. Tout ce qu'elles ne prennent pas,
+            les compartiments le gagnent. */}
         <g id="ticks" fill={TEXT} fontWeight={700}>
           {Array.from({ length: COLS + 1 }).map((_, i) => {
             const perf = PERF_MIN + i * PERF_STEP;
             if (perf === PERF_ORIGIN) return null;
-            const p = plan(i / COLS, V_ORIGIN - GUTTER_V * 0.22);
+            const p = plan(i / COLS, V_ORIGIN);
             return (
-              <text key={`tx-${perf}`} x={p.x} y={p.y + 26} textAnchor="middle" fontSize={26}>
+              <text key={`tx-${perf}`} x={p.x} y={p.y + 34} textAnchor="middle" fontSize={26}>
                 {perf}%
               </text>
             );
@@ -375,32 +392,35 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
             if (evo === 0) return null;
             // À droite de l'axe : à gauche, elles se perdaient sur la bordure
             // du compartiment voisin.
-            const p = plan(U_ORIGIN + GUTTER_U * 0.25, i / ROWS);
+            const p = plan(U_ORIGIN, i / ROWS);
             return (
-              <text key={`ty-${evo}`} x={p.x + 10} y={p.y + 9} textAnchor="start" fontSize={26}>
+              <text key={`ty-${evo}`} x={p.x + 16} y={p.y + 9} textAnchor="start" fontSize={26}>
                 {evo > 0 ? `+${evo}%` : `${evo}%`}
               </text>
             );
           })}
         </g>
 
-        {/* ---- Étiquettes d'axes et repère des 90 % ------------------------ */}
+        {/* ---- Étiquettes d'axes et repère des 90 % ------------------------
+            Chacune se pose au bout de sa flèche, jamais au milieu du plateau :
+            l'étiquette des performances contre la pointe de l'horizontale,
+            celle des écarts contre la pointe de la verticale, et le repère des
+            90 % au pied de cette même verticale — qui n'est autre que la ligne
+            des 90 %, et dont la graduation est laissée libre pour lui. */}
         <g id="labels">
-          <g
-            transform={`translate(${plan(0.86, V_ORIGIN + GUTTER_V * 1.4).x} ${plan(0.86, V_ORIGIN + GUTTER_V * 1.4).y}) skewY(-3)`}
-          >
+          <g transform={`translate(${axisRight.x - 404} ${axisRight.y - 62}) skewY(-3)`}>
             <rect width="404" height="54" rx="6" fill={POSTIT} stroke="#d9c53f" strokeWidth={2} />
             <text x="16" y="36" fontSize="25" fontWeight="800" fill={TEXT}>
               % {t("talents.performanceAxisShort")}
             </text>
           </g>
-          <g transform={`translate(${axisTop.x - 96} ${axisTop.y + 16})`}>
+          <g transform={`translate(${axisTop.x - 98} ${axisTop.y + 10})`}>
             <rect width="56" height="200" rx="6" fill={POSTIT} stroke="#d9c53f" strokeWidth={2} />
             <text x="28" y="100" fontSize="25" fontWeight="800" fill={TEXT} textAnchor="middle" transform="rotate(90 28 100)">
               {t("talents.progressionAxisShort")}
             </text>
           </g>
-          <g transform={`translate(${origin.x - 56} ${origin.y - 29})`}>
+          <g transform={`translate(${axisFoot.x - 53} ${axisFoot.y + SLAB + 18})`}>
             <rect x="6" y="8" width="106" height="56" rx="4" fill="#5e8f31" />
             <rect width="106" height="56" rx="4" fill={GREEN} />
             <text x="53" y="39" textAnchor="middle" fontSize="29" fontWeight="800" fill="#fff">
