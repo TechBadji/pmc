@@ -18,3 +18,7 @@ frontend/vite.config.d.ts
 # OS
 .DS_Store
 .claude/
+
+# Téléchargements de vérification (bundles de production)
+/idx.js
+/tal.js
