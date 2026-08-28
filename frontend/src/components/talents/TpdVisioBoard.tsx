@@ -159,13 +159,15 @@ const GUTTER_V = GUTTER_Y / DEPTH;
  * Marge entre un compartiment et le bord du plateau. Identique pour les quatre
  * compartiments, comme la gouttière — c'est ce qui les garde de même taille.
  *
- * Elle est réduite au minimum sur les côtés : les compartiments poussent vers
- * les bords du cadre, et il ne reste que de quoi distinguer leur bordure de
- * celle du plateau. Au-delà commence la marge du cadre, qu'occupent les
- * repères de quadrant — eux doivent rester dehors pour se voir.
+ * Elle est réduite au minimum des quatre côtés : les compartiments poussent
+ * jusqu'aux bords du plateau — ceux du haut vers le haut, ceux du bas vers le
+ * bas, ceux de gauche vers la gauche, ceux de droite vers la droite — et il ne
+ * reste que de quoi distinguer leur bordure de celle du plateau. Au-delà
+ * commence la marge du cadre, qu'occupent les repères de quadrant, lesquels
+ * doivent rester dehors pour se voir.
  */
 const MARGIN_X = 32;
-const MARGIN_Y = 96;
+const MARGIN_Y = 32;
 const MARGIN_U = MARGIN_X / FRONT_WIDTH;
 const MARGIN_V = MARGIN_Y / DEPTH;
 
