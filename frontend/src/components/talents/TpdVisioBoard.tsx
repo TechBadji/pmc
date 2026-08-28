@@ -53,8 +53,10 @@ export interface VisioPerson {
 const W = 2900;
 /** Marge libre de part et d'autre du plateau, où se posent les repères. */
 const SIDE_MARGIN = 200;
-/** Air au-dessus du fond du plateau. */
-const TOP_ROOM = 90;
+/** Air au-dessus du fond de la table : les silhouettes qui s'y tiennent
+ *  dépassent du plateau, puisqu'elles sont debout dessus. Recadrée si
+ *  personne ne l'occupe. */
+const TOP_ROOM = 396;
 /** Air sous la tranche basse, pour l'épaisseur de la dalle et son ombre. */
 const BOTTOM_ROOM = 124;
 
@@ -78,12 +80,11 @@ const EVO_MAX = 20;
 /**
  * Pas des graduations : 5 % sur les deux axes, soit 12 colonnes pour 8 rangées.
  *
- * C'est l'inclinaison qui décide de ce pas. Un plateau très couché écrase la
- * profondeur au point que les compartiments ne peuvent plus contenir une
- * silhouette, et il faut alors de grosses cases pour leur rendre de la
- * hauteur : le basculement à 35° avait ainsi imposé un pas de 10 %. Vu de
- * dessus, à peine incliné, le plateau garde presque toute sa profondeur, et le
- * pas de 5 % redevient tenable.
+ * L'inclinaison avait un temps commandé ce pas : tant qu'une silhouette devait
+ * tenir tout entière dans son compartiment, un plateau couché exigeait de
+ * grosses cases pour lui rendre de la hauteur. Les silhouettes se tenant
+ * maintenant debout sur la table, seuls leurs pieds ont à y tenir, et le pas
+ * fin redevient libre.
  */
 const PERF_STEP = 5;
 const EVO_STEP = 5;
@@ -92,25 +93,23 @@ const ROWS = (EVO_MAX - EVO_MIN) / EVO_STEP; // 8 rangées
 
 // --- Emprise du plateau ----------------------------------------------------
 /**
- * Vue de dessus, légèrement inclinée.
- *
- * Le regard plonge sur le plateau et le bascule à peine vers l'avant : c'est
- * une rotation autour de l'axe horizontal, et rien d'autre. Le plateau reste
- * un repère orthonormé — bords d'équerre, côtés parallèles, mêmes unités sur
- * les deux axes — et seule la profondeur se raccourcit à l'écran, du facteur
- * sin(60°), soit un peu moins de neuf dixièmes. L'écrasement se voit sans
- * jamais déformer la lecture : une case reste presque carrée.
+ * Une table, vue depuis le bord.
  *
  * L'angle se compte depuis l'horizontale : à 90° on regarderait le plateau
- * exactement à plat, à 35° il était franchement couché. À 60° il est
- * simplement penché.
+ * exactement de face, à plat sur l'écran ; plus il diminue, plus la table se
+ * couche et devient une surface sur laquelle on peut se tenir. À 35°, la
+ * profondeur ne se voit plus que sur 0,57 de sa longueur réelle — c'est le
+ * raccourci d'un plan horizontal regardé depuis son bord.
+ *
+ * C'est une rotation autour de l'axe horizontal, et rien d'autre : le plateau
+ * reste un repère orthonormé, bords d'équerre et côtés parallèles.
  *
  * Ce choix écarte la perspective conique, essayée puis abandonnée : elle
  * faisait converger les côtés et rétrécissait les compartiments du fond, alors
  * que le repère doit rester orthonormé et les quatre compartiments égaux. Le
  * relief tient à l'épaisseur de la dalle et à l'ombre qui l'entoure.
  */
-const TILT_DEG = 60;
+const TILT_DEG = 35;
 const FORESHORTEN = Math.sin((TILT_DEG * Math.PI) / 180);
 const FRONT_WIDTH = W - 2 * SIDE_MARGIN;
 /** Côté d'une case, dans le plan du plateau — avant que l'inclinaison ne
@@ -146,15 +145,19 @@ function ratio(value: number, min: number, max: number) {
  * Point du plateau : `u` le long des performances, `v` le long des écarts.
  *
  * Les deux axes restent indépendants : `u` ne joue que sur l'abscisse, `v` que
- * sur l'ordonnée, où l'inclinaison a déjà été prise en compte dans DEPTH. Les
- * silhouettes gardent toutes la même taille — debout sur un plateau basculé,
- * elles restent verticales et ne subissent pas le raccourci du sol.
+ * sur l'ordonnée, où l'inclinaison a déjà été prise en compte dans DEPTH.
+ *
+ * `scale` est la taille d'une silhouette posée là. Elle ne suit pas le
+ * raccourci du sol — quelqu'un debout sur une table reste vertical — mais
+ * décroît doucement avec l'éloignement, comme le veut la distance. Sans ce
+ * dégradé, les personnes du fond paraîtraient aussi proches que celles du
+ * bord, et la table redeviendrait un dessin plat.
  */
 function plan(u: number, v: number) {
   return {
     x: CENTER_X + (u - 0.5) * FRONT_WIDTH,
     y: FLOOR_FRONT_Y - DEPTH * v,
-    scale: 1,
+    scale: 1.06 - 0.22 * v,
   };
 }
 
@@ -232,12 +235,11 @@ function polygon(u0: number, u1: number, v0: number, v1: number) {
 }
 
 /** Hauteur d'un portrait en pied, avant mise à l'échelle par la profondeur. */
-const PHOTO_H = 360;
+const PHOTO_H = 380;
 /** Ce que la silhouette occupe au-dessus des pieds, en plus du portrait :
- *  le pourcentage de performance et l'écart. */
+ *  le pourcentage de performance et l'écart. Sert à ménager la place au-dessus
+ *  de la table, non plus à contraindre l'assise. */
 const LABEL_ABOVE = 70;
-/** Et en dessous : le prénom, plus l'ombre portée. */
-const LABEL_BELOW = 44;
 
 /** Encombrement d'une silhouette posée à une profondeur donnée. */
 function figureSize(hasPhoto: boolean, scale: number) {
@@ -252,29 +254,27 @@ function confine(value: number, low: number, high: number) {
 }
 
 /**
- * Place une personne à l'intérieur du compartiment qui la décrit — non pas
- * ses pieds seulement, mais toute sa silhouette, portrait et libellés compris.
+ * Pose une personne sur la table, à l'endroit que disent ses deux valeurs.
  *
- * Poser les pieds dans le compartiment ne suffisait pas : le portrait s'élève
- * de près de 400 px au-dessus, si bien qu'une personne assise en haut de son
- * compartiment dépassait par le toit. On réserve donc, au-dessus des pieds, la
- * hauteur qu'occupera réellement la silhouette, et en dessous celle du prénom.
+ * Ce sont ses pieds qui sont placés, et eux seuls qui doivent tomber dans le
+ * compartiment. La silhouette s'élève ensuite librement au-dessus : c'est ce
+ * qui la fait tenir debout *sur* la table plutôt qu'enfermée *dans* une case.
+ * On a longtemps réservé au-dessus des pieds la hauteur du portrait pour qu'il
+ * ne dépasse jamais du compartiment ; c'était nier qu'une personne debout sur
+ * un plan horizontal se dresse forcément au-dessus de lui.
  *
- * Les bords du compartiment étant d'équerre, il suffit de retrancher de part
- * et d'autre l'encombrement de la silhouette : sa demi-largeur sur les côtés,
- * sa hauteur au-dessus, celle du prénom en dessous.
+ * Reste à ce que les pieds ne chevauchent pas la bordure : d'où le retrait
+ * d'une demi-largeur sur les côtés et d'une petite garde en profondeur.
  */
 function seat(perf: number, evo: number, hasPhoto: boolean) {
   const zone =
     COMPARTMENTS.find((c) => c.above === perf >= PERF_ORIGIN && c.rising === (evo >= 0)) ?? COMPARTMENTS[0];
-  const { height, width } = figureSize(hasPhoto, plan(0, zone.v0).scale);
-  const halfU = width / (2 * FRONT_WIDTH);
+  const targetV = ratio(evo, EVO_MIN, EVO_MAX);
+  const guard = 24 / DEPTH;
+  const v = confine(targetV, zone.v0 + guard, zone.v1 - guard);
 
-  const v = confine(
-    ratio(evo, EVO_MIN, EVO_MAX),
-    zone.v0 + LABEL_BELOW / DEPTH,
-    zone.v1 - (height + LABEL_ABOVE) / DEPTH
-  );
+  const { width } = figureSize(hasPhoto, plan(0, v).scale);
+  const halfU = width / (2 * FRONT_WIDTH);
   const lowU = zone.u0 + halfU;
   const highU = zone.u1 - halfU;
   const u = confine(ratio(perf, PERF_MIN, PERF_MAX), lowU, highU);
@@ -303,7 +303,10 @@ function spread(people: VisioPerson[]) {
 
 export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPerson[]; periodLabel: string }) {
   const { t } = useTranslation();
-  const positioned = spread(people);
+  // Du fond vers le bord : c'est l'ordre du peintre. Sans lui, une silhouette
+  // lointaine pourrait recouvrir une silhouette proche, et la table
+  // s'aplatirait aussitôt.
+  const positioned = spread(people).sort((a, b) => a.y - b.y);
   const EDGE = 24;
 
   const frontLeft = plan(0, 0);
@@ -315,6 +318,14 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   // la gouttière y ménage exactement la place de sa pastille.
   const axisCross = plan(U_ORIGIN, V_ORIGIN);
 
+  // Le cadre ne garde au-dessus de la table que la place réclamée par ceux qui
+  // s'y tiennent au fond — mais jamais moins que la pointe de la flèche.
+  const highest = positioned.reduce(
+    (top, { person, y, scale }) => Math.min(top, y - figureSize(Boolean(person.photo), scale).height - LABEL_ABOVE),
+    axisTop.y
+  );
+  const viewTop = Math.max(0, Math.min(axisTop.y - EDGE, highest - EDGE));
+
   return (
     <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider", bgcolor: "#fff" }}>
       <Stack spacing={0.25} sx={{ mb: 1 }}>
@@ -325,7 +336,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
       </Stack>
 
       <svg
-        viewBox={`0 0 ${W} ${H}`}
+        viewBox={`0 ${viewTop} ${W} ${H - viewTop}`}
         width="100%"
         style={{ display: "block", height: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}
         role="img"
@@ -475,7 +486,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
             const { height, width } = figureSize(hasPhoto, scale);
             const halfSpan = Math.max(width / 2, 90);
             const x = Math.min(W - EDGE - halfSpan, Math.max(EDGE + halfSpan, rawX));
-            const top = Math.max(EDGE, y - height);
+            const top = Math.max(viewTop + EDGE, y - height);
             const progression = person.progression;
             const progressionColor = progression === null ? "#7a7a7a" : progression >= 0 ? "#2e7d32" : "#c62828";
             return (
