@@ -52,8 +52,8 @@ const W = 2900;
 const SIDE_MARGIN = 200;
 /** Air au-dessus du fond du plateau. */
 const TOP_ROOM = 90;
-/** Air sous la tranche basse, où se pose le repère des 90 %. */
-const BOTTOM_ROOM = 130;
+/** Air sous la tranche basse. */
+const BOTTOM_ROOM = 70;
 
 // --- Échelles --------------------------------------------------------------
 /**
@@ -292,7 +292,9 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   // point d'ancrage des étiquettes.
   const axisTop = plan(U_ORIGIN, 1 + 54 / DEPTH);
   const axisRight = plan(1 + 62 / FRONT_WIDTH, V_ORIGIN);
-  const axisFoot = plan(U_ORIGIN, 0);
+  // Le repère des 90 % revient au croisement des deux axes, cœur du plateau :
+  // la gouttière y ménage exactement la place de sa pastille.
+  const axisCross = plan(U_ORIGIN, V_ORIGIN);
 
   return (
     <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider", bgcolor: "#fff" }}>
@@ -411,9 +413,9 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
         {/* ---- Étiquettes d'axes et repère des 90 % ------------------------
             Chacune se pose au bout de sa flèche, jamais au milieu du plateau :
             l'étiquette des performances contre la pointe de l'horizontale,
-            celle des écarts contre la pointe de la verticale, et le repère des
-            90 % au pied de cette même verticale — qui n'est autre que la ligne
-            des 90 %, et dont la graduation est laissée libre pour lui. */}
+            celle des écarts contre la pointe de la verticale. Le repère des
+            90 %, lui, marque le croisement des deux axes : c'est le centre du
+            plateau, la place que la graduation manquante lui laisse. */}
         <g id="labels">
           <g transform={`translate(${axisRight.x - 404} ${axisRight.y - 62}) skewY(-3)`}>
             <rect width="404" height="54" rx="6" fill={POSTIT} stroke="#d9c53f" strokeWidth={2} />
@@ -427,7 +429,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
               {t("talents.progressionAxisShort")}
             </text>
           </g>
-          <g transform={`translate(${axisFoot.x - 53} ${axisFoot.y + SLAB + 18})`}>
+          <g transform={`translate(${axisCross.x - 53} ${axisCross.y - 28})`}>
             <rect x="6" y="8" width="106" height="56" rx="4" fill="#5e8f31" />
             <rect width="106" height="56" rx="4" fill={GREEN} />
             <text x="53" y="39" textAnchor="middle" fontSize="29" fontWeight="800" fill="#fff">
