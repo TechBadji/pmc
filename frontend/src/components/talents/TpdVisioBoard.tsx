@@ -51,28 +51,26 @@ export interface VisioPerson {
 
 // --- Cadre -----------------------------------------------------------------
 const W = 2900;
-/** Marge libre de part et d'autre du plateau, où se posent les repères. */
-const SIDE_MARGIN = 200;
+/** Marge devant, au plus près du cadre : c'est la convergence qui dégage,
+ *  vers le fond, la place où se posent les repères de quadrant. */
+const SIDE_MARGIN = 60;
 /** Air au-dessus du fond de la table : les silhouettes qui s'y tiennent
  *  dépassent du plateau, puisqu'elles sont debout dessus. Recadrée si
  *  personne ne l'occupe. */
-const TOP_ROOM = 396;
+const TOP_ROOM = 380;
 /** Air sous la tranche basse, pour l'épaisseur de la dalle et son ombre. */
-const BOTTOM_ROOM = 124;
+const BOTTOM_ROOM = 120;
 
 // --- Échelles --------------------------------------------------------------
 /**
- * Fenêtre de performance, centrée sur l'objectif.
+ * Fenêtre de performance : 50 à 120 %, comme sur la planche de référence.
  *
- * Elle allait de 50 à 120 %, soit huit colonnes sous les 90 % et six au-dessus
- * — c'est de là que venait la différence de taille entre les compartiments de
- * gauche et ceux de droite, et aucun réglage de perspective ne pouvait la
- * corriger. Une fenêtre symétrique, 50-130, place l'origine au milieu exact du
- * plateau : les quatre compartiments couvrent alors les mêmes 40 points de
- * performance et les mêmes 20 points d'écart. Ils sont identiques par
- * construction, pas par réglage.
+ * L'origine des 90 % ne tombe donc pas au milieu — huit colonnes en dessous,
+ * six au-dessus — et les compartiments de gauche sont plus larges que ceux de
+ * droite. C'est ainsi sur la planche, et c'est fidèle au propos : l'échelle
+ * descend bas sous l'objectif et le dépasse peu.
  */
-const PERF_MIN = 60;
+const PERF_MIN = 50;
 const PERF_MAX = 120;
 const PERF_ORIGIN = 90; // objectifs atteints, au centre
 const EVO_MIN = -20;
@@ -93,49 +91,37 @@ const ROWS = (EVO_MAX - EVO_MIN) / EVO_STEP; // 8 rangées
 
 // --- Emprise du plateau ----------------------------------------------------
 /**
- * Une table, vue depuis le bord.
+ * Perspective de la planche de référence : un trapèze qui se resserre au fond.
  *
- * L'angle se compte depuis l'horizontale : à 90° on regarderait le plateau
- * exactement de face, à plat sur l'écran ; plus il diminue, plus la table se
- * couche et devient une surface sur laquelle on peut se tenir. À 35°, la
- * profondeur ne se voit plus que sur 0,57 de sa longueur réelle — c'est le
- * raccourci d'un plan horizontal regardé depuis son bord.
+ * Les côtés convergent — le bord du fond ne mesure que trois quarts du bord
+ * avant — tandis que les rangées restent également espacées en hauteur. C'est
+ * la perspective simple d'un plateau posé devant soi, celle du modèle.
  *
- * C'est une rotation autour de l'axe horizontal, et rien d'autre : le plateau
- * reste un repère orthonormé, bords d'équerre et côtés parallèles.
- *
- * Ce choix écarte la perspective conique, essayée puis abandonnée : elle
- * faisait converger les côtés et rétrécissait les compartiments du fond, alors
- * que le repère doit rester orthonormé et les quatre compartiments égaux. Le
- * relief tient à l'épaisseur de la dalle et à l'ombre qui l'entoure.
+ * J'avais écarté cette convergence deux fois, pour garder des côtés parallèles
+ * et quatre compartiments égaux ; la planche de référence, elle, l'assume, et
+ * c'est elle qui fait loi. Le resserrement dégage au passage, sur les côtés du
+ * fond, la place où se posent les repères de quadrant.
  */
-const TILT_DEG = 35;
-const FORESHORTEN = Math.sin((TILT_DEG * Math.PI) / 180);
 const FRONT_WIDTH = W - 2 * SIDE_MARGIN;
-/** Côté d'une case, dans le plan du plateau — avant que l'inclinaison ne
- *  l'écrase. */
-const FRONT_CELL = FRONT_WIDTH / COLS;
-/** Profondeur telle qu'elle se voit, une fois le plateau basculé. */
-const DEPTH = ROWS * FRONT_CELL * FORESHORTEN;
+/** Le fond ne fait plus que ces trois quarts : toute la fuite est là. */
+const BACK_RATIO = 0.753;
+const BACK_WIDTH = FRONT_WIDTH * BACK_RATIO;
+/** Profondeur vue, rapportée à la largeur comme sur le modèle. */
+const DEPTH = FRONT_WIDTH * 0.325;
 const CENTER_X = W / 2;
 const FLOOR_FRONT_Y = TOP_ROOM + DEPTH;
 const H = FLOOR_FRONT_Y + BOTTOM_ROOM;
-/** Épaisseur de la dalle, et ce qu'on en voit : plus le regard plonge, moins
- *  la tranche se présente — d'où le cosinus. */
-const SLAB_REAL = 60;
-const SLAB = SLAB_REAL * Math.cos((TILT_DEG * Math.PI) / 180);
 
 // --- Palette ---------------------------------------------------------------
 const NAVY = "#31527f";
 const NAVY_DEEP = "#1f3760";
-const CELL_LIGHT = "#f2f7fd";
-const CELL_DARK = "#dbe6f4"; // contraste assumé : le damier doit se voir
-const CELL_EDGE = "#b7c8de";
-const COMPARTMENT = "#cfe1f7";
-const COMPARTMENT_EDGE = "#4a6fa5";
+const CELL_LIGHT = "#fbfdff";
+const CELL_EDGE = "#b3c6dd";
+const COMPARTMENT_EDGE = "#1d3557"; // le marine franc des compartiments du modèle
 const POSTIT = "#f5e050";
 const GREEN = "#7cb342";
 const TEXT = "#1a2744";
+const RED = "#c62828";
 
 function ratio(value: number, min: number, max: number) {
   return (Math.min(max, Math.max(min, value)) - min) / (max - min);
@@ -155,10 +141,16 @@ function ratio(value: number, min: number, max: number) {
  */
 function plan(u: number, v: number) {
   return {
-    x: CENTER_X + (u - 0.5) * FRONT_WIDTH,
+    x: CENTER_X + (u - 0.5) * halfSpan(v) * 2,
     y: FLOOR_FRONT_Y - DEPTH * v,
     scale: 1.06 - 0.22 * v,
   };
+}
+
+/** Demi-largeur du plateau à la profondeur `v` : c'est elle qui porte la
+ *  fuite, la hauteur des rangées restant régulière. */
+function halfSpan(v: number) {
+  return (FRONT_WIDTH + (BACK_WIDTH - FRONT_WIDTH) * v) / 2;
 }
 
 const U_ORIGIN = ratio(PERF_ORIGIN, PERF_MIN, PERF_MAX);
@@ -192,6 +184,21 @@ const MARGIN_X = 32;
 const MARGIN_Y = 32;
 const MARGIN_U = MARGIN_X / FRONT_WIDTH;
 const MARGIN_V = MARGIN_Y / DEPTH;
+/** Débord du liseré clair autour de la grille. */
+const MAT_U = 30 / FRONT_WIDTH;
+const MAT_V = 24 / DEPTH;
+
+/**
+ * Repères de lecture, du plus proche du compartiment au plus éloigné. Ils
+ * qualifient chaque quart d'un coup d'œil, posés en marge : à l'intérieur, ils
+ * se perdaient derrière les silhouettes.
+ */
+const QUADRANT_MARKS: Record<string, { text: string; fill: string }[]> = {
+  tl: [{ text: "+", fill: GREEN }, { text: "−", fill: RED }],
+  tr: [{ text: "++", fill: GREEN }],
+  bl: [{ text: "−", fill: RED }, { text: "−", fill: RED }],
+  br: [{ text: "+", fill: GREEN }, { text: "−", fill: RED }],
+};
 
 /** Les quatre compartiments, en coordonnées du plateau. */
 const COMPARTMENTS = [
@@ -274,7 +281,7 @@ function seat(perf: number, evo: number, hasPhoto: boolean) {
   const v = confine(targetV, zone.v0 + guard, zone.v1 - guard);
 
   const { width } = figureSize(hasPhoto, plan(0, v).scale);
-  const halfU = width / (2 * FRONT_WIDTH);
+  const halfU = width / (4 * halfSpan(v));
   const lowU = zone.u0 + halfU;
   const highU = zone.u1 - halfU;
   const u = confine(ratio(perf, PERF_MIN, PERF_MAX), lowU, highU);
@@ -309,7 +316,6 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   const positioned = spread(people).sort((a, b) => a.y - b.y);
   const EDGE = 24;
 
-  const frontLeft = plan(0, 0);
   // Les deux flèches débordent légèrement du plateau : leur pointe est le
   // point d'ancrage des étiquettes.
   const axisTop = plan(U_ORIGIN, 1 + 54 / DEPTH);
@@ -364,41 +370,43 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           </filter>
         </defs>
 
-        {/* ---- La dalle : damier, épaisseur, ombre --------------------------
-            Le groupe entier porte l'ombre portée, qui se calcule donc sur sa
-            seule silhouette — dalle et tranche d'un bloc — et non case par
-            case. */}
+        {/* ---- Le plateau : liseré, quadrillage, ombre ----------------------
+            Le liseré est un trapèze un peu plus grand que la grille : c'est la
+            bordure claire du modèle, qui donne au plateau son épaisseur de
+            planche. Il porte l'ombre pour le groupe entier, dont la silhouette
+            est ainsi calculée d'un bloc plutôt que case par case. */}
         <g id="plate" filter="url(#tpd-plate-shadow)">
-          {/* Tranche basse : c'est par elle que le plateau a une épaisseur.
-              Basculé vers l'avant, il ne montre qu'elle — ses flancs latéraux
-              se présentent de profil et n'ont pas de largeur à l'écran. */}
-          <rect x={frontLeft.x} y={frontLeft.y} width={FRONT_WIDTH} height={SLAB} fill="url(#tpd-slab-front)" />
-          <rect x={frontLeft.x} y={frontLeft.y + SLAB - 4} width={FRONT_WIDTH} height={4} fill={NAVY_DEEP} />
+          <polygon points={polygon(-MAT_U, 1 + MAT_U, -MAT_V, 1 + MAT_V)} fill="#fdfdfe" stroke="#d7dde6" strokeWidth={3} />
 
+          {/* Quadrillage uni, non alterné : sur le modèle, ce sont les
+              compartiments qui portent la lecture, la grille reste discrète. */}
           {Array.from({ length: COLS }).map((_, col) =>
             Array.from({ length: ROWS }).map((_, row) => (
               <polygon
                 key={`c-${col}-${row}`}
                 points={polygon(col / COLS, (col + 1) / COLS, row / ROWS, (row + 1) / ROWS)}
-                fill={(col + row) % 2 === 0 ? CELL_LIGHT : CELL_DARK}
+                fill={CELL_LIGHT}
                 stroke={CELL_EDGE}
-                strokeWidth={1.4}
+                strokeWidth={1.6}
               />
             ))
           )}
-          <polygon points={polygon(0, 1, 0, 1)} fill="none" stroke={NAVY_DEEP} strokeWidth={4} />
+          <polygon points={polygon(0, 1, 0, 1)} fill="none" stroke="#9fb2c8" strokeWidth={2.5} />
         </g>
 
-        {/* ---- Les quatre compartiments, pleins ---------------------------- */}
+        {/* ---- Les quatre compartiments ------------------------------------
+            Évidés, cernés d'un trait marine épais : c'est le dessin du modèle.
+            Remplis, ils masquaient le quadrillage et alourdissaient la
+            planche. */}
         <g id="compartments">
           {COMPARTMENTS.map((c) => (
             <path
               key={c.key}
-              d={roundedQuad(c.u0, c.u1, c.v0, c.v1, 54)}
-              fill={COMPARTMENT}
-              fillOpacity={0.62}
+              d={roundedQuad(c.u0, c.u1, c.v0, c.v1, 62)}
+              fill="none"
               stroke={COMPARTMENT_EDGE}
-              strokeWidth={5}
+              strokeWidth={7}
+              strokeLinejoin="round"
             />
           ))}
         </g>
@@ -488,7 +496,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
             const x = Math.min(W - EDGE - halfSpan, Math.max(EDGE + halfSpan, rawX));
             const top = Math.max(viewTop + EDGE, y - height);
             const progression = person.progression;
-            const progressionColor = progression === null ? "#7a7a7a" : progression >= 0 ? "#2e7d32" : "#c62828";
+            const progressionColor = progression === null ? "#7a7a7a" : progression >= 0 ? "#2e7d32" : RED;
             return (
               <g
                 key={person.userId}
@@ -506,7 +514,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                   cx={x}
                   cy={y + 3}
                   rx={Math.max(width * 0.6, 40)}
-                  ry={Math.max(width * 0.18, 12) * FORESHORTEN}
+                  ry={Math.max(width * 0.18, 12) * 0.5}
                   fill="url(#tpd-shadow)"
                 />
                 {hasPhoto ? (
@@ -571,25 +579,23 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
             Dans les compartiments, ils se perdaient derrière les silhouettes ;
             en marge, ils qualifient chaque quart d'un coup d'œil. */}
         <g id="quadrant-marks" fontWeight="800" fontSize={58}>
-          {[
-            // Les bords étant maintenant verticaux, les repères se posent à
-            // une distance fixe du plateau, dans la marge du cadre : `dx`
-            // compte depuis le bord gauche s'il est négatif, depuis le droit
-            // s'il est positif.
-            { dx: -148, v: 0.86, text: "−", fill: "#c62828" },
-            { dx: -62, v: 0.86, text: "+", fill: GREEN },
-            { dx: 68, v: 0.86, text: "++", fill: GREEN },
-            { dx: -148, v: 0.12, text: "−", fill: "#c62828" },
-            { dx: -62, v: 0.12, text: "−", fill: "#c62828" },
-            { dx: 62, v: 0.12, text: "+", fill: GREEN },
-            { dx: 148, v: 0.12, text: "−", fill: "#c62828" },
-          ].map((mark, i) => {
-            const edge = plan(mark.dx < 0 ? 0 : 1, mark.v);
-            return (
-              <text key={i} x={edge.x + mark.dx} y={edge.y} textAnchor="middle" fill={mark.fill}>
+          {COMPARTMENTS.flatMap((c) => {
+            // Calés sur le compartiment qu'ils qualifient, et non sur le bord
+            // du plateau : celui-ci se rapproche du cadre à mesure qu'on
+            // avance, et les repères du premier plan en sortaient.
+            const edge = plan(c.above ? c.u1 : c.u0, (c.v0 + c.v1) / 2);
+            const away = c.above ? 1 : -1;
+            return QUADRANT_MARKS[c.key].map((mark, i) => (
+              <text
+                key={`${c.key}-${i}`}
+                x={edge.x + away * (56 + 74 * i)}
+                y={edge.y}
+                textAnchor="middle"
+                fill={mark.fill}
+              >
                 {mark.text}
               </text>
-            );
+            ));
           })}
         </g>
       </svg>
