@@ -8,12 +8,12 @@ import type { PerformanceRating } from "@/api/types";
  * Configuration retenue, et pourquoi.
  *
  * 1. Un damier plutôt qu'un fond quadrillé. Le plateau se lit comme une table
- *    de jeu : 8 × 8 cases alternées, une dalle épaisse, une ombre portée. Les
- *    cases sont carrées dans le plan du plateau et se voient couchées, l'
- *    inclinaison les écrasant d'un facteur sin(35°) — c'est l'alternance du
- *    damier qui donne à lire la fuite.
+ *    de jeu : 12 × 8 cases alternées, une dalle épaisse, une ombre diffuse.
+ *    Les cases sont carrées dans le plan du plateau et se voient à peine
+ *    écrasées, du facteur sin(60°) — c'est l'alternance du damier qui donne à
+ *    lire l'inclinaison.
  *
- * 2. Un rectangle basculé de 35° vers l'avant. Le basculement est une simple
+ * 2. Un repère orthonormé vu de dessus, légèrement basculé vers l'avant. Le basculement est une simple
  *    rotation autour de l'horizontale : les côtés restent verticaux, les bords
  *    horizontaux, les angles droits. La perspective conique a été essayée puis
  *    écartée — elle faisait converger les côtés et rétrécissait les
@@ -70,44 +70,47 @@ const BOTTOM_ROOM = 124;
  * performance et les mêmes 20 points d'écart. Ils sont identiques par
  * construction, pas par réglage.
  */
-const PERF_MIN = 50;
-const PERF_MAX = 130;
+const PERF_MIN = 60;
+const PERF_MAX = 120;
 const PERF_ORIGIN = 90; // objectifs atteints, au centre
 const EVO_MIN = -20;
 const EVO_MAX = 20;
 /**
- * Pas des graduations : 10 % en performance, 5 % en écart.
+ * Pas des graduations : 5 % sur les deux axes, soit 12 colonnes pour 8 rangées.
  *
- * L'inclinaison décide de ce pas. Elle écrase la profondeur d'écran d'un
- * facteur sin(35°), soit un peu moins de six dixièmes ; à colonnes inchangées
- * les compartiments perdaient presque la moitié de leur hauteur et une
- * silhouette n'y tenait plus. De plus grosses cases — huit colonnes au lieu de
- * douze — rendent au plateau la profondeur que l'inclinaison lui prend.
- * Chacun reste placé à sa valeur exacte, qui n'a pas à tomber sur un trait.
+ * C'est l'inclinaison qui décide de ce pas. Un plateau très couché écrase la
+ * profondeur au point que les compartiments ne peuvent plus contenir une
+ * silhouette, et il faut alors de grosses cases pour leur rendre de la
+ * hauteur : le basculement à 35° avait ainsi imposé un pas de 10 %. Vu de
+ * dessus, à peine incliné, le plateau garde presque toute sa profondeur, et le
+ * pas de 5 % redevient tenable.
  */
-const PERF_STEP = 10;
+const PERF_STEP = 5;
 const EVO_STEP = 5;
-const COLS = (PERF_MAX - PERF_MIN) / PERF_STEP; // 8 colonnes
+const COLS = (PERF_MAX - PERF_MIN) / PERF_STEP; // 12 colonnes
 const ROWS = (EVO_MAX - EVO_MIN) / EVO_STEP; // 8 rangées
 
 // --- Emprise du plateau ----------------------------------------------------
 /**
- * Plateau basculé de 35° vers l'avant.
+ * Vue de dessus, légèrement inclinée.
  *
- * C'est une rotation autour de l'axe horizontal, et rien d'autre : le plateau
- * reste un rectangle vu de face, ses bords restent d'équerre, ses côtés
- * parallèles. Seule la profondeur se raccourcit à l'écran, du facteur sin(35°)
- * — c'est l'effet de fuite. Les cases, carrées dans le plan du plateau,
- * s'écrasent donc en rectangles couchés, et c'est précisément ce qui donne à
- * lire l'inclinaison.
+ * Le regard plonge sur le plateau et le bascule à peine vers l'avant : c'est
+ * une rotation autour de l'axe horizontal, et rien d'autre. Le plateau reste
+ * un repère orthonormé — bords d'équerre, côtés parallèles, mêmes unités sur
+ * les deux axes — et seule la profondeur se raccourcit à l'écran, du facteur
+ * sin(60°), soit un peu moins de neuf dixièmes. L'écrasement se voit sans
+ * jamais déformer la lecture : une case reste presque carrée.
  *
- * Ce choix écarte volontairement la perspective conique, essayée puis
- * abandonnée : elle faisait converger les côtés et rétrécissait les
- * compartiments du fond, alors que la consigne est d'avoir des bords nets et
- * quatre compartiments égaux. Le relief est ici porté par l'épaisseur de la
- * dalle et l'ombre portée, non par une déformation du plateau.
+ * L'angle se compte depuis l'horizontale : à 90° on regarderait le plateau
+ * exactement à plat, à 35° il était franchement couché. À 60° il est
+ * simplement penché.
+ *
+ * Ce choix écarte la perspective conique, essayée puis abandonnée : elle
+ * faisait converger les côtés et rétrécissait les compartiments du fond, alors
+ * que le repère doit rester orthonormé et les quatre compartiments égaux. Le
+ * relief tient à l'épaisseur de la dalle et à l'ombre qui l'entoure.
  */
-const TILT_DEG = 35;
+const TILT_DEG = 60;
 const FORESHORTEN = Math.sin((TILT_DEG * Math.PI) / 180);
 const FRONT_WIDTH = W - 2 * SIDE_MARGIN;
 /** Côté d'une case, dans le plan du plateau — avant que l'inclinaison ne
@@ -118,7 +121,10 @@ const DEPTH = ROWS * FRONT_CELL * FORESHORTEN;
 const CENTER_X = W / 2;
 const FLOOR_FRONT_Y = TOP_ROOM + DEPTH;
 const H = FLOOR_FRONT_Y + BOTTOM_ROOM;
-const SLAB = 44; // épaisseur de la dalle, vue sur sa tranche basse
+/** Épaisseur de la dalle, et ce qu'on en voit : plus le regard plonge, moins
+ *  la tranche se présente — d'où le cosinus. */
+const SLAB_REAL = 60;
+const SLAB = SLAB_REAL * Math.cos((TILT_DEG * Math.PI) / 180);
 
 // --- Palette ---------------------------------------------------------------
 const NAVY = "#31527f";
@@ -338,10 +344,12 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           <marker id="tpd-arrow" markerWidth="16" markerHeight="16" refX="15" refY="8" orient="auto" markerUnits="userSpaceOnUse">
             <path d="M 0 0 L 16 8 L 0 16 z" fill={NAVY_DEEP} />
           </marker>
-          {/* Ombre portée sur la droite. Elle ne s'applique qu'à la dalle : le
-              flou n'entame donc aucun bord du dessin, qui restent nets. */}
-          <filter id="tpd-plate-shadow" x="-12%" y="-12%" width="140%" height="150%">
-            <feDropShadow dx="34" dy="22" stdDeviation="18" floodColor="#1c2a44" floodOpacity="0.32" />
+          {/* Ombre légère tout autour de la plateforme : à peine décalée vers
+              le bas, largement diffusée, faible en intensité — elle pose le
+              plateau sans le charger. Elle ne s'applique qu'à la dalle, si
+              bien que le flou n'entame aucun bord du dessin. */}
+          <filter id="tpd-plate-shadow" x="-15%" y="-15%" width="130%" height="140%">
+            <feDropShadow dx="0" dy="14" stdDeviation="24" floodColor="#1c2a44" floodOpacity="0.17" />
           </filter>
         </defs>
 
