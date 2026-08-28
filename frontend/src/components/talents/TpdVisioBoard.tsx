@@ -8,14 +8,17 @@ import type { PerformanceRating } from "@/api/types";
  * Configuration retenue, et pourquoi.
  *
  * 1. Un damier plutôt qu'un fond quadrillé. Le plateau se lit comme une table
- *    de jeu : 12 × 8 cases carrées alternées, posées sur un socle. C'est
- *    l'alternance des cases qui donne l'échelle, sans qu'aucun artifice de
- *    volume n'ait à s'en mêler.
+ *    de jeu : 8 × 8 cases alternées, une dalle épaisse, une ombre portée. Les
+ *    cases sont carrées dans le plan du plateau et se voient couchées, l'
+ *    inclinaison les écrasant d'un facteur sin(35°) — c'est l'alternance du
+ *    damier qui donne à lire la fuite.
  *
- * 2. Un rectangle droit. Le plateau a été successivement mis en perspective,
- *    où les côtés convergeaient, puis en projection oblique, où il partait en
- *    biais ; il est maintenant vu de face. Les côtés sont verticaux, les bords
- *    horizontaux, les cases carrées, et rien ne se déforme.
+ * 2. Un rectangle basculé de 35° vers l'avant. Le basculement est une simple
+ *    rotation autour de l'horizontale : les côtés restent verticaux, les bords
+ *    horizontaux, les angles droits. La perspective conique a été essayée puis
+ *    écartée — elle faisait converger les côtés et rétrécissait les
+ *    compartiments du fond. Ici le relief vient de l'épaisseur et de l'ombre,
+ *    non d'une déformation du plateau.
  *
  * 3. Quatre compartiments identiques. Ce sont eux qui portent la lecture, pas
  *    la grille : bleu clair, bordés de marine, en retrait des axes. L'origine
@@ -52,8 +55,8 @@ const W = 2900;
 const SIDE_MARGIN = 200;
 /** Air au-dessus du fond du plateau. */
 const TOP_ROOM = 90;
-/** Air sous la tranche basse. */
-const BOTTOM_ROOM = 70;
+/** Air sous la tranche basse, pour l'épaisseur de la dalle et son ombre. */
+const BOTTOM_ROOM = 124;
 
 // --- Échelles --------------------------------------------------------------
 /**
@@ -67,46 +70,55 @@ const BOTTOM_ROOM = 70;
  * performance et les mêmes 20 points d'écart. Ils sont identiques par
  * construction, pas par réglage.
  */
-const PERF_MIN = 60;
-const PERF_MAX = 120;
+const PERF_MIN = 50;
+const PERF_MAX = 130;
 const PERF_ORIGIN = 90; // objectifs atteints, au centre
 const EVO_MIN = -20;
 const EVO_MAX = 20;
 /**
- * Pas des graduations : 5 % sur les deux axes, soit 12 colonnes pour 8 rangées.
+ * Pas des graduations : 10 % en performance, 5 % en écart.
  *
- * Le plateau incliné avait dû se contenter d'un pas de 10 % en performance :
- * le décalage oblique mangeait tant de largeur qu'il fallait de grosses cases
- * pour garder des compartiments capables d'accueillir une silhouette. Redressé,
- * le plateau récupère cette largeur et retrouve la lecture de 5 en 5.
+ * L'inclinaison décide de ce pas. Elle écrase la profondeur d'écran d'un
+ * facteur sin(35°), soit un peu moins de six dixièmes ; à colonnes inchangées
+ * les compartiments perdaient presque la moitié de leur hauteur et une
+ * silhouette n'y tenait plus. De plus grosses cases — huit colonnes au lieu de
+ * douze — rendent au plateau la profondeur que l'inclinaison lui prend.
+ * Chacun reste placé à sa valeur exacte, qui n'a pas à tomber sur un trait.
  */
-const PERF_STEP = 5;
+const PERF_STEP = 10;
 const EVO_STEP = 5;
-const COLS = (PERF_MAX - PERF_MIN) / PERF_STEP; // 12 colonnes
+const COLS = (PERF_MAX - PERF_MIN) / PERF_STEP; // 8 colonnes
 const ROWS = (EVO_MAX - EVO_MIN) / EVO_STEP; // 8 rangées
 
 // --- Emprise du plateau ----------------------------------------------------
 /**
- * Plateau droit, vu de face.
+ * Plateau basculé de 35° vers l'avant.
  *
- * Il a été successivement mis en perspective, où les côtés convergeaient et le
- * fond s'écrasait, puis en projection oblique, où il gardait sa forme mais
- * partait en biais. Il est maintenant simplement droit : les axes sont
- * horizontal et vertical, les côtés d'équerre, et rien ne se déforme. Ce que
- * l'inclinaison prenait en largeur est rendu aux compartiments.
+ * C'est une rotation autour de l'axe horizontal, et rien d'autre : le plateau
+ * reste un rectangle vu de face, ses bords restent d'équerre, ses côtés
+ * parallèles. Seule la profondeur se raccourcit à l'écran, du facteur sin(35°)
+ * — c'est l'effet de fuite. Les cases, carrées dans le plan du plateau,
+ * s'écrasent donc en rectangles couchés, et c'est précisément ce qui donne à
+ * lire l'inclinaison.
  *
- * La largeur remplit le cadre moins les marges ; la profondeur en découle,
- * puisqu'une case doit rester carrée : autant de hauteur par rangée que de
- * largeur par colonne.
+ * Ce choix écarte volontairement la perspective conique, essayée puis
+ * abandonnée : elle faisait converger les côtés et rétrécissait les
+ * compartiments du fond, alors que la consigne est d'avoir des bords nets et
+ * quatre compartiments égaux. Le relief est ici porté par l'épaisseur de la
+ * dalle et l'ombre portée, non par une déformation du plateau.
  */
+const TILT_DEG = 35;
+const FORESHORTEN = Math.sin((TILT_DEG * Math.PI) / 180);
 const FRONT_WIDTH = W - 2 * SIDE_MARGIN;
-/** Côté d'une case du damier. */
+/** Côté d'une case, dans le plan du plateau — avant que l'inclinaison ne
+ *  l'écrase. */
 const FRONT_CELL = FRONT_WIDTH / COLS;
-const DEPTH = ROWS * FRONT_CELL;
+/** Profondeur telle qu'elle se voit, une fois le plateau basculé. */
+const DEPTH = ROWS * FRONT_CELL * FORESHORTEN;
 const CENTER_X = W / 2;
 const FLOOR_FRONT_Y = TOP_ROOM + DEPTH;
 const H = FLOOR_FRONT_Y + BOTTOM_ROOM;
-const SLAB = 26; // socle sous la tranche basse
+const SLAB = 44; // épaisseur de la dalle, vue sur sa tranche basse
 
 // --- Palette ---------------------------------------------------------------
 const NAVY = "#31527f";
@@ -127,9 +139,10 @@ function ratio(value: number, min: number, max: number) {
 /**
  * Point du plateau : `u` le long des performances, `v` le long des écarts.
  *
- * Le plateau étant droit, les deux axes sont indépendants et rien ne se
- * déforme. Les silhouettes gardent donc toutes la même taille : les faire
- * varier n'avait de sens que pour dire une profondeur, et il n'y en a plus.
+ * Les deux axes restent indépendants : `u` ne joue que sur l'abscisse, `v` que
+ * sur l'ordonnée, où l'inclinaison a déjà été prise en compte dans DEPTH. Les
+ * silhouettes gardent toutes la même taille — debout sur un plateau basculé,
+ * elles restent verticales et ne subissent pas le raccourci du sol.
  */
 function plan(u: number, v: number) {
   return {
@@ -325,15 +338,24 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
           <marker id="tpd-arrow" markerWidth="16" markerHeight="16" refX="15" refY="8" orient="auto" markerUnits="userSpaceOnUse">
             <path d="M 0 0 L 16 8 L 0 16 z" fill={NAVY_DEEP} />
           </marker>
+          {/* Ombre portée sur la droite. Elle ne s'applique qu'à la dalle : le
+              flou n'entame donc aucun bord du dessin, qui restent nets. */}
+          <filter id="tpd-plate-shadow" x="-12%" y="-12%" width="140%" height="150%">
+            <feDropShadow dx="34" dy="22" stdDeviation="18" floodColor="#1c2a44" floodOpacity="0.32" />
+          </filter>
         </defs>
 
-        {/* ---- Socle : une tranche sous le bord bas -------------------------
-            Le plateau étant droit, il n'a plus de flanc à présenter. Reste ce
-            liseré, qui l'assied sans prétendre au volume. */}
-        <rect x={frontLeft.x} y={frontLeft.y} width={FRONT_WIDTH} height={SLAB} fill="url(#tpd-slab-front)" />
+        {/* ---- La dalle : damier, épaisseur, ombre --------------------------
+            Le groupe entier porte l'ombre portée, qui se calcule donc sur sa
+            seule silhouette — dalle et tranche d'un bloc — et non case par
+            case. */}
+        <g id="plate" filter="url(#tpd-plate-shadow)">
+          {/* Tranche basse : c'est par elle que le plateau a une épaisseur.
+              Basculé vers l'avant, il ne montre qu'elle — ses flancs latéraux
+              se présentent de profil et n'ont pas de largeur à l'écran. */}
+          <rect x={frontLeft.x} y={frontLeft.y} width={FRONT_WIDTH} height={SLAB} fill="url(#tpd-slab-front)" />
+          <rect x={frontLeft.x} y={frontLeft.y + SLAB - 4} width={FRONT_WIDTH} height={4} fill={NAVY_DEEP} />
 
-        {/* ---- Damier : une case par pas de 5 % sur les deux axes ---------- */}
-        <g id="board">
           {Array.from({ length: COLS }).map((_, col) =>
             Array.from({ length: ROWS }).map((_, row) => (
               <polygon
@@ -465,7 +487,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                   cx={x}
                   cy={y + 3}
                   rx={Math.max(width * 0.6, 40)}
-                  ry={Math.max(width * 0.18, 12)}
+                  ry={Math.max(width * 0.18, 12) * FORESHORTEN}
                   fill="url(#tpd-shadow)"
                 />
                 {hasPhoto ? (
