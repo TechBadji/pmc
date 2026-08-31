@@ -381,7 +381,9 @@
     "reopenTooltip": "Rouvrir la campagne",
     "noCampaign": "Aucune campagne disponible pour ce collaborateur — créez-en une nouvelle depuis la rubrique Campagnes d'évaluation.",
     "selectCampaign": "Campagne",
-    "selectCampaignHint": "Choisissez la campagne pour laquelle cette évaluation compte."
+    "selectCampaignHint": "Choisissez la campagne pour laquelle cette évaluation compte.",
+    "openEvaluations": "Voir les évaluations de la campagne {{name}}",
+    "clickHint": "Cliquez sur une campagne pour consulter ses évaluations."
   },
   "evaluationForm": {
     "editTitle": "Modifier l'évaluation",

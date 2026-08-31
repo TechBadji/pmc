@@ -381,7 +381,9 @@
     "reopenTooltip": "Reopen the campaign",
     "noCampaign": "No campaign available for this team member — create a new one from Evaluation Campaigns.",
     "selectCampaign": "Campaign",
-    "selectCampaignHint": "Choose which campaign this evaluation counts towards."
+    "selectCampaignHint": "Choose which campaign this evaluation counts towards.",
+    "openEvaluations": "View evaluations for the {{name}} campaign",
+    "clickHint": "Click a campaign to review its evaluations."
   },
   "evaluationForm": {
     "editTitle": "Edit evaluation",

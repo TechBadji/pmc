@@ -22,16 +22,17 @@ import {
   TableRow,
   TextField,
   Tooltip,
-  Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
 import { apiClient } from "@/api/client";
 import type { EvaluationCampaign, Paginated } from "@/api/types";
 
 export default function EvaluationCampaignsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<EvaluationCampaign[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<EvaluationCampaign | null>(null);
@@ -106,10 +107,10 @@ export default function EvaluationCampaignsPage() {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Stack>
-          <PageHeader title={t("evaluationCampaigns.title")} />
-          <Typography variant="body2" color="text.secondary">
-            {t("evaluationCampaigns.subtitle")}
-          </Typography>
+          <PageHeader
+            title={t("evaluationCampaigns.title")}
+            subtitle={`${t("evaluationCampaigns.subtitle")} ${t("evaluationCampaigns.clickHint")}`}
+          />
         </Stack>
         <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={openCreateDialog}>
           {t("evaluationCampaigns.newCampaign")}
@@ -150,8 +151,25 @@ export default function EvaluationCampaignsPage() {
             </TableHead>
             <TableBody>
               {campaigns.map((c) => (
-                <TableRow key={c.id} hover>
-                  <TableCell>{c.name}</TableCell>
+                // La ligne entière ouvre les évaluations de la campagne : une
+                // campagne close n'était jusqu'ici qu'une entrée d'archive,
+                // alors que c'est là qu'on va chercher les périodes passées.
+                <TableRow
+                  key={c.id}
+                  hover
+                  sx={{ cursor: "pointer" }}
+                  onClick={() => navigate(`/evaluations?campaign=${c.id}`)}
+                  tabIndex={0}
+                  role="link"
+                  aria-label={t("evaluationCampaigns.openEvaluations", { name: c.name })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate(`/evaluations?campaign=${c.id}`);
+                    }
+                  }}
+                >
+                  <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>{c.name}</TableCell>
                   <TableCell>{c.start_date}</TableCell>
                   <TableCell>{c.end_date}</TableCell>
                   <TableCell align="right">{c.evaluations_count}</TableCell>
@@ -162,7 +180,10 @@ export default function EvaluationCampaignsPage() {
                       color={c.is_closed ? "default" : "success"}
                     />
                   </TableCell>
-                  <TableCell align="right">
+                  {/* Les actions restent des actions : sans cette coupure, un
+                      clic sur « clôturer » ou « supprimer » emporterait aussi
+                      la navigation de la ligne. */}
+                  <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                       <Tooltip
                         title={c.is_closed ? t("evaluationCampaigns.reopenTooltip") : t("evaluationCampaigns.closeTooltip")}

@@ -111,10 +111,18 @@ export default function EvaluationsPage() {
         setEvaluations(evaluationsRes.data.results);
         setCampaigns(campaignsRes.data.results);
         setDepartments(departmentsRes.data.results);
-        // La période par défaut est la campagne la plus récente qui existe
-        // (pas seulement celle qui a déjà des évaluations) — une campagne
-        // fraîchement créée doit être sélectionnable immédiatement, avant
-        // toute saisie.
+        // Campagne demandée par l'adresse : on arrive depuis la liste des
+        // campagnes, où l'on a cliqué sur une période passée. Elle prime sur
+        // la période par défaut, sans quoi le clic ramènerait toujours à la
+        // campagne courante.
+        const wanted = Number(searchParams.get("campaign"));
+        if (wanted && campaignsRes.data.results.some((c) => c.id === wanted)) {
+          setSelectedCampaignId(wanted);
+          return;
+        }
+        // Sinon la campagne la plus récente qui existe (pas seulement celle
+        // qui a déjà des évaluations) — une campagne fraîchement créée doit
+        // être sélectionnable immédiatement, avant toute saisie.
         const sorted = [...campaignsRes.data.results].sort((a, b) => a.start_date.localeCompare(b.start_date));
         if (sorted.length) setSelectedCampaignId((prev) => (prev === "" ? sorted[sorted.length - 1].id : prev));
       })
@@ -291,6 +299,11 @@ export default function EvaluationsPage() {
                 : "objectivesSheet.viewTeam"
           )}
           subtitle={view === "id3a" ? t("evaluations.clickHint") : t("objectivesSheet.sheetHint")}
+          parent={
+            searchParams.get("campaign")
+              ? { label: t("nav.evaluationCampaigns"), to: "/evaluation-campaigns" }
+              : undefined
+          }
         />
         {view === "id3a" && campaignOptions.length > 0 && (
           <TextField
