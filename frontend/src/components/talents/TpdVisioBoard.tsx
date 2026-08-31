@@ -1,4 +1,5 @@
 import { Paper, Stack, Typography } from "@mui/material";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PerformanceRating } from "@/api/types";
 import { QUADRANT_EDGE, QUADRANT_TINTS } from "@/theme";
@@ -273,10 +274,27 @@ const PHOTO_H = 380;
  *  de la table, non plus à contraindre l'assise. */
 const LABEL_ABOVE = 70;
 
-/** Encombrement d'une silhouette posée à une profondeur donnée. */
-function figureSize(hasPhoto: boolean, scale: number) {
+/**
+ * Proportion supposée d'un portrait tant que sa vraie mesure n'est pas connue,
+ * et bornes au-delà desquelles on ne la suit plus : un portrait très large
+ * empiéterait sur ses voisins.
+ */
+const PHOTO_RATIO = 0.34;
+const PHOTO_RATIO_MAX = 0.55;
+
+/**
+ * Encombrement d'une silhouette posée à une profondeur donnée.
+ *
+ * `ratio` est la proportion réelle du portrait. Elle compte : la boîte de
+ * dessin conservant les proportions de l'image, un portrait plus large que
+ * prévu s'y trouve contraint par la largeur, donc rendu plus court — et il
+ * s'aligne en bas, laissant du vide au-dessus. Les libellés, calés sur le haut
+ * de la boîte, flottaient alors loin de la tête : 44 px pour Gilbert, 51 pour
+ * Nadine. Une boîte à la mesure de l'image supprime ce vide.
+ */
+function figureSize(hasPhoto: boolean, scale: number, ratio = PHOTO_RATIO) {
   const height = hasPhoto ? PHOTO_H * scale : PHOTO_H * scale * 0.44;
-  return { height, width: hasPhoto ? height * 0.34 : height };
+  return { height, width: hasPhoto ? height * Math.min(ratio, PHOTO_RATIO_MAX) : height };
 }
 
 /** Ramène une valeur entre deux bornes, en se plaçant au milieu si l'intervalle
@@ -298,14 +316,14 @@ function confine(value: number, low: number, high: number) {
  * Reste à ce que les pieds ne chevauchent pas la bordure : d'où le retrait
  * d'une demi-largeur sur les côtés et d'une petite garde en profondeur.
  */
-function seat(perf: number, evo: number, hasPhoto: boolean) {
+function seat(perf: number, evo: number, hasPhoto: boolean, photoRatio: number) {
   const zone =
     COMPARTMENTS.find((c) => c.above === perf >= PERF_ORIGIN && c.rising === (evo >= 0)) ?? COMPARTMENTS[0];
   const targetV = ratio(evo, EVO_MIN, EVO_MAX);
   const guard = 24 / DEPTH;
   const v = confine(targetV, zone.v0 + guard, zone.v1 - guard);
 
-  const { width } = figureSize(hasPhoto, plan(0, v).scale);
+  const { width } = figureSize(hasPhoto, plan(0, v).scale, photoRatio);
   const halfU = width / (4 * halfSpan(v));
   const lowU = zone.u0 + halfU;
   const highU = zone.u1 - halfU;
@@ -317,10 +335,15 @@ function seat(perf: number, evo: number, hasPhoto: boolean) {
 /** Écarte les silhouettes qui se poseraient l'une sur l'autre — sans jamais
  *  pousser personne hors de son compartiment : l'écartement se replie sur les
  *  bornes que l'assise a calculées. */
-function spread(people: VisioPerson[]) {
+function spread(people: VisioPerson[], ratios: Record<number, number>) {
   const placed: { person: VisioPerson; x: number; y: number; scale: number }[] = [];
   people.forEach((person) => {
-    const point = seat(person.performance, person.progression ?? 0, Boolean(person.photo));
+    const point = seat(
+      person.performance,
+      person.progression ?? 0,
+      Boolean(person.photo),
+      ratios[person.userId] ?? PHOTO_RATIO
+    );
     let x = point.x;
     let guard = 0;
     while (placed.some((p) => Math.abs(p.x - x) < 150 && Math.abs(p.y - point.y) < 200) && guard < 12) {
@@ -338,7 +361,26 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   // Du fond vers le bord : c'est l'ordre du peintre. Sans lui, une silhouette
   // lointaine pourrait recouvrir une silhouette proche, et la table
   // s'aplatirait aussitôt.
-  const positioned = spread(people).sort((a, b) => a.y - b.y);
+  // Proportions réelles des portraits, mesurées au chargement : sans elles, la
+  // boîte de dessin ne correspond pas à l'image et laisse du vide au-dessus.
+  const [ratios, setRatios] = useState<Record<number, number>>({});
+  useEffect(() => {
+    let live = true;
+    people.forEach((person) => {
+      if (!person.photo) return;
+      const img = new Image();
+      img.onload = () => {
+        if (!live || !img.naturalHeight) return;
+        setRatios((current) => ({ ...current, [person.userId]: img.naturalWidth / img.naturalHeight }));
+      };
+      img.src = person.photo as string;
+    });
+    return () => {
+      live = false;
+    };
+  }, [people]);
+
+  const positioned = spread(people, ratios).sort((a, b) => a.y - b.y);
   const EDGE = 24;
 
   // Les deux flèches débordent légèrement du plateau : leur pointe est le
@@ -352,7 +394,8 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   // Le cadre ne garde au-dessus de la table que la place réclamée par ceux qui
   // s'y tiennent au fond — mais jamais moins que la pointe de la flèche.
   const highest = positioned.reduce(
-    (top, { person, y, scale }) => Math.min(top, y - figureSize(Boolean(person.photo), scale).height - LABEL_ABOVE),
+    (top, { person, y, scale }) =>
+      Math.min(top, y - figureSize(Boolean(person.photo), scale, ratios[person.userId]).height - LABEL_ABOVE),
     axisTop.y
   );
   const viewTop = Math.max(0, Math.min(axisTop.y - EDGE, highest - EDGE));
@@ -525,7 +568,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
         <g id="people">
           {positioned.map(({ person, x: rawX, y, scale }) => {
             const hasPhoto = Boolean(person.photo);
-            const { height, width } = figureSize(hasPhoto, scale);
+            const { height, width } = figureSize(hasPhoto, scale, ratios[person.userId]);
             const halfSpan = Math.max(width / 2, 90);
             const x = Math.min(W - EDGE - halfSpan, Math.max(EDGE + halfSpan, rawX));
             const top = Math.max(viewTop + EDGE, y - height);
