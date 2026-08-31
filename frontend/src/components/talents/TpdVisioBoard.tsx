@@ -58,37 +58,41 @@ const SIDE_MARGIN = 30;
 /** Air au-dessus du fond de la table : les silhouettes qui s'y tiennent
  *  dépassent du plateau, puisqu'elles sont debout dessus. Recadrée si
  *  personne ne l'occupe. */
-const TOP_ROOM = 344;
+const TOP_ROOM = 380;
 /** Air sous la tranche basse, pour l'épaisseur de la dalle et son ombre. */
 const BOTTOM_ROOM = 120;
 
 // --- Échelles --------------------------------------------------------------
 /**
- * Fenêtre de performance : 50 à 120 %, comme sur la planche de référence.
+ * Fenêtre de lecture : la performance de 50 à 130 %, l'écart de −30 à +30.
  *
- * L'origine des 90 % ne tombe donc pas au milieu — huit colonnes en dessous,
- * six au-dessus — et les compartiments de gauche sont plus larges que ceux de
- * droite. C'est ainsi sur la planche, et c'est fidèle au propos : l'échelle
- * descend bas sous l'objectif et le dépasse peu.
+ * L'échelle des performances s'étend au-delà de l'objectif autant qu'elle
+ * descend en dessous — huit colonnes de part et d'autre des 90 % — si bien que
+ * l'origine tombe exactement au milieu du plateau. Un dépassement de 130 % se
+ * lit donc désormais, là où tout ce qui excédait 120 % s'écrasait sur le bord.
+ *
+ * L'écart, lui, va jusqu'à trente points dans les deux sens : les progressions
+ * et les reculs francs cessent d'être ramenés au bord du plateau.
  */
 const PERF_MIN = 50;
-const PERF_MAX = 120;
+const PERF_MAX = 130;
 const PERF_ORIGIN = 90; // objectifs atteints, au centre
-const EVO_MIN = -20;
-const EVO_MAX = 20;
+const EVO_MIN = -30;
+const EVO_MAX = 30;
 /**
- * Pas des graduations : 5 % sur les deux axes, soit 12 colonnes pour 8 rangées.
+ * Pas des graduations : 5 % sur les deux axes, soit 16 colonnes pour 12
+ * rangées.
  *
  * L'inclinaison avait un temps commandé ce pas : tant qu'une silhouette devait
  * tenir tout entière dans son compartiment, un plateau couché exigeait de
  * grosses cases pour lui rendre de la hauteur. Les silhouettes se tenant
  * maintenant debout sur la table, seuls leurs pieds ont à y tenir, et le pas
- * fin redevient libre.
+ * fin reste tenable même avec dix rangées de plus.
  */
 const PERF_STEP = 5;
 const EVO_STEP = 5;
-const COLS = (PERF_MAX - PERF_MIN) / PERF_STEP; // 12 colonnes
-const ROWS = (EVO_MAX - EVO_MIN) / EVO_STEP; // 8 rangées
+const COLS = (PERF_MAX - PERF_MIN) / PERF_STEP; // 16 colonnes
+const ROWS = (EVO_MAX - EVO_MIN) / EVO_STEP; // 12 rangées
 
 // --- Emprise du plateau ----------------------------------------------------
 /**
@@ -109,10 +113,17 @@ const BACK_RATIO = 0.753;
 const BACK_WIDTH = FRONT_WIDTH * BACK_RATIO;
 /**
  * Profondeur vue, rapportée à la largeur. Le modèle la donne à 0,325 ; elle
- * est portée à 0,37 pour que les compartiments respirent — c'est elle, et non
- * les marges déjà au plus juste, qui commande leur hauteur.
+ * passe à 0,50 parce que l'échelle des écarts compte maintenant douze rangées
+ * au lieu de huit. Sans cet approfondissement, les rangées s'écraseraient de
+ * moitié et le plateau deviendrait illisible en hauteur.
+ *
+ * C'est le cadre qui grandit en conséquence, pas le dessin qui se comprime :
+ * la planche s'affiche plus haute, sa largeur à l'écran restant la même.
+ * L'élargir n'aurait rien donné — le plateau occupe déjà 98 % du cadre, et
+ * seule la part comptant à l'affichage, un cadre plus large rapetissirait
+ * l'ensemble d'autant.
  */
-const DEPTH = FRONT_WIDTH * 0.37;
+const DEPTH = FRONT_WIDTH * 0.5;
 const CENTER_X = W / 2;
 const FLOOR_FRONT_Y = TOP_ROOM + DEPTH;
 const H = FLOOR_FRONT_Y + BOTTOM_ROOM;
