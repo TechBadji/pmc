@@ -1127,8 +1127,16 @@ export default function TalentsDashboardPage() {
             select
             size="small"
             label={t("talents.directors")}
-            value={directorFilter}
+            // « Tous les directeurs » n'est pas un directeur de plus : c'est
+            // le filtre de personne qui sait déjà ne retenir qu'eux. Le choix
+            // se répercute donc là, et les deux sélecteurs restent cohérents.
+            value={personFilter === DIRECTORS_ONLY ? DIRECTORS_ONLY : directorFilter}
             onChange={(e) => {
+              if (e.target.value === DIRECTORS_ONLY) {
+                setDirectorFilter("");
+                setPersonFilter(DIRECTORS_ONLY);
+                return;
+              }
               setDirectorFilter(e.target.value === "" ? "" : Number(e.target.value));
               setPersonFilter("");
             }}
@@ -1139,10 +1147,13 @@ export default function TalentsDashboardPage() {
               renderValue: (value: unknown) =>
                 value === "" || value === undefined
                   ? t("talents.allDirectorsScope")
-                  : directors.find((d) => d.id === value)?.name ?? "",
+                  : value === DIRECTORS_ONLY
+                    ? t("talents.directorsOnly")
+                    : directors.find((d) => d.id === value)?.name ?? "",
             }}
           >
             <MenuItem value="">{t("talents.allDirectorsScope")}</MenuItem>
+            <MenuItem value={DIRECTORS_ONLY}>{t("talents.directorsOnly")}</MenuItem>
             {directors.map((d) => (
               <MenuItem key={d.id} value={d.id}>
                 <Stack spacing={0} sx={{ minWidth: 0 }}>

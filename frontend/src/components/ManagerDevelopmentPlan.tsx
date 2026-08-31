@@ -166,7 +166,20 @@ function key(category: DevCategory, priorityOrder: number) {
   return `${category}-${priorityOrder}`;
 }
 
-export default function ManagerDevelopmentPlan({ managerId, managerName }: { managerId: number; managerName: string }) {
+/**
+ * Portée de la grille : la fiche d'une personne, ou celle d'une équipe entière.
+ * Les deux se saisissent et se lisent exactement pareil — seul l'objet auquel
+ * les lignes se rattachent change, d'où une portée plutôt que deux composants.
+ */
+export type DevPlanScope = { kind: "user" | "team"; id: number };
+
+export default function ManagerDevelopmentPlan({
+  scope,
+  title,
+}: {
+  scope: DevPlanScope;
+  title: string;
+}) {
   const { t, i18n } = useTranslation();
   const [groups, setGroups] = useState<GroupMap>({});
   const [saving, setSaving] = useState(false);
@@ -174,11 +187,18 @@ export default function ManagerDevelopmentPlan({ managerId, managerName }: { man
 
   useEffect(() => {
     setSaved(false);
+    const params =
+      scope.kind === "user"
+        ? { target_user: scope.id, page_size: 200 }
+        : { team: scope.id, page_size: 200 };
     apiClient
-      .get<Paginated<ActionPlan>>("/action-plans/", { params: { target_user: managerId, page_size: 200 } })
+      .get<Paginated<ActionPlan>>("/action-plans/", { params })
       .then((r) => {
         const map: GroupMap = {};
         r.data.results
+          // La grille d'équipe ne vise personne : ses lignes sont justement
+          // celles qui n'ont pas de destinataire, au sein de la même équipe.
+          .filter((p) => (scope.kind === "team" ? p.target_user === null : true))
           .filter((p) => p.order !== null && p.priority_order !== null)
           .sort((a, b) => (a.order as number) - (b.order as number))
           .forEach((p) => {
@@ -198,7 +218,7 @@ export default function ManagerDevelopmentPlan({ managerId, managerName }: { man
           });
         setGroups(map);
       });
-  }, [managerId]);
+  }, [scope.kind, scope.id]);
 
   function group(category: DevCategory, priorityOrder: number): PriorityGroup {
     return groups[key(category, priorityOrder)] ?? emptyGroup();
@@ -251,7 +271,10 @@ export default function ManagerDevelopmentPlan({ managerId, managerName }: { man
           }));
         })
       );
-      await apiClient.post("/action-plans/bulk-save-dev-plan/", { target_user: managerId, items });
+      await apiClient.post("/action-plans/bulk-save-dev-plan/", {
+        [scope.kind === "user" ? "target_user" : "team"]: scope.id,
+        items,
+      });
       setSaved(true);
     } finally {
       setSaving(false);
@@ -388,7 +411,7 @@ export default function ManagerDevelopmentPlan({ managerId, managerName }: { man
     <Paper elevation={0} sx={{ p: 2, mt: 2, border: "1px solid", borderColor: "divider" }}>
       <Paper elevation={0} sx={{ py: 1, mb: 2, textAlign: "center", bgcolor: "#f5efd6", border: "1px solid", borderColor: "divider" }}>
         <Typography variant="subtitle1" fontWeight={800} sx={{ color: "primary.main" }}>
-          {`ID-PMC_ ${t("managerDevPlan.title", { name: managerName }).toUpperCase()}`}
+          {`ID-PMC_ ${title.toUpperCase()}`}
         </Typography>
       </Paper>
 

@@ -341,7 +341,8 @@
     "viewStrengths": "Strengths & weaknesses",
     "viewRelationship": "Relationship dynamic",
     "noHistory": "No cohesion measurement recorded for this team.",
-    "subtitle": "Cohesion score, strengths and weaknesses, and relationship dynamic of the team."
+    "subtitle": "Cohesion score, strengths and weaknesses, and relationship dynamic of the team.",
+    "allDirectors": "All directors"
   },
   "evaluations": {
     "title": "ID-3A Evaluations",
@@ -439,7 +440,10 @@
     "pickManagerFirst": "Pick a manager to open their individual development plan.",
     "pickMemberFirst": "Pick a team member to open their individual development plan.",
     "responsibleHelper": "Who is accountable",
-    "targetHelper": "Who it is aimed at"
+    "targetHelper": "Who it is aimed at",
+    "allDirectors": "All directors",
+    "pickTeamFirst": "Pick a team to display its development plan.",
+    "teamPlanTitle": "Development plan — {{name}} team"
   },
   "managerDevPlan": {
     "title": "Development Plan for the Manager",

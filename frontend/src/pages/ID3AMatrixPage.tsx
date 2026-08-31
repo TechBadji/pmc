@@ -57,11 +57,18 @@ import { CHART_NEUTRALS, performanceColors } from "@/theme";
 // exceptionnelle peut se situer au-delà de 5 — sans cette marge, un point à
 // 5,5 serait collé au bord du repère, voire hors cadre. La frontière des
 // quadrants reste à 2,5, milieu du barème et non de l'axe.
+/** Bornes des deux axes. Les aptitudes (ordonnée) montent un cran plus haut
+ *  que les attitudes : la grille n'est donc plus carrée, et tout ce qui la
+ *  dessine — fond, quadrants, mini-graphe — s'appuie sur la borne de son
+ *  propre axe. Les cadrans restent découpés à 2,5 sur chaque axe. */
 const AXIS_MAX = 6;
+const AXIS_MAX_Y = 7;
 const AXIS_TICKS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
+const AXIS_TICKS_Y = [...AXIS_TICKS, 6.5, 7];
 // Quadrillage secondaire (pas de 0.25) — lecture plus fine entre les
 // graduations principales de 0.5, sans les dupliquer.
 const MINOR_AXIS_TICKS = [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25, 5.75];
+const MINOR_AXIS_TICKS_Y = [...MINOR_AXIS_TICKS, 6.25, 6.75];
 
 const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
 
@@ -137,7 +144,7 @@ function declutterPoints(points: Point[]): Point[] {
   }
   adjusted.forEach((p) => {
     p.x = Math.min(AXIS_MAX, Math.max(0, p.x));
-    p.y = Math.min(AXIS_MAX, Math.max(0, p.y));
+    p.y = Math.min(AXIS_MAX_Y, Math.max(0, p.y));
   });
   return adjusted;
 }
@@ -436,7 +443,7 @@ function MatrixBackground({ xAxisMap, yAxisMap, enabled }: any) {
   const x0 = xAxis.scale(0);
   const x5 = xAxis.scale(AXIS_MAX);
   const y0 = yAxis.scale(0);
-  const y5 = yAxis.scale(AXIS_MAX);
+  const y5 = yAxis.scale(AXIS_MAX_Y);
   return (
     <rect
       x={Math.min(x0, x5)}
@@ -457,7 +464,7 @@ function MatrixQuadrants({ xAxisMap, yAxisMap }: any) {
   const x5 = xAxis.scale(AXIS_MAX);
   const xMid = xAxis.scale(2.5);
   const y0 = yAxis.scale(0);
-  const y5 = yAxis.scale(AXIS_MAX);
+  const y5 = yAxis.scale(AXIS_MAX_Y);
   const yMid = yAxis.scale(2.5);
   const labelStyle = {
     fontSize: 10,
@@ -510,7 +517,7 @@ function ObjectiveMiniChart({ current, prev }: ObjectivePair) {
   const plotW = W - ML - MR;
   const plotH = H - MT - MB;
   const sx = (v: number) => ML + (v / AXIS_MAX) * plotW;
-  const sy = (v: number) => MT + plotH - (v / AXIS_MAX) * plotH;
+  const sy = (v: number) => MT + plotH - (v / AXIS_MAX_Y) * plotH;
   const color = performanceColors[current.rating];
 
   return (
@@ -518,7 +525,7 @@ function ObjectiveMiniChart({ current, prev }: ObjectivePair) {
       {/* axes */}
       <line x1={ML} y1={MT} x2={ML} y2={MT + plotH} stroke={CHART_NEUTRALS.plotAxisLine} strokeWidth={1} />
       <line x1={ML} y1={MT + plotH} x2={ML + plotW} y2={MT + plotH} stroke={CHART_NEUTRALS.plotAxisLine} strokeWidth={1} />
-      <text x={ML - 4} y={MT + 4} textAnchor="end" fontSize={8} fill="#898781">{AXIS_MAX}</text>
+      <text x={ML - 4} y={MT + 4} textAnchor="end" fontSize={8} fill="#898781">{AXIS_MAX_Y}</text>
       <text x={ML - 4} y={MT + plotH} textAnchor="end" fontSize={8} fill="#898781">0</text>
       <text x={ML} y={H - 2} textAnchor="start" fontSize={8} fill="#898781">0</text>
       <text x={ML + plotW} y={H - 2} textAnchor="end" fontSize={8} fill="#898781">{AXIS_MAX}</text>
@@ -1119,7 +1126,7 @@ export default function ID3AMatrixPage() {
           <ResponsiveContainer width={isManager || isCompanyAdmin ? "80%" : "100%"} height={480}>
             <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
               <Customized component={<MatrixBackground enabled={matrixBackground} />} />
-              <CartesianGrid horizontalValues={MINOR_AXIS_TICKS} verticalValues={MINOR_AXIS_TICKS} stroke="#e1e0d9" strokeDasharray="2 3" strokeOpacity={0.6} />
+              <CartesianGrid horizontalValues={MINOR_AXIS_TICKS_Y} verticalValues={MINOR_AXIS_TICKS} stroke="#e1e0d9" strokeDasharray="2 3" strokeOpacity={0.6} />
               <CartesianGrid stroke="#e1e0d9" />
               <XAxis
                 type="number"
@@ -1134,8 +1141,8 @@ export default function ID3AMatrixPage() {
                 type="number"
                 dataKey="y"
                 name="Aptitudes (Hard Skills)"
-                domain={[0, AXIS_MAX]}
-                ticks={AXIS_TICKS}
+                domain={[0, AXIS_MAX_Y]}
+                ticks={AXIS_TICKS_Y}
                 tick={{ fill: "#898781", fontSize: 12 }}
                 label={{ value: "APTITUDES (HARD SKILLS)", angle: -90, position: "insideLeft", fill: CHART_NEUTRALS.axisTitle }}
               />

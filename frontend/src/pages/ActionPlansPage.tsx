@@ -15,12 +15,6 @@ import {
   MenuItem,
   Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
@@ -35,12 +29,6 @@ import type { ActionPlan, Department, Evaluation, Paginated, UserRecord } from "
 import { performanceColors } from "@/theme";
 import { SUPPORT_THRESHOLD, lastEvaluationByUser, ratingForAltitude } from "@/utils/performance";
 
-const STATUS_COLOR: Record<ActionPlan["status"], "default" | "info" | "success"> = {
-  TODO: "default",
-  IN_PROGRESS: "info",
-  DONE: "success",
-};
-
 const EMPTY_FORM = {
   team: "" as number | "",
   target_user: "" as number | "",
@@ -51,6 +39,9 @@ const EMPTY_FORM = {
   due_date: "",
 };
 
+/** Option du sélecteur : l'équipe formée par le CEO et ses directeurs. */
+const DIRECTORS_TEAM = "__directors__";
+
 export default function ActionPlansPage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
@@ -60,11 +51,24 @@ export default function ActionPlansPage() {
   const [people, setPeople] = useState<UserRecord[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [managers, setManagers] = useState<UserRecord[]>([]);
-  const [selectedManagerId, setSelectedManagerId] = useState<number | "">("");
+  const [selectedManagerId, setSelectedManagerId] = useState<number | "" | typeof DIRECTORS_TEAM>("");
   // Deux plans coexistent : celui d'une personne (grille de développement) et
   // celui de l'équipe (actions libres). Ils ne se lisent pas ensemble.
   const [view, setView] = useState<"individual" | "team">("team");
   const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
+  // Le comité de direction : le département dont le CEO est le manager. C'est
+  // lui que désigne l'option « Tous les directeurs ».
+  const ownTeam = isCompanyAdmin ? departments.find((d) => d.manager === user!.id) : undefined;
+  /** Équipe dont la grille est affichée : celle du manager choisi, ou le comité
+   *  de direction quand tous les directeurs sont visés. */
+  const teamScopeId =
+    selectedManagerId === DIRECTORS_TEAM
+      ? ownTeam?.id ?? null
+      : managers.find((m) => m.id === selectedManagerId)?.department ?? null;
+  const teamScopeName =
+    selectedManagerId === DIRECTORS_TEAM
+      ? t("actionPlans.allDirectors")
+      : departments.find((d) => d.id === teamScopeId)?.name ?? "";
   const canEdit = isCompanyAdmin || user?.role === "MANAGER";
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -214,42 +218,49 @@ export default function ActionPlansPage() {
             </ToggleButton>
           </ToggleButtonGroup>
 
-          {view === "individual" && (
-            <TextField
-              select
-              size="small"
-              label={isCompanyAdmin ? t("managerDevPlan.selectManager") : t("actionPlans.selectMember")}
-              value={selectedManagerId}
-              onChange={(e) => setSelectedManagerId(e.target.value === "" ? "" : Number(e.target.value))}
-              sx={{ width: 260 }}
-            >
-              {managers.map((m) => (
-                // Département suffixé au nom : deux homonymes restent distincts.
-                <MenuItem key={m.id} value={m.id}>
-                  {m.full_name || m.email}
-                  {m.department_name ? ` — ${m.department_name}` : ""}
-                </MenuItem>
-              ))}
-            </TextField>
-          )}
-
-          {view === "team" && (
-            <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setOpen(true)} sx={{ ml: "auto" }}>
-              {t("actionPlans.newAction")}
-            </Button>
-          )}
+          {/* Un seul sélecteur pour les deux vues : il désigne la personne dont
+            * on lit la fiche, ou le manager dont on lit la grille d'équipe. */}
+          <TextField
+            select
+            size="small"
+            label={isCompanyAdmin ? t("managerDevPlan.selectManager") : t("actionPlans.selectMember")}
+            value={selectedManagerId}
+            onChange={(e) =>
+              setSelectedManagerId(
+                e.target.value === ""
+                  ? ""
+                  : e.target.value === DIRECTORS_TEAM
+                    ? DIRECTORS_TEAM
+                    : Number(e.target.value)
+              )
+            }
+            sx={{ width: 260 }}
+          >
+            {view === "team" && ownTeam && (
+              <MenuItem value={DIRECTORS_TEAM}>{t("actionPlans.allDirectors")}</MenuItem>
+            )}
+            {managers.map((m) => (
+              // Département suffixé au nom : deux homonymes restent distincts.
+              <MenuItem key={m.id} value={m.id}>
+                {m.full_name || m.email}
+                {m.department_name ? ` — ${m.department_name}` : ""}
+              </MenuItem>
+            ))}
+          </TextField>
         </Stack>
       )}
 
       {view === "individual" &&
-        (selectedManagerId === "" ? (
+        (selectedManagerId === "" || selectedManagerId === DIRECTORS_TEAM ? (
           <Alert severity="info">
             {isCompanyAdmin ? t("actionPlans.pickManagerFirst") : t("actionPlans.pickMemberFirst")}
           </Alert>
         ) : (
           <ManagerDevelopmentPlan
-            managerId={selectedManagerId}
-            managerName={managers.find((m) => m.id === selectedManagerId)?.full_name ?? ""}
+            scope={{ kind: "user", id: selectedManagerId as number }}
+            title={t("managerDevPlan.title", {
+              name: managers.find((m) => m.id === selectedManagerId)?.full_name ?? "",
+            })}
           />
         ))}
 
@@ -321,47 +332,19 @@ export default function ActionPlansPage() {
         </Box>
       )}
 
-      {view === "team" && (
-      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>{t("actionPlans.priority")}</TableCell>
-                <TableCell>{t("cohesion.team")}</TableCell>
-                <TableCell>{t("actionPlans.targetUser")}</TableCell>
-                <TableCell>{t("actionPlans.category")}</TableCell>
-                <TableCell>{t("actionPlans.startDate")}</TableCell>
-                <TableCell>{t("actionPlans.endDate")}</TableCell>
-                <TableCell>{t("common.status")}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {plans.map((p) => (
-                <TableRow key={p.id} hover>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={600}>
-                      {p.priority}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {p.objective}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{p.team_name}</TableCell>
-                  <TableCell>{p.target_user_name ?? t("actionPlans.wholeTeam")}</TableCell>
-                  <TableCell>{p.category === "HARD_SKILLS" ? "Hard Skills" : "Soft Skills"}</TableCell>
-                  <TableCell>{p.start_date ?? "—"}</TableCell>
-                  <TableCell>{p.due_date ?? "—"}</TableCell>
-                  <TableCell>
-                    <Chip size="small" label={t(`actionPlans.status.${p.status}`)} color={STATUS_COLOR[p.status]} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
-      )}
+      {/* La grille du plan de développement, mais rapportée à l'équipe : mêmes
+        * priorités, mêmes actions, sans destinataire nommé. Le tableau de suivi
+        * des actions libres qui occupait cette place ne disait rien du plan
+        * lui-même — il listait des lignes, quand la grille les organise. */}
+      {view === "team" &&
+        (teamScopeId === null ? (
+          <Alert severity="info">{t("actionPlans.pickTeamFirst")}</Alert>
+        ) : (
+          <ManagerDevelopmentPlan
+            scope={{ kind: "team", id: teamScopeId }}
+            title={t("actionPlans.teamPlanTitle", { name: teamScopeName })}
+          />
+        ))}
 
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>{t("actionPlans.newPlan")}</DialogTitle>

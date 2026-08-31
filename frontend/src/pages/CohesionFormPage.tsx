@@ -148,6 +148,12 @@ function ScoreOval({ selected, color, onClick, ariaLabel }: { selected: boolean;
   );
 }
 
+/** Option du sélecteur d'équipe : le CEO et ses directeurs, considérés comme
+ *  une équipe à part entière. Le comité de direction porte le stockage — c'est
+ *  le département dont le CEO est le manager — mais sa composition affichée est
+ *  calculée : le CEO, puis ceux qui dirigent une direction. */
+const DIRECTORS_TEAM = "__directors__";
+
 export default function CohesionFormPage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
@@ -156,10 +162,14 @@ export default function CohesionFormPage() {
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [teamId, setTeamId] = useState<number | "">("");
-  // Trois lectures d'une même équipe : sa cohésion mesurée, ses forces et
-  // faiblesses, sa dynamique relationnelle.
+  // Trois lectures d'une même équipe, dans l'ordre où elles se travaillent :
+  // la cohésion mesurée, la dynamique relationnelle qui l'explique, puis les
+  // forces et faiblesses qui s'en déduisent.
   const [view, setView] = useState<"cohesion" | "strengths" | "relationship">("cohesion");
   const [teamMembers, setTeamMembers] = useState<UserRecord[]>([]);
+  // Vue « Tous les directeurs » : la planche reste celle du comité de
+  // direction, seule sa composition change.
+  const [directorsView, setDirectorsView] = useState(false);
   const [teamRelationships, setTeamRelationships] = useState<TeamRelationship[]>([]);
   const board = useTeamBoard(teamId);
   const [rows, setRows] = useState<CriterionRow[]>(
@@ -249,11 +259,27 @@ export default function CohesionFormPage() {
       setTeamRelationships([]);
       return;
     }
-    apiClient
-      .get<Paginated<UserRecord>>("/users/", { params: { department: teamId, page_size: 200 } })
-      .then((r) => setTeamMembers(r.data.results));
+    if (directorsView) {
+      // Les directeurs ne sont pas rattachés au comité de direction : ils
+      // dirigent leur propre direction. La composition se reconstitue donc à
+      // partir de qui encadre quoi, le CEO en tête.
+      Promise.all([
+        apiClient.get<Paginated<UserRecord>>("/users/", { params: { role: "MANAGER", page_size: 200 } }),
+        apiClient.get<Paginated<UserRecord>>("/users/", { params: { role: "COMPANY_ADMIN", page_size: 50 } }),
+      ]).then(([managers, admins]) => {
+        const directionIds = new Set(departments.filter((d) => d.parent === null).map((d) => d.manager));
+        const directors = managers.data.results.filter((m) => directionIds.has(m.id));
+        const ceo = admins.data.results.find((a) => a.id === user?.id);
+        setTeamMembers(ceo ? [ceo, ...directors] : directors);
+      });
+    } else {
+      apiClient
+        .get<Paginated<UserRecord>>("/users/", { params: { department: teamId, page_size: 200 } })
+        .then((r) => setTeamMembers(r.data.results));
+    }
     loadRelationships();
-  }, [teamId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamId, directorsView, departments]);
 
   /** Relit les relations : la matrice de saisie écrit directement en base. */
   function loadRelationships() {
@@ -268,8 +294,12 @@ export default function CohesionFormPage() {
   // seulement par le CEO ou l'encadrant de l'équipe.
   const canEditBoard = (isCompanyAdmin || user?.role === "MANAGER") && board.draft !== null;
 
-  const ownTeamExists = !isCompanyAdmin || departments.some((d) => d.manager === user!.id);
+  // Le comité de direction : le département dont le CEO est le manager. Il
+  // porte la planche « Tous les directeurs ».
+  const ownTeam = isCompanyAdmin ? departments.find((d) => d.manager === user!.id) : undefined;
+  const ownTeamExists = !isCompanyAdmin || Boolean(ownTeam);
   const selectedDept = departments.find((d) => d.id === teamId);
+  const boardTeamName = directorsView ? t("cohesion.allDirectors") : selectedDept?.name ?? "";
 
   async function handleProvisionOwnTeam() {
     if (!user) return;
@@ -417,8 +447,8 @@ export default function CohesionFormPage() {
           }}
         >
           <ToggleButton value="cohesion">{t("cohesion.viewSheet")}</ToggleButton>
-          <ToggleButton value="strengths">{t("cohesion.viewStrengths")}</ToggleButton>
           <ToggleButton value="relationship">{t("cohesion.viewRelationship")}</ToggleButton>
+          <ToggleButton value="strengths">{t("cohesion.viewStrengths")}</ToggleButton>
         </ToggleButtonGroup>
 
         {/* L'équipe se choisit dans toutes les vues : la fiche de cohésion a
@@ -428,10 +458,21 @@ export default function CohesionFormPage() {
             select
             size="small"
             label={t("cohesion.team")}
-            value={teamId}
-            onChange={(e) => setTeamId(Number(e.target.value))}
+            value={directorsView ? DIRECTORS_TEAM : teamId}
+            onChange={(e) => {
+              if (e.target.value === DIRECTORS_TEAM) {
+                setDirectorsView(true);
+                if (ownTeam) setTeamId(ownTeam.id);
+              } else {
+                setDirectorsView(false);
+                setTeamId(Number(e.target.value));
+              }
+            }}
             sx={{ minWidth: 260 }}
           >
+            {ownTeam && (
+              <MenuItem value={DIRECTORS_TEAM}>{t("cohesion.allDirectors")}</MenuItem>
+            )}
             {departments.map((d) => (
               <MenuItem key={d.id} value={d.id}>
                 {d.name}
@@ -463,7 +504,7 @@ export default function CohesionFormPage() {
               board={board.draft}
               patch={board.patch}
               readOnly={!canEditBoard}
-              teamName={departments.find((d) => d.id === teamId)?.name ?? ""}
+              teamName={boardTeamName}
               teamSize={teamMembers.length}
             />
           ) : (
@@ -473,7 +514,7 @@ export default function CohesionFormPage() {
               readOnly={!canEditBoard}
               members={teamMembers}
               relationships={teamRelationships}
-              teamName={departments.find((d) => d.id === teamId)?.name ?? ""}
+              teamName={boardTeamName}
               iceScore={history.length ? Number(history[0].ice_score) : null}
               teamId={teamId === "" ? 0 : teamId}
               managerId={departments.find((d) => d.id === teamId)?.manager ?? null}
@@ -506,14 +547,21 @@ export default function CohesionFormPage() {
             </Typography>
             <TextField
               select
-              value={teamId}
+              value={directorsView ? DIRECTORS_TEAM : teamId}
               onChange={(e) => {
-                setTeamId(Number(e.target.value));
+                if (e.target.value === DIRECTORS_TEAM) {
+                  setDirectorsView(true);
+                  if (ownTeam) setTeamId(ownTeam.id);
+                } else {
+                  setDirectorsView(false);
+                  setTeamId(Number(e.target.value));
+                }
                 setSaved(false);
               }}
               size="small"
               sx={{ minWidth: 260 }}
             >
+              {ownTeam && <MenuItem value={DIRECTORS_TEAM}>{t("cohesion.allDirectors")}</MenuItem>}
               {departments.map((d) => (
                 <MenuItem key={d.id} value={d.id}>
                   {d.name}

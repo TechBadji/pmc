@@ -544,7 +544,10 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
                         <circle cx={x} cy={top + height / 2} r={height / 2} />
                       </clipPath>
                     )}
-                    <circle cx={x} cy={top + height / 2} r={height / 2} fill="#e9edf4" stroke={NAVY} strokeWidth={4} />
+                    {/* Pas de fond : la vignette se pose sur la planche comme
+                        les portraits, sans pastille qui masque le quadrillage.
+                        Seul le cercle de contour situe la personne. */}
+                    <circle cx={x} cy={top + height / 2} r={height / 2} fill="none" stroke={NAVY} strokeWidth={4} />
                     {person.avatar ? (
                       <image
                         href={person.avatar}

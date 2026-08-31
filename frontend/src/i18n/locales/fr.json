@@ -341,7 +341,8 @@
     "viewStrengths": "Forces & faiblesses",
     "viewRelationship": "Dynamique relationnelle",
     "noHistory": "Aucune mesure de cohésion enregistrée pour cette équipe.",
-    "subtitle": "Mesure de la cohésion, forces et faiblesses, et dynamique relationnelle de l'équipe."
+    "subtitle": "Mesure de la cohésion, forces et faiblesses, et dynamique relationnelle de l'équipe.",
+    "allDirectors": "Tous les directeurs"
   },
   "evaluations": {
     "title": "Évaluations ID-3A",
@@ -439,7 +440,10 @@
     "pickManagerFirst": "Choisissez un manager pour ouvrir son plan de développement individuel.",
     "pickMemberFirst": "Choisissez un collaborateur pour ouvrir son plan de développement individuel.",
     "responsibleHelper": "Qui répond de cette action",
-    "targetHelper": "Qui elle vise"
+    "targetHelper": "Qui elle vise",
+    "allDirectors": "Tous les directeurs",
+    "pickTeamFirst": "Choisissez une équipe pour afficher son plan de développement.",
+    "teamPlanTitle": "Plan de développement de l'équipe {{name}}"
   },
   "managerDevPlan": {
     "title": "Plan de Développement pour le Manager",

@@ -3,12 +3,12 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from apps.core.models import User
+from apps.core.models import Department, User
 from apps.core.permissions import (
     CompanyScopedQuerySetMixin,
     IsCompanyAdminOrManager,
 )
-from apps.core.scoping import manages_user
+from apps.core.scoping import manages_department, manages_user
 from apps.core.validators import require_same_company
 
 from .models import ActionPlan
@@ -55,32 +55,54 @@ class ActionPlanViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="bulk-save-dev-plan")
     def bulk_save_dev_plan(self, request):
-        """Grille "Plan de développement du manager" (3 priorités Soft Skills
-        + 3 priorités Hard Skills, chacune portant une ou plusieurs actions) —
-        même logique "tout ou rien" que SkillNote.bulk_save : remplace en une
-        fois les lignes rattachées à ce manager (target_user + order
-        renseigné), sans toucher aux plans d'action libres (order NULL) déjà
-        créés depuis la page équipe."""
-        target_user_id = request.data.get("target_user")
-        items = request.data.get("items", [])
-        try:
-            target_user = User.objects.select_related("company", "department").get(pk=target_user_id)
-        except (User.DoesNotExist, TypeError, ValueError):
-            raise ValidationError({"target_user": "Manager introuvable."})
-        require_same_company(request.user, target_user=target_user)
-        actor = request.user
-        if actor.role == User.Role.MANAGER:
-            # Son périmètre, et pas lui-même : sa propre fiche relève du CEO.
-            if target_user.id == actor.id or not manages_user(actor, target_user):
-                raise ValidationError(
-                    {"target_user": "Ce collaborateur ne fait pas partie de votre équipe."}
-                )
-        elif target_user.role != User.Role.MANAGER:
-            raise ValidationError({"target_user": "Le plan de développement ne concerne que les managers."})
+        """Grille "Plan de développement" (3 priorités Soft Skills + 3 priorités
+        Hard Skills, chacune portant une ou plusieurs actions) — même logique
+        "tout ou rien" que SkillNote.bulk_save : remplace en une fois les lignes
+        de la grille (order renseigné), sans toucher aux plans d'action libres
+        (order NULL) créés depuis la page équipe.
 
-        team = target_user.department
-        if team is None:
-            raise ValidationError({"target_user": "Ce manager n'est rattaché à aucun département."})
+        La grille sert deux portées, et une seule est attendue par appel :
+        `target_user` pour la fiche d'une personne, `team` pour celle d'une
+        équipe entière. La seconde ne vise personne en particulier — ses lignes
+        portent `target_user` à NULL, ce qui les distingue naturellement des
+        fiches individuelles rattachées à la même équipe.
+        """
+        target_user_id = request.data.get("target_user")
+        team_id = request.data.get("team")
+        items = request.data.get("items", [])
+        actor = request.user
+
+        if target_user_id in (None, "") and team_id in (None, ""):
+            raise ValidationError({"target_user": "Indiquez la personne ou l'équipe concernée."})
+
+        target_user = None
+        if target_user_id not in (None, ""):
+            try:
+                target_user = User.objects.select_related("company", "department").get(pk=target_user_id)
+            except (User.DoesNotExist, TypeError, ValueError):
+                raise ValidationError({"target_user": "Manager introuvable."})
+            require_same_company(actor, target_user=target_user)
+            if actor.role == User.Role.MANAGER:
+                # Son périmètre, et pas lui-même : sa propre fiche relève du CEO.
+                if target_user.id == actor.id or not manages_user(actor, target_user):
+                    raise ValidationError(
+                        {"target_user": "Ce collaborateur ne fait pas partie de votre équipe."}
+                    )
+            elif target_user.role != User.Role.MANAGER:
+                raise ValidationError({"target_user": "Le plan de développement ne concerne que les managers."})
+
+            team = target_user.department
+            if team is None:
+                raise ValidationError({"target_user": "Ce manager n'est rattaché à aucun département."})
+        else:
+            try:
+                team = Department.objects.select_related("company").get(pk=team_id)
+            except (Department.DoesNotExist, TypeError, ValueError):
+                raise ValidationError({"team": "Équipe introuvable."})
+            if team.company_id != actor.company_id:
+                raise ValidationError({"team": "Cette équipe n'appartient pas à votre entreprise."})
+            if actor.role == User.Role.MANAGER and not manages_department(actor, team):
+                raise ValidationError({"team": "Cette équipe ne fait pas partie de votre périmètre."})
 
         valid_categories = {c.value for c in ActionPlan.Category}
         cleaned = []
@@ -124,13 +146,18 @@ class ActionPlanViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
                 )
             )
 
-        ActionPlan.objects.filter(target_user=target_user, order__isnull=False).delete()
+        # La portée du remplacement suit celle de l'appel : la fiche d'une
+        # personne, ou celle de l'équipe (les lignes sans destinataire).
+        if target_user is not None:
+            scope = ActionPlan.objects.filter(target_user=target_user, order__isnull=False)
+        else:
+            scope = ActionPlan.objects.filter(team=team, target_user__isnull=True, order__isnull=False)
+
+        scope.delete()
         ActionPlan.objects.bulk_create(cleaned)
         return Response(
             ActionPlanSerializer(
-                ActionPlan.objects.filter(target_user=target_user, order__isnull=False).order_by(
-                    "category", "priority_order", "order"
-                ),
+                scope.order_by("category", "priority_order", "order"),
                 many=True,
             ).data
         )
