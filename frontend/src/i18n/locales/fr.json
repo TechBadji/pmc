@@ -465,7 +465,8 @@
     "eval": "Éval.",
     "softSkills": "SOFT SKILLS",
     "hardSkills": "HARD SKILLS",
-    "saved": "Enregistré."
+    "saved": "Enregistré.",
+    "actionsColTeam": "Plan d'actions pour renforcer la performance de l'équipe"
   },
   "performanceId": {
     "selectPerson": "Choisir une personne",

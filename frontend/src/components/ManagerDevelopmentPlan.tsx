@@ -436,7 +436,9 @@ export default function ManagerDevelopmentPlan({
                 {t("managerDevPlan.kpis")}
               </TableCell>
               <TableCell rowSpan={2} sx={{ bgcolor: HEADER_ORANGE, color: "#fff", fontWeight: 700, textAlign: "center" }}>
-                {t("managerDevPlan.actionsCol")}
+                {/* L'intitulé nomme ce que le plan cherche à renforcer : le
+                    manager sur sa fiche, l'équipe sur celle de l'équipe. */}
+                {t(scope.kind === "team" ? "managerDevPlan.actionsColTeam" : "managerDevPlan.actionsCol")}
               </TableCell>
               <TableCell colSpan={2} sx={{ bgcolor: HEADER_ORANGE, color: "#fff", fontWeight: 700, textAlign: "center" }}>
                 {t("managerDevPlan.timing")}
