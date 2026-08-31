@@ -125,6 +125,7 @@ const CELL_EDGE = "#b3c6dd";
 /** Contour et aplats des compartiments, partagés avec l'ID-TPD : les deux
  *  planches croisent les mêmes axes et doivent se lire de la même couleur. */
 const COMPARTMENT_EDGE = QUADRANT_EDGE;
+const COMPARTMENT_STROKE = 7;
 const POSTIT = "#f5e050";
 const GREEN = "#7cb342";
 const TEXT = "#1a2744";
@@ -420,7 +421,14 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
               d={roundedQuad(c.u0, c.u1, c.v0, c.v1, 62)}
               fill={QUADRANT_TINTS[c.key as keyof typeof QUADRANT_TINTS]}
               stroke={COMPARTMENT_EDGE}
-              strokeWidth={7}
+              strokeWidth={COMPARTMENT_STROKE}
+              // Pointillés ronds, comme sur l'ID-TPD. Les valeurs diffèrent des
+              // siennes (1 et 6) parce que le trait est plus épais ici : ce
+              // sont les proportions qui sont reprises, un point large comme le
+              // trait et un intervalle du double — pas les nombres eux-mêmes,
+              // qui donneraient un pointillé deux fois plus serré.
+              strokeDasharray={`${COMPARTMENT_STROKE * 0.3} ${COMPARTMENT_STROKE * 2}`}
+              strokeLinecap="round"
               strokeLinejoin="round"
             />
           ))}
