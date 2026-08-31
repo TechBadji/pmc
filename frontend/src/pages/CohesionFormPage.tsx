@@ -260,15 +260,25 @@ export default function CohesionFormPage() {
       return;
     }
     if (directorsView) {
-      // Les directeurs ne sont pas rattachés au comité de direction : ils
-      // dirigent leur propre direction. La composition se reconstitue donc à
-      // partir de qui encadre quoi, le CEO en tête.
+      // Un directeur n'est pas *membre* du comité : il appartient à sa propre
+      // direction et n'est rattaché au CEO que par son responsable
+      // hiérarchique. Lire les membres du département ne donnerait donc que
+      // l'équipe rapprochée du CEO, jamais ses directeurs.
+      //
+      // Le critère retenu est ce rattachement hiérarchique. S'y ajoutent ceux
+      // qui dirigent une direction, au cas où le lien n'aurait pas été saisi :
+      // les deux conventions coexistent selon le paramétrage de l'entreprise,
+      // et aucun directeur ne doit manquer à la planche.
       Promise.all([
         apiClient.get<Paginated<UserRecord>>("/users/", { params: { role: "MANAGER", page_size: 200 } }),
         apiClient.get<Paginated<UserRecord>>("/users/", { params: { role: "COMPANY_ADMIN", page_size: 50 } }),
       ]).then(([managers, admins]) => {
-        const directionIds = new Set(departments.filter((d) => d.parent === null).map((d) => d.manager));
-        const directors = managers.data.results.filter((m) => directionIds.has(m.id));
+        const headsOfDirection = new Set(
+          departments.filter((d) => d.parent === null).map((d) => d.manager)
+        );
+        const directors = managers.data.results.filter(
+          (m) => m.manager === user?.id || headsOfDirection.has(m.id)
+        );
         const ceo = admins.data.results.find((a) => a.id === user?.id);
         setTeamMembers(ceo ? [ceo, ...directors] : directors);
       });
