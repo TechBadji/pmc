@@ -1,6 +1,7 @@
 import { Paper, Stack, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import type { PerformanceRating } from "@/api/types";
+import { QUADRANT_EDGE, QUADRANT_TINTS } from "@/theme";
 
 /* ---------------------------------------------------------------------------
  * TPD-VISIO — le plateau ID-TPD.
@@ -121,7 +122,9 @@ const NAVY = "#31527f";
 const NAVY_DEEP = "#1f3760";
 const CELL_LIGHT = "#fbfdff";
 const CELL_EDGE = "#b3c6dd";
-const COMPARTMENT_EDGE = "#1d3557"; // le marine franc des compartiments du modèle
+/** Contour et aplats des compartiments, partagés avec l'ID-TPD : les deux
+ *  planches croisent les mêmes axes et doivent se lire de la même couleur. */
+const COMPARTMENT_EDGE = QUADRANT_EDGE;
 const POSTIT = "#f5e050";
 const GREEN = "#7cb342";
 const TEXT = "#1a2744";
@@ -405,15 +408,17 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
         </g>
 
         {/* ---- Les quatre compartiments ------------------------------------
-            Évidés, cernés d'un trait marine épais : c'est le dessin du modèle.
-            Remplis, ils masquaient le quadrillage et alourdissaient la
-            planche. */}
+            Cernés d'un trait épais, sur l'aplat qui dit leur sens : vert en
+            haut à droite pour les performants qui progressent, rouge en bas à
+            gauche pour ceux qui reculent. Ce sont les teintes de l'ID-TPD, et
+            elles viennent de la même source — les deux planches croisent les
+            mêmes axes, elles ne peuvent pas se contredire en couleur. */}
         <g id="compartments">
           {COMPARTMENTS.map((c) => (
             <path
               key={c.key}
               d={roundedQuad(c.u0, c.u1, c.v0, c.v1, 62)}
-              fill="none"
+              fill={QUADRANT_TINTS[c.key as keyof typeof QUADRANT_TINTS]}
               stroke={COMPARTMENT_EDGE}
               strokeWidth={7}
               strokeLinejoin="round"

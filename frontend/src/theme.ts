@@ -62,6 +62,25 @@ export function cohesionColor(score: number): string {
 // dirigeante, jamais réutilisé comme code de performance ou de catégorie.
 export const EXECUTIVE_BADGE_COLOR = "#9C7A2E";
 
+/**
+ * Teintes des quatre quadrants performance × évolution, communes à l'ID-TPD et
+ * à TPD-VISIO : les deux planches disent la même chose et doivent donc la dire
+ * de la même couleur. Des aplats très pâles — ce sont les silhouettes qui
+ * portent la lecture, pas le fond.
+ *
+ * `tl` bas de performance mais en progrès, `tr` performants qui progressent,
+ * `bl` en difficulté et en recul, `br` performants mais qui décrochent.
+ */
+export const QUADRANT_TINTS = {
+  tl: "#eef4fd",
+  tr: "#ecf8ee",
+  bl: "#fdeeec",
+  br: "#fdf6e9",
+} as const;
+
+/** Contour des quadrants, de part et d'autre. */
+export const QUADRANT_EDGE = "#3a5a8c";
+
 export function createAppTheme(mode: PaletteMode) {
   return createTheme({
     palette: {

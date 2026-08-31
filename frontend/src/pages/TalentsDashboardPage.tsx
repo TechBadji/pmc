@@ -35,7 +35,7 @@ import PersonOption, { rankPeopleByHierarchy } from "@/components/PersonOption";
 import StatCard from "@/components/StatCard";
 import TpdVisioBoard from "@/components/talents/TpdVisioBoard";
 import { departmentScopeNames, orderedDepartmentOptions } from "@/utils/departments";
-import { CHART_NEUTRALS, performanceColors } from "@/theme";
+import { CHART_NEUTRALS, QUADRANT_EDGE, QUADRANT_TINTS, performanceColors } from "@/theme";
 
 /**
  * Module 4 — Tableau de Bord des Talents (ID-TPD).
@@ -392,7 +392,7 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
         rx={26}
         ry={26}
         fill={mode === "fill" ? tint : "none"}
-        stroke={mode === "stroke" ? "#3a5a8c" : "none"}
+        stroke={mode === "stroke" ? QUADRANT_EDGE : "none"}
         strokeWidth={3}
         strokeDasharray="1 6"
         strokeLinecap="round"
@@ -403,10 +403,10 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
   return (
     <g>
       {/* 1. Aplats des quadrants */}
-      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, 0, TRAJECTORY_Y[1], "tl-f", "#eef4fd", "fill")}
-      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], 0, TRAJECTORY_Y[1], "tr-f", "#ecf8ee", "fill")}
-      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[0], 0, "bl-f", "#fdeeec", "fill")}
-      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], TRAJECTORY_Y[0], 0, "br-f", "#fdf6e9", "fill")}
+      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, 0, TRAJECTORY_Y[1], "tl-f", QUADRANT_TINTS.tl, "fill")}
+      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], 0, TRAJECTORY_Y[1], "tr-f", QUADRANT_TINTS.tr, "fill")}
+      {quadrant(TRAJECTORY_X[0], TRAJECTORY_ORIGIN_X, TRAJECTORY_Y[0], 0, "bl-f", QUADRANT_TINTS.bl, "fill")}
+      {quadrant(TRAJECTORY_ORIGIN_X, TRAJECTORY_X[1], TRAJECTORY_Y[0], 0, "br-f", QUADRANT_TINTS.br, "fill")}
 
       {/* 2. Quadrillage régulier, dessiné par-dessus les aplats : un pas de 5 %
         * en abscisse et de 5 points en ordonnée, soit des carreaux réguliers.
