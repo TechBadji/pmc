@@ -104,8 +104,8 @@
     "forgotError": "Something went wrong, please try again."
   },
   "changePassword": {
-    "title": "Password change required",
-    "greeting": "Hello {{name}}, your password must be changed before continuing.",
+    "title": "Change your password",
+    "greeting": "Hello {{name}}, choose a new password here.",
     "current": "Current password",
     "new": "New password",
     "newHelper": "At least 8 characters",
@@ -175,7 +175,7 @@
     "plan": "Plan",
     "ceoAdmin": "Company CEO / Administrator",
     "users": "Users",
-    "mustChangePassword": "must change password",
+    "mustChangePassword": "default password",
     "bulkUploadTooltip": "Bulk upload users",
     "changePlanTooltip": "Change subscription plan",
     "resetAdminPasswordTooltip": "Reset CEO password (123456)",
