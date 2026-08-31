@@ -381,6 +381,7 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
   }, [people]);
 
   const positioned = spread(people, ratios).sort((a, b) => a.y - b.y);
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
   const EDGE = 24;
 
   // Les deux flèches débordent légèrement du plateau : leur pointe est le
@@ -578,6 +579,9 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
               <g
                 key={person.userId}
                 className="tpd-person"
+                style={{ cursor: "pointer" }}
+                onMouseEnter={() => setHoveredId(person.userId)}
+                onMouseLeave={() => setHoveredId((current) => (current === person.userId ? null : current))}
                 data-user-id={person.userId}
                 data-performance={person.performance}
                 data-progression={progression ?? ""}
@@ -658,6 +662,58 @@ export default function TpdVisioBoard({ people, periodLabel }: { people: VisioPe
         {/* ---- Repères de lecture, posés hors du plateau ------------------
             Dans les compartiments, ils se perdaient derrière les silhouettes ;
             en marge, ils qualifient chaque quart d'un coup d'œil. */}
+        {/* ---- Repère de lecture au survol ---------------------------------
+            Deux traits pointillés partant des pieds de la personne survolée :
+            l'un jusqu'à l'axe des performances, l'autre jusqu'à celui des
+            écarts, chacun refermé sur la valeur exacte. C'est le même geste
+            que le curseur de l'ID-TPD, transposé au plateau en perspective.
+
+            Les traits partent de la position *dessinée*, pour qu'ils touchent
+            bien la silhouette qu'on survole, tandis que les étiquettes portent
+            la valeur *saisie*. Les deux coïncident sauf pour qui a été décalé
+            afin de ne pas en recouvrir un autre : l'étiquette reste alors la
+            référence, et c'est elle qu'on lit. */}
+        {hoveredId !== null &&
+          (() => {
+            const target = positioned.find((p) => p.person.userId === hoveredId);
+            if (!target) return null;
+            // La position sur le plateau se relit depuis le point dessiné : la
+            // profondeur donne l'ordonnée, et la largeur du plateau à cette
+            // profondeur donne l'abscisse.
+            const v = (FLOOR_FRONT_Y - target.y) / DEPTH;
+            const u = (target.x - CENTER_X) / (2 * halfSpan(v)) + 0.5;
+            const onPerfAxis = plan(u, V_ORIGIN);
+            const onEvoAxis = plan(U_ORIGIN, v);
+            const evo = target.person.progression;
+            return (
+              <g id="hover-crosshair" pointerEvents="none">
+                <g stroke={NAVY_DEEP} strokeWidth={3} strokeDasharray="10 10" strokeLinecap="round" fill="none" opacity={0.85}>
+                  <line x1={target.x} y1={target.y} x2={onPerfAxis.x} y2={onPerfAxis.y} />
+                  <line x1={target.x} y1={target.y} x2={onEvoAxis.x} y2={target.y} />
+                </g>
+                <circle cx={target.x} cy={target.y} r={9} fill={NAVY_DEEP} />
+                <circle cx={onPerfAxis.x} cy={onPerfAxis.y} r={8} fill={NAVY_DEEP} />
+                <circle cx={onEvoAxis.x} cy={target.y} r={8} fill={NAVY_DEEP} />
+
+                {/* Performance, dans la gouttière au-dessus de l'axe horizontal */}
+                <g transform={`translate(${onPerfAxis.x - 58} ${onPerfAxis.y - 40})`}>
+                  <rect width="116" height="36" rx="5" fill={NAVY_DEEP} />
+                  <text x="58" y="26" textAnchor="middle" fontSize="24" fontWeight="800" fill="#fff">
+                    {target.person.performance}%
+                  </text>
+                </g>
+
+                {/* Écart, à gauche de l'axe vertical — ses graduations sont à droite */}
+                <g transform={`translate(${onEvoAxis.x - 128} ${target.y - 18})`}>
+                  <rect width="116" height="36" rx="5" fill={evo === null ? "#5b6980" : evo >= 0 ? "#2e7d32" : RED} />
+                  <text x="58" y="26" textAnchor="middle" fontSize="24" fontWeight="800" fill="#fff">
+                    {evo === null ? "—" : `${evo > 0 ? "+" : ""}${evo}%`}
+                  </text>
+                </g>
+              </g>
+            );
+          })()}
+
         <g id="quadrant-marks" fontWeight="800" fontSize={58}>
           {COMPARTMENTS.flatMap((c) => {
             // Calés sur le compartiment qu'ils qualifient, et non sur le bord
