@@ -470,9 +470,7 @@ export default function CohesionFormPage() {
             }}
             sx={{ minWidth: 260 }}
           >
-            {ownTeam && (
-              <MenuItem value={DIRECTORS_TEAM}>{t("cohesion.allDirectors")}</MenuItem>
-            )}
+            {isCompanyAdmin && <MenuItem value={DIRECTORS_TEAM}>{t("cohesion.allDirectors")}</MenuItem>}
             {departments.map((d) => (
               <MenuItem key={d.id} value={d.id}>
                 {d.name}
@@ -482,7 +480,7 @@ export default function CohesionFormPage() {
         )}
       </Stack>
 
-      {view !== "cohesion" && (
+      {view !== "cohesion" && !(directorsView && !ownTeam) && (
         <Stack spacing={2}>
           <BoardPeriodBar
             dates={board.dates}
@@ -524,7 +522,7 @@ export default function CohesionFormPage() {
         </Stack>
       )}
 
-      {view === "cohesion" && isCompanyAdmin && !ownTeamExists && (
+      {(view === "cohesion" || directorsView) && isCompanyAdmin && !ownTeamExists && (
         <Alert
           severity="info"
           action={
@@ -561,7 +559,7 @@ export default function CohesionFormPage() {
               size="small"
               sx={{ minWidth: 260 }}
             >
-              {ownTeam && <MenuItem value={DIRECTORS_TEAM}>{t("cohesion.allDirectors")}</MenuItem>}
+              {isCompanyAdmin && <MenuItem value={DIRECTORS_TEAM}>{t("cohesion.allDirectors")}</MenuItem>}
               {departments.map((d) => (
                 <MenuItem key={d.id} value={d.id}>
                   {d.name}
