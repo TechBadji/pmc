@@ -17,7 +17,8 @@
     "evaluationCampaigns": "Evaluation campaigns",
     "directorsReview": "Performance review (Directors)",
     "performances": "Performance ID",
-    "logs": "Logs"
+    "logs": "Logs",
+    "cohesionSurvey": "My view on my division"
   },
   "common": {
     "logout": "Log out",
@@ -342,7 +343,8 @@
     "viewRelationship": "Relationship dynamic",
     "noHistory": "No cohesion measurement recorded for this team.",
     "subtitle": "Cohesion score, strengths and weaknesses, and relationship dynamic of the team.",
-    "allDirectors": "All directors"
+    "allDirectors": "All directors",
+    "viewOpinion": "Team feedback"
   },
   "evaluations": {
     "title": "ID-3A Evaluations",
@@ -802,5 +804,29 @@
     "savedAt": "Saved at {{time}}",
     "autoSave": "Saved automatically as you type",
     "sheetHint": "Objectives set at the start of the cycle, results at the end: overall performance follows."
+  },
+  "cohesionSurvey": {
+    "title": "My view on my division",
+    "subtitle": "Your view on {{team}}, across the ten cohesion criteria.",
+    "privacy": "Your answers are never read individually. Results are published to your division only from 4 respondents, as an average.",
+    "scaleHint": "1 = very low · 5 = very high",
+    "progress": "{{answered}} of {{total}} criteria rated",
+    "incomplete": "Rate all ten criteria to save.",
+    "saved": "Your feedback is saved.",
+    "update": "Update my feedback",
+    "saveFailed": "Saving failed.",
+    "noTeam": "You are not attached to a division yet, so there is nothing to rate."
+  },
+  "cohesionOpinion": {
+    "loading": "Loading feedback…",
+    "companyScore": "Company index",
+    "publishedCount": "Divisions published",
+    "companyHint": "Average of divisions weighted by their respondent count — what the average employee feels.",
+    "participation": "{{respondents}} of {{headcount}} responded",
+    "score": "Index",
+    "lowShare": "Ratings of 1 or 2",
+    "gap": "Manager / team gap",
+    "lowShareShort": "{{share}}% low ratings",
+    "tooFew": "Fewer than {{min}} respondents — not published"
   }
 }

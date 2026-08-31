@@ -396,3 +396,36 @@ export interface PerformanceObjective {
   /** Taux d'atteinte calculé par le serveur. */
   achievement_percent: number | null;
 }
+
+/** Avis individuel d'un collaborateur sur sa direction. */
+export interface CohesionResponse {
+  id: number;
+  team: number;
+  respondent: number;
+  respondent_name: string;
+  date: string;
+  scores: { criterion: string; score: number }[];
+  updated_at: string;
+}
+
+/** Résultat agrégé d'une direction : le niveau, la dispersion, la
+ *  participation — et l'écart avec la note de son encadrant. */
+export interface CohesionDirectionResult {
+  team: number;
+  team_name: string;
+  respondents: number;
+  headcount: number | null;
+  participation: number | null;
+  min_respondents: number;
+  published: boolean;
+  score: number | null;
+  low_share: number | null;
+  manager_score: number | null;
+  gap: number | null;
+  criteria: { criterion: string; score: number | null; answers: number; low_share: number | null }[];
+}
+
+export interface CohesionAggregate {
+  directions: CohesionDirectionResult[];
+  company_score: number | null;
+}

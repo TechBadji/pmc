@@ -2,7 +2,13 @@ from rest_framework import serializers
 
 from apps.core.validators import require_manages_team, require_same_company
 
-from .models import CohesionCriterionScore, TeamBoard, TeamCohesionAnalysis, TeamRelationship
+from .models import (
+    CohesionCriterionScore,
+    CohesionResponse,
+    TeamBoard,
+    TeamCohesionAnalysis,
+    TeamRelationship,
+)
 
 
 class CohesionCriterionScoreSerializer(serializers.ModelSerializer):
@@ -132,3 +138,29 @@ class TeamBoardSerializer(serializers.ModelSerializer):
         require_same_company(actor, team=team)
         require_manages_team(actor, team)
         return attrs
+
+
+class CohesionResponseSerializer(serializers.ModelSerializer):
+    """L'avis d'un collaborateur sur sa direction.
+
+    Le répondant n'est jamais choisi par le client : c'est l'utilisateur
+    connecté, sans quoi on pourrait déposer un avis sous le nom d'un autre.
+    """
+
+    respondent_name = serializers.CharField(source="respondent.full_name", read_only=True)
+
+    class Meta:
+        model = CohesionResponse
+        fields = ["id", "team", "respondent", "respondent_name", "date", "scores", "updated_at"]
+        read_only_fields = ["respondent", "respondent_name", "updated_at"]
+
+    def validate_scores(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Les notes doivent être une liste.")
+        for entry in value:
+            if not isinstance(entry, dict) or "criterion" not in entry:
+                raise serializers.ValidationError("Chaque note porte un critère.")
+            score = entry.get("score")
+            if not isinstance(score, int) or not (1 <= score <= 5):
+                raise serializers.ValidationError("Chaque note va de 1 à 5.")
+        return value

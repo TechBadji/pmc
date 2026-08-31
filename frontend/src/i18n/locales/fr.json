@@ -17,7 +17,8 @@
     "evaluationCampaigns": "Campagnes d'évaluation",
     "logs": "Logs",
     "directorsReview": "Revue des performances (Directeurs)",
-    "performances": "Performance ID"
+    "performances": "Performance ID",
+    "cohesionSurvey": "Mon avis sur ma direction"
   },
   "common": {
     "logout": "Déconnexion",
@@ -342,7 +343,8 @@
     "viewRelationship": "Dynamique relationnelle",
     "noHistory": "Aucune mesure de cohésion enregistrée pour cette équipe.",
     "subtitle": "Mesure de la cohésion, forces et faiblesses, et dynamique relationnelle de l'équipe.",
-    "allDirectors": "Tous les directeurs"
+    "allDirectors": "Tous les directeurs",
+    "viewOpinion": "Avis des équipes"
   },
   "evaluations": {
     "title": "Évaluations ID-3A",
@@ -802,5 +804,29 @@
     "savedAt": "Enregistré à {{time}}",
     "autoSave": "Enregistrement automatique à chaque saisie",
     "sheetHint": "Objectifs fixés en début de cycle, résultats en fin : la performance globale en découle."
+  },
+  "cohesionSurvey": {
+    "title": "Mon avis sur ma direction",
+    "subtitle": "Votre regard sur {{team}}, sur les dix critères de cohésion.",
+    "privacy": "Vos réponses ne sont jamais lues nominativement. Le résultat n'est publié à votre direction qu'à partir de 4 répondants, sous forme de moyenne.",
+    "scaleHint": "1 = très faible · 5 = très élevé",
+    "progress": "{{answered}} sur {{total}} critères notés",
+    "incomplete": "Notez les dix critères pour pouvoir enregistrer.",
+    "saved": "Votre avis est enregistré.",
+    "update": "Mettre à jour mon avis",
+    "saveFailed": "L'enregistrement a échoué.",
+    "noTeam": "Vous n'êtes rattaché à aucune direction : il n'y a pas d'avis à donner pour l'instant."
+  },
+  "cohesionOpinion": {
+    "loading": "Chargement des avis…",
+    "companyScore": "Indice entreprise",
+    "publishedCount": "Directions publiées",
+    "companyHint": "Moyenne des directions pondérée par leur nombre de répondants — ce que ressent le collaborateur moyen.",
+    "participation": "{{respondents}} répondants sur {{headcount}}",
+    "score": "Indice",
+    "lowShare": "Avis à 1 ou 2",
+    "gap": "Écart directeur / équipe",
+    "lowShareShort": "{{share}} % d'avis bas",
+    "tooFew": "Moins de {{min}} répondants — résultat non publié"
   }
 }

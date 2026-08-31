@@ -41,6 +41,7 @@ import {
 import { apiClient } from "@/api/client";
 import { BoardPeriodBar } from "@/components/teamBoard/BoardPieces";
 import TeamRelationshipBoard from "@/components/teamBoard/TeamRelationshipBoard";
+import CohesionOpinionBoard from "@/components/teamBoard/CohesionOpinionBoard";
 import TeamStrengthsBoard from "@/components/teamBoard/TeamStrengthsBoard";
 import { today as boardToday, useTeamBoard } from "@/features/teamBoard";
 import { useAppSelector } from "@/app/hooks";
@@ -50,8 +51,7 @@ import type {
   Paginated,
   TeamCohesionAnalysis,
   TeamRelationship,
-  UserRecord,
-} from "@/api/types";
+  UserRecord, CohesionAggregate,} from "@/api/types";
 import { cohesionColor } from "@/theme";
 
 type PlanStatus = ActionPlan["status"];
@@ -165,7 +165,8 @@ export default function CohesionFormPage() {
   // Trois lectures d'une même équipe, dans l'ordre où elles se travaillent :
   // la cohésion mesurée, la dynamique relationnelle qui l'explique, puis les
   // forces et faiblesses qui s'en déduisent.
-  const [view, setView] = useState<"cohesion" | "strengths" | "relationship">("cohesion");
+  const [view, setView] = useState<"cohesion" | "strengths" | "relationship" | "opinion">("cohesion");
+  const [aggregate, setAggregate] = useState<CohesionAggregate | null>(null);
   const [teamMembers, setTeamMembers] = useState<UserRecord[]>([]);
   // Vue « Tous les directeurs » : la planche reste celle du comité de
   // direction, seule sa composition change.
@@ -193,6 +194,16 @@ export default function CohesionFormPage() {
     target_user: "" as number | "",
   });
   const [planToDelete, setPlanToDelete] = useState<ActionPlan | null>(null);
+
+  // Les avis agrégés : une seule requête, le serveur ayant déjà fait le calcul
+  // et appliqué le seuil de publication.
+  useEffect(() => {
+    if (view !== "opinion" || aggregate !== null) return;
+    apiClient
+      .get<CohesionAggregate>("/cohesion-responses/aggregate/")
+      .then((r) => setAggregate(r.data))
+      .catch(() => setAggregate({ directions: [], company_score: null }));
+  }, [view, aggregate]);
 
   useEffect(() => {
     apiClient.get<Paginated<Department>>("/departments/", { params: { page_size: 500 } }).then((r) => {
@@ -439,7 +450,9 @@ export default function CohesionFormPage() {
             ? "cohesion.viewSheet"
             : view === "strengths"
               ? "cohesion.viewStrengths"
-              : "cohesion.viewRelationship"
+              : view === "opinion"
+                ? "cohesion.viewOpinion"
+                : "cohesion.viewRelationship"
         )}
         subtitle={t("cohesion.subtitle")}
       />
@@ -459,11 +472,12 @@ export default function CohesionFormPage() {
           <ToggleButton value="cohesion">{t("cohesion.viewSheet")}</ToggleButton>
           <ToggleButton value="relationship">{t("cohesion.viewRelationship")}</ToggleButton>
           <ToggleButton value="strengths">{t("cohesion.viewStrengths")}</ToggleButton>
+          <ToggleButton value="opinion">{t("cohesion.viewOpinion")}</ToggleButton>
         </ToggleButtonGroup>
 
         {/* L'équipe se choisit dans toutes les vues : la fiche de cohésion a
           * son propre sélecteur plus bas, les planches utilisent celui-ci. */}
-        {view !== "cohesion" && (
+        {view !== "cohesion" && view !== "opinion" && (
           <TextField
             select
             size="small"
@@ -490,7 +504,9 @@ export default function CohesionFormPage() {
         )}
       </Stack>
 
-      {view !== "cohesion" && !(directorsView && !ownTeam) && (
+      {view === "opinion" && <CohesionOpinionBoard data={aggregate} />}
+
+      {view !== "cohesion" && view !== "opinion" && !(directorsView && !ownTeam) && (
         <Stack spacing={2}>
           <BoardPeriodBar
             dates={board.dates}

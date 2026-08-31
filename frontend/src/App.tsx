@@ -15,6 +15,7 @@ import LoginPage from "@/features/auth/LoginPage";
 const ActionPlansPage = lazy(() => import("@/pages/ActionPlansPage"));
 const BulkUploadPage = lazy(() => import("@/pages/BulkUploadPage"));
 const CohesionFormPage = lazy(() => import("@/pages/CohesionFormPage"));
+const CohesionSurveyPage = lazy(() => import("@/pages/CohesionSurveyPage"));
 const CompaniesPage = lazy(() => import("@/pages/CompaniesPage"));
 const CompanyDepartmentsPage = lazy(() => import("@/pages/CompanyDepartmentsPage"));
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/departments/:id" element={<DepartmentDetailPage />} />
           <Route path="/skills" element={<SkillsPage />} />
           <Route path="/cohesion" element={<CohesionFormPage />} />
+          <Route path="/cohesion-survey" element={<CohesionSurveyPage />} />
           <Route path="/id3a-matrix" element={<ID3AMatrixPage />} />
           <Route path="/talents-dashboard" element={<TalentsDashboardPage />} />
           <Route path="/evaluation-campaigns" element={<EvaluationCampaignsPage />} />
