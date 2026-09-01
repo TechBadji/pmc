@@ -366,7 +366,12 @@ export default function CohesionFormPage() {
       .then((r) => setTeamRelationships(r.data.results));
   }
 
-  const readOnly = viewedAnalysisId !== "";
+  // La fiche se remplit par l'encadrant de l'équipe. Côté CEO elle se consulte :
+  // la note de la direction vient de son directeur, et l'avis des équipes de
+  // leurs réponses — il n'y a rien que le CEO ait à y saisir. La grille est
+  // donc figée pour lui, faute de quoi il cliquerait des pastilles sans avoir
+  // de quoi les enregistrer.
+  const readOnly = viewedAnalysisId !== "" || isCompanyAdmin;
   // Une planche archivée se relit ; seule la saisie courante s'édite, et
   // seulement par le CEO ou l'encadrant de l'équipe.
   const canEditBoard = (isCompanyAdmin || user?.role === "MANAGER") && board.draft !== null;
@@ -735,7 +740,11 @@ export default function CohesionFormPage() {
 
       {teamId && (
         <>
-          {readOnly && (
+          {/* Le bandeau « vous consultez une fiche archivée » ne concerne que
+              la relecture d'un exercice passé par son encadrant — pas le CEO,
+              pour qui la fiche est de toute façon en lecture seule et qui n'a
+              pas de nouvelle saisie à ouvrir. */}
+          {viewedAnalysisId !== "" && !isCompanyAdmin && (
             <Alert severity="info" action={<Button size="small" color="inherit" onClick={() => showAnalysis("")}>{t("cohesion.newEntry")}</Button>}>
               {t("cohesion.viewingArchive", { date: history.find((h) => h.id === viewedAnalysisId)?.date ?? "" })}
             </Alert>
@@ -854,11 +863,13 @@ export default function CohesionFormPage() {
             </TableContainer>
           </Paper>
 
-          <Stack direction="row" justifyContent="flex-end">
-            <Button variant="contained" onClick={handleSubmit} disabled={!teamId || readOnly}>
-              {t("cohesion.save")}
-            </Button>
-          </Stack>
+          {!isCompanyAdmin && (
+            <Stack direction="row" justifyContent="flex-end">
+              <Button variant="contained" onClick={handleSubmit} disabled={!teamId || readOnly}>
+                {t("cohesion.save")}
+              </Button>
+            </Stack>
+          )}
           {saved && (
             <Alert severity="success" onClose={() => setSaved(false)}>
               {t("cohesion.saved")}
