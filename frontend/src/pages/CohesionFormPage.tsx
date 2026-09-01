@@ -211,13 +211,19 @@ export default function CohesionFormPage() {
 
   // Les avis agrégés : une seule requête, le serveur ayant déjà fait le calcul
   // et appliqué le seuil de publication.
+  // Les avis agrégés, bornés à la campagne choisie. Sans cette borne, les avis
+  // retenus étaient les derniers de chacun tandis que la note du directeur
+  // était celle de sa fiche la plus récente : l'écart comparait alors deux
+  // exercices distants de plusieurs mois, et affichait des écarts de deux
+  // points qui ne voulaient rien dire.
   useEffect(() => {
-    if (view !== "opinion" || aggregate !== null) return;
+    if (view !== "opinion" || campaignId === "") return;
+    setAggregate(null);
     apiClient
-      .get<CohesionAggregate>("/cohesion-responses/aggregate/")
+      .get<CohesionAggregate>("/cohesion-responses/aggregate/", { params: { campaign: campaignId } })
       .then((r) => setAggregate(r.data))
       .catch(() => setAggregate({ directions: [], company_score: null }));
-  }, [view, aggregate]);
+  }, [view, campaignId]);
 
   useEffect(() => {
     apiClient
@@ -576,6 +582,27 @@ export default function CohesionFormPage() {
           <ToggleButton value="strengths">{t("cohesion.viewStrengths")}</ToggleButton>
           <ToggleButton value="opinion">{t("cohesion.viewOpinion")}</ToggleButton>
         </ToggleButtonGroup>
+
+        {/* La campagne borne la vue des avis comme elle borne la fiche : les
+          * deux côtés de la comparaison doivent venir du même exercice. */}
+        {view === "opinion" && campaigns.length > 0 && (
+          <TextField
+            select
+            size="small"
+            label={t("cohesion.campaign")}
+            value={campaignId}
+            onChange={(e) => setCampaignId(Number(e.target.value))}
+            sx={{ minWidth: 240 }}
+          >
+            {[...campaigns]
+              .sort((a, b) => b.start_date.localeCompare(a.start_date))
+              .map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.name}
+                </MenuItem>
+              ))}
+          </TextField>
+        )}
 
         {/* L'équipe se choisit dans toutes les vues : la fiche de cohésion a
           * son propre sélecteur plus bas, les planches utilisent celui-ci. */}
