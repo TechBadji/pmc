@@ -103,7 +103,14 @@ class TeamRelationship(models.Model):
     class Meta:
         verbose_name = "Relation d'équipe"
         verbose_name_plural = "Relations d'équipe"
-        unique_together = ("from_user", "to_user")
+        # L'unicité porte sur l'équipe autant que sur le binôme. Sans elle,
+        # deux personnes qui siègent dans deux collectifs — sa direction et le
+        # comité, par exemple — ne pouvaient voir leur relation qualifiée que
+        # dans un seul, le second enregistrement étant refusé. Or la relation
+        # de travail entre un directeur général adjoint et son CEO ne se lit
+        # pas de la même façon selon qu'on l'observe dans la direction ou au
+        # comité.
+        unique_together = ("team", "from_user", "to_user")
         # Sans ordre par défaut, la pagination DRF avertit — et surtout, deux
         # appels sur la même page peuvent renvoyer des lignes différentes, le
         # SGBD étant libre de changer l'ordre de restitution.
