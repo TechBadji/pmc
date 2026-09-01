@@ -6,6 +6,7 @@ import { useAppSelector } from "@/app/hooks";
 import PageHeader from "@/components/layout/PageHeader";
 import { cohesionColor } from "@/theme";
 import type { CohesionResponse, Paginated } from "@/api/types";
+import { useCohesionCriteria } from "@/utils/cohesionCriteria";
 
 /** Note portée sur un critère : cinq pastilles, de « très faible » à « très
  *  élevé ». Le même geste que la fiche de l'encadrant, pour que la lecture des
@@ -74,7 +75,7 @@ function ScoreRow({
 export default function CohesionSurveyPage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
-  const criteria = t("cohesion.criteria", { returnObjects: true }) as string[];
+  const criteria = useCohesionCriteria();
 
   const [scores, setScores] = useState<Record<string, number>>({});
   const [existing, setExisting] = useState<CohesionResponse | null>(null);
@@ -91,9 +92,12 @@ export default function CohesionSurveyPage() {
         const mine = [...r.data.results].sort((a, b) => a.date.localeCompare(b.date)).pop() ?? null;
         setExisting(mine);
         if (mine) {
+          // Indexé par texte et par rang : un avis déposé avant que les
+          // libellés ne nomment l'entreprise doit rester relisible.
           const map: Record<string, number> = {};
-          mine.scores.forEach((s) => {
+          mine.scores.forEach((s, index) => {
             map[s.criterion] = s.score;
+            map[`#${index}`] = s.score;
           });
           setScores(map);
         }
@@ -101,7 +105,11 @@ export default function CohesionSurveyPage() {
       .catch(() => setError(true));
   }, []);
 
-  const answered = criteria.filter((c) => scores[c] !== undefined).length;
+  /** Note d'un critère : par son libellé, ou à défaut par son rang — un avis
+   * déposé avant que les libellés ne nomment l'entreprise reste relisible. */
+  const scoreOf = (criterion: string, index: number) => scores[criterion] ?? scores[`#${index}`];
+
+  const answered = criteria.filter((c, i) => scoreOf(c, i) !== undefined).length;
   const complete = answered === criteria.length;
 
   async function handleSave() {
@@ -113,8 +121,8 @@ export default function CohesionSurveyPage() {
       team: user.department,
       date: today,
       scores: criteria
-        .filter((c) => scores[c] !== undefined)
-        .map((c) => ({ criterion: c, score: scores[c] })),
+        .map((c, i) => ({ criterion: c, score: scoreOf(c, i) }))
+        .filter((entry): entry is { criterion: string; score: number } => entry.score !== undefined),
     };
     try {
       // Un avis par personne et par jour : redéposer le même jour corrige le
@@ -162,11 +170,11 @@ export default function CohesionSurveyPage() {
           </Typography>
         </Stack>
 
-        {criteria.map((criterion) => (
+        {criteria.map((criterion, index) => (
           <ScoreRow
             key={criterion}
             label={criterion}
-            value={scores[criterion] ?? null}
+            value={scoreOf(criterion, index) ?? null}
             onChange={(v) => {
               setScores((current) => ({ ...current, [criterion]: v }));
               setSaved(false);

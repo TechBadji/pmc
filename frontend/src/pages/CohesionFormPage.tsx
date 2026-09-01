@@ -57,6 +57,7 @@ import type {
   UserRecord,
 } from "@/api/types";
 import { cohesionColor } from "@/theme";
+import { useCohesionCriteria } from "@/utils/cohesionCriteria";
 
 type PlanStatus = ActionPlan["status"];
 const PLAN_STATUSES: PlanStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
@@ -162,7 +163,7 @@ export default function CohesionFormPage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
-  const criteria = t("cohesion.criteria", { returnObjects: true }) as string[];
+  const criteria = useCohesionCriteria();
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [teamId, setTeamId] = useState<number | "">("");
@@ -301,8 +302,14 @@ export default function CohesionFormPage() {
     const analysis = history.find((h) => h.id === id);
     if (!analysis) return;
     setRows(
-      criteria.map((criterion) => {
-        const saved = analysis.criterion_scores.find((cs) => cs.criterion === criterion);
+      criteria.map((criterion, index) => {
+        // Rapprochement par texte, puis par rang. Le libellé d'un critère est
+        // sa clé de stockage : le jour où il change — il nomme désormais
+        // l'entreprise — les fiches déjà enregistrées cesseraient d'être
+        // reconnues et se rouvriraient vierges. Le rang, lui, ne bouge pas.
+        const saved =
+          analysis.criterion_scores.find((cs) => cs.criterion === criterion) ??
+          analysis.criterion_scores[index];
         return {
           criterion,
           score: saved ? Number(saved.score) : 3,

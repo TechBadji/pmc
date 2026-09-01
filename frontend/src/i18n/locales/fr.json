@@ -319,17 +319,18 @@
       "5": "Très élevé"
     },
     "criteria": [
-      "La vision de l'organisation sur les 10-15 prochaines années est clairement définie",
-      "Tout le personnel comprend la vision et les valeurs de l'organisation et peut l'expliquer clairement",
-      "Tous les employés se sont appropriés la vision et les valeurs de l'organisation",
+      "La vision de {{company}} sur les 1-5 prochaines années est clairement définie",
+      "Tout le personnel comprend la vision et les valeurs de {{company}} et peut l'expliquer clairement",
+      "Tous les employés se sont appropriés la vision et les valeurs de {{company}}",
       "Chaque employé connaît ses objectifs individuels et comment ils sont liés aux objectifs globaux",
       "Chaque membre est très engagé pour atteindre les objectifs fixés à l'équipe",
-      "Tous les employés mettent les intérêts de l'organisation au-dessus de leurs intérêts personnels",
-      "Il y a une bonne communication verticale entre le Top Management et le reste de l'organisation",
+      "Tous les employés de {{company}} mettent les intérêts de l'organisation au-dessus de leurs intérêts personnels",
+      "Il y a une bonne communication verticale entre le Top Management et le reste de {{company}}",
       "Il y a une bonne communication horizontale entre les différents départements/directions",
-      "Il y a un niveau élevé de confiance entre le Top Management et le reste de l'organisation",
-      "Il y a un niveau élevé de confiance entre les employés eux-mêmes"
+      "Il y a un niveau élevé de confiance entre le Top Management et le reste de {{company}}",
+      "Il y a un niveau élevé de confiance entre les employés de {{company}} eux-mêmes"
     ],
+    "organisationFallback": "l'organisation",
     "newEntry": "Nouvelle saisie",
     "viewingArchive": "Vous consultez la mesure du {{date}}. La fiche est en lecture seule ; passez en nouvelle saisie pour enregistrer une mesure de la période en cours.",
     "relationQuality": {

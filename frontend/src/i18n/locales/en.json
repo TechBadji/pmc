@@ -319,17 +319,18 @@
       "5": "Very high"
     },
     "criteria": [
-      "The organization's vision for the next 10-15 years is clearly defined",
-      "All staff understand the organization's vision and values and can explain them clearly",
-      "All employees have embraced the organization's vision and values",
+      "{{company}}'s vision for the next 1-5 years is clearly defined",
+      "All staff understand {{company}}'s vision and values and can explain them clearly",
+      "All employees have embraced {{company}}'s vision and values",
       "Every employee knows their individual objectives and how they relate to overall goals",
       "Every member is highly committed to achieving the team's objectives",
-      "All employees place the organization's interests above their personal interests",
-      "There is good vertical communication between Top Management and the rest of the organization",
+      "All {{company}} employees place the organization's interests above their personal interests",
+      "There is good vertical communication between Top Management and the rest of {{company}}",
       "There is good horizontal communication between the different departments/directorates",
-      "There is a high level of trust between Top Management and the rest of the organization",
-      "There is a high level of trust among employees themselves"
+      "There is a high level of trust between Top Management and the rest of {{company}}",
+      "There is a high level of trust among {{company}} employees themselves"
     ],
+    "organisationFallback": "the organization",
     "newEntry": "New entry",
     "viewingArchive": "You are viewing the {{date}} measurement. The sheet is read-only; switch to a new entry to record the current period.",
     "relationQuality": {
