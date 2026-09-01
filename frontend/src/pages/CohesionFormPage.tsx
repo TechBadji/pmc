@@ -86,7 +86,10 @@ const HEADER_TEXT = "#243747";
 
 interface CriterionRow {
   criterion: string;
-  score: number;
+  /** `null` tant que personne n'a noté ce critère. Le défaut était 3, ce qui
+   *  affichait dix pastilles « Moyen » présélectionnées sur une fiche vierge :
+   *  l'écran donnait à lire une évaluation là où il n'y en avait aucune. */
+  score: number | null;
   objective_score: number | null;
   achieved_score: number | null;
 }
@@ -185,7 +188,7 @@ export default function CohesionFormPage() {
   const [teamRelationships, setTeamRelationships] = useState<TeamRelationship[]>([]);
   const board = useTeamBoard(teamId);
   const [rows, setRows] = useState<CriterionRow[]>(
-    criteria.map((c) => ({ criterion: c, score: 3, objective_score: null, achieved_score: null }))
+    criteria.map((c) => ({ criterion: c, score: null, objective_score: null, achieved_score: null }))
   );
   const [history, setHistory] = useState<TeamCohesionAnalysis[]>([]);
   // Analyse consultée : "" = nouvelle saisie, sinon une analyse déjà enregistrée.
@@ -258,10 +261,11 @@ export default function CohesionFormPage() {
   useEffect(() => {
     apiClient.get<Paginated<Department>>("/departments/", { params: { page_size: 500 } }).then((r) => {
       setDepartments(r.data.results);
-      if (isCompanyAdmin) {
-        const own = r.data.results.find((d) => d.manager === user!.id);
-        if (own) setTeamId(own.id);
-      } else if (r.data.results.length >= 1) {
+      // L'encadrant arrive sur sa propre équipe, il n'en a qu'une. Le CEO,
+      // lui, en a autant que de directions : en choisir une à sa place, c'était
+      // lui présenter une fiche vide en lui laissant croire qu'elle était
+      // renseignée. Il choisit.
+      if (!isCompanyAdmin && r.data.results.length >= 1) {
         setTeamId(r.data.results[0].id);
       }
     });
@@ -272,7 +276,7 @@ export default function CohesionFormPage() {
     // Changer d'équipe repart d'une fiche vierge — sans ce reset, les scores
     // saisis (mais non enregistrés) pour l'équipe précédente restaient
     // affichés et risquaient d'être soumis par erreur pour la nouvelle équipe.
-    setRows(criteria.map((c) => ({ criterion: c, score: 3, objective_score: null, achieved_score: null })));
+    setRows(criteria.map((c) => ({ criterion: c, score: null, objective_score: null, achieved_score: null })));
     setSaved(false);
     setViewedAnalysisId("");
     if (!teamId) {
@@ -296,7 +300,7 @@ export default function CohesionFormPage() {
     setViewedAnalysisId(id);
     setSaved(false);
     if (id === "") {
-      setRows(criteria.map((c) => ({ criterion: c, score: 3, objective_score: null, achieved_score: null })));
+      setRows(criteria.map((c) => ({ criterion: c, score: null, objective_score: null, achieved_score: null })));
       return;
     }
     const analysis = history.find((h) => h.id === id);
@@ -431,7 +435,10 @@ export default function CohesionFormPage() {
     }
   }
 
-  const ice = rows.reduce((s, r) => s + r.score, 0) / rows.length;
+  // Sur les seuls critères notés : diviser par dix alors que trois sont
+  // renseignés donnerait un indice artificiellement bas.
+  const scoredValues = rows.map((r) => r.score).filter((v): v is number => v !== null);
+  const ice = scoredValues.length ? scoredValues.reduce((a, b) => a + b, 0) / scoredValues.length : null;
   const objectiveValues = rows.map((r) => r.objective_score).filter((v): v is number => v !== null);
   const oce = objectiveValues.length ? objectiveValues.reduce((a, b) => a + b, 0) / objectiveValues.length : null;
   const achievedValues = rows.map((r) => r.achieved_score).filter((v): v is number => v !== null);
@@ -448,12 +455,14 @@ export default function CohesionFormPage() {
     await apiClient.post("/cohesion-analyses/", {
       team: teamId,
       date: new Date().toISOString().slice(0, 10),
-      criterion_scores: rows.map((r) => ({
-        criterion: r.criterion,
-        score: r.score,
-        objective_score: r.objective_score,
-        achieved_score: r.achieved_score,
-      })),
+      criterion_scores: rows
+        .filter((r): r is CriterionRow & { score: number } => r.score !== null)
+        .map((r) => ({
+          criterion: r.criterion,
+          score: r.score,
+          objective_score: r.objective_score,
+          achieved_score: r.achieved_score,
+        })),
     });
     setSaved(true);
     const r = await apiClient.get<Paginated<TeamCohesionAnalysis>>("/cohesion-analyses/", { params: { team: teamId } });
@@ -738,6 +747,10 @@ export default function CohesionFormPage() {
         )}
       </Stack>
 
+      {/* Aucune direction choisie : on le dit, plutôt que de laisser un écran
+          nu qu'on prendrait pour un chargement. */}
+      {!teamId && <Alert severity="info">{t("cohesion.pickTeamFirst")}</Alert>}
+
       {teamId && (
         <>
           {/* Le bandeau « vous consultez une fiche archivée » ne concerne que
@@ -811,7 +824,7 @@ export default function CohesionFormPage() {
                       <TableCell align="center">
                         <Box sx={{ px: 1, py: 0.25, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
                           <Typography variant="body2" fontWeight={700}>
-                            {row.score.toFixed(1)}
+                            {row.score !== null ? row.score.toFixed(1) : "—"}
                           </Typography>
                         </Box>
                       </TableCell>

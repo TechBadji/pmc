@@ -350,7 +350,8 @@
     "teamOpinionCol": "Avis de l'équipe",
     "opinionAnswers": "{{count}} réponses",
     "opinionLow": "{{share}} % d'avis bas",
-    "opinionTooFew": "moins de {{min}} réponses"
+    "opinionTooFew": "moins de {{min}} réponses",
+    "pickTeamFirst": "Sélectionnez une direction pour afficher sa fiche de cohésion."
   },
   "evaluations": {
     "title": "Évaluations ID-3A",

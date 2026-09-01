@@ -350,7 +350,8 @@
     "teamOpinionCol": "Team feedback",
     "opinionAnswers": "{{count}} answers",
     "opinionLow": "{{share}}% low",
-    "opinionTooFew": "fewer than {{min}} answers"
+    "opinionTooFew": "fewer than {{min}} answers",
+    "pickTeamFirst": "Pick a division to display its cohesion sheet."
   },
   "evaluations": {
     "title": "ID-3A Evaluations",
