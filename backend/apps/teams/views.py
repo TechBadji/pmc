@@ -1,10 +1,11 @@
 from django.db.models import Count
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.core.models import Department
+from apps.evaluations.models import EvaluationCampaign
 from apps.core.permissions import CompanyScopedQuerySetMixin, IsCompanyAdminOrManager
 from apps.core.scoping import managed_department_ids
 
@@ -117,10 +118,28 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         if user.role == user.Role.MANAGER:
             departments = departments.filter(id__in=managed_department_ids(user))
 
+        team = request.query_params.get("team")
+        if team:
+            departments = departments.filter(id=team)
+
         date = request.query_params.get("date")
         responses = CohesionResponse.objects.filter(team__in=departments)
         if date:
             responses = responses.filter(date=date)
+
+        # Une campagne remplace la date isolée : elle borne une période, et
+        # tout avis déposé dans cette fenêtre lui appartient. C'est ce qui
+        # permet de comparer deux exercices sans imposer aux collaborateurs de
+        # répondre tous le même jour.
+        campaign_id = request.query_params.get("campaign")
+        campaign = None
+        if campaign_id:
+            campaign = EvaluationCampaign.objects.filter(
+                pk=campaign_id, company_id=user.company_id
+            ).first()
+            if campaign is None:
+                raise ValidationError({"campaign": "Campagne introuvable."})
+            responses = responses.filter(date__range=(campaign.start_date, campaign.end_date))
 
         # Sans tour précisé, on lit l'état courant : le dernier avis de chacun.
         # Additionner tous les avis d'une personne la ferait peser autant de
@@ -143,6 +162,8 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         sheets = TeamCohesionAnalysis.objects.filter(team__in=departments)
         if date:
             sheets = sheets.filter(date=date)
+        if campaign is not None:
+            sheets = sheets.filter(date__range=(campaign.start_date, campaign.end_date))
         for sheet in sheets.order_by("team_id", "-date"):
             own_sheets.setdefault(sheet.team_id, float(sheet.ice_score))
 

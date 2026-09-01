@@ -47,11 +47,15 @@ import { today as boardToday, useTeamBoard } from "@/features/teamBoard";
 import { useAppSelector } from "@/app/hooks";
 import type {
   ActionPlan,
+  CohesionAggregate,
+  CohesionDirectionResult,
   Department,
+  EvaluationCampaign,
   Paginated,
   TeamCohesionAnalysis,
   TeamRelationship,
-  UserRecord, CohesionAggregate,} from "@/api/types";
+  UserRecord,
+} from "@/api/types";
 import { cohesionColor } from "@/theme";
 
 type PlanStatus = ActionPlan["status"];
@@ -167,6 +171,12 @@ export default function CohesionFormPage() {
   // forces et faiblesses qui s'en déduisent.
   const [view, setView] = useState<"cohesion" | "strengths" | "relationship" | "opinion">("cohesion");
   const [aggregate, setAggregate] = useState<CohesionAggregate | null>(null);
+  // La fiche se lit désormais par campagne : une campagne borne une période,
+  // et tout avis déposé dans cette fenêtre lui appartient. Les collaborateurs
+  // n'ont donc pas à répondre tous le même jour pour être comptés ensemble.
+  const [campaigns, setCampaigns] = useState<EvaluationCampaign[]>([]);
+  const [campaignId, setCampaignId] = useState<number | "">("");
+  const [sheetOpinion, setSheetOpinion] = useState<CohesionDirectionResult | null>(null);
   const [teamMembers, setTeamMembers] = useState<UserRecord[]>([]);
   // Vue « Tous les directeurs » : la planche reste celle du comité de
   // direction, seule sa composition change.
@@ -204,6 +214,45 @@ export default function CohesionFormPage() {
       .then((r) => setAggregate(r.data))
       .catch(() => setAggregate({ directions: [], company_score: null }));
   }, [view, aggregate]);
+
+  useEffect(() => {
+    apiClient
+      .get<Paginated<EvaluationCampaign>>("/evaluation-campaigns/", { params: { page_size: 500 } })
+      .then((r) => {
+        const sorted = [...r.data.results].sort((a, b) => a.start_date.localeCompare(b.start_date));
+        setCampaigns(sorted);
+        if (sorted.length) setCampaignId((prev) => (prev === "" ? sorted[sorted.length - 1].id : prev));
+      });
+  }, []);
+
+  // Avis des collaborateurs pour la direction et la campagne affichées : c'est
+  // ce qui met, en face de la note de l'encadrant, ce que son équipe a répondu.
+  useEffect(() => {
+    if (teamId === "" || campaignId === "") {
+      setSheetOpinion(null);
+      return;
+    }
+    apiClient
+      .get<CohesionAggregate>("/cohesion-responses/aggregate/", {
+        params: { team: teamId, campaign: campaignId },
+      })
+      .then((r) => setSheetOpinion(r.data.directions[0] ?? null))
+      .catch(() => setSheetOpinion(null));
+  }, [teamId, campaignId]);
+
+  // Changer de campagne, c'est changer d'exercice : on affiche la fiche que
+  // l'encadrant a enregistrée dans cette fenêtre, ou une fiche vierge s'il n'y
+  // en a pas encore.
+  useEffect(() => {
+    if (campaignId === "") return;
+    const campaign = campaigns.find((c) => c.id === campaignId);
+    if (!campaign) return;
+    const inWindow = history.find(
+      (h) => h.date >= campaign.start_date && h.date <= campaign.end_date
+    );
+    showAnalysis(inWindow ? inWindow.id : "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId, history, campaigns]);
 
   useEffect(() => {
     apiClient.get<Paginated<Department>>("/departments/", { params: { page_size: 500 } }).then((r) => {
@@ -320,6 +369,38 @@ export default function CohesionFormPage() {
   const ownTeam = isCompanyAdmin ? departments.find((d) => d.manager === user!.id) : undefined;
   const ownTeamExists = !isCompanyAdmin || Boolean(ownTeam);
   const selectedDept = departments.find((d) => d.id === teamId);
+  /**
+   * Avis de l'équipe sur un critère : la moyenne, et le nombre de réponses qui
+   * la porte. Rien n'est montré tant que la direction n'a pas atteint le seuil
+   * de publication — la moyenne de deux personnes désignerait ses auteurs.
+   */
+  function opinionFor(criterion: string) {
+    if (!sheetOpinion || !sheetOpinion.published) {
+      return (
+        <Typography variant="caption" sx={{ color: "text.disabled" }}>
+          {sheetOpinion
+            ? t("cohesion.opinionTooFew", { min: sheetOpinion.min_respondents })
+            : "—"}
+        </Typography>
+      );
+    }
+    const entry = sheetOpinion.criteria.find((c) => c.criterion === criterion);
+    if (!entry || entry.score === null) return <Typography variant="caption">—</Typography>;
+    const low = entry.low_share !== null && entry.low_share > 0.2;
+    return (
+      <Stack spacing={0} alignItems="center">
+        <Typography sx={{ fontWeight: 800, color: cohesionColor(entry.score) }}>
+          {entry.score.toFixed(2)}
+        </Typography>
+        <Typography variant="caption" sx={{ color: low ? "#c62828" : "text.secondary" }}>
+          {low
+            ? t("cohesion.opinionLow", { share: Math.round((entry.low_share as number) * 100) })
+            : t("cohesion.opinionAnswers", { count: entry.answers })}
+        </Typography>
+      </Stack>
+    );
+  }
+
   const boardTeamName = directorsView ? t("cohesion.allDirectors") : selectedDept?.name ?? "";
 
   async function handleProvisionOwnTeam() {
@@ -593,27 +674,27 @@ export default function CohesionFormPage() {
               ))}
             </TextField>
           </Stack>
-          {/* Période : la cohésion se mesure à chaque exercice, on doit donc
-            * pouvoir relire une mesure antérieure et pas seulement en saisir
-            * une nouvelle. */}
-          {history.length > 0 && (
+          {/* Campagne : la cohésion se mesure à chaque exercice, et c'est la
+            * campagne qui le nomme. Elle remplace la date isolée — deux
+            * exercices se comparent par leur nom, pas par le jour où
+            * l'encadrant a rempli sa fiche. */}
+          {campaigns.length > 0 && (
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="subtitle2" fontWeight={700} sx={{ minWidth: 90 }}>
-                {t("common.period")}
+                {t("cohesion.campaign")}
               </Typography>
               <TextField
                 select
                 size="small"
-                value={viewedAnalysisId}
-                onChange={(e) => showAnalysis(e.target.value === "" ? "" : Number(e.target.value))}
+                value={campaignId}
+                onChange={(e) => setCampaignId(Number(e.target.value))}
                 sx={{ minWidth: 260 }}
               >
-                <MenuItem value="">{t("cohesion.newEntry")}</MenuItem>
-                {[...history]
-                  .sort((a, b) => b.date.localeCompare(a.date))
-                  .map((h) => (
-                    <MenuItem key={h.id} value={h.id}>
-                      {h.date} — ICE {Number(h.ice_score).toFixed(1)}
+                {[...campaigns]
+                  .sort((a, b) => b.start_date.localeCompare(a.start_date))
+                  .map((c) => (
+                    <MenuItem key={c.id} value={c.id}>
+                      {c.name}
                     </MenuItem>
                   ))}
               </TextField>
@@ -684,6 +765,13 @@ export default function CohesionFormPage() {
                     <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12, bgcolor: "#dbeeff", color: LIGHT_CELL_TEXT }}>
                       {t("cohesion.achievedCol")}
                     </TableCell>
+                    {/* Ce que l'équipe a répondu, en face de ce que l'encadrant
+                        a noté. C'est la confrontation des deux regards qui fait
+                        la valeur de la fiche — les avoir sur deux écrans
+                        séparés revenait à ne jamais les comparer. */}
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12, bgcolor: "#e8f3e2", color: LIGHT_CELL_TEXT, minWidth: 110 }}>
+                      {t("cohesion.teamOpinionCol")}
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -748,6 +836,9 @@ export default function CohesionFormPage() {
                             </MenuItem>
                           ))}
                         </TextField>
+                      </TableCell>
+                      <TableCell align="center" sx={{ bgcolor: "#f4faf0", color: LIGHT_CELL_TEXT }}>
+                        {opinionFor(row.criterion)}
                       </TableCell>
                     </TableRow>
                   ))}

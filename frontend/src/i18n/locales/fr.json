@@ -344,7 +344,12 @@
     "noHistory": "Aucune mesure de cohésion enregistrée pour cette équipe.",
     "subtitle": "Mesure de la cohésion, forces et faiblesses, et dynamique relationnelle de l'équipe.",
     "allDirectors": "Tous les directeurs",
-    "viewOpinion": "Avis des équipes"
+    "viewOpinion": "Avis des équipes",
+    "campaign": "Campagne",
+    "teamOpinionCol": "Avis de l'équipe",
+    "opinionAnswers": "{{count}} réponses",
+    "opinionLow": "{{share}} % d'avis bas",
+    "opinionTooFew": "moins de {{min}} réponses"
   },
   "evaluations": {
     "title": "Évaluations ID-3A",

@@ -344,7 +344,12 @@
     "noHistory": "No cohesion measurement recorded for this team.",
     "subtitle": "Cohesion score, strengths and weaknesses, and relationship dynamic of the team.",
     "allDirectors": "All directors",
-    "viewOpinion": "Team feedback"
+    "viewOpinion": "Team feedback",
+    "campaign": "Campaign",
+    "teamOpinionCol": "Team feedback",
+    "opinionAnswers": "{{count}} answers",
+    "opinionLow": "{{share}}% low",
+    "opinionTooFew": "fewer than {{min}} answers"
   },
   "evaluations": {
     "title": "ID-3A Evaluations",
