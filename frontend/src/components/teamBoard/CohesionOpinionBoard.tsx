@@ -35,6 +35,12 @@ export default function CohesionOpinionBoard({ data }: { data: CohesionAggregate
   const { directions, company_score: companyScore } = data;
   const published = directions.filter((d) => d.published);
 
+  // Un écran vide se prend pour une panne. On dit donc ce qui manque : des
+  // directions, ou des répondants en nombre suffisant.
+  if (directions.length === 0) {
+    return <Alert severity="info">{t("cohesionOpinion.noDirection")}</Alert>;
+  }
+
   return (
     <Stack spacing={2}>
       <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
@@ -53,6 +59,12 @@ export default function CohesionOpinionBoard({ data }: { data: CohesionAggregate
           </Typography>
         </Stack>
       </Paper>
+
+      {published.length === 0 && (
+        <Alert severity="warning">
+          {t("cohesionOpinion.noneReachThreshold", { min: directions[0].min_respondents })}
+        </Alert>
+      )}
 
       {directions.map((d) => (
         <Paper key={d.team} elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>

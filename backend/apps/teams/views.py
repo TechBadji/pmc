@@ -99,7 +99,24 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         return super().get_queryset().filter(respondent=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(respondent=self.request.user)
+        """Redéposer un avis le même jour corrige le précédent.
+
+        `respondent` étant imposé par le serveur et absent du payload, DRF ne
+        peut pas construire le contrôle d'unicité sur (équipe, répondant,
+        date) : un second envoi remontait l'erreur de base en 500. Or c'est un
+        cas ordinaire — un double clic, ou une page rouverte le même jour après
+        un chargement manqué. On écrit donc par-dessus, ce qui est aussi la
+        sémantique attendue : un avis par personne et par jour, le dernier
+        faisant foi.
+        """
+        data = serializer.validated_data
+        response, _ = CohesionResponse.objects.update_or_create(
+            team=data["team"],
+            respondent=self.request.user,
+            date=data["date"],
+            defaults={"scores": data.get("scores", [])},
+        )
+        serializer.instance = response
 
     @action(detail=False, methods=["get"], url_path="aggregate")
     def aggregate(self, request):

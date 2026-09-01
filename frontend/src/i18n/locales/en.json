@@ -834,6 +834,8 @@
     "lowShare": "Ratings of 1 or 2",
     "gap": "Manager / team gap",
     "lowShareShort": "{{share}}% low ratings",
-    "tooFew": "Fewer than {{min}} respondents — not published"
+    "tooFew": "Fewer than {{min}} respondents — not published",
+    "noDirection": "No division is defined for this company, so there is nothing to aggregate.",
+    "noneReachThreshold": "No division reaches {{min}} respondents for this campaign. Answers already given are counted, but nothing is published until the threshold is met — an average over fewer than {{min}} answers would identify its authors."
   }
 }
