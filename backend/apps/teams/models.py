@@ -184,7 +184,7 @@ class TeamBoard(models.Model):
 
 
 class CohesionResponse(models.Model):
-    """L'avis d'un collaborateur sur sa propre direction, pour un tour donné.
+    """L'avis d'un collaborateur, pour un tour donné.
 
     La fiche de cohésion existante (`TeamCohesionAnalysis`) est celle de
     l'encadrant : une par équipe et par date. Celle-ci est individuelle — une
@@ -193,16 +193,39 @@ class CohesionResponse(models.Model):
     dit de sa direction et ce que ses équipes en disent est le signal le plus
     riche de l'exercice, et il disparaîtrait si l'on fondait les deux notes.
 
+    Deux portées coexistent, et le même questionnaire sert aux deux : l'avis
+    sur sa direction, et l'avis sur l'entreprise entière. Un collaborateur peut
+    juger sa direction soudée et l'organisation cloisonnée — ce sont deux
+    lectures distinctes, qui ne se déduisent pas l'une de l'autre.
+
     Les notes sont stockées en JSON plutôt qu'en table dédiée : un tour compte
     une poignée de réponses par équipe, jamais interrogées autrement que toutes
     ensemble pour être moyennées.
     """
 
+    class Scope(models.TextChoices):
+        TEAM = "TEAM", "Sa direction"
+        ORGANISATION = "ORGANISATION", "L'organisation"
+
+    scope = models.CharField(
+        "Portée", max_length=15, choices=Scope.choices, default=Scope.TEAM
+    )
+    company = models.ForeignKey(
+        "core.Company",
+        verbose_name="Entreprise",
+        on_delete=models.CASCADE,
+        related_name="cohesion_responses",
+        null=True,
+        blank=True,
+    )
     team = models.ForeignKey(
         "core.Department",
         verbose_name="Direction notée",
         on_delete=models.CASCADE,
         related_name="cohesion_responses",
+        null=True,
+        blank=True,
+        help_text="Vide pour un avis portant sur l'organisation.",
     )
     respondent = models.ForeignKey(
         "core.User",
@@ -224,9 +247,25 @@ class CohesionResponse(models.Model):
         verbose_name = "Avis de cohésion"
         verbose_name_plural = "Avis de cohésion"
         ordering = ["-date"]
-        # Un avis par personne et par tour : répondre deux fois reviendrait à
-        # peser double dans la moyenne de sa direction.
-        unique_together = ("team", "respondent", "date")
+        # Un avis par personne, par tour et par portée : répondre deux fois
+        # reviendrait à peser double dans la moyenne. La contrainte se pose
+        # séparément sur chaque portée, l'une portant sur la direction et
+        # l'autre sur l'entreprise — une contrainte unique mêlant les deux
+        # laisserait passer les doublons, `team` étant vide côté organisation
+        # et deux valeurs nulles n'étant jamais réputées égales.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["team", "respondent", "date"],
+                condition=models.Q(scope="TEAM"),
+                name="unique_team_cohesion_response",
+            ),
+            models.UniqueConstraint(
+                fields=["company", "respondent", "date"],
+                condition=models.Q(scope="ORGANISATION"),
+                name="unique_org_cohesion_response",
+            ),
+        ]
 
     def __str__(self):
-        return f"Avis {self.respondent} — {self.team} — {self.date}"
+        cible = self.team if self.scope == self.Scope.TEAM else self.company
+        return f"Avis {self.respondent} — {cible} — {self.date}"

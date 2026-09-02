@@ -54,6 +54,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   MEMBER: [
     { labelKey: "nav.myProfile", path: "/", icon: "person" },
     { labelKey: "nav.cohesionSurvey", path: "/cohesion-survey", icon: "hub" },
+    { labelKey: "nav.cohesionSurveyOrg", path: "/cohesion-survey-org", icon: "business" },
     { labelKey: "nav.myPerformance", path: "/my-performance", icon: "scatterPlot" },
   ],
 };

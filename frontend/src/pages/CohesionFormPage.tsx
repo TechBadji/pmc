@@ -161,6 +161,10 @@ function ScoreOval({ selected, color, onClick, ariaLabel }: { selected: boolean;
  *  le département dont le CEO est le manager — mais sa composition affichée est
  *  calculée : le CEO, puis ceux qui dirigent une direction. */
 const DIRECTORS_TEAM = "__directors__";
+/** L'entreprise entière, jugée par tous ses collaborateurs. Ce n'est pas la
+ *  moyenne de ses directions : on peut trouver sa propre direction soudée et
+ *  l'organisation cloisonnée, et c'est cette lecture-là que l'option ouvre. */
+const ORGANISATION = "__organisation__";
 
 export default function CohesionFormPage() {
   const { t } = useTranslation();
@@ -181,6 +185,7 @@ export default function CohesionFormPage() {
   const [campaigns, setCampaigns] = useState<EvaluationCampaign[]>([]);
   const [campaignId, setCampaignId] = useState<number | "">("");
   const [sheetOpinion, setSheetOpinion] = useState<CohesionDirectionResult | null>(null);
+  const [orgView, setOrgView] = useState(false);
   const [teamMembers, setTeamMembers] = useState<UserRecord[]>([]);
   // Vue « Tous les directeurs » : la planche reste celle du comité de
   // direction, seule sa composition change.
@@ -238,17 +243,17 @@ export default function CohesionFormPage() {
   // Avis des collaborateurs pour la direction et la campagne affichées : c'est
   // ce qui met, en face de la note de l'encadrant, ce que son équipe a répondu.
   useEffect(() => {
-    if (teamId === "" || campaignId === "") {
+    if (campaignId === "" || (!orgView && teamId === "")) {
       setSheetOpinion(null);
       return;
     }
     apiClient
       .get<CohesionAggregate>("/cohesion-responses/aggregate/", {
-        params: { team: teamId, campaign: campaignId },
+        params: orgView ? { campaign: campaignId } : { team: teamId, campaign: campaignId },
       })
-      .then((r) => setSheetOpinion(r.data.directions[0] ?? null))
+      .then((r) => setSheetOpinion(orgView ? r.data.organisation ?? null : r.data.directions[0] ?? null))
       .catch(() => setSheetOpinion(null));
-  }, [teamId, campaignId]);
+  }, [teamId, campaignId, orgView]);
 
   // Changer de campagne, c'est changer d'exercice : on affiche la fiche que
   // l'encadrant a enregistrée dans cette fenêtre, ou une fiche vierge s'il n'y
@@ -611,19 +616,24 @@ export default function CohesionFormPage() {
             select
             size="small"
             label={t("cohesion.team")}
-            value={directorsView ? DIRECTORS_TEAM : teamId}
+            value={orgView ? ORGANISATION : directorsView ? DIRECTORS_TEAM : teamId}
             onChange={(e) => {
-              if (e.target.value === DIRECTORS_TEAM) {
+              const v = e.target.value;
+              setOrgView(v === ORGANISATION);
+              if (v === DIRECTORS_TEAM) {
                 setDirectorsView(true);
                 if (ownTeam) setTeamId(ownTeam.id);
-              } else {
+              } else if (v !== ORGANISATION) {
                 setDirectorsView(false);
-                setTeamId(Number(e.target.value));
+                setTeamId(Number(v));
               }
             }}
             sx={{ minWidth: 260 }}
           >
             {isCompanyAdmin && <MenuItem value={DIRECTORS_TEAM}>{t("cohesion.allDirectors")}</MenuItem>}
+            <MenuItem value={ORGANISATION}>
+              {t("cohesion.organisationOption", { company: user?.company_name ?? "" })}
+            </MenuItem>
             {departments.map((d) => (
               <MenuItem key={d.id} value={d.id}>
                 {d.name}
@@ -700,14 +710,16 @@ export default function CohesionFormPage() {
             </Typography>
             <TextField
               select
-              value={directorsView ? DIRECTORS_TEAM : teamId}
+              value={orgView ? ORGANISATION : directorsView ? DIRECTORS_TEAM : teamId}
               onChange={(e) => {
-                if (e.target.value === DIRECTORS_TEAM) {
+                const v = e.target.value;
+                setOrgView(v === ORGANISATION);
+                if (v === DIRECTORS_TEAM) {
                   setDirectorsView(true);
                   if (ownTeam) setTeamId(ownTeam.id);
-                } else {
+                } else if (v !== ORGANISATION) {
                   setDirectorsView(false);
-                  setTeamId(Number(e.target.value));
+                  setTeamId(Number(v));
                 }
                 setSaved(false);
               }}
@@ -715,6 +727,9 @@ export default function CohesionFormPage() {
               sx={{ minWidth: 260 }}
             >
               {isCompanyAdmin && <MenuItem value={DIRECTORS_TEAM}>{t("cohesion.allDirectors")}</MenuItem>}
+              <MenuItem value={ORGANISATION}>
+                {t("cohesion.organisationOption", { company: user?.company_name ?? "" })}
+              </MenuItem>
               {departments.map((d) => (
                 <MenuItem key={d.id} value={d.id}>
                   {d.name}
@@ -776,9 +791,9 @@ export default function CohesionFormPage() {
 
       {/* Aucune direction choisie : on le dit, plutôt que de laisser un écran
           nu qu'on prendrait pour un chargement. */}
-      {!teamId && <Alert severity="info">{t("cohesion.pickTeamFirst")}</Alert>}
+      {!teamId && !orgView && <Alert severity="info">{t("cohesion.pickTeamFirst")}</Alert>}
 
-      {teamId && (
+      {(teamId || orgView) && (
         <>
           {/* Le bandeau « vous consultez une fiche archivée » ne concerne que
               la relecture d'un exercice passé par son encadrant — pas le CEO,

@@ -66,6 +66,7 @@ export default function App() {
           <Route path="/skills" element={<SkillsPage />} />
           <Route path="/cohesion" element={<CohesionFormPage />} />
           <Route path="/cohesion-survey" element={<CohesionSurveyPage />} />
+          <Route path="/cohesion-survey-org" element={<CohesionSurveyPage scope="ORGANISATION" />} />
           <Route path="/id3a-matrix" element={<ID3AMatrixPage />} />
           <Route path="/talents-dashboard" element={<TalentsDashboardPage />} />
           <Route path="/evaluation-campaigns" element={<EvaluationCampaignsPage />} />

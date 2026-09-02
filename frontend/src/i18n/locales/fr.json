@@ -18,7 +18,8 @@
     "logs": "Logs",
     "directorsReview": "Revue des performances (Directeurs)",
     "performances": "Performance ID",
-    "cohesionSurvey": "Mon avis sur ma direction"
+    "cohesionSurvey": "Mon avis sur ma direction",
+    "cohesionSurveyOrg": "Mon avis sur mon organisation"
   },
   "common": {
     "logout": "Déconnexion",
@@ -351,7 +352,8 @@
     "opinionAnswers": "{{count}} réponses",
     "opinionLow": "{{share}} % d'avis bas",
     "opinionTooFew": "moins de {{min}} réponses",
-    "pickTeamFirst": "Sélectionnez une direction pour afficher sa fiche de cohésion."
+    "pickTeamFirst": "Sélectionnez une direction pour afficher sa fiche de cohésion.",
+    "organisationOption": "Organisation {{company}}"
   },
   "evaluations": {
     "title": "Évaluations ID-3A",
@@ -822,7 +824,10 @@
     "saved": "Votre avis est enregistré.",
     "update": "Mettre à jour mon avis",
     "saveFailed": "L'enregistrement a échoué.",
-    "noTeam": "Vous n'êtes rattaché à aucune direction : il n'y a pas d'avis à donner pour l'instant."
+    "noTeam": "Vous n'êtes rattaché à aucune direction : il n'y a pas d'avis à donner pour l'instant.",
+    "titleOrg": "Mon avis sur mon organisation",
+    "subtitleOrg": "Votre regard sur {{company}} dans son ensemble, sur les dix critères de cohésion.",
+    "privacyOrg": "Vos réponses ne sont jamais lues nominativement. Elles sont agrégées à l'échelle de l'entreprise et présentées à la direction sous forme de moyenne."
   },
   "cohesionOpinion": {
     "loading": "Chargement des avis…",

@@ -72,7 +72,7 @@ function ScoreRow({
  * le nombre minimum de répondants. Ce n'est pas une politesse — c'est la seule
  * chose qui rende les réponses sincères, donc l'exercice utile.
  */
-export default function CohesionSurveyPage() {
+export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" | "ORGANISATION" }) {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   const criteria = useCohesionCriteria();
@@ -85,7 +85,7 @@ export default function CohesionSurveyPage() {
 
   useEffect(() => {
     apiClient
-      .get<Paginated<CohesionResponse>>("/cohesion-responses/", { params: { page_size: 50 } })
+      .get<Paginated<CohesionResponse>>("/cohesion-responses/", { params: { page_size: 50, scope } })
       .then((r) => {
         // Le dernier avis déposé sert de point de départ : on ajuste son avis,
         // on ne le ressaisit pas de zéro.
@@ -103,7 +103,7 @@ export default function CohesionSurveyPage() {
         }
       })
       .catch(() => setError(true));
-  }, []);
+  }, [scope]);
 
   /** Note d'un critère : par son libellé, ou à défaut par son rang — un avis
    * déposé avant que les libellés ne nomment l'entreprise reste relisible. */
@@ -113,12 +113,15 @@ export default function CohesionSurveyPage() {
   const complete = answered === criteria.length;
 
   async function handleSave() {
-    if (!user?.department) return;
+    if (scope === "TEAM" && !user?.department) return;
     setSaving(true);
     setError(false);
     const today = new Date().toISOString().slice(0, 10);
     const payload = {
-      team: user.department,
+      scope,
+      // Un avis d'organisation ne vise aucune direction : c'est l'entreprise
+      // du répondant qui fait foi, et le serveur la lit sur lui.
+      team: scope === "TEAM" ? user?.department ?? null : null,
       date: today,
       scores: criteria
         .map((c, i) => ({ criterion: c, score: scoreOf(c, i) }))
@@ -142,7 +145,7 @@ export default function CohesionSurveyPage() {
     }
   }
 
-  if (!user?.department) {
+  if (scope === "TEAM" && !user?.department) {
     return (
       <Stack spacing={3} maxWidth={900}>
         <PageHeader title={t("cohesionSurvey.title")} />
@@ -154,11 +157,16 @@ export default function CohesionSurveyPage() {
   return (
     <Stack spacing={3} maxWidth={900}>
       <PageHeader
-        title={t("cohesionSurvey.title")}
-        subtitle={t("cohesionSurvey.subtitle", { team: user.department_name ?? "" })}
+        title={t(scope === "TEAM" ? "cohesionSurvey.title" : "cohesionSurvey.titleOrg")}
+        subtitle={t(scope === "TEAM" ? "cohesionSurvey.subtitle" : "cohesionSurvey.subtitleOrg", {
+          team: user?.department_name ?? "",
+          company: user?.company_name ?? "",
+        })}
       />
 
-      <Alert severity="info">{t("cohesionSurvey.privacy")}</Alert>
+      <Alert severity="info">
+        {t(scope === "TEAM" ? "cohesionSurvey.privacy" : "cohesionSurvey.privacyOrg")}
+      </Alert>
 
       <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}>
         <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1 }}>

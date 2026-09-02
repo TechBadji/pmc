@@ -111,6 +111,23 @@ def aggregate_responses(responses, criteria=None, headcount=None):
     return result
 
 
+def aggregate_organisation(responses, headcount=None):
+    """Indice de l'organisation, vue par ses collaborateurs.
+
+    C'est la même règle que pour une direction, appliquée à l'entreprise
+    entière : moyenne par critère, puis moyenne des critères, avec la part
+    d'avis bas à côté. Elle n'est pas la moyenne des directions — un
+    collaborateur peut trouver sa direction soudée et l'organisation
+    cloisonnée, et c'est justement ce que cette lecture révèle.
+
+    Le seuil de publication vaut ici aussi, quoique moins protecteur : à
+    l'échelle de l'entreprise, quatre réponses ne désignent personne, mais
+    elles ne disent pas grand-chose non plus. La participation, affichée à
+    côté, reste le meilleur garde-fou de lecture.
+    """
+    return aggregate_responses(responses, headcount=headcount)
+
+
 def company_score(directions):
     """Indice de l'entreprise : la moyenne des directions, pondérée par leur
     nombre de répondants.

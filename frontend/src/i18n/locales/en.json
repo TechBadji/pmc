@@ -18,7 +18,8 @@
     "directorsReview": "Performance review (Directors)",
     "performances": "Performance ID",
     "logs": "Logs",
-    "cohesionSurvey": "My view on my division"
+    "cohesionSurvey": "My view on my division",
+    "cohesionSurveyOrg": "My view on my organisation"
   },
   "common": {
     "logout": "Log out",
@@ -351,7 +352,8 @@
     "opinionAnswers": "{{count}} answers",
     "opinionLow": "{{share}}% low",
     "opinionTooFew": "fewer than {{min}} answers",
-    "pickTeamFirst": "Pick a division to display its cohesion sheet."
+    "pickTeamFirst": "Pick a division to display its cohesion sheet.",
+    "organisationOption": "{{company}} organisation"
   },
   "evaluations": {
     "title": "ID-3A Evaluations",
@@ -822,7 +824,10 @@
     "saved": "Your feedback is saved.",
     "update": "Update my feedback",
     "saveFailed": "Saving failed.",
-    "noTeam": "You are not attached to a division yet, so there is nothing to rate."
+    "noTeam": "You are not attached to a division yet, so there is nothing to rate.",
+    "titleOrg": "My view on my organisation",
+    "subtitleOrg": "Your view on {{company}} as a whole, across the ten cohesion criteria.",
+    "privacyOrg": "Your answers are never read individually. They are aggregated company-wide and presented to leadership as an average."
   },
   "cohesionOpinion": {
     "loading": "Loading feedback…",

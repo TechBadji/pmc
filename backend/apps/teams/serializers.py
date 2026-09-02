@@ -151,8 +151,19 @@ class CohesionResponseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CohesionResponse
-        fields = ["id", "team", "respondent", "respondent_name", "date", "scores", "updated_at"]
-        read_only_fields = ["respondent", "respondent_name", "updated_at"]
+        fields = [
+            "id", "scope", "team", "company", "respondent", "respondent_name",
+            "date", "scores", "updated_at",
+        ]
+        read_only_fields = ["respondent", "respondent_name", "company", "updated_at"]
+        extra_kwargs = {"team": {"required": False, "allow_null": True}}
+
+    def validate(self, attrs):
+        scope = attrs.get("scope", getattr(self.instance, "scope", None)) or "TEAM"
+        team = attrs.get("team", getattr(self.instance, "team", None))
+        if scope == "TEAM" and team is None:
+            raise serializers.ValidationError({"team": "Indiquez la direction notée."})
+        return attrs
 
     def validate_scores(self, value):
         if not isinstance(value, list):

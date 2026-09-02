@@ -4,12 +4,12 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
-from apps.core.models import Department
+from apps.core.models import Department, User
 from apps.evaluations.models import EvaluationCampaign
 from apps.core.permissions import CompanyScopedQuerySetMixin, IsCompanyAdminOrManager
 from apps.core.scoping import managed_department_ids
 
-from .aggregation import aggregate_responses, company_score
+from .aggregation import aggregate_organisation, aggregate_responses, company_score
 from .models import CohesionResponse, TeamBoard, TeamCohesionAnalysis, TeamRelationship
 from .serializers import (
     CohesionResponseSerializer,
@@ -110,12 +110,27 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         faisant foi.
         """
         data = serializer.validated_data
-        response, _ = CohesionResponse.objects.update_or_create(
-            team=data["team"],
-            respondent=self.request.user,
-            date=data["date"],
-            defaults={"scores": data.get("scores", [])},
-        )
+        scope = data.get("scope") or CohesionResponse.Scope.TEAM
+        company = self.request.user.company
+        if scope == CohesionResponse.Scope.ORGANISATION:
+            # L'avis porte sur l'entreprise : aucune direction n'est visée, et
+            # l'entreprise se lit sur le répondant plutôt que sur le payload —
+            # personne ne juge une organisation qui n'est pas la sienne.
+            response, _ = CohesionResponse.objects.update_or_create(
+                scope=scope,
+                company=company,
+                respondent=self.request.user,
+                date=data["date"],
+                defaults={"scores": data.get("scores", []), "team": None},
+            )
+        else:
+            response, _ = CohesionResponse.objects.update_or_create(
+                scope=scope,
+                team=data["team"],
+                respondent=self.request.user,
+                date=data["date"],
+                defaults={"scores": data.get("scores", []), "company": company},
+            )
         serializer.instance = response
 
     @action(detail=False, methods=["get"], url_path="aggregate")
@@ -207,4 +222,35 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
             )
             directions.append(summary)
 
-        return Response({"directions": directions, "company_score": company_score(directions)})
+        # Avis portant sur l'organisation elle-même, agrégés à part : ils ne
+        # se déduisent pas de ceux des directions et se lisent en regard.
+        org_responses = CohesionResponse.objects.filter(
+            scope=CohesionResponse.Scope.ORGANISATION, company_id=user.company_id
+        )
+        if date:
+            org_responses = org_responses.filter(date=date)
+        if campaign is not None:
+            org_responses = org_responses.filter(
+                date__range=(campaign.start_date, campaign.end_date)
+            )
+        latest_org = {}
+        for response in org_responses.order_by("date"):
+            latest_org[response.respondent_id] = response
+        organisation = aggregate_organisation(
+            list(latest_org.values()),
+            headcount=User.objects.filter(company_id=user.company_id, is_active=True).count(),
+        )
+        # Même forme qu'une direction : l'écran affiche les deux avec le même
+        # composant, et rien ne l'oblige à distinguer les cas.
+        organisation.update({
+            "team": 0,
+            "team_name": user.company.name if user.company else "",
+            "manager_score": None,
+            "gap": None,
+        })
+
+        return Response({
+            "directions": directions,
+            "company_score": company_score(directions),
+            "organisation": organisation,
+        })

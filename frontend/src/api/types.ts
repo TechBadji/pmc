@@ -428,4 +428,9 @@ export interface CohesionDirectionResult {
 export interface CohesionAggregate {
   directions: CohesionDirectionResult[];
   company_score: number | null;
+  /** Avis portant sur l'entreprise elle-même. Ce n'est pas la moyenne des
+   *  directions : on peut juger sa direction soudée et l'organisation
+   *  cloisonnée, et les deux lectures se présentent en regard. Le serveur lui
+   *  donne la forme d'une direction pour que l'écran les affiche pareil. */
+  organisation?: CohesionDirectionResult;
 }
