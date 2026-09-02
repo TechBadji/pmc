@@ -199,9 +199,10 @@ class CompanyViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="bulk-upload-users", parser_classes=[MultiPartParser])
     def bulk_upload_users(self, request, pk=None):
         """Charge des utilisateurs en masse depuis un CSV :
-        colonnes attendues -> prenom,nom,email,poste,departement_code,service_code,role
-        `email`, `service_code` et `role` sont optionnels (role par défaut:
-        MEMBER). `service_code` rattache la personne à un service : il doit
+        colonnes attendues -> prenom,nom,email,login,poste,departement_code,service_code,role
+        `email`, `login`, `service_code` et `role` sont optionnels (role par
+        défaut: MEMBER). `login` impose l'identifiant de connexion au lieu de
+        le dériver du nom, pour un import où ils sont décidés à l'avance. `service_code` rattache la personne à un service : il doit
         désigner un service de la direction indiquée par `departement_code` —
         un décalage entre les deux colonnes est refusé ligne à ligne plutôt
         que d'affecter silencieusement la personne au mauvais endroit.
@@ -265,6 +266,16 @@ class CompanyViewSet(viewsets.ModelViewSet):
                     continue
                 target_department = service
 
+            # Colonne `login` facultative : elle permet d'imposer l'identifiant
+            # de connexion au lieu de le dériver du nom. Utile pour un import
+            # où les identifiants sont décidés à l'avance (EMP1, EMP2…) et
+            # communiqués tels quels aux intéressés.
+            wanted_login = (row.get("login") or "").strip()
+            if wanted_login:
+                if User.objects.filter(generated_login__iexact=wanted_login).exists():
+                    errors.append({"row": row_number, "error": f"Login déjà utilisé: {wanted_login}"})
+                    continue
+
             email = row.get("email") or ""
             if email:
                 if User.objects.filter(email=email).exists():
@@ -273,7 +284,15 @@ class CompanyViewSet(viewsets.ModelViewSet):
                 # Le login sert d'identifiant de connexion : unique
                 # globalement, même quand un email réel est fourni.
                 existing_logins = set(User.objects.values_list("generated_login", flat=True))
-                login = unique_login(make_login(first_name, last_name), existing_logins)
+                login = wanted_login or unique_login(
+                    make_login(first_name, last_name), existing_logins
+                )
+            elif wanted_login:
+                login = wanted_login
+                email = f"{wanted_login.lower()}@{company.slug}.pmc.local"
+                if User.objects.filter(email=email).exists():
+                    errors.append({"row": row_number, "error": f"Email déjà utilisé: {email}"})
+                    continue
             else:
                 login, email = unique_login_email(
                     make_login(first_name, last_name), f"{company.slug}.pmc.local"
