@@ -1,4 +1,17 @@
-import { Alert, Box, Button, Paper, Stack, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
@@ -8,59 +21,41 @@ import { cohesionColor } from "@/theme";
 import type { CohesionResponse, Paginated } from "@/api/types";
 import { useCohesionCriteria } from "@/utils/cohesionCriteria";
 
-/** Note portée sur un critère : cinq pastilles, de « très faible » à « très
- *  élevé ». Le même geste que la fiche de l'encadrant, pour que la lecture des
- *  deux côtés se fasse sur la même échelle. */
-function ScoreRow({
-  value,
-  onChange,
-  label,
+const TIERS = [1, 2, 3, 4, 5];
+const TIER_LABELS = ["cohesion.legend.1", "cohesion.legend.2", "cohesion.legend.3", "cohesion.legend.4", "cohesion.legend.5"];
+
+/** Pastille de note : le même geste et les mêmes couleurs que la fiche de
+ *  l'encadrant, pour que les deux côtés se lisent sur une échelle commune. */
+function ScoreOval({
+  selected,
+  color,
+  onClick,
+  ariaLabel,
 }: {
-  value: number | null;
-  onChange: (v: number) => void;
-  label: string;
+  selected: boolean;
+  color: string;
+  onClick: () => void;
+  ariaLabel: string;
 }) {
   return (
-    <Stack
-      direction={{ xs: "column", sm: "row" }}
-      spacing={1.5}
-      alignItems={{ xs: "flex-start", sm: "center" }}
-      justifyContent="space-between"
-      sx={{ py: 1.25, borderBottom: "1px solid", borderColor: "divider" }}
-    >
-      <Typography variant="body2" sx={{ flex: 1, pr: 2 }}>
-        {label}
-      </Typography>
-      <Stack direction="row" spacing={0.75}>
-        {[1, 2, 3, 4, 5].map((tier) => {
-          const selected = value === tier;
-          return (
-            <Box
-              key={tier}
-              component="button"
-              type="button"
-              aria-label={`${label} — ${tier}`}
-              aria-pressed={selected}
-              onClick={() => onChange(tier)}
-              sx={{
-                width: 40,
-                height: 34,
-                borderRadius: 1,
-                border: "2px solid",
-                borderColor: selected ? cohesionColor(tier) : "divider",
-                bgcolor: selected ? cohesionColor(tier) : "background.paper",
-                color: selected ? "#fff" : "text.secondary",
-                fontWeight: 700,
-                cursor: "pointer",
-                "&:hover": { borderColor: cohesionColor(tier) },
-              }}
-            >
-              {tier}
-            </Box>
-          );
-        })}
-      </Stack>
-    </Stack>
+    <Box
+      component="button"
+      type="button"
+      aria-label={ariaLabel}
+      aria-pressed={selected}
+      onClick={onClick}
+      sx={{
+        width: 26,
+        height: 26,
+        borderRadius: "50%",
+        border: "2px solid",
+        borderColor: selected ? color : "divider",
+        bgcolor: selected ? color : "background.paper",
+        cursor: "pointer",
+        p: 0,
+        "&:hover": { borderColor: color },
+      }}
+    />
   );
 }
 
@@ -147,7 +142,7 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
 
   if (scope === "TEAM" && !user?.department) {
     return (
-      <Stack spacing={3} maxWidth={900}>
+      <Stack spacing={3} maxWidth={1180}>
         <PageHeader title={t("cohesionSurvey.title")} />
         <Alert severity="info">{t("cohesionSurvey.noTeam")}</Alert>
       </Stack>
@@ -155,7 +150,7 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
   }
 
   return (
-    <Stack spacing={3} maxWidth={900}>
+    <Stack spacing={3} maxWidth={1180}>
       <PageHeader
         title={t(scope === "TEAM" ? "cohesionSurvey.title" : "cohesionSurvey.titleOrg")}
         subtitle={t(scope === "TEAM" ? "cohesionSurvey.subtitle" : "cohesionSurvey.subtitleOrg", {
@@ -168,8 +163,8 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
         {t(scope === "TEAM" ? "cohesionSurvey.privacy" : "cohesionSurvey.privacyOrg")}
       </Alert>
 
-      <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1 }}>
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ p: 2, pb: 1 }}>
           <Typography variant="subtitle2" fontWeight={700}>
             {t("cohesionSurvey.scaleHint")}
           </Typography>
@@ -178,19 +173,72 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
           </Typography>
         </Stack>
 
-        {criteria.map((criterion, index) => (
-          <ScoreRow
-            key={criterion}
-            label={criterion}
-            value={scoreOf(criterion, index) ?? null}
-            onChange={(v) => {
-              setScores((current) => ({ ...current, [criterion]: v }));
-              setSaved(false);
-            }}
-          />
-        ))}
+        <TableContainer>
+          <Table size="small" sx={{ "& .MuiTableCell-root": { border: "1px solid", borderColor: "divider" } }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ width: "42%", bgcolor: "#dde5ef", color: "#243747", fontWeight: 800, fontSize: 12 }}>
+                  {t("cohesion.criterionCol")}
+                </TableCell>
+                {/* Entêtes à la couleur du barème : c'est le code couleur de la
+                    fiche ID-PMC, repris par la pastille sélectionnée. */}
+                {TIERS.map((tier) => (
+                  <TableCell
+                    key={tier}
+                    align="center"
+                    sx={{
+                      bgcolor: cohesionColor(tier),
+                      color: "#fff",
+                      fontWeight: 700,
+                      fontSize: 11,
+                      lineHeight: 1.25,
+                      minWidth: 78,
+                    }}
+                  >
+                    {t(TIER_LABELS[tier - 1]).toUpperCase()}
+                    <br />
+                    {tier}
+                  </TableCell>
+                ))}
+                <TableCell align="center" sx={{ fontWeight: 800, fontSize: 12, minWidth: 70 }}>
+                  {t("cohesion.totalCol")}
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {criteria.map((criterion, index) => {
+                const value = scoreOf(criterion, index);
+                return (
+                  <TableRow key={criterion}>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {index + 1}. {criterion}
+                      </Typography>
+                    </TableCell>
+                    {TIERS.map((tier) => (
+                      <TableCell key={tier} align="center">
+                        <ScoreOval
+                          selected={value === tier}
+                          color={cohesionColor(tier)}
+                          ariaLabel={`${criterion} — ${tier}`}
+                          onClick={() => {
+                            setScores((current) => ({ ...current, [criterion]: tier }));
+                            setSaved(false);
+                          }}
+                        />
+                      </TableCell>
+                    ))}
+                    <TableCell align="center" sx={{ fontWeight: 800 }}>
+                      {value !== undefined ? value.toFixed(1) : "—"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="flex-end" sx={{ mt: 2 }}>
+        <Stack direction="row" spacing={2} alignItems="center" justifyContent="flex-end" sx={{ p: 2 }}>
           {error && <Alert severity="error" sx={{ py: 0 }}>{t("cohesionSurvey.saveFailed")}</Alert>}
           {saved && <Alert severity="success" sx={{ py: 0 }}>{t("cohesionSurvey.saved")}</Alert>}
           <Button variant="contained" onClick={handleSave} disabled={saving || !complete}>
@@ -198,7 +246,7 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
           </Button>
         </Stack>
         {!complete && (
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", textAlign: "right", mt: 0.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", textAlign: "right", px: 2, pb: 2 }}>
             {t("cohesionSurvey.incomplete")}
           </Typography>
         )}

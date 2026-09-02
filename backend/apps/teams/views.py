@@ -89,10 +89,14 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
     nominatifs.
     """
 
-    queryset = CohesionResponse.objects.select_related("team", "respondent")
+    queryset = CohesionResponse.objects.select_related("team", "company", "respondent")
     serializer_class = CohesionResponseSerializer
-    company_lookup = "team__company_id"
-    filterset_fields = ["team", "date"]
+    # Le cloisonnement passe par l'entreprise portée directement, et non par
+    # la direction : un avis sur l'organisation n'en vise aucune, et le
+    # chemin `team__company_id` le rendait invisible à son propre auteur —
+    # donc impossible à relire ou à corriger.
+    company_lookup = "company_id"
+    filterset_fields = ["team", "date", "scope"]
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):

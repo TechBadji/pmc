@@ -320,7 +320,7 @@
       "5": "Très élevé"
     },
     "criteria": [
-      "La vision de {{company}} sur les 1-5 prochaines années est clairement définie",
+      "La vision de {{company}} sur les 10 à 15 prochaines années est clairement définie",
       "Tout le personnel comprend la vision et les valeurs de {{company}} et peut l'expliquer clairement",
       "Tous les employés se sont appropriés la vision et les valeurs de {{company}}",
       "Chaque employé connaît ses objectifs individuels et comment ils sont liés aux objectifs globaux",
@@ -353,7 +353,7 @@
     "opinionLow": "{{share}} % d'avis bas",
     "opinionTooFew": "moins de {{min}} réponses",
     "pickTeamFirst": "Sélectionnez une direction pour afficher sa fiche de cohésion.",
-    "organisationOption": "Organisation {{company}}"
+    "organisationOption": "{{company}}"
   },
   "evaluations": {
     "title": "Évaluations ID-3A",
