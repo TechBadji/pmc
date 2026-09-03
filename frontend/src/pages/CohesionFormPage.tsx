@@ -133,7 +133,24 @@ function ValueBox({ label, value, bg, suffix }: { label: string; value: number |
 /** Pastille ovale sélectionnable — une par palier (1 à 5), colorée quand
  * sélectionnée ; sinon blanche avec un léger pourtour gris, comme la case
  * TOTAL — reprend les boutons de la fiche Excel ID-PMC. */
-function ScoreOval({ selected, color, onClick, ariaLabel }: { selected: boolean; color: string; onClick: () => void; ariaLabel: string }) {
+function ScoreOval({
+  selected,
+  majority,
+  color,
+  onClick,
+  ariaLabel,
+}: {
+  selected: boolean;
+  /** Palier que les collaborateurs ont le plus choisi. Marqué d'un pourtour
+   *  épais plutôt que d'un aplat : sur la fiche d'une direction, l'aplat est
+   *  déjà pris par la note de l'encadrant, et confondre les deux ferait lire
+   *  un avis d'équipe comme une saisie. */
+  majority?: boolean;
+  color: string;
+  onClick: () => void;
+  ariaLabel: string;
+}) {
+  const filled = selected || (majority && !selected);
   return (
     <Box
       component="button"
@@ -145,12 +162,13 @@ function ScoreOval({ selected, color, onClick, ariaLabel }: { selected: boolean;
         width: 40,
         height: 24,
         borderRadius: 12,
-        border: "1px solid",
-        borderColor: selected ? color : "divider",
+        border: majority ? "3px solid" : "1px solid",
+        borderColor: selected || majority ? color : "divider",
         cursor: "pointer",
-        bgcolor: selected ? color : "background.paper",
+        bgcolor: filled ? color : "background.paper",
+        opacity: majority && !selected ? 0.85 : 1,
         transition: "background-color 0.15s",
-        "&:hover": { bgcolor: selected ? color : "action.hover" },
+        "&:hover": { bgcolor: filled ? color : "action.hover" },
       }}
     />
   );
@@ -401,6 +419,13 @@ export default function CohesionFormPage() {
    * la porte. Rien n'est montré tant que la direction n'a pas atteint le seuil
    * de publication — la moyenne de deux personnes désignerait ses auteurs.
    */
+  /** Palier le plus souvent choisi par les collaborateurs, ou `null` tant que
+   *  le seuil de publication n'est pas atteint. */
+  function majorityFor(criterion: string): number | null {
+    if (!sheetOpinion || !sheetOpinion.published) return null;
+    return sheetOpinion.criteria.find((c) => c.criterion === criterion)?.mode ?? null;
+  }
+
   function opinionFor(criterion: string) {
     if (!sheetOpinion || !sheetOpinion.published) {
       return (
@@ -881,6 +906,7 @@ export default function CohesionFormPage() {
                         <TableCell key={tier} align="center">
                           <ScoreOval
                             selected={row.score === tier}
+                            majority={majorityFor(row.criterion) === tier}
                             color={cohesionColor(tier)}
                             onClick={() => !readOnly && updateRow(i, { score: tier })}
                             ariaLabel={`${row.criterion} — ${tier}`}
