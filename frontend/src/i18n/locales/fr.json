@@ -354,7 +354,8 @@
     "opinionTooFew": "moins de {{min}} réponses",
     "pickTeamFirst": "Sélectionnez une direction pour afficher sa fiche de cohésion.",
     "organisationOption": "{{company}}",
-    "opinionMean": "moyenne {{value}}"
+    "opinionMean": "moyenne {{value}}",
+    "respondentsLabel": "Répondants"
   },
   "evaluations": {
     "title": "Évaluations ID-3A",

@@ -816,7 +816,11 @@ export default function CohesionFormPage() {
           )}
         </Stack>
 
-        {teamId && (
+        {/* Les indices s'affichent aussi pour l'organisation. Ils étaient
+            conditionnés au choix d'une direction, si bien que la vue
+            organisation — où aucune direction n'est sélectionnée — les perdait
+            en route. */}
+        {(teamId || orgView) && (
           <Stack alignItems={{ xs: "flex-start", sm: "flex-end" }} spacing={1}>
             <Stack direction="row" spacing={3} flexWrap="wrap">
               {/* En vue organisation, les indices viennent des avis agrégés
@@ -831,8 +835,26 @@ export default function CohesionFormPage() {
                 value={orgView ? sheetOpinion?.oce ?? null : oce}
                 bg="#fff4c2"
               />
-              <ValueBox label={t("cohesion.achievedLabel")} value={achieved} bg="#dbeeff" />
-              <ValueBox label={t("cohesion.tcoLabel")} value={tco} suffix="%" />
+              {orgView ? (
+                /* « Réalisé » et « TCO » se lisent sur la grille de
+                   l'encadrant, qui n'existe pas pour l'entreprise. À leur
+                   place, ce qui dit vraiment le poids de l'indice : combien de
+                   collaborateurs l'ont formé. */
+                <ValueBox
+                  label={t("cohesion.respondentsLabel")}
+                  value={
+                    sheetOpinion
+                      ? `${sheetOpinion.respondents}/${sheetOpinion.headcount ?? "?"}`
+                      : null
+                  }
+                  bg="#dbeeff"
+                />
+              ) : (
+                <>
+                  <ValueBox label={t("cohesion.achievedLabel")} value={achieved} bg="#dbeeff" />
+                  <ValueBox label={t("cohesion.tcoLabel")} value={tco} suffix="%" />
+                </>
+              )}
             </Stack>
           </Stack>
         )}

@@ -354,7 +354,8 @@
     "opinionTooFew": "fewer than {{min}} answers",
     "pickTeamFirst": "Pick a division to display its cohesion sheet.",
     "organisationOption": "{{company}}",
-    "opinionMean": "mean {{value}}"
+    "opinionMean": "mean {{value}}",
+    "respondentsLabel": "Respondents"
   },
   "evaluations": {
     "title": "ID-3A Evaluations",
