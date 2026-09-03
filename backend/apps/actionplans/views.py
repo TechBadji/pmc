@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from apps.core.audit import log_event
 from apps.core.models import Department, User
 from apps.core.permissions import (
     CompanyScopedQuerySetMixin,
@@ -51,7 +52,39 @@ class ActionPlanViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(manager=self.request.user)
+        plan = serializer.save(manager=self.request.user)
+        subject = f" ({plan.target_user.get_full_name()})" if plan.target_user else ""
+        log_event(
+            self.request.user,
+            "actionplan.created",
+            f"a créé un plan d'action pour « {plan.team.name} »{subject}.",
+            company=plan.team.company,
+        )
+
+    def perform_update(self, serializer):
+        plan = serializer.save()
+        subject = f" ({plan.target_user.get_full_name()})" if plan.target_user else ""
+        log_event(
+            self.request.user,
+            "actionplan.updated",
+            f"a modifié un plan d'action pour « {plan.team.name} »{subject}.",
+            company=plan.team.company,
+        )
+
+    def perform_destroy(self, instance):
+        team_name, target_name, company = (
+            instance.team.name,
+            instance.target_user.get_full_name() if instance.target_user else None,
+            instance.team.company,
+        )
+        instance.delete()
+        subject = f" ({target_name})" if target_name else ""
+        log_event(
+            self.request.user,
+            "actionplan.deleted",
+            f"a supprimé un plan d'action pour « {team_name} »{subject}.",
+            company=company,
+        )
 
     @action(detail=False, methods=["post"], url_path="bulk-save-dev-plan")
     def bulk_save_dev_plan(self, request):
@@ -155,6 +188,13 @@ class ActionPlanViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
 
         scope.delete()
         ActionPlan.objects.bulk_create(cleaned)
+        subject = target_user.get_full_name() if target_user is not None else f"l'équipe « {team.name} »"
+        log_event(
+            actor,
+            "actionplan.dev_plan_saved",
+            f"a mis à jour le plan de développement de {subject}.",
+            company=team.company,
+        )
         return Response(
             ActionPlanSerializer(
                 scope.order_by("category", "priority_order", "order"),

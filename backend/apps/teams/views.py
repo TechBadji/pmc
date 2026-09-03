@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
+from apps.core.audit import log_event
 from apps.core.models import Department, User
 from apps.evaluations.models import EvaluationCampaign
 from apps.core.permissions import CompanyScopedQuerySetMixin, IsCompanyAdminOrManager
@@ -39,6 +40,34 @@ class TeamCohesionAnalysisViewSet(CompanyScopedQuerySetMixin, viewsets.ModelView
             qs = qs.filter(team_id__in=managed_department_ids(user))
         return qs
 
+    def perform_create(self, serializer):
+        analysis = serializer.save()
+        log_event(
+            self.request.user,
+            "cohesion.created",
+            f"a créé une analyse de cohésion pour « {analysis.team.name} » ({analysis.date}).",
+            company=analysis.team.company,
+        )
+
+    def perform_update(self, serializer):
+        analysis = serializer.save()
+        log_event(
+            self.request.user,
+            "cohesion.updated",
+            f"a modifié l'analyse de cohésion de « {analysis.team.name} » ({analysis.date}).",
+            company=analysis.team.company,
+        )
+
+    def perform_destroy(self, instance):
+        team_name, date, company = instance.team.name, instance.date, instance.team.company
+        instance.delete()
+        log_event(
+            self.request.user,
+            "cohesion.deleted",
+            f"a supprimé l'analyse de cohésion de « {team_name} » ({date}).",
+            company=company,
+        )
+
 
 class TeamRelationshipViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
     queryset = TeamRelationship.objects.select_related("from_user", "to_user", "team")
@@ -53,6 +82,30 @@ class TeamRelationshipViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         if user.role == user.Role.MANAGER:
             qs = qs.filter(team_id__in=managed_department_ids(user))
         return qs
+
+    def perform_create(self, serializer):
+        rel = serializer.save()
+        log_event(
+            self.request.user,
+            "relationship.created",
+            f"a ajouté une relation « {rel.get_quality_display()} » entre {rel.from_user.get_full_name()} et {rel.to_user.get_full_name()}.",
+            company=rel.team.company,
+        )
+
+    def perform_destroy(self, instance):
+        from_name, to_name, quality, company = (
+            instance.from_user.get_full_name(),
+            instance.to_user.get_full_name(),
+            instance.get_quality_display(),
+            instance.team.company,
+        )
+        instance.delete()
+        log_event(
+            self.request.user,
+            "relationship.deleted",
+            f"a supprimé la relation « {quality} » entre {from_name} et {to_name}.",
+            company=company,
+        )
 
 
 class TeamBoardViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
@@ -76,6 +129,34 @@ class TeamBoardViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         if user.role == user.Role.MANAGER:
             qs = qs.filter(team_id__in=managed_department_ids(user))
         return qs
+
+    def perform_create(self, serializer):
+        board = serializer.save()
+        log_event(
+            self.request.user,
+            "teamboard.created",
+            f"a créé la fiche d'équipe de « {board.team.name} » ({board.date}).",
+            company=board.team.company,
+        )
+
+    def perform_update(self, serializer):
+        board = serializer.save()
+        log_event(
+            self.request.user,
+            "teamboard.updated",
+            f"a modifié la fiche d'équipe de « {board.team.name} » ({board.date}).",
+            company=board.team.company,
+        )
+
+    def perform_destroy(self, instance):
+        team_name, date, company = instance.team.name, instance.date, instance.team.company
+        instance.delete()
+        log_event(
+            self.request.user,
+            "teamboard.deleted",
+            f"a supprimé la fiche d'équipe de « {team_name} » ({date}).",
+            company=company,
+        )
 
 
 class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):

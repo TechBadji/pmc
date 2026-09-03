@@ -2,6 +2,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from .audit import log_event
 from .constants import DEFAULT_DEPARTMENTS, PLAN_FEATURES, DEFAULT_PASSWORD
 from .models import AuditLog, Company, Department, PasswordResetRequest, PerformanceProfile, User
 from .text_utils import make_login, slugify_company
@@ -280,6 +281,12 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.set_password(self.validated_data["new_password"])
         user.must_change_password = False
         user.save(update_fields=["password", "must_change_password"])
+        log_event(
+            user,
+            "user.password_changed",
+            "a changé son mot de passe.",
+            company=user.company,
+        )
         return user
 
 

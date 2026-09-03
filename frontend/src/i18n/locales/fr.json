@@ -606,7 +606,18 @@
     "categories": {
       "company": "Entreprise",
       "user": "Compte",
-      "campaign": "Campagne"
+      "campaign": "Campagne",
+      "department": "Département",
+      "evaluation": "Évaluation",
+      "skillnote": "Forces & Faiblesses",
+      "actionplan": "Plan d'action",
+      "cohesion": "Cohésion",
+      "relationship": "Relation d'équipe",
+      "teamboard": "Fiche d'équipe",
+      "skillmatrix": "Référentiel",
+      "skillitem": "Compétence",
+      "performanceprofile": "Fiche Performances",
+      "auth": "Authentification"
     }
   },
   "directorsReview": {

@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.utils import timezone
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -44,6 +44,21 @@ from .validators import require_same_company
 class PMCTokenObtainPairView(TokenObtainPairView):
     serializer_class = PMCTokenObtainPairSerializer
     throttle_scope = "login"
+
+    def post(self, request, *args, **kwargs):
+        try:
+            return super().post(request, *args, **kwargs)
+        except APIException:
+            # Identifiants invalides, compte inactif, entreprise suspendue…
+            # tout échec d'authentification est visible ici — utile pour
+            # repérer un bourrage de tentatives malgré le throttling.
+            identifier = str(request.data.get("email") or "")[:255]
+            log_event(
+                None,
+                "auth.login_failed",
+                f"Échec de connexion pour « {identifier} »." if identifier else "Échec de connexion (identifiant manquant).",
+            )
+            raise
 
 
 class MeView(APIView):
@@ -363,16 +378,41 @@ class DepartmentViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             company_id = self.request.data.get("company")
             if not company_id:
                 raise ValidationError({"company": "Champ requis pour le Super Admin."})
-            serializer.save(company_id=company_id)
+            department = serializer.save(company_id=company_id)
         else:
-            serializer.save(company=user.company)
+            department = serializer.save(company=user.company)
+        log_event(
+            user,
+            "department.created",
+            f"a créé le département « {department.name} » ({department.code}).",
+            company=department.company,
+        )
+
+    def perform_update(self, serializer):
+        before = {"name": serializer.instance.name, "code": serializer.instance.code, "manager_id": serializer.instance.manager_id}
+        department = serializer.save()
+        changed = [field for field, old in before.items() if old != getattr(department, field)]
+        if changed:
+            log_event(
+                self.request.user,
+                "department.updated",
+                f"a modifié le département « {department.name} » ({', '.join(changed)}).",
+                company=department.company,
+            )
 
     def perform_destroy(self, instance):
         if instance.members.exists():
             raise ValidationError(
                 {"detail": "Impossible de supprimer un département qui a des membres."}
             )
+        name, code, company = instance.name, instance.code, instance.company
         instance.delete()
+        log_event(
+            self.request.user,
+            "department.deleted",
+            f"a supprimé le département « {name} » ({code}).",
+            company=company,
+        )
 
 
 class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
@@ -626,4 +666,10 @@ class PerformanceProfileViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
         serializer = PerformanceProfileSerializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        log_event(
+            actor,
+            "performanceprofile.updated",
+            f"a mis à jour la fiche Performances de {target_user.get_full_name()}.",
+            company=target_user.company,
+        )
         return Response(serializer.data)

@@ -606,7 +606,18 @@
     "categories": {
       "company": "Company",
       "user": "Account",
-      "campaign": "Campaign"
+      "campaign": "Campaign",
+      "department": "Department",
+      "evaluation": "Evaluation",
+      "skillnote": "Strengths & Weaknesses",
+      "actionplan": "Action plan",
+      "cohesion": "Cohesion",
+      "relationship": "Team relationship",
+      "teamboard": "Team board",
+      "skillmatrix": "Skill matrix",
+      "skillitem": "Skill",
+      "performanceprofile": "Performance profile",
+      "auth": "Authentication"
     }
   },
   "directorsReview": {

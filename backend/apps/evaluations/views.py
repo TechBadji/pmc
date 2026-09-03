@@ -148,6 +148,34 @@ class EvaluationViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             qs = qs.filter(user__department_id__in=managed_department_ids(user)) | qs.filter(user=user)
         return qs.distinct()
 
+    def perform_create(self, serializer):
+        evaluation = serializer.save()
+        log_event(
+            self.request.user,
+            "evaluation.created",
+            f"a créé l'évaluation de {evaluation.user.get_full_name()} ({evaluation.campaign.name}).",
+            company=evaluation.user.company,
+        )
+
+    def perform_update(self, serializer):
+        evaluation = serializer.save()
+        log_event(
+            self.request.user,
+            "evaluation.updated",
+            f"a modifié l'évaluation de {evaluation.user.get_full_name()} ({evaluation.campaign.name}).",
+            company=evaluation.user.company,
+        )
+
+    def perform_destroy(self, instance):
+        user_name, campaign_name, company = instance.user.get_full_name(), instance.campaign.name, instance.user.company
+        instance.delete()
+        log_event(
+            self.request.user,
+            "evaluation.deleted",
+            f"a supprimé l'évaluation de {user_name} ({campaign_name}).",
+            company=company,
+        )
+
 
 class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
     """Fiche "Forces & Faiblesses" (Hard/Soft Skills) — rattachée à une
@@ -221,6 +249,12 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
 
         SkillNote.objects.filter(evaluation=evaluation).delete()
         SkillNote.objects.bulk_create(cleaned)
+        log_event(
+            actor,
+            "skillnote.bulk_saved",
+            f"a mis à jour la fiche Forces & Faiblesses de {target_user.get_full_name()} ({evaluation.campaign.name}).",
+            company=target_user.company,
+        )
         return Response(SkillNoteSerializer(SkillNote.objects.filter(evaluation=evaluation), many=True).data)
 
 
