@@ -82,7 +82,9 @@ const DIRECTORS_ONLY = "__directors__";
 
 const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
 
-const CHART_HEIGHT = 520;
+// Le 9 Box étire lui aussi ses paliers extrêmes — jusqu'à 125 % et ±30 % —
+// et gagne la hauteur correspondante.
+const CHART_HEIGHT = 600;
 // Marges du repère : la marge gauche n'a besoin que de la place des pastilles
 // chiffrées et des intitulés de paliers à la verticale — la réduire rapproche
 // d'autant le bandeau bleu de l'axe des ordonnées.
@@ -132,17 +134,17 @@ function xPos(performance: number) {
       ? Math.max(0, performance) / 75 // 0 → 1
       : performance < 90
         ? 1 + (performance - 75) / 15 // 1 → 2
-        : 2 + Math.min(1, (performance - 90) / 30); // 2 → 3 (90 % → 120 %)
+        : 2 + Math.min(1, (performance - 90) / 35); // 2 → 3 (90 % → 125 %)
   return clamp(raw, X_INSET);
 }
 
 function yPos(progression: number) {
   const raw =
     progression <= 0
-      ? 1 + Math.max(-20, progression) / 20 // 0 → 1
+      ? 1 + Math.max(-30, progression) / 30 // 0 → 1 (−30 % → 0)
       : progression < 6
         ? 1 + progression / 6 // 1 → 2
-        : 2 + Math.min(1, (progression - 6) / 14); // 2 → 3
+        : 2 + Math.min(1, (progression - 6) / 24); // 2 → 3 (6 % → +30 %)
   return clamp(raw, Y_INSET);
 }
 
@@ -340,13 +342,21 @@ function TalentDot({ cx, cy, payload, flip }: any) {
 
 
 // --- Vue "Trajectoire" ---------------------------------------------------
-// Repère du support : performance de 50 à 120 % en abscisse, écart avec la
-// période précédente de -20 à +20 % en ordonnée, les deux axes se croisant à
+// Repère du support : performance de 50 à 125 % en abscisse, écart avec la
+// période précédente de −30 à +30 % en ordonnée, les deux axes se croisant à
 // 90 % / 0 % — et non dans un coin.
-const TRAJECTORY_HEIGHT = Math.round(560 * 1.3);
+//
+// Les bornes sont volontairement larges. Une valeur qui les dépasse est
+// ramenée au bord, où elle se confond avec celles qui s'y trouvent
+// légitimement : mieux vaut de la marge inutilisée qu'un tassement contre le
+// cadre, qui fait lire une égalité là où il y a un écart.
+// L'ordonnée couvre désormais soixante points au lieu de quarante : à hauteur
+// constante, chaque point d'écart perdrait un tiers de sa place et les
+// silhouettes se chevaucheraient. Le cadre grandit dans la même proportion.
+const TRAJECTORY_HEIGHT = Math.round(560 * 1.3 * 1.25);
 const TRAJECTORY_MARGIN = { top: 30, right: 60, bottom: 30, left: 40 };
-const TRAJECTORY_X: [number, number] = [50, 120];
-const TRAJECTORY_Y: [number, number] = [-20, 20];
+const TRAJECTORY_X: [number, number] = [50, 125];
+const TRAJECTORY_Y: [number, number] = [-30, 30];
 const TRAJECTORY_ORIGIN_X = 90;
 // Pointe des axes : longueur le long de l'axe et demi-envergure. Les axes
 // s'arrêtent sur la dernière graduation, pointe comprise — rien ne dépasse du
@@ -367,11 +377,11 @@ function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
   const X = (v: number) => xAxis.scale(v);
   const Y = (v: number) => yAxis.scale(v);
   const tickText = { fontSize: 10.5, fontWeight: 700, fill: "#5b7aa8", letterSpacing: 0.2 } as const;
-  const xTicks = [50, 55, 60, 65, 70, 75, 80, 85, 95, 100, 105, 110, 115, 120];
+  const xTicks = [50, 55, 60, 65, 70, 75, 80, 85, 95, 100, 105, 110, 115, 120, 125];
   // Carreaux : tous les 5 % en abscisse, tous les 5 points en ordonnée.
-  const gridX = Array.from({ length: 15 }, (_, i) => 50 + i * 5);
-  const gridY = Array.from({ length: 9 }, (_, i) => -20 + i * 5);
-  const yTicks = [20, 15, 10, 5, -5, -10, -15, -20];
+  const gridX = Array.from({ length: 16 }, (_, i) => 50 + i * 5);
+  const gridY = Array.from({ length: 13 }, (_, i) => -30 + i * 5);
+  const yTicks = [30, 25, 20, 15, 10, 5, -5, -10, -15, -20, -25, -30];
   const inset = 10;
 
   /** Un quadrant : rectangle à coins arrondis, en pointillés, sur un aplat
