@@ -1,15 +1,18 @@
 import csv
 import io
 
+import django_filters
 from django.db.models import Q
+from django.http import HttpResponse
 from django.utils import timezone
-from rest_framework import permissions, viewsets
+from rest_framework import filters, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .audit import log_event
 from .constants import DEFAULT_PASSWORD
@@ -608,6 +611,22 @@ class PasswordResetRequestViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(PasswordResetRequestSerializer(reset_request).data)
 
 
+class AuditLogFilter(django_filters.FilterSet):
+    # `created_at__date` plutôt que `created_at` directement : bornes
+    # inclusives sur le jour choisi, sans que l'appelant ait à composer un
+    # horodatage complet pour "jusqu'au 31 inclus".
+    date_from = django_filters.DateFilter(field_name="created_at", lookup_expr="date__gte")
+    date_to = django_filters.DateFilter(field_name="created_at", lookup_expr="date__lte")
+    # `company_name`/`actor_name` sont des instantanés texte figés à
+    # l'écriture (voir AuditLog.__doc__) — pas de relation à joindre,
+    # une simple recherche insensible à la casse suffit.
+    company_name = django_filters.CharFilter(field_name="company_name", lookup_expr="icontains")
+
+    class Meta:
+        model = AuditLog
+        fields = ["action", "date_from", "date_to", "company_name"]
+
+
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     """Journal d'activité de la plateforme — réservé au Super Admin."""
 
@@ -619,7 +638,33 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AuditLog.objects.all()
     serializer_class = AuditLogSerializer
     permission_classes = [IsSuperAdmin]
-    filterset_fields = ["action"]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = AuditLogFilter
+    # Une seule zone de recherche libre côté écran, qui couvre à la fois
+    # "qui" (auteur) et "quoi" (description) — le filtre entreprise reste
+    # séparé puisqu'il a son propre champ dédié dans l'UI.
+    search_fields = ["description", "actor_name"]
+
+    @action(detail=False, methods=["get"], url_path="export")
+    def export(self, request):
+        """Export CSV du journal filtré — mêmes filtres que la liste
+        affichée à l'écran (période, entreprise, recherche, type
+        d'événement), jamais l'intégralité du journal en un clic."""
+        queryset = self.filter_queryset(self.get_queryset())
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="journal-activite.csv"'
+        writer = csv.writer(response)
+        writer.writerow(["Date", "Auteur", "Rôle", "Entreprise", "Type d'événement", "Description"])
+        for log in queryset.iterator():
+            writer.writerow([
+                timezone.localtime(log.created_at).strftime("%Y-%m-%d %H:%M:%S"),
+                log.actor_name,
+                log.actor_role,
+                log.company_name,
+                log.action,
+                log.description,
+            ])
+        return response
 
 
 class PerformanceProfileViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):

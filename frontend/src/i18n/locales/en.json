@@ -603,6 +603,12 @@
     "noEvents": "No events yet.",
     "newEventsAnnouncement_one": "{{count}} new event loaded.",
     "newEventsAnnouncement_other": "{{count}} new events loaded.",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "companyFilter": "Company",
+    "searchFilter": "Search",
+    "searchPlaceholder": "Author or description…",
+    "exportCsv": "Export CSV",
     "categories": {
       "company": "Company",
       "user": "Account",

@@ -1,3 +1,4 @@
+import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import {
   Alert,
@@ -13,6 +14,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TextField,
   Typography,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
@@ -22,6 +24,9 @@ import { apiClient } from "@/api/client";
 import type { AuditLog, Paginated } from "@/api/types";
 
 const POLL_MS = 8000;
+// Laisse l'utilisateur finir de taper avant d'interroger l'API — évite une
+// requête par frappe sur les champs Entreprise/Recherche.
+const DEBOUNCE_MS = 400;
 
 export default function LogsPage() {
   const { t, i18n } = useTranslation();
@@ -33,15 +38,52 @@ export default function LogsPage() {
   const [loadError, setLoadError] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [newEventsAnnouncement, setNewEventsAnnouncement] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  // Champs de saisie affichés (mise à jour immédiate) vs filtres réellement
+  // appliqués à la requête (mise à jour après un court silence de frappe
+  // pour Entreprise/Recherche, immédiate pour les dates).
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [companyInput, setCompanyInput] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [appliedCompany, setAppliedCompany] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+
   const pageRef = useRef(page);
   pageRef.current = page;
   const knownIdsRef = useRef<Set<number> | null>(null);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setAppliedCompany(companyInput);
+      setPage(0);
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+  }, [companyInput]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setAppliedSearch(searchInput);
+      setPage(0);
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
+
+  function filterParams() {
+    return {
+      ...(dateFrom ? { date_from: dateFrom } : {}),
+      ...(dateTo ? { date_to: dateTo } : {}),
+      ...(appliedCompany ? { company_name: appliedCompany } : {}),
+      ...(appliedSearch ? { search: appliedSearch } : {}),
+    };
+  }
 
   function load() {
     setLoadError(false);
     apiClient
       .get<Paginated<AuditLog>>("/audit-logs/", {
-        params: { page: page + 1, page_size: rowsPerPage },
+        params: { page: page + 1, page_size: rowsPerPage, ...filterParams() },
       })
       .then((r) => {
         setLogs(r.data.results);
@@ -65,7 +107,7 @@ export default function LogsPage() {
       .catch(() => setLoadError(true));
   }
 
-  useEffect(load, [page, rowsPerPage]);
+  useEffect(load, [page, rowsPerPage, dateFrom, dateTo, appliedCompany, appliedSearch]);
 
   // Actualisation automatique — seulement sur la première page (les plus
   // récents événements), pour ne pas perturber la pagination d'un
@@ -76,7 +118,29 @@ export default function LogsPage() {
     }, POLL_MS);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowsPerPage]);
+  }, [rowsPerPage, dateFrom, dateTo, appliedCompany, appliedSearch]);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const r = await apiClient.get("/audit-logs/export/", {
+        params: filterParams(),
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([r.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "journal-activite.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <Stack spacing={3}>
@@ -130,6 +194,59 @@ export default function LogsPage() {
           {t("common.loadError")}
         </Alert>
       )}
+
+      <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
+        <Stack direction="row" spacing={1.5} flexWrap="wrap" alignItems="center" useFlexGap>
+          <TextField
+            size="small"
+            type="date"
+            label={t("logs.dateFrom")}
+            value={dateFrom}
+            onChange={(e) => {
+              setDateFrom(e.target.value);
+              setPage(0);
+            }}
+            InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: 160 }}
+          />
+          <TextField
+            size="small"
+            type="date"
+            label={t("logs.dateTo")}
+            value={dateTo}
+            onChange={(e) => {
+              setDateTo(e.target.value);
+              setPage(0);
+            }}
+            InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: 160 }}
+          />
+          <TextField
+            size="small"
+            label={t("logs.companyFilter")}
+            value={companyInput}
+            onChange={(e) => setCompanyInput(e.target.value)}
+            sx={{ minWidth: 200 }}
+          />
+          <TextField
+            size="small"
+            label={t("logs.searchFilter")}
+            placeholder={t("logs.searchPlaceholder")}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            sx={{ minWidth: 240, flexGrow: 1 }}
+          />
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<DownloadOutlinedIcon />}
+            onClick={handleExport}
+            disabled={exporting}
+          >
+            {t("logs.exportCsv")}
+          </Button>
+        </Stack>
+      </Paper>
 
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
         <TableContainer>

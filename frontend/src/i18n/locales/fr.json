@@ -603,6 +603,12 @@
     "noEvents": "Aucun événement pour le moment.",
     "newEventsAnnouncement_one": "{{count}} nouvel événement chargé.",
     "newEventsAnnouncement_other": "{{count}} nouveaux événements chargés.",
+    "dateFrom": "Du",
+    "dateTo": "Au",
+    "companyFilter": "Entreprise",
+    "searchFilter": "Recherche",
+    "searchPlaceholder": "Auteur ou description…",
+    "exportCsv": "Exporter en CSV",
     "categories": {
       "company": "Entreprise",
       "user": "Compte",
