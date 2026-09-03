@@ -353,7 +353,8 @@
     "opinionLow": "{{share}}% low",
     "opinionTooFew": "fewer than {{min}} answers",
     "pickTeamFirst": "Pick a division to display its cohesion sheet.",
-    "organisationOption": "{{company}}"
+    "organisationOption": "{{company}}",
+    "opinionMean": "mean {{value}}"
   },
   "evaluations": {
     "title": "ID-3A Evaluations",
@@ -858,6 +859,8 @@
     "lowShareShort": "{{share}}% low ratings",
     "tooFew": "Fewer than {{min}} respondents — not published",
     "noDirection": "No division is defined for this company, so there is nothing to aggregate.",
-    "noneReachThreshold": "No division reaches {{min}} respondents for this campaign. Answers already given are counted, but nothing is published until the threshold is met — an average over fewer than {{min}} answers would identify its authors."
+    "noneReachThreshold": "No division reaches {{min}} respondents for this campaign. Answers already given are counted, but nothing is published until the threshold is met — an average over fewer than {{min}} answers would identify its authors.",
+    "oce": "Target (OCE)",
+    "mostChosen": "most chosen: {{note}} ({{share}}%)"
   }
 }

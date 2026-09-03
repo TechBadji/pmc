@@ -405,9 +405,7 @@ export default function CohesionFormPage() {
     if (!sheetOpinion || !sheetOpinion.published) {
       return (
         <Typography variant="caption" sx={{ color: "text.disabled" }}>
-          {sheetOpinion
-            ? t("cohesion.opinionTooFew", { min: sheetOpinion.min_respondents })
-            : "—"}
+          {sheetOpinion ? t("cohesion.opinionTooFew", { min: sheetOpinion.min_respondents }) : "—"}
         </Typography>
       );
     }
@@ -416,8 +414,24 @@ export default function CohesionFormPage() {
     const low = entry.low_share !== null && entry.low_share > 0.2;
     return (
       <Stack spacing={0} alignItems="center">
-        <Typography sx={{ fontWeight: 800, color: cohesionColor(entry.score) }}>
-          {entry.score.toFixed(2)}
+        {/* La note la plus choisie en premier : c'est une réponse que des gens
+            ont réellement donnée. La moyenne la suit, en plus petit — elle
+            situe le niveau mais peut désigner une valeur que personne n'a
+            exprimée, comme un 3 obtenu de 1 et de 5 à parts égales. */}
+        {entry.mode !== null && (
+          <Stack direction="row" spacing={0.5} alignItems="baseline">
+            <Typography sx={{ fontWeight: 800, fontSize: 20, color: cohesionColor(entry.mode) }}>
+              {entry.mode}
+            </Typography>
+            {entry.mode_share !== null && (
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                {Math.round(entry.mode_share * 100)} %
+              </Typography>
+            )}
+          </Stack>
+        )}
+        <Typography variant="caption" sx={{ color: LIGHT_CELL_TEXT }}>
+          {t("cohesion.opinionMean", { value: entry.score.toFixed(2) })}
         </Typography>
         <Typography variant="caption" sx={{ color: low ? "#c62828" : "text.secondary" }}>
           {low
@@ -780,8 +794,18 @@ export default function CohesionFormPage() {
         {teamId && (
           <Stack alignItems={{ xs: "flex-start", sm: "flex-end" }} spacing={1}>
             <Stack direction="row" spacing={3} flexWrap="wrap">
-              <ValueBox label={t("cohesion.iceLabel")} value={ice} />
-              <ValueBox label={t("cohesion.oceLabel")} value={oce} bg="#fff4c2" />
+              {/* En vue organisation, les indices viennent des avis agrégés
+                  et non de la grille — le CEO n'a pas de fiche à remplir pour
+                  l'entreprise, ce sont ses collaborateurs qui la notent. */}
+              <ValueBox
+                label={t("cohesion.iceLabel")}
+                value={orgView ? sheetOpinion?.score ?? null : ice}
+              />
+              <ValueBox
+                label={t("cohesion.oceLabel")}
+                value={orgView ? sheetOpinion?.oce ?? null : oce}
+                bg="#fff4c2"
+              />
               <ValueBox label={t("cohesion.achievedLabel")} value={achieved} bg="#dbeeff" />
               <ValueBox label={t("cohesion.tcoLabel")} value={tco} suffix="%" />
             </Stack>

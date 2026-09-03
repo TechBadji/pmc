@@ -99,6 +99,10 @@ export default function CohesionOpinionBoard({ data }: { data: CohesionAggregate
                 {/* L'écart n'est affiché que si les deux notes existent : un
                     zéro faute de données se lirait comme un accord parfait. */}
                 <Figure
+                  value={d.oce != null ? d.oce.toFixed(2) : "—"}
+                  label={t("cohesionOpinion.oce")}
+                />
+                <Figure
                   value={d.gap !== null ? `${d.gap > 0 ? "+" : ""}${d.gap.toFixed(2)}` : "—"}
                   label={t("cohesionOpinion.gap")}
                   color={d.gap !== null && Math.abs(d.gap) >= 1 ? RED : undefined}
@@ -127,6 +131,17 @@ export default function CohesionOpinionBoard({ data }: { data: CohesionAggregate
                   <Typography variant="body2" sx={{ flex: 1 }}>
                     {c.criterion}
                   </Typography>
+                  {/* La note la plus choisie, avec la part qui l'a choisie :
+                      une réponse réellement donnée, là où la moyenne peut
+                      désigner une valeur que personne n'a exprimée. */}
+                  {c.mode !== null && (
+                    <Typography variant="caption" sx={{ color: "text.secondary", whiteSpace: "nowrap" }}>
+                      {t("cohesionOpinion.mostChosen", {
+                        note: c.mode,
+                        share: Math.round((c.mode_share ?? 0) * 100),
+                      })}
+                    </Typography>
+                  )}
                   {c.low_share !== null && c.low_share > 0.2 && (
                     <Typography variant="caption" sx={{ color: RED, fontWeight: 700 }}>
                       {t("cohesionOpinion.lowShareShort", { share: Math.round(c.low_share * 100) })}

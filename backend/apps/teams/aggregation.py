@@ -39,6 +39,34 @@ def _mean(values):
     return sum(values) / len(values) if values else None
 
 
+def _distribution(values):
+    """Nombre de fois que chaque note de 1 à 5 a été choisie."""
+    return {note: sum(1 for v in values if round(v) == note) for note in range(1, 6)}
+
+
+def _mode(values, moyenne):
+    """La note la plus souvent choisie — le sentiment dominant, là où la
+    moyenne ne donne qu'un point d'équilibre.
+
+    Les deux disent des choses différentes et il faut les lire ensemble : une
+    question notée 1 par la moitié des répondants et 5 par l'autre moitié a
+    une moyenne de 3, qu'aucun d'eux n'a exprimée. Le mode, lui, nomme une
+    réponse réellement donnée.
+
+    En cas d'égalité entre deux notes, on retient celle qui est la plus proche
+    de la moyenne : c'est le départage le moins arbitraire, et il garde le mode
+    cohérent avec le niveau d'ensemble.
+    """
+    if not values:
+        return None
+    counts = _distribution(values)
+    top = max(counts.values())
+    candidats = [note for note, n in counts.items() if n == top]
+    if len(candidats) == 1:
+        return candidats[0]
+    return min(candidats, key=lambda note: (abs(note - (moyenne or 3)), note))
+
+
 def aggregate_responses(responses, criteria=None, headcount=None):
     """Résultat agrégé d'une direction pour un tour.
 
@@ -88,11 +116,20 @@ def aggregate_responses(responses, criteria=None, headcount=None):
 
     for label in labels:
         scores = by_criterion.get(label, [])
+        moyenne = _mean(scores)
+        mode = _mode(scores, moyenne)
+        counts = _distribution(scores)
         result["criteria"].append(
             {
                 "criterion": label,
-                "score": _mean(scores),
+                "score": moyenne,
                 "answers": len(scores),
+                # Le sentiment dominant : la note que le plus de monde a
+                # choisie, et la part des répondants qui l'ont choisie. Sans
+                # cette part, un mode obtenu à 30 % se lirait comme un accord.
+                "mode": mode,
+                "mode_share": (counts[mode] / len(scores)) if mode and scores else None,
+                "distribution": counts,
                 "low_share": (
                     sum(1 for s in scores if s <= LOW_SCORE) / len(scores) if scores else None
                 ),

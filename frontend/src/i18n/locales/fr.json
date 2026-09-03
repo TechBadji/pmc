@@ -353,7 +353,8 @@
     "opinionLow": "{{share}} % d'avis bas",
     "opinionTooFew": "moins de {{min}} réponses",
     "pickTeamFirst": "Sélectionnez une direction pour afficher sa fiche de cohésion.",
-    "organisationOption": "{{company}}"
+    "organisationOption": "{{company}}",
+    "opinionMean": "moyenne {{value}}"
   },
   "evaluations": {
     "title": "Évaluations ID-3A",
@@ -858,6 +859,8 @@
     "lowShareShort": "{{share}} % d'avis bas",
     "tooFew": "Moins de {{min}} répondants — résultat non publié",
     "noDirection": "Aucune direction n'est définie pour cette entreprise : il n'y a donc pas d'avis à agréger.",
-    "noneReachThreshold": "Aucune direction n'atteint {{min}} répondants sur cette campagne. Les avis déjà déposés sont comptés, mais rien n'est publié tant que le seuil n'est pas franchi — une moyenne calculée sur moins de {{min}} réponses désignerait ses auteurs."
+    "noneReachThreshold": "Aucune direction n'atteint {{min}} répondants sur cette campagne. Les avis déjà déposés sont comptés, mais rien n'est publié tant que le seuil n'est pas franchi — une moyenne calculée sur moins de {{min}} réponses désignerait ses auteurs.",
+    "oce": "Objectif (OCE)",
+    "mostChosen": "le plus choisi : {{note}} ({{share}} %)"
   }
 }

@@ -422,7 +422,22 @@ export interface CohesionDirectionResult {
   low_share: number | null;
   manager_score: number | null;
   gap: number | null;
-  criteria: { criterion: string; score: number | null; answers: number; low_share: number | null }[];
+  /** Cible que l'encadrement s'est fixée sur sa fiche — l'OCE. */
+  oce?: number | null;
+  /** Nombre de fiches ayant servi à calculer l'OCE d'une organisation. */
+  oce_source_count?: number;
+  criteria: {
+    criterion: string;
+    score: number | null;
+    answers: number;
+    /** Note la plus souvent choisie, et la part des répondants qui l'ont
+     *  choisie : le sentiment dominant, là où la moyenne ne donne qu'un point
+     *  d'équilibre que personne n'a forcément exprimé. */
+    mode: number | null;
+    mode_share: number | null;
+    distribution: Record<string, number>;
+    low_share: number | null;
+  }[];
 }
 
 export interface CohesionAggregate {

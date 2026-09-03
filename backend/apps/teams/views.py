@@ -276,6 +276,7 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         }
         # Note portée par l'encadrant sur sa propre fiche, pour l'écart.
         own_sheets = {}
+        own_targets = {}
         sheets = TeamCohesionAnalysis.objects.filter(team__in=departments)
         if date:
             sheets = sheets.filter(date=date)
@@ -283,6 +284,8 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
             sheets = sheets.filter(date__range=(campaign.start_date, campaign.end_date))
         for sheet in sheets.order_by("team_id", "-date"):
             own_sheets.setdefault(sheet.team_id, float(sheet.ice_score))
+            if sheet.oce_score:
+                own_targets.setdefault(sheet.team_id, float(sheet.oce_score))
 
         directions = []
         for department in departments.order_by("name"):
@@ -295,6 +298,7 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
                     "team": department.id,
                     "team_name": department.name,
                     "manager_score": manager_score,
+                    "oce": own_targets.get(department.id),
                     # L'écart n'a de sens que si les deux notes existent : un
                     # zéro affiché faute de données se lirait comme un accord
                     # parfait, ce qui est l'inverse de la vérité.
@@ -327,11 +331,18 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         )
         # Même forme qu'une direction : l'écran affiche les deux avec le même
         # composant, et rien ne l'oblige à distinguer les cas.
+        # L'OCE de l'organisation : la moyenne des objectifs que les directions
+        # se sont fixés. L'entreprise n'a pas de fiche propre où en saisir un,
+        # et l'inventer serait pire que de l'agréger — au moins celui-ci est
+        # tenu par des engagements réels.
+        cibles = list(own_targets.values())
         organisation.update({
             "team": 0,
             "team_name": user.company.name if user.company else "",
             "manager_score": None,
             "gap": None,
+            "oce": (sum(cibles) / len(cibles)) if cibles else None,
+            "oce_source_count": len(cibles),
         })
 
         return Response({
