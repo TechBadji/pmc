@@ -331,6 +331,14 @@ class PMCTokenObtainPairSerializer(TokenObtainPairSerializer):
             raise serializers.ValidationError(
                 "Votre entreprise a été suspendue par l'administrateur de la plateforme."
             )
+        # Connexion réussie : symétrique à auth.login_failed (views.py) —
+        # sans cette trace, le Super Admin ne voyait dans le journal que les
+        # échecs de connexion, jamais les connexions elles-mêmes.
+        log_event(
+            self.user,
+            "auth.login_succeeded",
+            f"s'est connecté(e) ({self.user.get_role_display()}).",
+        )
         return data
 
     @classmethod
