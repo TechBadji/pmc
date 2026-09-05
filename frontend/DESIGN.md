@@ -90,7 +90,11 @@ Palette fonctionnelle héritée du logo ID-PMC (bleu/magenta/orange), complété
 
 ## Typography
 
-**Display/Body Font:** system-ui, -apple-system, "Segoe UI", sans-serif (pile système — aucune police custom chargée)
+**Display/Body Font:** system-ui, -apple-system, "Segoe UI", sans-serif (pile système)
+
+**Directions en cours d'évaluation.** Les variantes servies sur `/login1`, `/login2`, … (`src/features/auth/variants/`) sont des planches de comparaison figées : leurs choix — polices, palettes, matières — **n'appartiennent pas au système** tant qu'une direction n'a pas été retenue. Ne pas s'y référer pour concevoir un autre écran.
+
+**Exception — l'écran de connexion.** *Baloo 2* (700/800), sans-serif géométrique arrondie, est chargée depuis Google Fonts (`display=swap`) et sert **uniquement** les titres de `/login` : c'est la seule surface où la marque parle avant les données, et cette graisse ronde est ce qui rattache la page au wordmark PMC. Tout le reste de l'application, l'écran de connexion compris pour son texte courant, reste sur la pile système.
 
 **Character:** Neutre et lisible avant tout ; la police système renforce la sensation d'outil professionnel intégré plutôt que de produit marketing.
 
@@ -109,7 +113,9 @@ Navigation latérale permanente (`Drawer` MUI, 260px, jamais rétractable) avec 
 **Le système est plat par construction — aucune ombre portée n'est utilisée.** Toutes les cartes (`Paper`) sont rendues avec `elevation={0}` et une bordure de 1px (`border: "1px solid", borderColor: "divider"`) : ce motif apparaît de façon quasi systématique (27 occurrences observées dans le code). La profondeur, quand elle existe, vient de la couleur de fond (surface vs canvas), jamais du flou.
 
 ### Named Rules
-**La Règle du Plat-par-Défaut.** Une carte se distingue du fond par une bordure fine, jamais par une ombre. Les seules exceptions sont les `Dialog`/menus contextuels MUI (ombre native du composant, non stylée manuellement).
+**La Règle du Plat-par-Défaut.** Une carte se distingue du fond par une bordure fine, jamais par une ombre. Les seules exceptions sont les `Dialog`/menus contextuels MUI (ombre native du composant, non stylée manuellement) et l'écran de connexion (voir ci-dessous).
+
+**Exception — l'écran de connexion.** `/login` est la seule page qui assume le rendu « glossy/embossé » des tuiles du canevas ID-PMC : dégradés internes, reflet supérieur et ombre portée douce sur le motif SVG, la plaque du logo et le CTA. C'est un choix d'identité de marque sur une page sans données ; dès que l'utilisateur est authentifié, la Règle du Plat-par-Défaut reprend sans exception.
 
 ## Shapes
 

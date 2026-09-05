@@ -22,3 +22,4 @@ frontend/vite.config.d.ts
 # Téléchargements de vérification (bundles de production)
 /idx.js
 /tal.js
+.playwright-mcp/

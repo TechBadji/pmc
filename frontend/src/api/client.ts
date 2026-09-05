@@ -62,7 +62,13 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+    // Un 401 sur /auth/login/ n'est pas une session expirée mais un refus
+    // d'identifiants : le rafraîchir puis rediriger vers /login rechargerait la
+    // page et effacerait le message d'erreur avant que l'utilisateur le lise.
+    // On laisse donc l'appelant traiter ces deux routes lui-même.
+    const url: string = original?.url ?? "";
+    const isAuthEntryPoint = url.includes("/auth/login/") || url.includes("/auth/refresh/");
+    if (error.response?.status === 401 && !original._retry && !isAuthEntryPoint) {
       original._retry = true;
       refreshing = refreshing ?? refreshAccessToken();
       const newToken = await refreshing;

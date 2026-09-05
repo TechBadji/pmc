@@ -87,10 +87,9 @@
   },
   "login": {
     "subtitle": "People Management Canvas",
-    "welcomeSubtitle": "Entrez vos identifiants pour accéder à votre tableau de bord.",
+    "welcomeSubtitle": "Identifiez-vous pour accéder à vos tableaux de gestion d'équipe.",
     "identifier": "Identifiant ou email",
-    "brandHeadline": "Pilotez la performance de vos équipes avec méthode.",
-    "brandBody": "La méthodologie ID-3A combine Aptitudes et Attitudes pour révéler l'Altitude réelle de chaque collaborateur.",
+    "brandHeadline": "Révélez le potentiel de vos équipes et structurez leurs compétences.",
     "brandFooter": "Conçu pour les dirigeants et managers d'équipe",
     "copyright": "© 2026 PMC",
     "password": "Mot de passe",
@@ -103,7 +102,67 @@
     "forgotExplanation": "Une demande sera envoyée à l'administrateur de votre entreprise, qui réinitialisera votre mot de passe à la valeur par défaut (123456).",
     "sending": "Envoi…",
     "sendRequest": "Envoyer la demande",
-    "forgotError": "Une erreur est survenue, veuillez réessayer."
+    "forgotError": "Une erreur est survenue, veuillez réessayer.",
+    "reassurance": "Utilisé par les équipes RH pour aligner talents et objectifs.",
+    "welcomeTitle": "Bienvenue sur PMC",
+    "secureConnection": "Connexion sécurisée · chiffrement TLS 256 bits",
+    "support": "Support DigitalMatis",
+    "privacy": "Confidentialité des données RH",
+    "language": "Langue de l'interface",
+    "invalidCredentials": "Identifiant ou mot de passe incorrect.",
+    "networkError": "Une erreur est survenue, réessayez.",
+    "canvas": {
+      "groupLabel": "Les dix modules du canevas ID-PMC — utilisez les flèches pour les parcourir.",
+      "hint": "Survolez un module du canevas pour découvrir la méthode.",
+      "phase": {
+        "analysis": "Phase 1 · Analyse",
+        "planning": "Phase 2 · Planning",
+        "implementation": "Phase 3 · Implémentation"
+      },
+      "m1": {
+        "name": "Analyse Cohésion d'Équipe",
+        "role": "La fiche de cohésion confronte l'ICE de l'équipe et l'OCE du manager, critère par critère."
+      },
+      "m2": {
+        "name": "Analyse des Performances de l'Équipe",
+        "role": "Le tableau d'équipe rassemble les paliers de performance de chaque collaborateur sur une même planche."
+      },
+      "m3": {
+        "name": "Analyse ID-3A",
+        "role": "Aptitudes × Attitudes = Altitude : la matrice place chaque collaborateur dans l'un des quatre quadrants."
+      },
+      "m4": {
+        "name": "ID-Talent Perf Dashboard",
+        "role": "La 9 Box croise performance et trajectoire : qui progresse, qui décroche, qui il faut retenir."
+      },
+      "m5": {
+        "name": "Carte d'Identité Performance",
+        "role": "La fiche individuelle : compétences évaluées, historique et points d'appui d'un collaborateur."
+      },
+      "m6": {
+        "name": "Vision, Missions, Valeurs",
+        "role": "Le socle stratégique auquel les neuf autres modules se rattachent — le cœur du canevas.",
+        "line1": "Vision",
+        "line2": "Missions",
+        "line3": "Valeurs"
+      },
+      "m7": {
+        "name": "Priorités & Objectifs de l'Équipe",
+        "role": "La fiche d'objectifs annuels : ce que l'équipe doit atteindre, et dans quel ordre."
+      },
+      "m8": {
+        "name": "Plan d'Actions PMC",
+        "role": "Qui fait quoi, avec quelle priorité et quelle échéance."
+      },
+      "m9": {
+        "name": "Implémentation",
+        "role": "Les plans passent au réel : l'exécution est suivie dans la durée, pas classée."
+      },
+      "m10": {
+        "name": "Évaluation des Performances",
+        "role": "Les campagnes d'évaluation notent les compétences Hard et Soft de 1 à 5."
+      }
+    }
   },
   "changePassword": {
     "title": "Changer de mot de passe",
@@ -863,5 +922,14 @@
     "noneReachThreshold": "Aucune direction n'atteint {{min}} répondants sur cette campagne. Les avis déjà déposés sont comptés, mais rien n'est publié tant que le seuil n'est pas franchi — une moyenne calculée sur moins de {{min}} réponses désignerait ses auteurs.",
     "oce": "Objectif (OCE)",
     "mostChosen": "le plus choisi : {{note}} ({{share}} %)"
+  },
+  "login2": {
+    "title": "Ouvrez votre canevas",
+    "hint": "Cliquez une brique pour vous identifier",
+    "openWith": "Se connecter par le module",
+    "cardTitle": "Identifiez-vous",
+    "cardSubtitle": "Vos identifiants ID-PMC ouvrent l'ensemble du canevas.",
+    "back": "Revenir au canevas",
+    "secure": "Connexion chiffrée en TLS 256 bits"
   }
 }

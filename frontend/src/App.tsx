@@ -12,6 +12,12 @@ import LoginPage from "@/features/auth/LoginPage";
  * utilisateur, à chaque connexion, le poids de pages qu'il n'ouvrira peut-être
  * jamais. Seuls la connexion et le changement de mot de passe restent dans le
  * paquet initial : ce sont les deux écrans que tout le monde traverse. */
+/* Variantes figées de la page de connexion, servies pour comparer plusieurs
+ * directions artistiques côte à côte. Chargées à la demande : ce sont des
+ * planches de travail, elles n'ont rien à faire dans le paquet initial. */
+const LoginPage1 = lazy(() => import("@/features/auth/variants/login1/LoginPage1"));
+const LoginPage2 = lazy(() => import("@/features/auth/variants/login2/LoginPage2"));
+
 const ActionPlansPage = lazy(() => import("@/pages/ActionPlansPage"));
 const BulkUploadPage = lazy(() => import("@/pages/BulkUploadPage"));
 const CohesionFormPage = lazy(() => import("@/pages/CohesionFormPage"));
@@ -50,6 +56,8 @@ export default function App() {
     <Suspense fallback={<RouteFallback />}>
       <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/login1" element={<LoginPage1 />} />
+      <Route path="/login2" element={<LoginPage2 />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/change-password" element={<ChangePasswordPage />} />

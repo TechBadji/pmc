@@ -1,11 +1,13 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import axios from "axios";
 import { apiClient, LAST_EMAIL_KEY, tokenStorage } from "@/api/client";
 import type { Me } from "@/api/types";
 
 interface AuthState {
   user: Me | null;
   status: "idle" | "loading" | "authenticated" | "error";
-  error: string | null;
+  /** Code d'erreur de la dernière tentative de connexion (traduit à l'affichage). */
+  error: LoginErrorCode | null;
 }
 
 const initialState: AuthState = {
@@ -14,10 +16,20 @@ const initialState: AuthState = {
   error: null,
 };
 
-export const login = createAsyncThunk(
-  "auth/login",
-  async (payload: { email: string; password: string; rememberMe: boolean }) => {
-    const { email, password, rememberMe } = payload;
+/**
+ * Code d'erreur de connexion, traduit à l'affichage : `invalid_credentials`
+ * ne dit jamais lequel des deux champs est fautif (pas d'énumération de
+ * comptes), `network` distingue la panne réseau/serveur d'un refus.
+ */
+export type LoginErrorCode = "invalid_credentials" | "network";
+
+export const login = createAsyncThunk<
+  Me,
+  { email: string; password: string; rememberMe: boolean },
+  { rejectValue: LoginErrorCode }
+>("auth/login", async (payload, { rejectWithValue }) => {
+  const { email, password, rememberMe } = payload;
+  try {
     const { data } = await apiClient.post("/auth/login/", { email, password });
     tokenStorage.set(data.access, data.refresh, rememberMe);
     if (rememberMe) {
@@ -27,8 +39,15 @@ export const login = createAsyncThunk(
     }
     const me = await apiClient.get<Me>("/auth/me/");
     return me.data;
+  } catch (err) {
+    const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+    // 400/401 = identifiants refusés ; tout le reste (pas de réponse, 5xx) est
+    // une panne, que l'utilisateur ne peut pas corriger en retapant son mot de passe.
+    return rejectWithValue(
+      status === 400 || status === 401 ? "invalid_credentials" : "network"
+    );
   }
-);
+});
 
 export const fetchMe = createAsyncThunk("auth/fetchMe", async () => {
   const { data } = await apiClient.get<Me>("/auth/me/");
@@ -57,7 +76,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.status = "error";
-        state.error = action.error.message ?? "Échec de la connexion";
+        state.error = action.payload ?? "network";
       })
       .addCase(fetchMe.fulfilled, (state, action: PayloadAction<Me>) => {
         state.status = "authenticated";

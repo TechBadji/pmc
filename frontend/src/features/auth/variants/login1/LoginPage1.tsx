@@ -1,3 +1,18 @@
+/* ---------------------------------------------------------------------------
+ * Login1 — instantané figé de la refonte de la page de connexion.
+ *
+ * Cette copie existe pour comparer plusieurs directions artistiques côte à côte
+ * dans le navigateur (/login1, /login2, …) : elle est volontairement autonome.
+ * Elle ne réutilise AUCUN composant de présentation partagé, sinon une
+ * retouche du design en cours la ferait bouger et la comparaison n'aurait plus
+ * de sens. Ce qui reste partagé est la plomberie applicative (client API,
+ * store, traductions) et les textes : ce sont ceux du produit, pas ceux d'une
+ * maquette.
+ *
+ * Ne pas modifier — pour faire évoluer le design, éditer
+ * `src/features/auth/LoginPage.tsx`, servi sur /login.
+ * ------------------------------------------------------------------------- */
+
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
@@ -30,8 +45,8 @@ import { useNavigate } from "react-router-dom";
 import { apiClient, LAST_EMAIL_KEY } from "@/api/client";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { setAppLanguage } from "@/i18n";
-import { login } from "./authSlice";
-import CanvasMotif from "./CanvasMotif";
+import { login } from "@/features/auth/authSlice";
+import CanvasMotif from "./CanvasMotif1";
 import { PHASE_COLORS, moduleByNumber } from "./pmcModules";
 
 const FAILED_ATTEMPTS_BEFORE_FORGOT_LINK = 3;
@@ -256,7 +271,7 @@ const BrandPanel = memo(function BrandPanel() {
   );
 });
 
-export default function LoginPage() {
+export default function LoginPage1() {
   const { t, i18n } = useTranslation();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();

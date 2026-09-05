@@ -87,10 +87,9 @@
   },
   "login": {
     "subtitle": "People Management Canvas",
-    "welcomeSubtitle": "Enter your credentials to access your dashboard.",
+    "welcomeSubtitle": "Sign in to reach your team management dashboards.",
     "identifier": "Login or email",
-    "brandHeadline": "Lead your teams' performance with method.",
-    "brandBody": "The ID-3A methodology combines Aptitudes and Attitudes to reveal each team member's true Altitude.",
+    "brandHeadline": "Reveal your teams' potential and structure their skills.",
     "brandFooter": "Built for executives and team managers",
     "copyright": "© 2026 PMC",
     "password": "Password",
@@ -103,7 +102,67 @@
     "forgotExplanation": "A request will be sent to your company's administrator, who will reset your password to the default value (123456).",
     "sending": "Sending…",
     "sendRequest": "Send request",
-    "forgotError": "Something went wrong, please try again."
+    "forgotError": "Something went wrong, please try again.",
+    "reassurance": "Used by HR teams to align talent with objectives.",
+    "welcomeTitle": "Welcome to PMC",
+    "secureConnection": "Secure connection · 256-bit TLS encryption",
+    "support": "DigitalMatis support",
+    "privacy": "HR data privacy",
+    "language": "Interface language",
+    "invalidCredentials": "Incorrect login or password.",
+    "networkError": "Something went wrong, please try again.",
+    "canvas": {
+      "groupLabel": "The ten modules of the ID-PMC canvas — use the arrow keys to browse them.",
+      "hint": "Hover a canvas module to explore the method.",
+      "phase": {
+        "analysis": "Phase 1 · Analysis",
+        "planning": "Phase 2 · Planning",
+        "implementation": "Phase 3 · Implementation"
+      },
+      "m1": {
+        "name": "Team Cohesion Analysis",
+        "role": "The cohesion sheet sets the team's ICE against the manager's OCE, criterion by criterion."
+      },
+      "m2": {
+        "name": "Team Performance Analysis",
+        "role": "The team board gathers every member's performance tier onto a single sheet."
+      },
+      "m3": {
+        "name": "ID-3A Analysis",
+        "role": "Aptitudes × Attitudes = Altitude: the matrix places each member in one of four quadrants."
+      },
+      "m4": {
+        "name": "ID-Talent Perf Dashboard",
+        "role": "The 9 Box crosses performance with trajectory: who is rising, who is slipping, who to retain."
+      },
+      "m5": {
+        "name": "Performance ID Card",
+        "role": "The individual sheet: assessed skills, history and strengths for one team member."
+      },
+      "m6": {
+        "name": "Vision, Missions, Values",
+        "role": "The strategic core the nine other modules hang from — the heart of the canvas.",
+        "line1": "Vision",
+        "line2": "Missions",
+        "line3": "Values"
+      },
+      "m7": {
+        "name": "Team Priorities & Objectives",
+        "role": "The annual objectives sheet: what the team must reach, and in which order."
+      },
+      "m8": {
+        "name": "PMC Action Plan",
+        "role": "Who does what, at which priority and by when."
+      },
+      "m9": {
+        "name": "Implementation",
+        "role": "Plans meet reality: execution is tracked over time, not filed away."
+      },
+      "m10": {
+        "name": "Performance Evaluation",
+        "role": "Evaluation campaigns rate Hard and Soft skills from 1 to 5."
+      }
+    }
   },
   "changePassword": {
     "title": "Change your password",
@@ -863,5 +922,14 @@
     "noneReachThreshold": "No division reaches {{min}} respondents for this campaign. Answers already given are counted, but nothing is published until the threshold is met — an average over fewer than {{min}} answers would identify its authors.",
     "oce": "Target (OCE)",
     "mostChosen": "most chosen: {{note}} ({{share}}%)"
+  },
+  "login2": {
+    "title": "Open your canvas",
+    "hint": "Click any brick to sign in",
+    "openWith": "Sign in through module",
+    "cardTitle": "Sign in",
+    "cardSubtitle": "Your ID-PMC credentials open the whole canvas.",
+    "back": "Back to the canvas",
+    "secure": "Connection encrypted with 256-bit TLS"
   }
 }
