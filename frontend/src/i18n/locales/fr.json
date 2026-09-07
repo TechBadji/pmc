@@ -364,7 +364,7 @@
     "scoreCol": "Score",
     "oceCol": "OCE",
     "achievedCol": "Réalisé",
-    "totalCol": "TOTAL",
+    "totalCol": "Note",
     "unset": "—",
     "date": "Date",
     "chartTitle": "Évolution ICE vs OCE",
@@ -905,7 +905,9 @@
     "noTeam": "Vous n'êtes rattaché à aucune direction : il n'y a pas d'avis à donner pour l'instant.",
     "titleOrg": "Mon avis sur mon organisation",
     "subtitleOrg": "Votre regard sur {{company}} dans son ensemble, sur les dix critères de cohésion.",
-    "privacyOrg": "Vos réponses ne sont jamais lues nominativement. Elles sont agrégées à l'échelle de l'entreprise et présentées à la direction sous forme de moyenne."
+    "privacyOrg": "Vos réponses ne sont jamais lues nominativement. Elles sont agrégées à l'échelle de l'entreprise et présentées à la direction sous forme de moyenne.",
+    "myIce": "Mon ICE",
+    "myIceHint": "La moyenne de vos notes — le même calcul que l'indice de cohésion de la fiche. Il reste partiel tant que les dix critères ne sont pas notés."
   },
   "cohesionOpinion": {
     "loading": "Chargement des avis…",

@@ -364,7 +364,7 @@
     "scoreCol": "Score",
     "oceCol": "TCO",
     "achievedCol": "Achieved",
-    "totalCol": "TOTAL",
+    "totalCol": "Rating",
     "unset": "—",
     "date": "Date",
     "chartTitle": "TCI vs TCO over time",
@@ -905,7 +905,9 @@
     "noTeam": "You are not attached to a division yet, so there is nothing to rate.",
     "titleOrg": "My view on my organisation",
     "subtitleOrg": "Your view on {{company}} as a whole, across the ten cohesion criteria.",
-    "privacyOrg": "Your answers are never read individually. They are aggregated company-wide and presented to leadership as an average."
+    "privacyOrg": "Your answers are never read individually. They are aggregated company-wide and presented to leadership as an average.",
+    "myIce": "My TCI",
+    "myIceHint": "The average of your ratings — the same calculation as the cohesion index on the sheet. It stays partial until all ten criteria are rated."
   },
   "cohesionOpinion": {
     "loading": "Loading feedback…",

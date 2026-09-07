@@ -104,8 +104,18 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
    * déposé avant que les libellés ne nomment l'entreprise reste relisible. */
   const scoreOf = (criterion: string, index: number) => scores[criterion] ?? scores[`#${index}`];
 
-  const answered = criteria.filter((c, i) => scoreOf(c, i) !== undefined).length;
+  const given = criteria
+    .map((c, i) => scoreOf(c, i))
+    .filter((v): v is number => v !== undefined);
+  const answered = given.length;
   const complete = answered === criteria.length;
+  /** L'indice du répondant : la moyenne de ses propres notes — la même
+   *  opération que celle qui donne l'ICE d'une fiche d'encadrant, pour que les
+   *  deux se comparent sur la même échelle. Calculé sur les critères notés,
+   *  donc partiel tant qu'il en manque : c'est pourquoi le nombre de réponses
+   *  est affiché juste à côté, sans quoi une moyenne sur trois lignes se
+   *  lirait comme un résultat. */
+  const ice = answered ? given.reduce((a, b) => a + b, 0) / answered : null;
 
   async function handleSave() {
     if (scope === "TEAM" && !user?.department) return;
@@ -163,13 +173,56 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
         {t(scope === "TEAM" ? "cohesionSurvey.privacy" : "cohesionSurvey.privacyOrg")}
       </Alert>
 
+      <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+          useFlexGap
+        >
+          <Stack>
+            <Typography variant="subtitle2" fontWeight={700}>
+              {t("cohesionSurvey.myIce")}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 620 }}>
+              {t("cohesionSurvey.myIceHint")}
+            </Typography>
+          </Stack>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Typography variant="caption" color="text.secondary">
+              {t("cohesionSurvey.progress", { answered, total: criteria.length })}
+            </Typography>
+            {/* Encadré à la manière de la fiche ID-PMC, et valeur à la couleur
+                du barème : le même chiffre se lit partout de la même façon. */}
+            <Box
+              sx={{
+                minWidth: 76,
+                px: 1.5,
+                py: 0.5,
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 1,
+                textAlign: "center",
+              }}
+            >
+              <Typography
+                variant="h6"
+                fontWeight={800}
+                sx={{ color: ice !== null ? cohesionColor(ice) : "text.disabled" }}
+              >
+                {ice !== null ? ice.toFixed(1) : "—"}
+              </Typography>
+            </Box>
+          </Stack>
+        </Stack>
+      </Paper>
+
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ p: 2, pb: 1 }}>
+        <Stack sx={{ p: 2, pb: 1 }}>
           <Typography variant="subtitle2" fontWeight={700}>
             {t("cohesionSurvey.scaleHint")}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {t("cohesionSurvey.progress", { answered, total: criteria.length })}
           </Typography>
         </Stack>
 
