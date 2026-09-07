@@ -1,6 +1,7 @@
 """
-Jeu de démonstration « SUNU Services » : un CEO et trente collaborateurs
-rattachés directement à l'entreprise, sans direction intermédiaire.
+Jeu de démonstration « SUNU Services » : un CEO et quarante-cinq
+collaborateurs rattachés directement à l'entreprise, sans direction
+intermédiaire.
 
 Ce que la démo montre : chaque collaborateur note l'entreprise dans
 « Cohésion d'équipe » (portée ORGANISATION), et le CEO lit l'agrégat — jamais
@@ -10,7 +11,7 @@ l'organisation entière.
 
 Usage:
     python manage.py seed_sunu_services
-    python manage.py seed_sunu_services --responses   # pré-remplit les 30 avis
+    python manage.py seed_sunu_services --responses   # pré-remplit un avis par personne
     python manage.py seed_sunu_services --reset       # repart d'une entreprise vide
 
 La commande est idempotente : relancée, elle remet les comptes en état sans
@@ -32,7 +33,7 @@ CEO_FIRST_NAME = "Ibrahima"
 CEO_LAST_NAME = "DIAGNE"
 CEO_LOGIN = "id.sunuserv"
 PASSWORD = "123456"
-EMPLOYEE_COUNT = 30
+EMPLOYEE_COUNT = 45
 CAMPAIGN_NAME = "Année 2026"
 CAMPAIGN_START = date(2026, 1, 1)
 CAMPAIGN_END = date(2026, 12, 31)
