@@ -921,7 +921,9 @@
     "noDirection": "No division is defined for this company, so there is nothing to aggregate.",
     "noneReachThreshold": "No division reaches {{min}} respondents for this campaign. Answers already given are counted, but nothing is published until the threshold is met — an average over fewer than {{min}} answers would identify its authors.",
     "oce": "Target (OCE)",
-    "mostChosen": "most chosen: {{note}} ({{share}}%)"
+    "mostChosen": "most chosen: {{note}} ({{share}}%)",
+    "organisationBadge": "Whole company",
+    "organisationHint": "Feedback on the organisation as a whole. This is not the average of the divisions: a team can feel united while the company feels siloed."
   },
   "login2": {
     "title": "Open your canvas",

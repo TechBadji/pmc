@@ -92,7 +92,13 @@ export default function AppLayout() {
   }, [canSeeResetRequests]);
 
   if (!user) return null;
-  const items = NAV_BY_ROLE[user.role];
+  // L'avis sur sa direction n'a de destinataire que si l'on en a une : les
+  // collaborateurs rattachés directement à l'entreprise n'ont que l'avis sur
+  // l'organisation, et l'entrée de menu ne menait pour eux qu'à un message
+  // d'indisponibilité.
+  const items = NAV_BY_ROLE[user.role].filter(
+    (item) => item.path !== "/cohesion-survey" || Boolean(user.department)
+  );
 
   function handleLogout() {
     setMenuAnchor(null);
