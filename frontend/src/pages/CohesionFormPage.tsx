@@ -416,17 +416,49 @@ export default function CohesionFormPage() {
   const selectedDept = departments.find((d) => d.id === teamId);
   /**
    * Avis de l'équipe sur un critère : la moyenne, et le nombre de réponses qui
-   * la porte. Rien n'est montré tant que la direction n'a pas atteint le seuil
+   * la porte. Rien n'est renvoyé tant que la direction n'a pas atteint le seuil
    * de publication — la moyenne de deux personnes désignerait ses auteurs.
    */
+  function opinionEntry(criterion: string) {
+    if (!sheetOpinion || !sheetOpinion.published) return null;
+    return sheetOpinion.criteria.find((c) => c.criterion === criterion) ?? null;
+  }
+
   /** Palier le plus souvent choisi par les collaborateurs, ou `null` tant que
    *  le seuil de publication n'est pas atteint. */
   function majorityFor(criterion: string): number | null {
-    if (!sheetOpinion || !sheetOpinion.published) return null;
-    return sheetOpinion.criteria.find((c) => c.criterion === criterion)?.mode ?? null;
+    return opinionEntry(criterion)?.mode ?? null;
   }
 
-  function opinionFor(criterion: string) {
+  /**
+   * Ce que porte la colonne « Note » : la note de l'encadrant, ou — quand il
+   * n'y en a aucune sur la fiche — la moyenne des avis des collaborateurs.
+   *
+   * Une fiche d'organisation n'a pas de grille : l'entreprise n'a pas
+   * d'encadrant qui la note, et la colonne restait vide sur ses dix lignes. La
+   * moyenne des avis y est alors la seule note qui existe.
+   *
+   * La bascule se décide sur la fiche entière et non ligne par ligne : sinon,
+   * un encadrant en train de remplir sa grille verrait chaque ligne changer de
+   * sens sous sa souris, et les deux colonnes se réorganiser à chaque clic. Le
+   * seul basculement a lieu à sa première note, moment où la fiche devient
+   * bien la sienne.
+   */
+  const hasOwnNotes = rows.some((r) => r.score !== null);
+
+  function noteFor(row: CriterionRow): { value: number; digits: number; fromOpinion: boolean } | null {
+    if (hasOwnNotes) {
+      return row.score !== null ? { value: row.score, digits: 1, fromOpinion: false } : null;
+    }
+    const entry = opinionEntry(row.criterion);
+    if (entry && entry.score !== null) return { value: entry.score, digits: 2, fromOpinion: true };
+    return null;
+  }
+
+  /** `meanShownElsewhere` : la colonne « Note » affiche déjà la moyenne de ce
+   *  critère, il n'y a pas lieu de la répéter ici — cette colonne-ci garde
+   *  alors ce qu'elle est seule à dire, les pourcentages. */
+  function opinionFor(criterion: string, meanShownElsewhere = false) {
     if (!sheetOpinion || !sheetOpinion.published) {
       return (
         <Typography variant="caption" sx={{ color: "text.disabled" }}>
@@ -455,9 +487,11 @@ export default function CohesionFormPage() {
             )}
           </Stack>
         )}
-        <Typography variant="caption" sx={{ color: LIGHT_CELL_TEXT }}>
-          {t("cohesion.opinionMean", { value: entry.score.toFixed(2) })}
-        </Typography>
+        {!meanShownElsewhere && (
+          <Typography variant="caption" sx={{ color: LIGHT_CELL_TEXT }}>
+            {t("cohesion.opinionMean", { value: entry.score.toFixed(2) })}
+          </Typography>
+        )}
         <Typography variant="caption" sx={{ color: low ? "#c62828" : "text.secondary" }}>
           {low
             ? t("cohesion.opinionLow", { share: Math.round((entry.low_share as number) * 100) })
@@ -936,11 +970,20 @@ export default function CohesionFormPage() {
                         </TableCell>
                       ))}
                       <TableCell align="center">
-                        <Box sx={{ px: 1, py: 0.25, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
-                          <Typography variant="body2" fontWeight={700}>
-                            {row.score !== null ? row.score.toFixed(1) : "—"}
-                          </Typography>
-                        </Box>
+                        {(() => {
+                          const note = noteFor(row);
+                          return (
+                            <Box sx={{ px: 1, py: 0.25, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+                              <Typography
+                                variant="body2"
+                                fontWeight={700}
+                                sx={note?.fromOpinion ? { color: cohesionColor(note.value) } : undefined}
+                              >
+                                {note ? note.value.toFixed(note.digits) : "—"}
+                              </Typography>
+                            </Box>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell align="center" sx={{ bgcolor: "#fffaf0", color: LIGHT_CELL_TEXT }}>
                         <TextField
@@ -981,7 +1024,7 @@ export default function CohesionFormPage() {
                         </TextField>
                       </TableCell>
                       <TableCell align="center" sx={{ bgcolor: "#f4faf0", color: LIGHT_CELL_TEXT }}>
-                        {opinionFor(row.criterion)}
+                        {opinionFor(row.criterion, !hasOwnNotes)}
                       </TableCell>
                     </TableRow>
                   ))}
