@@ -63,6 +63,11 @@ import { CHART_NEUTRALS, performanceColors } from "@/theme";
  *  propre axe. Les cadrans restent découpés à 2,5 sur chaque axe. */
 const AXIS_MAX = 6;
 const AXIS_MAX_Y = 7;
+// Hauteur du tracé. Relevée avec la taille des vignettes : à 480 pixels, des
+// pastilles presque doublées se seraient recouvertes dès que deux personnes
+// partagent un cadran. Tout ce que dessine `MatrixBackground` se déduit des
+// axes, la hauteur se change donc ici seule.
+const MATRIX_HEIGHT = 640;
 const AXIS_TICKS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
 const AXIS_TICKS_Y = [...AXIS_TICKS, 6.5, 7];
 // Quadrillage secondaire (pas de 0.25) — lecture plus fine entre les
@@ -201,8 +206,12 @@ function PhotoDot({ cx, cy, payload, dimmed, onSelect }: any) {
   const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
   const p: Point = payload;
-  const baseR = dimmed ? 15 : 19;
-  const r = hovered ? baseR + 20 : baseR;
+  // Vignettes agrandies pour que le visage se reconnaisse sans survol, comme
+  // sur la planche TPD-VISIO où les silhouettes se lisent de loin. Le gain au
+  // survol est réduit d'autant : parti d'un rayon presque double, l'ancien
+  // bond de 20 pixels aurait fait sauter la vignette par-dessus ses voisines.
+  const baseR = dimmed ? 22 : 28;
+  const r = hovered ? baseR + 16 : baseR;
   // Épaisseur de l'anneau proportionnelle au rayon (et non fixe), pour que
   // la couleur reste bien présente tout autour de la photo même une fois
   // agrandie au survol, au lieu de devenir un mince filet à peine visible.
@@ -268,7 +277,7 @@ function PhotoDot({ cx, cy, payload, dimmed, onSelect }: any) {
             textAnchor="middle"
             dominantBaseline="central"
             fill="#fff"
-            fontSize={hovered ? 24 : 12}
+            fontSize={Math.round(photoR * 1.1)}
             fontWeight={700}
             style={{ transition: "font-size 0.15s ease" }}
           >
@@ -1123,7 +1132,7 @@ export default function ID3AMatrixPage() {
           {/* Échelle des abscisses réduite de 20 % pour les vues Manager et
               CEO (Admin Entreprise) — seule la vue Super Admin garde la
               pleine largeur. */}
-          <ResponsiveContainer width={isManager || isCompanyAdmin ? "80%" : "100%"} height={480}>
+          <ResponsiveContainer width={isManager || isCompanyAdmin ? "80%" : "100%"} height={MATRIX_HEIGHT}>
             <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
               <Customized component={<MatrixBackground enabled={matrixBackground} />} />
               <CartesianGrid horizontalValues={MINOR_AXIS_TICKS_Y} verticalValues={MINOR_AXIS_TICKS} stroke="#e1e0d9" strokeDasharray="2 3" strokeOpacity={0.6} />

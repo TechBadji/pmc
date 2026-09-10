@@ -84,7 +84,11 @@ const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", 
 
 // Le 9 Box étire lui aussi ses paliers extrêmes — jusqu'à 125 % et ±30 % —
 // et gagne la hauteur correspondante.
-const CHART_HEIGHT = 600;
+// Relevée avec la taille des vignettes : à 600 pixels, des pastilles presque
+// doublées se seraient recouvertes dans les cases les plus peuplées. Toute la
+// géométrie de la planche — bandeau des ordonnées, pastilles chiffrées,
+// séparateurs — se déduit de cette constante et suit d'elle-même.
+const CHART_HEIGHT = 780;
 // Marges du repère : la marge gauche n'a besoin que de la place des pastilles
 // chiffrées et des intitulés de paliers à la verticale — la réduire rapproche
 // d'autant le bandeau bleu de l'axe des ordonnées.
@@ -121,8 +125,12 @@ const PROGRESS_BANDS = [
  * personne se place à l'intérieur de son palier au prorata de sa valeur.
  * Les bornes gardent la vignette entière dans le cadre : un point posé sur
  * l'arête déborderait de la moitié de sa photo. */
-const X_INSET = 0.1; // ~30 px sur un tracé de 900 px de large
-const Y_INSET = 0.2; // ~29 px sur un tracé de 440 px de haut
+// Relevées avec le rayon des vignettes, qui demandent maintenant 27 px de
+// dégagement au lieu de 18. L'abscisse était la plus juste : 0,1 unité ne vaut
+// 30 px que sur un tracé large de 900 px, et tombait sous le rayon dès que la
+// fenêtre se rétrécissait.
+const X_INSET = 0.14; // ~42 px sur un tracé de 900 px de large
+const Y_INSET = 0.2; // ~47 px sur un tracé de 700 px de haut
 
 function clamp(value: number, inset: number) {
   return Math.min(3 - inset, Math.max(inset, value));
@@ -242,8 +250,12 @@ function TalentDot({ cx, cy, payload, flip }: any) {
   const p: TalentPoint & { x: number } = payload;
   const delta = p.progression as number;
   const color = performanceColors[p.rating];
-  const baseR = 17;
-  const r = hovered ? baseR + 18 : baseR;
+  // Vignettes agrandies pour que le visage se reconnaisse sans survol, comme
+  // sur la planche TPD-VISIO où les silhouettes se lisent de loin. Le gain au
+  // survol est réduit d'autant : parti d'un rayon presque double, l'ancien
+  // bond de 18 pixels aurait fait sauter la vignette par-dessus ses voisines.
+  const baseR = 26;
+  const r = hovered ? baseR + 14 : baseR;
   // Anneau proportionnel au rayon : agrandi, il resterait sinon un filet.
   const ringWidth = r * 0.24;
   const photoR = r - ringWidth;
@@ -295,7 +307,7 @@ function TalentDot({ cx, cy, payload, flip }: any) {
             y={cy}
             textAnchor="middle"
             dominantBaseline="central"
-            fontSize={hovered ? 24 : 14}
+            fontSize={Math.round(photoR * 1.1)}
             fontWeight={700}
             fill={color}
             style={{ transition: "font-size 0.15s ease" }}
@@ -365,8 +377,10 @@ const AXIS_HEAD_LENGTH = 18;
 const AXIS_HEAD_HALF = 11;
 // Marges de sécurité : une vignette posée sur la graduation extrême sortirait
 // du repère de la moitié de sa photo. Exprimées dans l'unité de chaque axe.
-const TRAJECTORY_X_INSET = 2; // ~2 points de performance
-const TRAJECTORY_Y_INSET = 1.5; // ~1,5 point d'écart
+// Mêmes bornes, relevées pour le même motif : sur l'abscisse 2 points de
+// performance ne valaient que 24 px, sous le rayon d'une vignette agrandie.
+const TRAJECTORY_X_INSET = 2.6; // ~31 px sur un tracé de 900 px de large
+const TRAJECTORY_Y_INSET = 2; // ~28 px sur un tracé de 850 px de haut
 const AXIS_BLUE = "#2E5AAC";
 
 function TrajectoryFrame({ xAxisMap, yAxisMap }: any) {
