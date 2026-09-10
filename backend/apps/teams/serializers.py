@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.core.serializer_fields import DecimalCommaMixin
 from apps.core.validators import require_manages_team, require_same_company
 
 from .models import (
@@ -11,7 +12,7 @@ from .models import (
 )
 
 
-class CohesionCriterionScoreSerializer(serializers.ModelSerializer):
+class CohesionCriterionScoreSerializer(DecimalCommaMixin, serializers.ModelSerializer):
     class Meta:
         model = CohesionCriterionScore
         fields = ["id", "analysis", "criterion", "score", "objective_score", "achieved_score"]
@@ -22,7 +23,7 @@ class CohesionCriterionScoreSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "analysis"]
 
 
-class TeamCohesionAnalysisSerializer(serializers.ModelSerializer):
+class TeamCohesionAnalysisSerializer(DecimalCommaMixin, serializers.ModelSerializer):
     criterion_scores = CohesionCriterionScoreSerializer(many=True, required=False)
     team_name = serializers.CharField(source="team.name", read_only=True)
     achieved_score = serializers.SerializerMethodField()

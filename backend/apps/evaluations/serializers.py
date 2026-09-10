@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 
+from apps.core.serializer_fields import DecimalCommaMixin, normalize_decimal
 from apps.core.validators import require_manages_team, require_same_company
 from apps.skills.models import SkillItem
 
@@ -16,7 +17,7 @@ from .models import (
 )
 
 
-class SkillNoteSerializer(serializers.ModelSerializer):
+class SkillNoteSerializer(DecimalCommaMixin, serializers.ModelSerializer):
     class Meta:
         model = SkillNote
         fields = ["id", "evaluation", "category", "order", "text", "score"]
@@ -45,7 +46,7 @@ class EvaluationCampaignSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class EvaluationSkillScoreSerializer(serializers.ModelSerializer):
+class EvaluationSkillScoreSerializer(DecimalCommaMixin, serializers.ModelSerializer):
     skill_name = serializers.CharField(source="skill_item.name", read_only=True)
     skill_type = serializers.CharField(source="skill_item.matrix.type", read_only=True)
 
@@ -57,7 +58,7 @@ class EvaluationSkillScoreSerializer(serializers.ModelSerializer):
         ]
 
 
-class EvaluationSerializer(serializers.ModelSerializer):
+class EvaluationSerializer(DecimalCommaMixin, serializers.ModelSerializer):
     """Sérialiseur de lecture : expose les indices calculés HSI/SSI/Altitude
     utilisés pour positionner le collaborateur sur la matrice ID-3A."""
 
@@ -97,7 +98,7 @@ class EvaluationSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "evaluator", "created_at", "updated_at"]
 
 
-class EvaluationWriteSerializer(serializers.ModelSerializer):
+class EvaluationWriteSerializer(DecimalCommaMixin, serializers.ModelSerializer):
     """Sérialiseur d'écriture : permet de soumettre les notes des compétences
     en une seule requête (formulaire d'évaluation Hard/Soft Skills)."""
 
@@ -165,9 +166,13 @@ class EvaluationWriteSerializer(serializers.ModelSerializer):
             # chemin — la borne 1-5 doit donc être vérifiée ici explicitement.
             for item in skill_scores:
                 for field in ("score", "objective_score", "achievement_rate"):
-                    value = item.get(field)
+                    value = normalize_decimal(item.get(field))
                     if value in (None, ""):
                         continue
+                    # La valeur normalisée est réécrite dans l'entrée : c'est
+                    # elle qui part en base plus bas, `_save_scores` écrivant
+                    # le dictionnaire tel quel.
+                    item[field] = value
                     try:
                         value = float(value)
                     except (TypeError, ValueError):
@@ -218,7 +223,7 @@ class EvaluationWriteSerializer(serializers.ModelSerializer):
         )
 
 
-class PerformanceObjectiveSerializer(serializers.ModelSerializer):
+class PerformanceObjectiveSerializer(DecimalCommaMixin, serializers.ModelSerializer):
     """Ligne de la fiche annuelle. Le taux d'atteinte est calculé, jamais saisi."""
 
     achievement_percent = serializers.FloatField(read_only=True)

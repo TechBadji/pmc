@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DecimalField } from "@/components/inputs/DecimalField";
 import PageHeader from "@/components/layout/PageHeader";
 import { apiClient } from "@/api/client";
 import type { Company, Paginated, SkillMatrix } from "@/api/types";
@@ -208,12 +209,10 @@ export default function SkillsAdminPage() {
               autoFocus
               fullWidth
             />
-            <TextField
+            <DecimalField
               label={t("skills.weight")}
-              type="number"
               value={itemForm.weight}
-              onChange={(e) => setItemForm({ ...itemForm, weight: Number(e.target.value) })}
-              inputProps={{ step: 0.1, min: 0.1 }}
+              onChange={(v) => setItemForm({ ...itemForm, weight: v === "" ? 0 : v })}
               fullWidth
             />
           </Stack>

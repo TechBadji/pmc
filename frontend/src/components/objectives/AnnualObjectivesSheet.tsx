@@ -2,6 +2,7 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { Avatar, Box, Button, IconButton, InputBase, Stack, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
+import { parseDecimalInput } from "@/components/inputs/DecimalField";
 import type { PerformanceObjective } from "@/api/types";
 
 /* ---------------------------------------------------------------------------
@@ -115,9 +116,14 @@ function Field({
 export function blockPercent(rows: PerformanceObjective[]): number | null {
   const scored = rows.filter((r) => r.achievement_percent !== null && r.achievement_percent !== undefined);
   if (scored.length === 0) return null;
-  const totalWeight = scored.reduce((sum, r) => sum + (Number(r.weight) || 1), 0);
+  // Le coefficient est lu avec la même tolérance qu'à la saisie : tant que le
+  // serveur n'a pas répondu, la cellule contient la frappe brute — « 2,4 » que
+  // `Number` rendrait NaN, et le bloc afficherait un instant une pondération
+  // uniforme au lieu de celle qui vient d'être saisie.
+  const weightOf = (r: PerformanceObjective) => Number(parseDecimalInput(String(r.weight ?? ""))) || 1;
+  const totalWeight = scored.reduce((sum, r) => sum + weightOf(r), 0);
   if (totalWeight === 0) return null;
-  const weighted = scored.reduce((sum, r) => sum + (r.achievement_percent as number) * (Number(r.weight) || 1), 0);
+  const weighted = scored.reduce((sum, r) => sum + (r.achievement_percent as number) * weightOf(r), 0);
   return Math.round((weighted / totalWeight) * 10) / 10;
 }
 

@@ -1,11 +1,12 @@
 from rest_framework import serializers
 
+from apps.core.serializer_fields import DecimalCommaMixin
 from apps.core.validators import require_same_company
 
 from .models import SkillItem, SkillMatrix
 
 
-class SkillItemSerializer(serializers.ModelSerializer):
+class SkillItemSerializer(DecimalCommaMixin, serializers.ModelSerializer):
     class Meta:
         model = SkillItem
         fields = ["id", "matrix", "name", "description", "weight", "order"]

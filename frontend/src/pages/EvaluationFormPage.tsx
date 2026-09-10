@@ -19,8 +19,8 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
-import type { KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { DecimalField } from "@/components/inputs/DecimalField";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
@@ -39,24 +39,54 @@ import { ratingForAltitude as ratingFor } from "@/utils/performance";
 
 type ScoreState = Record<number, number | "">;
 
-function parseScoreInput(raw: string): number | "" {
-  if (raw === "") return "";
-  const value = Number(raw);
-  return Number.isNaN(value) ? "" : value;
+/**
+ * Une note de compétence : la saisie décimale commune, plus le barème 1-5.
+ *
+ * Hors de cette plage, le champ le signale — c'est ce que faisaient `min` et
+ * `max`, qui n'ont plus cours sur un champ texte, et le serveur refuse de
+ * toute façon la valeur.
+ */
+function ScoreField({
+  value,
+  onChange,
+  helperText,
+}: {
+  value: number | "";
+  onChange: (value: number | "") => void;
+  helperText?: string;
+}) {
+  return (
+    <DecimalField
+      value={value}
+      onChange={onChange}
+      helperText={helperText}
+      error={typeof value === "number" && (value < 1 || value > 5)}
+      width={54}
+      ariaLabel="note"
+    />
+  );
 }
 
-// Masque les flèches natives d'incrémentation des champs number, laissées
-// libres à la saisie (nombre entier ou décimal, aucun autre caractère).
-const NUMBER_INPUT_SX = {
-  "& input[type=number]": { MozAppearance: "textfield" },
-  "& input[type=number]::-webkit-outer-spin-button": { WebkitAppearance: "none", margin: 0 },
-  "& input[type=number]::-webkit-inner-spin-button": { WebkitAppearance: "none", margin: 0 },
-} as const;
-
-function blockNonNumericKeys(e: KeyboardEvent<HTMLDivElement>) {
-  if (e.key === "e" || e.key === "E" || e.key === "+" || e.key === "-") {
-    e.preventDefault();
-  }
+/** Un taux d'atteinte en pourcentage : même saisie, sans le barème 1-5 — ces
+ *  deux champs se comptent en dizaines, et un dépassement de 100 % y est un
+ *  bon résultat, pas une erreur. */
+function PercentField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <DecimalField
+      label={label}
+      value={value}
+      onChange={(v) => onChange(v === "" ? 0 : v)}
+      sx={{ maxWidth: 200 }}
+    />
+  );
 }
 
 function calculateAverage(scores: Record<number, number | "">, itemIds: number[]): number {
@@ -330,47 +360,26 @@ export default function EvaluationFormPage() {
                       {i + 1}. {item.name}
                     </TableCell>
                     <TableCell align="center">
-                      <TextField
-                        type="number"
-                        size="small"
-                        inputProps={{ min: 1, max: 5, step: 0.1 }}
+                      <ScoreField
                         value={scores[item.id] ?? ""}
-                        onChange={(e) =>
-                          setScores((prev) => ({ ...prev, [item.id]: parseScoreInput(e.target.value) }))
-                        }
-                        onKeyDown={blockNonNumericKeys}
-                        sx={{ width: 54, ...NUMBER_INPUT_SX }}
+                        onChange={(v) => setScores((prev) => ({ ...prev, [item.id]: v }))}
                       />
                     </TableCell>
                     <TableCell align="center">
-                      <TextField
-                        type="number"
-                        size="small"
-                        inputProps={{ min: 1, max: 5, step: 0.1 }}
+                      <ScoreField
                         value={objectives[item.id] ?? ""}
-                        onChange={(e) =>
-                          setObjectives((prev) => ({ ...prev, [item.id]: parseScoreInput(e.target.value) }))
-                        }
-                        onKeyDown={blockNonNumericKeys}
-                        sx={{ width: 54, ...NUMBER_INPUT_SX }}
+                        onChange={(v) => setObjectives((prev) => ({ ...prev, [item.id]: v }))}
                       />
                     </TableCell>
                     <TableCell align="center">
-                      <TextField
-                        type="number"
-                        size="small"
-                        inputProps={{ min: 1, max: 5, step: 0.1 }}
+                      <ScoreField
                         value={achievements[item.id] ?? ""}
-                        onChange={(e) =>
-                          setAchievements((prev) => ({ ...prev, [item.id]: parseScoreInput(e.target.value) }))
-                        }
-                        onKeyDown={blockNonNumericKeys}
+                        onChange={(v) => setAchievements((prev) => ({ ...prev, [item.id]: v }))}
                         helperText={
                           hasPreviousObjective
                             ? t("evaluationForm.previousObjective", { value: previousObjective.toFixed(1) })
                             : undefined
                         }
-                        sx={{ width: 54, ...NUMBER_INPUT_SX }}
                       />
                     </TableCell>
                   </TableRow>
@@ -472,23 +481,15 @@ export default function EvaluationFormPage() {
       <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}>
         <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems={{ md: "center" }}>
           <Stack direction="row" spacing={2}>
-            <TextField
+            <PercentField
               label={t("evaluationForm.businessScore")}
-              type="number"
               value={businessScore}
-              onChange={(e) => setBusinessScore(Number(e.target.value))}
-              onKeyDown={blockNonNumericKeys}
-              size="small"
-              sx={{ maxWidth: 200, ...NUMBER_INPUT_SX }}
+              onChange={setBusinessScore}
             />
-            <TextField
+            <PercentField
               label={t("evaluationForm.peopleScore")}
-              type="number"
               value={peopleScore}
-              onChange={(e) => setPeopleScore(Number(e.target.value))}
-              onKeyDown={blockNonNumericKeys}
-              size="small"
-              sx={{ maxWidth: 200, ...NUMBER_INPUT_SX }}
+              onChange={setPeopleScore}
             />
           </Stack>
           <Stack sx={{ flexGrow: 1 }} />

@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DecimalField } from "@/components/inputs/DecimalField";
 import {
   Bar,
   BarChart,
@@ -363,21 +364,17 @@ function TargetsVsActuals({
                   onChange={(e) => setAt(i, { year: e.target.value })}
                   sx={{ width: 110 }}
                 />
-                <TextField
-                  size="small"
-                  type="number"
+                <DecimalField
                   label={t("teamBoard.target")}
-                  value={row.target ?? ""}
-                  onChange={(e) => setAt(i, { target: e.target.value === "" ? null : Number(e.target.value) })}
-                  sx={{ width: 120 }}
+                  value={row.target ?? null}
+                  onChange={(v) => setAt(i, { target: v === "" ? null : v })}
+                  width={120}
                 />
-                <TextField
-                  size="small"
-                  type="number"
+                <DecimalField
                   label={t("teamBoard.actual")}
-                  value={row.actual ?? ""}
-                  onChange={(e) => setAt(i, { actual: e.target.value === "" ? null : Number(e.target.value) })}
-                  sx={{ width: 120 }}
+                  value={row.actual ?? null}
+                  onChange={(v) => setAt(i, { actual: v === "" ? null : v })}
+                  width={120}
                 />
               </Stack>
             ))}
