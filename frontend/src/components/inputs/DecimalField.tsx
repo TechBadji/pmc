@@ -42,21 +42,36 @@ export function DecimalField({
   onChange,
   label,
   helperText,
+  placeholder,
   error,
   width,
   fullWidth,
   sx,
   ariaLabel,
+  min,
+  max,
+  decimals,
 }: {
   value: number | "" | null;
   onChange: (value: number | "") => void;
   label?: string;
   helperText?: string;
+  placeholder?: string;
   error?: boolean;
   width?: number;
   fullWidth?: boolean;
   sx?: SxProps<Theme>;
   ariaLabel?: string;
+  /** Bornes de saisie. Une frappe qui en sortirait n'est pas prise : le champ
+   *  reste ce qu'il était, plutôt que d'accepter une valeur que le serveur
+   *  refusera. Ce refus au clavier ne convient qu'à un intervalle dont aucune
+   *  valeur valide ne commence par un nombre hors bornes — c'est le cas d'un
+   *  barème 1 à 5, où rien de valide ne débute par 0. */
+  min?: number;
+  max?: number;
+  /** Nombre maximal de décimales, à accorder avec la colonne : au-delà, le
+   *  serveur refuse l'enregistrement. */
+  decimals?: number;
 }) {
   const [typing, setTyping] = useState<string | null>(null);
   const shown = typing ?? (value === "" || value === null ? "" : String(value));
@@ -69,12 +84,24 @@ export function DecimalField({
       helperText={helperText}
       fullWidth={fullWidth}
       inputProps={{ inputMode: "decimal", ...(ariaLabel ? { "aria-label": ariaLabel } : {}) }}
+      placeholder={placeholder}
       onChange={(e) => {
         const raw = e.target.value;
         // Frappe refusée : l'état ne bouge pas, le champ reste ce qu'il était.
         if (!DECIMAL_INPUT.test(raw)) return;
+        if (decimals !== undefined) {
+          const frac = raw.replace(SPACES, "").replace(",", ".").split(".")[1] ?? "";
+          if (frac.length > decimals) return;
+        }
+        const parsed = parseDecimalInput(raw);
+        if (
+          typeof parsed === "number" &&
+          ((min !== undefined && parsed < min) || (max !== undefined && parsed > max))
+        ) {
+          return;
+        }
         setTyping(raw);
-        onChange(parseDecimalInput(raw));
+        onChange(parsed);
       }}
       onBlur={() => setTyping(null)}
       sx={{ ...(width ? { width } : {}), ...sx }}

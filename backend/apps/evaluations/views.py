@@ -10,6 +10,7 @@ from apps.core.permissions import (
     IsCompanyAdminOrManager,
     IsSuperAdminOrCompanyAdmin,
 )
+from apps.core.serializer_fields import normalize_decimal
 from apps.core.validators import require_same_company
 
 from apps.core.scoping import managed_department_ids
@@ -234,9 +235,17 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             score = n.get("score")
             if score is not None:
                 try:
-                    score = min(5, max(1, float(score)))
+                    # La virgule décimale passe ici comme ailleurs : sans cette
+                    # normalisation, « 3,5 » levait une ValueError et l'indice
+                    # était effacé au lieu d'être refusé — l'écran enregistrant
+                    # les vingt lignes d'un bloc, rien ne le signalait.
+                    score = min(5, max(1, float(normalize_decimal(score))))
                 except (TypeError, ValueError):
                     score = None
+                else:
+                    # La colonne ne garde qu'une décimale : on arrondit ici
+                    # plutôt que de laisser le SGBD le faire en silence.
+                    score = round(score, 1)
             cleaned.append(
                 SkillNote(
                     evaluation=evaluation,

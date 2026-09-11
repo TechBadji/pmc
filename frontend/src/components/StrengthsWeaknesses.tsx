@@ -1,14 +1,14 @@
 import FitnessCenterOutlinedIcon from "@mui/icons-material/FitnessCenterOutlined";
 import LinkOffOutlinedIcon from "@mui/icons-material/LinkOffOutlined";
-import { Alert, Avatar, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Avatar, Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
+import { DecimalField } from "@/components/inputs/DecimalField";
 import type { Paginated, PerformanceRating, SkillNote, SkillNoteCategory } from "@/api/types";
 import { performanceColors } from "@/theme";
 
 const ORDERS = [1, 2, 3, 4, 5];
-const SCORES = [1, 2, 3, 4, 5];
 const CATEGORY_BG: Record<SkillNoteCategory, string> = {
   SOFT_STRENGTH: "#3F914215", // vert clair — même teinte que le bandeau "Strengths"
   SOFT_WEAKNESS: "#8B2E2E15", // rouge clair — même teinte que le bandeau "Weaknesses"
@@ -55,23 +55,23 @@ function Column({
               inputProps={{ maxLength: 255 }}
               sx={{ bgcolor: "background.paper" }}
             />
-            <TextField
-              select
-              size="small"
-              value={row?.score ?? ""}
-              onChange={(e) => onChangeScore(category, order, e.target.value === "" ? null : Number(e.target.value))}
-              sx={{ width: 64, bgcolor: "background.paper" }}
-              SelectProps={{ displayEmpty: true }}
-            >
-              <MenuItem value="">
-                <em>{t("strengthsWeaknesses.indexShort")}</em>
-              </MenuItem>
-              {SCORES.map((s) => (
-                <MenuItem key={s} value={s}>
-                  {s}
-                </MenuItem>
-              ))}
-            </TextField>
+            {/* Saisie libre plutôt qu'une liste de cinq entiers : l'indice se
+                note au demi-point comme partout ailleurs sur la fiche, et la
+                colonne l'accepte déjà (une décimale). Les bornes sont tenues
+                au clavier — au-delà de 5 ou en deçà de 1, la frappe n'est pas
+                prise — car l'enregistrement de cette grille est groupé et un
+                refus du serveur n'y serait pas affiché. */}
+            <DecimalField
+              value={row?.score ?? null}
+              onChange={(v) => onChangeScore(category, order, v === "" ? null : v)}
+              placeholder={t("strengthsWeaknesses.indexShort")}
+              min={1}
+              max={5}
+              decimals={1}
+              width={64}
+              ariaLabel={t("strengthsWeaknesses.indexShort")}
+              sx={{ bgcolor: "background.paper" }}
+            />
           </Stack>
         );
       })}
