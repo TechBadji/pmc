@@ -1,17 +1,22 @@
 """
 Jeu de démonstration « Africa Insurance Group » : un groupe d'assurance
-panafricain organisé autour d'un CODIR, avec un Directeur de Zone à la tête
-de deux filiales pays, et six directions fonctionnelles à son niveau.
+panafricain organisé autour d'un CODIR présidé par le PDG, avec le Directeur
+de Zone (DZ) et six directions fonctionnelles à son niveau hiérarchique.
 
 Organigramme :
-    CODIR (comité de direction, vide — DZ + directions fonctionnelles y siègent)
-    └── Directeur de Zone (DZ, Admin Entreprise / CEO applicatif)
-        ├── Filiale Côte d'Ivoire   (service rattaché à la Direction de Zone)
-        └── Filiale Sénégal         (service rattaché à la Direction de Zone)
-    Direction Technique, Direction Études et Projets, Direction Marketing et
-    Expérience Client, Direction Financière, Direction des Ressources
-    Humaines, Direction Planning Budgétaire et Pilotage — au même niveau
-    hiérarchique que la Direction de Zone (tous rattachés au CODIR).
+    CODIR (comité de direction, présidé par le PDG — Admin Entreprise / CEO applicatif)
+    ├── Directeur de Zone (DZ)
+    │   ├── Filiale Côte d'Ivoire   (service rattaché à la Direction de Zone)
+    │   └── Filiale Sénégal         (service rattaché à la Direction de Zone)
+    ├── Direction Technique
+    ├── Direction Études et Projets
+    ├── Direction Marketing et Expérience Client
+    ├── Direction Financière
+    ├── Direction des Ressources Humaines
+    └── Direction Planning Budgétaire et Pilotage
+    Le DZ et les six directions fonctionnelles sont tous au même niveau
+    hiérarchique (rattachés directement au CODIR) ; seules les deux filiales
+    sont un niveau sous le DZ.
 
 Chacune des 9 directions actives (Zone, 2 filiales, 6 fonctionnelles) reçoit
 un directeur + 5 collaborateurs (5 paliers de performance ID-3A distincts,
@@ -20,11 +25,11 @@ généré et une date de naissance tirée pour une moyenne d'âge 40-50 ans.
 
 Usage:
     python manage.py seed_africa_insurance_group
-    python manage.py seed_africa_insurance_group --reset   # repart de zéro (CEO conservé)
+    python manage.py seed_africa_insurance_group --reset   # repart de zéro (PDG conservé)
 
-Seul le CEO (DZ) est upserté par login — les directeurs et collaborateurs
-sont tirés au hasard (noms, postes) et créés une seule fois : relancer la
-commande sans `--reset` échoue sur un doublon d'email plutôt que de dupliquer
+Seul le PDG est upserté par login — les directeurs et collaborateurs sont
+tirés au hasard (noms, postes) et créés une seule fois : relancer la commande
+sans `--reset` échoue sur un doublon d'email plutôt que de dupliquer
 silencieusement les comptes. Utiliser `--reset` pour repeupler à neuf.
 """
 import random
@@ -46,12 +51,9 @@ CAMPAIGN_NAME = "Année 2026"
 CAMPAIGN_START = date(2026, 1, 1)
 CAMPAIGN_END = date(2026, 12, 31)
 
-DZ_FIRST_NAME, DZ_LAST_NAME = "Kwame", "Boateng"
-DZ_LOGIN = "k.boateng"
-# Identique au `position` de la ligne "DZ" dans DIRECTIONS ci-dessous : c'est
-# ce qui fait correspondre l'évaluation du DZ à son propre référentiel de
-# compétences (résolution "poste d'abord" côté EvaluationFormPage).
-DZ_POSITION = "Directeur de Zone"
+PDG_FIRST_NAME, PDG_LAST_NAME = "Amina", "Sylla"
+PDG_LOGIN = "CODIR"
+PDG_POSITION = "Président Directeur Général — Président du CODIR"
 
 # Les 10 soft skills sont repris à l'identique du référentiel PMC-DEMO
 # (seed_demo.py) — convention établie : les soft skills ne varient pas d'une
@@ -255,7 +257,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--reset", action="store_true",
-            help="Supprime tous les comptes hors CEO et recrée l'entreprise à neuf.",
+            help="Supprime tous les comptes hors PDG et recrée l'entreprise à neuf.",
         )
 
     @transaction.atomic
@@ -272,37 +274,26 @@ class Command(BaseCommand):
             User.objects.exclude(company=company).values_list("generated_login", flat=True)
         )
 
-        ceo = self._ceo(company)
+        pdg = self._pdg(company)
         campaign, _ = EvaluationCampaign.objects.get_or_create(
             company=company,
             name=CAMPAIGN_NAME,
-            defaults={"start_date": CAMPAIGN_START, "end_date": CAMPAIGN_END, "created_by": ceo},
+            defaults={"start_date": CAMPAIGN_START, "end_date": CAMPAIGN_END, "created_by": pdg},
         )
 
-        departments = self._departments(company, ceo)
+        departments = self._departments(company, pdg)
         self.stdout.write(self.style.SUCCESS(f"{len(departments)} départements prêts."))
 
         director_count = 0
         employee_count = 0
         for code, dept_name, parent_code, position, hard_skills in DIRECTIONS:
             department = departments[code]
-            if code == "DZ":
-                # La Direction de Zone est dirigée par le DZ lui-même (CEO
-                # applicatif) : pas de directeur distinct sous le CEO.
-                director = ceo
-                if ceo.department_id != department.id:
-                    ceo.department = department
-                    ceo.save(update_fields=["department"])
-                if department.manager_id != ceo.id:
-                    department.manager = ceo
-                    department.save(update_fields=["manager"])
-            else:
-                director = self._director(company, ceo, department, position)
-                director_count += 1
+            director_count += 1
+            director = self._director(company, pdg, department, position, f"DIR{director_count}")
 
             hard_items, soft_items = self._matrices(company, department, position, hard_skills)
             label, biz_range, skill_range = self.rng.choice(PERFORMANCE_BUCKETS)
-            self._evaluation(campaign, director, ceo, hard_items, soft_items, biz_range, skill_range, label)
+            self._evaluation(campaign, director, pdg, hard_items, soft_items, biz_range, skill_range, label)
 
             for title in JOB_TITLES[code]:
                 self._employee(company, department, director, title, campaign, hard_items, soft_items)
@@ -313,8 +304,8 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             f"\nTerminé — {company.name} (slug {company.slug})\n"
-            f"  DZ / CEO    : {DZ_LOGIN} / {PASSWORD}\n"
-            f"  Directeurs  : {director_count} + le DZ (login p.nom / {PASSWORD})\n"
+            f"  PDG / CEO   : {PDG_LOGIN} / {PASSWORD}\n"
+            f"  Directeurs  : {director_count} (dont le DZ, login DIR1…DIR{director_count} / {PASSWORD})\n"
             f"  Collaborateurs : {employee_count} (login p.nom / {PASSWORD})\n"
             f"  Campagne    : {campaign.name} ({campaign.start_date} → {campaign.end_date})"
         ))
@@ -328,54 +319,57 @@ class Command(BaseCommand):
                 "slug": slugify_company(COMPANY_NAME),
                 "sector": "Assurance",
                 "plan": "PREMIUM",
-                "admin_first_name": DZ_FIRST_NAME,
-                "admin_last_name": DZ_LAST_NAME,
+                "admin_first_name": PDG_FIRST_NAME,
+                "admin_last_name": PDG_LAST_NAME,
             },
         )
         self.stdout.write(self.style.SUCCESS(f"Entreprise {'créée' if created else 'réutilisée'} : {company.name}"))
         return company
 
     def _reset(self, company):
-        company.users.exclude(generated_login__iexact=DZ_LOGIN).delete()
+        company.users.exclude(generated_login__iexact=PDG_LOGIN).delete()
         company.departments.all().delete()
         company.skill_matrices.all().delete()
-        self.stdout.write(self.style.WARNING("Comptes, départements et référentiels existants supprimés (CEO conservé)."))
+        self.stdout.write(self.style.WARNING("Comptes, départements et référentiels existants supprimés (PDG conservé)."))
 
-    def _ceo(self, company):
-        ceo = User.objects.filter(generated_login__iexact=DZ_LOGIN).first()
-        if ceo is not None and ceo.company_id not in (None, company.id):
-            raise CommandError(f"Le login {DZ_LOGIN} est déjà pris par {ceo.email} ({ceo.company.name}).")
-        if ceo is None:
-            ceo = User(email=f"{DZ_LOGIN}@{company.slug}.pmc.local", generated_login=DZ_LOGIN)
-            ceo.set_password(PASSWORD)
-        ceo.first_name = DZ_FIRST_NAME
-        ceo.last_name = DZ_LAST_NAME
-        ceo.role = User.Role.COMPANY_ADMIN
-        ceo.position = DZ_POSITION
-        ceo.company = company
-        ceo.birth_date = random_birth_date(self.rng, 46, 54)
-        ceo.hire_date = date(2018, 3, 1)
-        ceo.career_start_date = date(1998, 9, 1)
-        ceo.must_change_password = False
-        ceo.is_active = True
-        if not ceo.avatar:
-            ceo.avatar.save(f"{DZ_LOGIN}.png", make_avatar_file(DZ_LOGIN, "KB"), save=False)
-        ceo.save()
-        self.used_logins.add(DZ_LOGIN)
-        self.used_names.add(f"{DZ_FIRST_NAME} {DZ_LAST_NAME}")
-        if company.admin_user_id != ceo.id:
-            company.admin_user = ceo
+    def _pdg(self, company):
+        pdg = User.objects.filter(generated_login__iexact=PDG_LOGIN).first()
+        if pdg is not None and pdg.company_id not in (None, company.id):
+            raise CommandError(f"Le login {PDG_LOGIN} est déjà pris par {pdg.email} ({pdg.company.name}).")
+        if pdg is None:
+            pdg = User(email=f"{PDG_LOGIN}@{company.slug}.pmc.local", generated_login=PDG_LOGIN)
+            pdg.set_password(PASSWORD)
+        pdg.first_name = PDG_FIRST_NAME
+        pdg.last_name = PDG_LAST_NAME
+        pdg.role = User.Role.COMPANY_ADMIN
+        pdg.position = PDG_POSITION
+        pdg.company = company
+        pdg.birth_date = random_birth_date(self.rng, 48, 58)
+        pdg.hire_date = date(2016, 1, 1)
+        pdg.career_start_date = date(1994, 9, 1)
+        pdg.must_change_password = False
+        pdg.is_active = True
+        if not pdg.avatar:
+            pdg.avatar.save(f"{PDG_LOGIN}.png", make_avatar_file(PDG_LOGIN, "AS"), save=False)
+        pdg.save()
+        self.used_logins.add(PDG_LOGIN)
+        self.used_names.add(f"{PDG_FIRST_NAME} {PDG_LAST_NAME}")
+        if company.admin_user_id != pdg.id:
+            company.admin_user = pdg
             company.save(update_fields=["admin_user"])
-        self.stdout.write(self.style.SUCCESS(f"DZ / CEO : {ceo.get_full_name()} — login {DZ_LOGIN}"))
-        return ceo
+        self.stdout.write(self.style.SUCCESS(f"PDG / CEO : {pdg.get_full_name()} — login {PDG_LOGIN}"))
+        return pdg
 
-    def _departments(self, company, ceo):
+    def _departments(self, company, pdg):
         codir, _ = Department.objects.get_or_create(
-            company=company, code=CODIR_CODE, defaults={"name": CODIR_NAME, "manager": ceo},
+            company=company, code=CODIR_CODE, defaults={"name": CODIR_NAME, "manager": pdg},
         )
-        if codir.manager_id != ceo.id:
-            codir.manager = ceo
+        if codir.manager_id != pdg.id:
+            codir.manager = pdg
             codir.save(update_fields=["manager"])
+        if pdg.department_id != codir.id:
+            pdg.department = codir
+            pdg.save(update_fields=["department"])
 
         departments = {}
         # deux passes : les directions racines d'abord, pour que les filiales
@@ -426,9 +420,12 @@ class Command(BaseCommand):
                 return first, last
         raise CommandError("Pool de noms épuisé.")
 
-    def _director(self, company, ceo, department, position):
+    def _director(self, company, pdg, department, position, login):
         first, last = self._unique_name()
-        login = make_login(first, last, self.used_logins)
+        existing = User.objects.filter(generated_login__iexact=login).first()
+        if existing is not None and existing.company_id not in (None, company.id):
+            raise CommandError(f"Le login {login} est déjà pris par {existing.email} ({existing.company.name}).")
+        self.used_logins.add(login)
         user = User.objects.create(
             email=f"{login}@{company.slug}.pmc.local",
             first_name=first,
@@ -437,7 +434,7 @@ class Command(BaseCommand):
             position=position,
             company=company,
             department=department,
-            manager=ceo,
+            manager=pdg,
             generated_login=login,
             must_change_password=False,
             birth_date=random_birth_date(self.rng, 42, 55),
