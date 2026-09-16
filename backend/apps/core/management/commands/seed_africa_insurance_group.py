@@ -6,7 +6,7 @@ de Zone (DZ) et six directions fonctionnelles à son niveau hiérarchique.
 Organigramme :
     CODIR (comité de direction, présidé par le PDG — Admin Entreprise / CEO applicatif)
     ├── Directeur de Zone (DZ)
-    │   ├── Filiale Côte d'Ivoire   (service rattaché à la Direction de Zone)
+    │   ├── Filiale Bénin           (service rattaché à la Direction de Zone)
     │   └── Filiale Sénégal         (service rattaché à la Direction de Zone)
     ├── Direction Technique
     ├── Direction Études et Projets
@@ -84,12 +84,12 @@ DIRECTIONS = [
         ],
     ),
     (
-        "FIL1", "Filiale Côte d'Ivoire", "DZ", "Directeur de Filiale — Côte d'Ivoire",
+        "FIL1", "Filiale Bénin", "DZ", "Directeur de Filiale — Bénin",
         [
             "Souscription IARD & Vie", "Gestion des sinistres", "Animation du réseau d'agents généraux",
             "Pilotage commercial de filiale", "Gestion technique locale", "Relation clientèle et distribution",
             "Conformité réglementaire locale (CIMA)", "Gestion de la rentabilité de filiale",
-            "Management d'équipe terrain", "Connaissance du marché ivoirien",
+            "Management d'équipe terrain", "Connaissance du marché béninois",
         ],
     ),
     (
