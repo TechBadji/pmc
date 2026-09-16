@@ -63,11 +63,13 @@ import { CHART_NEUTRALS, performanceColors } from "@/theme";
  *  propre axe. Les cadrans restent découpés à 2,5 sur chaque axe. */
 const AXIS_MAX = 6;
 const AXIS_MAX_Y = 7;
-// Hauteur du tracé. Relevée avec la taille des vignettes : à 480 pixels, des
-// pastilles presque doublées se seraient recouvertes dès que deux personnes
-// partagent un cadran. Tout ce que dessine `MatrixBackground` se déduit des
-// axes, la hauteur se change donc ici seule.
-const MATRIX_HEIGHT = 640;
+// Hauteur du tracé. Relevée une première fois de 480 à 640 avec la taille
+// des vignettes (des pastilles presque doublées se seraient recouvertes dès
+// que deux personnes partagent un cadran), puis à 880 : le pas entre deux
+// graduations de 0,5 sur l'ordonnée Aptitudes était encore trop petit pour
+// séparer deux vignettes voisines. Tout ce que dessine `MatrixBackground` se
+// déduit des axes, la hauteur se change donc ici seule.
+const MATRIX_HEIGHT = 880;
 const AXIS_TICKS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
 const AXIS_TICKS_Y = [...AXIS_TICKS, 6.5, 7];
 // Quadrillage secondaire (pas de 0.25) — lecture plus fine entre les
