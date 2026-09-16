@@ -39,6 +39,7 @@ import {
   YAxis,
 } from "recharts";
 import { apiClient } from "@/api/client";
+import { DecimalField } from "@/components/inputs/DecimalField";
 import { BoardPeriodBar } from "@/components/teamBoard/BoardPieces";
 import TeamRelationshipBoard from "@/components/teamBoard/TeamRelationshipBoard";
 import CohesionOpinionBoard from "@/components/teamBoard/CohesionOpinionBoard";
@@ -986,42 +987,33 @@ export default function CohesionFormPage() {
                         })()}
                       </TableCell>
                       <TableCell align="center" sx={{ bgcolor: "#fffaf0", color: LIGHT_CELL_TEXT }}>
-                        <TextField
-                          select
-                          size="small"
-                          value={row.objective_score ?? ""}
-                          onChange={(e) =>
-                            updateRow(i, { objective_score: e.target.value === "" ? null : Number(e.target.value) })
-                          }
+                        {/* Saisie libre plutôt qu'une liste de cinq entiers :
+                            l'OCE accepte une décimale, comme l'indice Forces &
+                            Faiblesses (même composant, mêmes bornes 1-5). */}
+                        <DecimalField
+                          value={row.objective_score ?? null}
+                          onChange={(v) => updateRow(i, { objective_score: v === "" ? null : v })}
+                          placeholder={t("cohesion.unset")}
+                          min={1}
+                          max={5}
+                          decimals={1}
                           disabled={readOnly}
-                          sx={{ minWidth: 64, bgcolor: "#fff4c2", borderRadius: 1, color: LIGHT_CELL_TEXT, "& .MuiInputBase-root, & .MuiSelect-select": { color: LIGHT_CELL_TEXT } }}
-                        >
-                          <MenuItem value="">{t("cohesion.unset")}</MenuItem>
-                          {TIERS.map((tier) => (
-                            <MenuItem key={tier} value={tier}>
-                              {tier}
-                            </MenuItem>
-                          ))}
-                        </TextField>
+                          width={64}
+                          sx={{ bgcolor: "#fff4c2", borderRadius: 1, "& .MuiInputBase-input": { color: LIGHT_CELL_TEXT } }}
+                        />
                       </TableCell>
                       <TableCell align="center" sx={{ bgcolor: "#f5faff", color: LIGHT_CELL_TEXT }}>
-                        <TextField
-                          select
-                          size="small"
-                          value={row.achieved_score ?? ""}
-                          onChange={(e) =>
-                            updateRow(i, { achieved_score: e.target.value === "" ? null : Number(e.target.value) })
-                          }
+                        <DecimalField
+                          value={row.achieved_score ?? null}
+                          onChange={(v) => updateRow(i, { achieved_score: v === "" ? null : v })}
+                          placeholder={t("cohesion.unset")}
+                          min={1}
+                          max={5}
+                          decimals={1}
                           disabled={readOnly}
-                          sx={{ minWidth: 64, bgcolor: "#dbeeff", borderRadius: 1, color: LIGHT_CELL_TEXT, "& .MuiInputBase-root, & .MuiSelect-select": { color: LIGHT_CELL_TEXT } }}
-                        >
-                          <MenuItem value="">{t("cohesion.unset")}</MenuItem>
-                          {TIERS.map((tier) => (
-                            <MenuItem key={tier} value={tier}>
-                              {tier}
-                            </MenuItem>
-                          ))}
-                        </TextField>
+                          width={64}
+                          sx={{ bgcolor: "#dbeeff", borderRadius: 1, "& .MuiInputBase-input": { color: LIGHT_CELL_TEXT } }}
+                        />
                       </TableCell>
                       <TableCell align="center" sx={{ bgcolor: "#f4faf0", color: LIGHT_CELL_TEXT }}>
                         {opinionFor(row.criterion, !hasOwnNotes)}
