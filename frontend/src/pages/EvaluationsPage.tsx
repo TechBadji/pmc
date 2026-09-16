@@ -325,22 +325,6 @@ export default function EvaluationsPage() {
               : undefined
           }
         />
-        {view === "id3a" && campaignOptions.length > 0 && (
-          <TextField
-            select
-            size="small"
-            label={t("common.period")}
-            value={selectedCampaignId}
-            onChange={(e) => setSelectedCampaignId(Number(e.target.value))}
-            sx={{ minWidth: 200 }}
-          >
-            {campaignOptions.map((c) => (
-              <MenuItem key={c.id} value={c.id}>
-                {c.name}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
       </Stack>
 
       <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap className="pmc-no-print">
@@ -362,6 +346,23 @@ export default function EvaluationsPage() {
           <ToggleButton value="monkey">{t("objectivesSheet.viewMonkeyManagement")}</ToggleButton>
         </ToggleButtonGroup>
       </Stack>
+
+      {view === "id3a" && campaignOptions.length > 0 && (
+        <TextField
+          select
+          size="small"
+          label={t("common.period")}
+          value={selectedCampaignId}
+          onChange={(e) => setSelectedCampaignId(Number(e.target.value))}
+          sx={{ minWidth: 200, alignSelf: "flex-start" }}
+        >
+          {campaignOptions.map((c) => (
+            <MenuItem key={c.id} value={c.id}>
+              {c.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      )}
 
       {(view === "employee" || view === "team") && (
         <ObjectivesSheetPanel
