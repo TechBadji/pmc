@@ -19,9 +19,16 @@ Organigramme :
     sont un niveau sous le DZ.
 
 Chacune des 9 directions actives (Zone, 2 filiales, 6 fonctionnelles) reçoit
-un directeur + 5 collaborateurs (5 paliers de performance ID-3A distincts,
-pour que la matrice ID-3A/9 Box montre un ensemble contrasté), avec avatar
-généré et une date de naissance tirée pour une moyenne d'âge 40-50 ans.
+un directeur + 5 collaborateurs, avec avatar généré et une date de naissance
+tirée pour une moyenne d'âge 40-50 ans.
+
+Quatre campagnes (Année 2023, 2024, 2025, Semestre 1 2026) : chaque personne
+est évaluée sur chacune, avec un niveau de hard skills et un niveau de soft
+skills tirés **indépendamment** l'un de l'autre à chaque campagne — pour
+obtenir des profils contrastés (bon technicien/faible relationnel, et
+l'inverse) plutôt que des scores qui bougent ensemble. La performance
+business/people est tirée séparément encore, pour un troisième axe
+indépendant (un bon profil n'est pas mécaniquement un bon performeur).
 
 Usage:
     python manage.py seed_africa_insurance_group
@@ -41,15 +48,21 @@ from django.db import transaction
 
 from apps.core.avatar_utils import make_avatar_file
 from apps.core.models import Company, Department, User
-from apps.core.text_utils import slugify_company, strip_accents
+from apps.core.text_utils import slugify_company
 from apps.evaluations.models import Evaluation, EvaluationCampaign, EvaluationSkillScore
 from apps.skills.models import SkillItem, SkillMatrix
 
 COMPANY_NAME = "Africa Insurance Group"
 PASSWORD = "123456"
-CAMPAIGN_NAME = "Année 2026"
-CAMPAIGN_START = date(2026, 1, 1)
-CAMPAIGN_END = date(2026, 12, 31)
+
+# (nom, début, fin, clôturée) — les trois années passées sont closes, le
+# semestre en cours reste ouvert pour la démo interactive.
+CAMPAIGNS = [
+    ("Année 2023", date(2023, 1, 1), date(2023, 12, 31), True),
+    ("Année 2024", date(2024, 1, 1), date(2024, 12, 31), True),
+    ("Année 2025", date(2025, 1, 1), date(2025, 12, 31), True),
+    ("Semestre 1 2026", date(2026, 1, 1), date(2026, 6, 30), False),
+]
 
 PDG_FIRST_NAME, PDG_LAST_NAME = "Amina", "Sylla"
 PDG_LOGIN = "CODIR"
@@ -227,27 +240,21 @@ def random_birth_date(rng: random.Random, low: int, high: int) -> date:
     return today.replace(year=today.year - age_years) - timedelta(days=rng.randint(0, 364))
 
 
-def make_login(first_name: str, last_name: str, used: set) -> str:
-    """Format `p.nom` (initiale du prénom, point, nom), suffixe numérique en
-    cas d'homonymie — même convention que SUNU Bank Togo."""
-    first = strip_accents(first_name).strip().lower()
-    last = strip_accents(last_name).strip().lower().replace(" ", "").replace("-", "").replace("'", "")
-    base = f"{first[:1]}.{last}"
-    login = base
-    suffix = 2
-    while login in used:
-        login = f"{base}{suffix}"
-        suffix += 1
-    used.add(login)
-    return login
-
-
-PERFORMANCE_BUCKETS = [
-    ("Très faible", (30, 48), (1.0, 2.2)),
-    ("Faible", (52, 72), (2.0, 3.0)),
-    ("Moyenne", (76, 88), (3.0, 3.8)),
-    ("Bonne", (91, 99), (3.8, 4.6)),
-    ("Exceptionnelle", (102, 128), (4.4, 5.0)),
+# Niveaux tirés indépendamment pour le hard, le soft, et la performance —
+# trois axes qui ne bougent pas ensemble (voir docstring du module).
+LEVEL_RANGES = [
+    ("très faible", (1.0, 2.0)),
+    ("faible", (2.0, 2.8)),
+    ("moyen", (2.8, 3.6)),
+    ("bon", (3.6, 4.4)),
+    ("excellent", (4.4, 5.0)),
+]
+BIZ_RANGES = [
+    ("très faible", (30, 48)),
+    ("faible", (52, 72)),
+    ("moyenne", (76, 88)),
+    ("bonne", (91, 99)),
+    ("exceptionnelle", (102, 128)),
 ]
 
 
@@ -265,6 +272,7 @@ class Command(BaseCommand):
         self.rng = random.Random(2026)
         self.used_logins: set[str] = set()
         self.used_names: set[str] = set()
+        self.employee_counter = 0
 
         company = self._company()
         if options["reset"]:
@@ -275,11 +283,7 @@ class Command(BaseCommand):
         )
 
         pdg = self._pdg(company)
-        campaign, _ = EvaluationCampaign.objects.get_or_create(
-            company=company,
-            name=CAMPAIGN_NAME,
-            defaults={"start_date": CAMPAIGN_START, "end_date": CAMPAIGN_END, "created_by": pdg},
-        )
+        campaigns = self._campaigns(company, pdg)
 
         departments = self._departments(company, pdg)
         self.stdout.write(self.style.SUCCESS(f"{len(departments)} départements prêts."))
@@ -292,12 +296,14 @@ class Command(BaseCommand):
             director = self._director(company, pdg, department, position, f"DIR{director_count}")
 
             hard_items, soft_items = self._matrices(company, department, position, hard_skills)
-            label, biz_range, skill_range = self.rng.choice(PERFORMANCE_BUCKETS)
-            self._evaluation(campaign, director, pdg, hard_items, soft_items, biz_range, skill_range, label)
+            for campaign in campaigns:
+                self._evaluate_person(campaign, director, pdg, hard_items, soft_items)
 
             for title in JOB_TITLES[code]:
-                self._employee(company, department, director, title, campaign, hard_items, soft_items)
+                employee = self._employee(company, department, director, title)
                 employee_count += 1
+                for campaign in campaigns:
+                    self._evaluate_person(campaign, employee, director, hard_items, soft_items)
 
         company.employee_count = company.users.count()
         company.save(update_fields=["employee_count"])
@@ -306,8 +312,8 @@ class Command(BaseCommand):
             f"\nTerminé — {company.name} (slug {company.slug})\n"
             f"  PDG / CEO   : {PDG_LOGIN} / {PASSWORD}\n"
             f"  Directeurs  : {director_count} (dont le DZ, login DIR1…DIR{director_count} / {PASSWORD})\n"
-            f"  Collaborateurs : {employee_count} (login p.nom / {PASSWORD})\n"
-            f"  Campagne    : {campaign.name} ({campaign.start_date} → {campaign.end_date})"
+            f"  Collaborateurs : {employee_count} (login EMP1…EMP{employee_count} / {PASSWORD})\n"
+            f"  Campagnes   : {', '.join(c.name for c in campaigns)}"
         ))
 
     # ------------------------------------------------------------------
@@ -327,10 +333,16 @@ class Command(BaseCommand):
         return company
 
     def _reset(self, company):
+        # Les évaluations sont supprimées en cascade avec leurs utilisateurs
+        # (Evaluation.user est CASCADE) — les campagnes ne le sont pas
+        # (Evaluation.campaign est PROTECT) : il faut les vider avant de
+        # pouvoir supprimer les campagnes elles-mêmes, sous peine de laisser
+        # une campagne orpheline d'une exécution précédente traîner en base.
         company.users.exclude(generated_login__iexact=PDG_LOGIN).delete()
+        company.evaluation_campaigns.all().delete()
         company.departments.all().delete()
         company.skill_matrices.all().delete()
-        self.stdout.write(self.style.WARNING("Comptes, départements et référentiels existants supprimés (PDG conservé)."))
+        self.stdout.write(self.style.WARNING("Comptes, campagnes, départements et référentiels existants supprimés (PDG conservé)."))
 
     def _pdg(self, company):
         pdg = User.objects.filter(generated_login__iexact=PDG_LOGIN).first()
@@ -359,6 +371,19 @@ class Command(BaseCommand):
             company.save(update_fields=["admin_user"])
         self.stdout.write(self.style.SUCCESS(f"PDG / CEO : {pdg.get_full_name()} — login {PDG_LOGIN}"))
         return pdg
+
+    def _campaigns(self, company, pdg):
+        campaigns = []
+        for name, start, end, closed in CAMPAIGNS:
+            campaign, _ = EvaluationCampaign.objects.get_or_create(
+                company=company, name=name,
+                defaults={"start_date": start, "end_date": end, "created_by": pdg, "is_closed": closed},
+            )
+            if campaign.is_closed != closed:
+                campaign.is_closed = closed
+                campaign.save(update_fields=["is_closed"])
+            campaigns.append(campaign)
+        return campaigns
 
     def _departments(self, company, pdg):
         codir, _ = Department.objects.get_or_create(
@@ -450,9 +475,14 @@ class Command(BaseCommand):
         self.stdout.write(f"  → {department.name}: directeur {user.get_full_name()} ({login})")
         return user
 
-    def _employee(self, company, department, manager, position, campaign, hard_items, soft_items):
+    def _employee(self, company, department, manager, position):
         first, last = self._unique_name()
-        login = make_login(first, last, self.used_logins)
+        self.employee_counter += 1
+        login = f"EMP{self.employee_counter}"
+        existing = User.objects.filter(generated_login__iexact=login).first()
+        if existing is not None and existing.company_id not in (None, company.id):
+            raise CommandError(f"Le login {login} est déjà pris par {existing.email} ({existing.company.name}).")
+        self.used_logins.add(login)
         user = User.objects.create(
             email=f"{login}@{company.slug}.pmc.local",
             first_name=first,
@@ -472,13 +502,21 @@ class Command(BaseCommand):
         initials = f"{first[0]}{last[0]}".upper()
         user.avatar.save(f"{login}.png", make_avatar_file(login, initials), save=False)
         user.save()
+        return user
 
-        label, (biz_lo, biz_hi), (skill_lo, skill_hi) = self.rng.choice(PERFORMANCE_BUCKETS)
-        self._evaluation(campaign, user, manager, hard_items, soft_items, (biz_lo, biz_hi), (skill_lo, skill_hi), label)
+    def _evaluate_person(self, campaign, user, evaluator, hard_items, soft_items):
+        """Tire le niveau hard, le niveau soft et la performance business/people
+        chacun indépendamment (voir docstring du module) : c'est ce qui produit
+        des profils contrastés d'une campagne à l'autre plutôt que des scores
+        qui montent ou descendent ensemble."""
+        hard_label, hard_range = self.rng.choice(LEVEL_RANGES)
+        soft_label, soft_range = self.rng.choice(LEVEL_RANGES)
+        biz_label, biz_range = self.rng.choice(BIZ_RANGES)
+        note = f"Hard skills {hard_label}, soft skills {soft_label}, performance {biz_label}."
+        self._evaluation(campaign, user, evaluator, hard_items, soft_items, biz_range, hard_range, soft_range, note)
 
-    def _evaluation(self, campaign, user, evaluator, hard_items, soft_items, biz_range, skill_range, label=""):
+    def _evaluation(self, campaign, user, evaluator, hard_items, soft_items, biz_range, hard_range, soft_range, note=""):
         biz_lo, biz_hi = biz_range
-        skill_lo, skill_hi = skill_range
         biz_score = round(self.rng.uniform(biz_lo, biz_hi), 1)
         people_score = round(self.rng.uniform(biz_lo, biz_hi), 1)
         evaluation, _ = Evaluation.objects.update_or_create(
@@ -488,13 +526,17 @@ class Command(BaseCommand):
                 "evaluator": evaluator if evaluator.id != user.id else None,
                 "business_objectives_score": Decimal(str(biz_score)),
                 "people_objectives_score": Decimal(str(people_score)),
-                "notes": f"Palier de performance cible: {label}." if label else "",
+                "notes": note,
             },
         )
         evaluation.skill_scores.all().delete()
-        EvaluationSkillScore.objects.bulk_create(
-            [
-                EvaluationSkillScore(evaluation=evaluation, skill_item=item, score=Decimal(str(round(self.rng.uniform(skill_lo, skill_hi), 1))))
-                for item in hard_items + soft_items
-            ]
-        )
+        hard_lo, hard_hi = hard_range
+        soft_lo, soft_hi = soft_range
+        entries = [
+            EvaluationSkillScore(evaluation=evaluation, skill_item=item, score=Decimal(str(round(self.rng.uniform(hard_lo, hard_hi), 1))))
+            for item in hard_items
+        ] + [
+            EvaluationSkillScore(evaluation=evaluation, skill_item=item, score=Decimal(str(round(self.rng.uniform(soft_lo, soft_hi), 1))))
+            for item in soft_items
+        ]
+        EvaluationSkillScore.objects.bulk_create(entries)
