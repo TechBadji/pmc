@@ -57,12 +57,13 @@ import { CHART_NEUTRALS, performanceColors } from "@/theme";
 // exceptionnelle peut se situer au-delà de 5 — sans cette marge, un point à
 // 5,5 serait collé au bord du repère, voire hors cadre. La frontière des
 // quadrants reste à 2,5, milieu du barème et non de l'axe.
-/** Bornes des deux axes. Les aptitudes (ordonnée) montent un cran plus haut
- *  que les attitudes : la grille n'est donc plus carrée, et tout ce qui la
- *  dessine — fond, quadrants, mini-graphe — s'appuie sur la borne de son
- *  propre axe. Les cadrans restent découpés à 2,5 sur chaque axe. */
+/** Bornes des deux axes — les mêmes des deux côtés, jusqu'à 6. Tout ce qui
+ *  dessine la grille — fond, quadrants, mini-graphe — s'appuie sur la borne
+ *  de son propre axe (`AXIS_MAX_Y` séparé de `AXIS_MAX`) pour qu'un futur
+ *  écart entre les deux n'oblige pas à reprendre ces fonctions. Les cadrans
+ *  restent découpés à 2,5 sur chaque axe. */
 const AXIS_MAX = 6;
-const AXIS_MAX_Y = 7;
+const AXIS_MAX_Y = 6;
 // Hauteur du tracé. Relevée une première fois de 480 à 640 avec la taille
 // des vignettes (des pastilles presque doublées se seraient recouvertes dès
 // que deux personnes partagent un cadran), puis à 880 : le pas entre deux
@@ -71,11 +72,11 @@ const AXIS_MAX_Y = 7;
 // déduit des axes, la hauteur se change donc ici seule.
 const MATRIX_HEIGHT = 880;
 const AXIS_TICKS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
-const AXIS_TICKS_Y = [...AXIS_TICKS, 6.5, 7];
+const AXIS_TICKS_Y = AXIS_TICKS;
 // Quadrillage secondaire (pas de 0.25) — lecture plus fine entre les
 // graduations principales de 0.5, sans les dupliquer.
 const MINOR_AXIS_TICKS = [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25, 5.75];
-const MINOR_AXIS_TICKS_Y = [...MINOR_AXIS_TICKS, 6.25, 6.75];
+const MINOR_AXIS_TICKS_Y = MINOR_AXIS_TICKS;
 
 const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
 
