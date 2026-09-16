@@ -51,6 +51,7 @@ export function DecimalField({
   min,
   max,
   decimals,
+  disabled,
 }: {
   value: number | "" | null;
   onChange: (value: number | "") => void;
@@ -62,6 +63,7 @@ export function DecimalField({
   fullWidth?: boolean;
   sx?: SxProps<Theme>;
   ariaLabel?: string;
+  disabled?: boolean;
   /** Bornes de saisie. Une frappe qui en sortirait n'est pas prise : le champ
    *  reste ce qu'il était, plutôt que d'accepter une valeur que le serveur
    *  refusera. Ce refus au clavier ne convient qu'à un intervalle dont aucune
@@ -83,6 +85,7 @@ export function DecimalField({
       error={error}
       helperText={helperText}
       fullWidth={fullWidth}
+      disabled={disabled}
       inputProps={{ inputMode: "decimal", ...(ariaLabel ? { "aria-label": ariaLabel } : {}) }}
       placeholder={placeholder}
       onChange={(e) => {

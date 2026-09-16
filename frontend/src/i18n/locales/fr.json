@@ -19,7 +19,8 @@
     "directorsReview": "Revue des performances (Directeurs)",
     "performances": "Performance ID",
     "cohesionSurvey": "Mon avis sur ma direction",
-    "cohesionSurveyOrg": "Mon avis sur mon organisation"
+    "cohesionSurveyOrg": "Mon avis sur mon organisation",
+    "managerialSelfAssessment": "Auto-évaluation managériale"
   },
   "common": {
     "logout": "Déconnexion",
@@ -935,5 +936,115 @@
     "cardSubtitle": "Vos identifiants ID-PMC ouvrent l'ensemble du canevas.",
     "back": "Revenir au canevas",
     "secure": "Connexion chiffrée en TLS 256 bits"
+  },
+  "managerialSelfAssessment": {
+    "title": "Auto-évaluation managériale",
+    "subtitle": "Cinq fiches de compétences managériales, notées par vous-même pour la campagne sélectionnée.",
+    "campaignLabel": "Campagne",
+    "noCampaign": "Aucune campagne d'évaluation disponible pour l'instant.",
+    "selectCampaign": "Sélectionnez une campagne pour commencer.",
+    "closedCampaign": "Cette campagne est clôturée : lecture seule.",
+    "icLabel": "IC",
+    "ocLabel": "OC",
+    "totalCol": "Total",
+    "objectiveCol": "Obj.",
+    "unset": "—",
+    "save": "Enregistrer",
+    "update": "Mettre à jour",
+    "saved": "Auto-évaluation enregistrée.",
+    "saveFailed": "L'enregistrement a échoué.",
+    "nomManager": "Nom Manager",
+    "position": "Position",
+    "scaleFrequency": {
+      "1": "Jamais",
+      "2": "Rarement",
+      "3": "Occasionnellement",
+      "4": "Très souvent",
+      "5": "Toujours"
+    },
+    "scaleLevel": {
+      "1": "Très faible",
+      "2": "Faible",
+      "3": "Moyen",
+      "4": "Élevé",
+      "5": "Très élevé"
+    },
+    "categories": {
+      "COMMUNICATION": {
+        "label": "Communication",
+        "items": [
+          "J'investis personnellement pour développer mes compétences en communication (par la lecture, la formation...)",
+          "Lorsque je communique avec mes équipes, je leur explique toujours le POURQUOI pour donner du sens à l'action",
+          "Je passe du temps à préparer chaque communication que je dois faire",
+          "Je me fixe toujours des objectifs clairs et des résultats attendus avant de communiquer",
+          "Je travaille toujours ma communication verbale et ma communication non verbale (gestuelle, posture, silence...)",
+          "J'ai une grande capacité d'écoute reconnue par mes collègues et collaborateurs",
+          "Je communique toujours de manière claire et concise",
+          "Je sais captiver l'attention de mon audience lorsque je communique",
+          "J'essaie toujours de bien analyser et bien connaître ma cible avant de communiquer",
+          "Je fais systématiquement une évaluation de ma communication après l'action pour apprendre de mes erreurs"
+        ]
+      },
+      "ECOUTE": {
+        "label": "Écoute",
+        "items": [
+          "Je travaille sérieusement ma capacité d'écoute pour bien comprendre mes interlocuteurs/collaborateurs",
+          "Je prends le temps d'écouter mes proches/collaborateurs parler de leurs difficultés professionnelles",
+          "Je demande à mes proches/collaborateurs de me faire un feedback sur ma capacité d'écoute pour m'améliorer",
+          "Lorsque j'écoute, je cesse toute autre activité pour me consacrer entièrement à la discussion",
+          "Lorsque j'écoute, je prends systématiquement des notes de ce qui est dit",
+          "Je laisse toujours mon interlocuteur s'exprimer, sans jamais l'interrompre",
+          "Lorsque j'écoute, j'observe attentivement la communication non verbale de mon interlocuteur (gestuelle, posture, intonation...)",
+          "J'acquiesce de la tête et je relance pour montrer que je suis attentivement mon interlocuteur",
+          "Lorsque j'écoute, je garde le contact visuel avec mon interlocuteur pour lui montrer que je l'écoute attentivement",
+          "Après avoir écouté mon interlocuteur, je reformule ce qu'il a dit pour m'assurer que j'ai bien compris"
+        ]
+      },
+      "MOTIVATION": {
+        "label": "Motivation des équipes",
+        "items": [
+          "Je prends le temps de rencontrer tous mes collaborateurs pour faire un tour d'horizon de l'activité",
+          "Je suis attentif aux comportements inhabituels de mes collaborateurs",
+          "Je prends le temps d'écouter mes collaborateurs parler de leurs difficultés personnelles",
+          "Je prends le temps d'écouter mes collaborateurs parler de leurs difficultés professionnelles",
+          "J'écoute mes collaborateurs parler de leurs réussites professionnelles",
+          "Je prends le temps de les complimenter pour leurs réalisations professionnelles",
+          "Je rencontre mes collaborateurs individuellement après une action à enjeu élevé",
+          "Je célèbre systématiquement les succès et réalisations avec mon équipe",
+          "Je rencontre chaque collaborateur chaque année pour un entretien individuel",
+          "Lors de cet entretien, je m'appuie d'abord sur les points forts du collaborateur"
+        ]
+      },
+      "DELEGATION": {
+        "label": "Délégation",
+        "items": [
+          "Je responsabilise mes collaborateurs d'année en année en leur confiant plus de responsabilités",
+          "Je prépare mes collaborateurs à assumer de nouvelles tâches en leur expliquant le \"POURQUOI\" je leur délègue",
+          "Je définis clairement ce que j'attends de mon collaborateur en lui déléguant des tâches",
+          "Avant de déléguer, je m'assure que le collaborateur a les moyens et la compétence pour faire le travail que je délègue",
+          "Je mets en place un plan de suivi fréquent de la réalisation de ce que je délègue",
+          "Je consacre à chacun de mes collaborateurs au moins 30 min chaque mois pour les coacher one-on-one",
+          "Je permets à mes collaborateurs d'essayer des choses nouvelles, de faire des erreurs et d'apprendre de leurs erreurs",
+          "En cas d'erreur, je reste calme et je m'appuie sur les erreurs commises pour faire progresser le collaborateur",
+          "Lorsque je délègue, j'offre mon soutien aux collaborateurs pour les accompagner dans la réalisation de la tâche",
+          "Lorsque le travail délégué est bien accompli, je prends le temps de féliciter mes collaborateurs"
+        ]
+      },
+      "TEMPS_PRIORITES": {
+        "label": "Gestion du temps et des priorités",
+        "items": [
+          "Capacité à prioriser mes tâches en utilisant la matrice Important-Urgent",
+          "Capacité à planifier efficacement les journées de travail et organiser les activités en tenant compte des ressources disponibles",
+          "Capacité à gérer efficacement les interruptions fréquentes (appels urgents, escalades, etc.) sans compromettre les priorités",
+          "Capacité à déléguer les tâches appropriées aux agents pour me concentrer sur les activités à plus forte valeur",
+          "Capacité à suivre rigoureusement les délais de livraison des projets ou des tâches critiques sans retard",
+          "Maîtrise des outils numériques de gestion du temps (ex. Trello, Microsoft Planner) pour suivre les tâches",
+          "Capacité à anticiper les besoins et les problèmes potentiels afin de planifier à l'avance et éviter des situations de crise",
+          "Capacité à organiser et animer des réunions courtes, ciblées et productives, avec des objectifs et des résultats clairs",
+          "Aptitude à équilibrer les responsabilités stratégiques (gestion des équipes) et opérationnelles (escalades, suivi des KPI)",
+          "Habileté à réorganiser rapidement le planning pour faire face aux urgences et imprévus, en maintenant la productivité globale"
+        ]
+      }
+    }
   }
 }

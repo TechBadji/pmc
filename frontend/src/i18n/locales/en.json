@@ -19,7 +19,8 @@
     "performances": "Performance ID",
     "logs": "Logs",
     "cohesionSurvey": "My view on my division",
-    "cohesionSurveyOrg": "My view on my organisation"
+    "cohesionSurveyOrg": "My view on my organisation",
+    "managerialSelfAssessment": "Managerial self-assessment"
   },
   "common": {
     "logout": "Log out",
@@ -935,5 +936,115 @@
     "cardSubtitle": "Your ID-PMC credentials open the whole canvas.",
     "back": "Back to the canvas",
     "secure": "Connection encrypted with 256-bit TLS"
+  },
+  "managerialSelfAssessment": {
+    "title": "Managerial self-assessment",
+    "subtitle": "Five managerial competency sheets, self-rated for the selected campaign.",
+    "campaignLabel": "Campaign",
+    "noCampaign": "No evaluation campaign available yet.",
+    "selectCampaign": "Select a campaign to get started.",
+    "closedCampaign": "This campaign is closed: read-only.",
+    "icLabel": "IC",
+    "ocLabel": "OC",
+    "totalCol": "Total",
+    "objectiveCol": "Target",
+    "unset": "—",
+    "save": "Save",
+    "update": "Update",
+    "saved": "Self-assessment saved.",
+    "saveFailed": "Save failed.",
+    "nomManager": "Manager name",
+    "position": "Position",
+    "scaleFrequency": {
+      "1": "Never",
+      "2": "Rarely",
+      "3": "Sometimes",
+      "4": "Very often",
+      "5": "Always"
+    },
+    "scaleLevel": {
+      "1": "Very low",
+      "2": "Low",
+      "3": "Medium",
+      "4": "High",
+      "5": "Very high"
+    },
+    "categories": {
+      "COMMUNICATION": {
+        "label": "Communication",
+        "items": [
+          "I personally invest in developing my communication skills (reading, training...)",
+          "When I communicate with my teams, I always explain the WHY to give meaning to the action",
+          "I spend time preparing every communication I need to deliver",
+          "I always set clear objectives and expected outcomes before communicating",
+          "I always work on both my verbal and non-verbal communication (gestures, posture, silence...)",
+          "I have a strong listening ability recognized by my colleagues and team members",
+          "I always communicate clearly and concisely",
+          "I know how to capture my audience's attention when I communicate",
+          "I always try to properly analyze and understand my audience before communicating",
+          "I systematically review my communication after the fact to learn from my mistakes"
+        ]
+      },
+      "ECOUTE": {
+        "label": "Listening",
+        "items": [
+          "I work seriously on my listening skills to properly understand those around me and my team members",
+          "I take the time to listen to those close to me and my team members talk about their professional difficulties",
+          "I ask those close to me and my team members for feedback on my listening skills so I can improve",
+          "When I listen, I stop any other activity to fully focus on the conversation",
+          "When I listen, I systematically take notes on what is being said",
+          "I always let the person speaking express themselves, without ever interrupting them",
+          "When I listen, I pay close attention to the other person's non-verbal communication (gestures, posture, tone...)",
+          "I nod and prompt to show that I am attentively listening to the other person",
+          "When I listen, I keep eye contact with the other person to show them I am listening attentively",
+          "After listening to the other person, I paraphrase what they said to make sure I understood correctly"
+        ]
+      },
+      "MOTIVATION": {
+        "label": "Team motivation",
+        "items": [
+          "I take the time to meet all my team members to get an overview of the activity",
+          "I am attentive to unusual behaviour among my team members",
+          "I take the time to listen to my team members talk about their personal difficulties",
+          "I take the time to listen to my team members talk about their professional difficulties",
+          "I listen to my team members talk about their professional successes",
+          "I take the time to compliment them on their professional achievements",
+          "I meet my team members individually after a high-stakes action",
+          "I systematically celebrate successes and achievements with my team",
+          "I meet each team member every year for an individual review",
+          "During that review, I start by relying on the team member's strengths"
+        ]
+      },
+      "DELEGATION": {
+        "label": "Delegation",
+        "items": [
+          "I give my team members more responsibility year after year",
+          "I prepare my team members to take on new tasks by explaining the \"WHY\" behind the delegation",
+          "I clearly define what I expect from my team member when delegating tasks",
+          "Before delegating, I make sure the team member has the means and the skills to do the work I'm delegating",
+          "I put in place a frequent follow-up plan for what I delegate",
+          "I dedicate at least 30 minutes a month to each of my team members for one-on-one coaching",
+          "I let my team members try new things, make mistakes, and learn from their mistakes",
+          "When a mistake happens, I stay calm and use it to help the team member improve",
+          "When I delegate, I offer my support to team members to help them accomplish the task",
+          "When delegated work is completed well, I take the time to congratulate my team members"
+        ]
+      },
+      "TEMPS_PRIORITES": {
+        "label": "Time and priority management",
+        "items": [
+          "Ability to prioritize my tasks using the Important-Urgent matrix",
+          "Ability to plan working days effectively and organize activities based on available resources",
+          "Ability to handle frequent interruptions (urgent calls, escalations, etc.) effectively without compromising priorities",
+          "Ability to delegate appropriate tasks to agents to focus on higher-value activities",
+          "Ability to rigorously track delivery deadlines for projects or critical tasks without delay",
+          "Mastery of digital time-management tools (e.g. Trello, Microsoft Planner) to track tasks",
+          "Ability to anticipate needs and potential problems in order to plan ahead and avoid crisis situations",
+          "Ability to organize and run short, focused, productive meetings with clear objectives and outcomes",
+          "Ability to balance strategic responsibilities (team management) and operational ones (escalations, KPI tracking)",
+          "Ability to quickly reorganize the schedule to handle urgent and unforeseen situations while maintaining overall productivity"
+        ]
+      }
+    }
   }
 }

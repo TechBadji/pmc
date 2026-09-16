@@ -11,6 +11,7 @@ from .models import (
     Evaluation,
     EvaluationCampaign,
     EvaluationSkillScore,
+    ManagerialSelfAssessment,
     PerformanceObjective,
     SkillNote,
     recompute_evaluation_scores,
@@ -221,6 +222,103 @@ class EvaluationWriteSerializer(DecimalCommaMixin, serializers.ModelSerializer):
                 for item in scores
             ]
         )
+
+
+class ManagerialSelfAssessmentSerializer(DecimalCommaMixin, serializers.ModelSerializer):
+    """Fiche d'auto-évaluation managériale : le manager ne note que lui-même,
+    `user` est donc forcé côté serveur (jamais fourni par le client) — même
+    principe que `respondent` sur `CohesionResponse`."""
+
+    campaign_name = serializers.CharField(source="campaign.name", read_only=True)
+    campaign_is_closed = serializers.BooleanField(source="campaign.is_closed", read_only=True)
+
+    class Meta:
+        model = ManagerialSelfAssessment
+        fields = [
+            "id", "user", "campaign", "campaign_name", "campaign_is_closed",
+            "category", "scores", "ic_score", "oc_score", "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "user", "ic_score", "oc_score", "created_at", "updated_at"]
+
+    def validate_campaign(self, campaign):
+        already_on_this_campaign = self.instance and self.instance.campaign_id == campaign.id
+        if campaign.is_closed and not already_on_this_campaign:
+            raise serializers.ValidationError("Cette campagne d'évaluation est clôturée.")
+        return campaign
+
+    def validate_scores(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Les notes doivent être une liste.")
+        seen_orders = set()
+        cleaned = []
+        for entry in value:
+            if not isinstance(entry, dict) or "order" not in entry:
+                raise serializers.ValidationError("Chaque note porte un rang (order).")
+            order = entry.get("order")
+            if not isinstance(order, int) or not (1 <= order <= 10) or order in seen_orders:
+                raise serializers.ValidationError("Rang de question invalide ou dupliqué.")
+            seen_orders.add(order)
+            cleaned_entry = {"order": order}
+            for field in ("score", "objective_score"):
+                raw = entry.get(field)
+                if raw in (None, ""):
+                    cleaned_entry[field] = None
+                    continue
+                raw = normalize_decimal(raw)
+                try:
+                    num = float(raw)
+                except (TypeError, ValueError):
+                    raise serializers.ValidationError(f"Valeur invalide pour {field}.")
+                if not 1 <= num <= 5:
+                    raise serializers.ValidationError(f"{field} doit être compris entre 1 et 5 (reçu {num}).")
+                cleaned_entry[field] = round(num, 1)
+            cleaned.append(cleaned_entry)
+        return cleaned
+
+    def validate(self, attrs):
+        actor = self.context["request"].user
+        campaign = attrs.get("campaign", getattr(self.instance, "campaign", None))
+        require_same_company(actor, campaign=campaign)
+        category = attrs.get("category", getattr(self.instance, "category", None))
+        # `user` est read_only (forcé au serveur) : le UniqueTogetherValidator
+        # que DRF génère automatiquement à partir de `unique_together` exclut
+        # les champs read_only de son contrôle, donc ne voit jamais ce
+        # doublon — sans ce contrôle explicite, une seconde fiche pour la
+        # même campagne remontait un 500 (IntegrityError brut) au lieu d'un
+        # message clair.
+        duplicate = ManagerialSelfAssessment.objects.filter(
+            user=actor, campaign=campaign, category=category
+        )
+        if self.instance:
+            duplicate = duplicate.exclude(pk=self.instance.pk)
+        if duplicate.exists():
+            raise serializers.ValidationError(
+                {"category": "Une auto-évaluation existe déjà pour cette fiche et cette campagne."}
+            )
+        return attrs
+
+    def create(self, validated_data):
+        validated_data["user"] = self.context["request"].user
+        instance = super().create(validated_data)
+        self._recompute(instance)
+        return instance
+
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        self._recompute(instance)
+        return instance
+
+    @staticmethod
+    def _recompute(instance):
+        """Même logique que `TeamCohesionAnalysis._sync_criteria` : IC/OC sont
+        des colonnes mises en cache, recalculées à chaque écriture plutôt que
+        lues à l'affichage — cette fiche est consultée aussi souvent que les
+        autres indices ID-3A/cohésion."""
+        scores = [e["score"] for e in instance.scores if e.get("score") is not None]
+        objectives = [e["objective_score"] for e in instance.scores if e.get("objective_score") is not None]
+        instance.ic_score = round(sum(scores) / len(scores), 1) if scores else 0
+        instance.oc_score = round(sum(objectives) / len(objectives), 1) if objectives else 0
+        instance.save(update_fields=["ic_score", "oc_score"])
 
 
 class PerformanceObjectiveSerializer(DecimalCommaMixin, serializers.ModelSerializer):

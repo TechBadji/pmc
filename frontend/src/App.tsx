@@ -30,6 +30,7 @@ const DirectorsPerformanceReviewPage = lazy(() => import("@/pages/DirectorsPerfo
 const EvaluationCampaignsPage = lazy(() => import("@/pages/EvaluationCampaignsPage"));
 const EvaluationFormPage = lazy(() => import("@/pages/EvaluationFormPage"));
 const EvaluationsPage = lazy(() => import("@/pages/EvaluationsPage"));
+const ManagerialSelfAssessmentPage = lazy(() => import("@/pages/ManagerialSelfAssessmentPage"));
 const ID3AMatrixPage = lazy(() => import("@/pages/ID3AMatrixPage"));
 const LogsPage = lazy(() => import("@/pages/LogsPage"));
 const MyPerformancePage = lazy(() => import("@/pages/MyPerformancePage"));
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="/evaluations" element={<EvaluationsPage />} />
           <Route path="/evaluations/new" element={<EvaluationFormPage />} />
           <Route path="/evaluations/:id" element={<EvaluationFormPage />} />
+          <Route path="/managerial-self-assessment" element={<ManagerialSelfAssessmentPage />} />
           <Route path="/directors-performance-review" element={<DirectorsPerformanceReviewPage />} />
           <Route path="/action-plans" element={<ActionPlansPage />} />
           <Route path="/performances" element={<PerformancePage />} />

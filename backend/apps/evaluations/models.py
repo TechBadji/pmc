@@ -344,6 +344,74 @@ class PerformanceObjective(models.Model):
         return round(ratio * 100, 1)
 
 
+class ManagerialSelfAssessment(models.Model):
+    """Auto-évaluation d'un manager sur une compétence managériale (fiche
+    ID-PMC « AUTO-EVALUATION COMPETENCES MANAGERIALES »), pour une campagne.
+
+    Cinq fiches fixes (Communication, Écoute, Motivation des équipes,
+    Délégation, Gestion du temps et des priorités), chacune notée par son
+    propre manager sur lui-même — à la différence de `Evaluation`, il n'y a
+    pas d'évaluateur distinct. Les 10 questions de chaque fiche sont fixes et
+    dupliquées côté front (même principe que les critères de cohésion), mais
+    stockées ici par rang plutôt que par libellé : contrairement aux critères
+    de cohésion, ces questions ne nomment jamais l'entreprise, un entier
+    suffit comme clé et évite de dupliquer 50 phrases en base à chaque
+    sauvegarde.
+    """
+
+    class Category(models.TextChoices):
+        COMMUNICATION = "COMMUNICATION", "Communication"
+        ECOUTE = "ECOUTE", "Écoute"
+        MOTIVATION = "MOTIVATION", "Motivation des équipes"
+        DELEGATION = "DELEGATION", "Délégation"
+        TEMPS_PRIORITES = "TEMPS_PRIORITES", "Gestion du temps et des priorités"
+
+    user = models.ForeignKey(
+        "core.User",
+        verbose_name="Manager",
+        on_delete=models.CASCADE,
+        related_name="managerial_self_assessments",
+    )
+    campaign = models.ForeignKey(
+        "evaluations.EvaluationCampaign",
+        verbose_name="Campagne",
+        on_delete=models.PROTECT,
+        related_name="managerial_self_assessments",
+    )
+    category = models.CharField("Compétence", max_length=20, choices=Category.choices)
+    scores = models.JSONField(
+        "Notes par question",
+        default=list,
+        blank=True,
+        help_text="Liste de {order, score, objective_score} — order 1-10, score/objective_score 1-5.",
+    )
+    ic_score = models.DecimalField(
+        "IC — Indice de Compétence",
+        max_digits=3,
+        decimal_places=1,
+        default=0,
+        help_text="Moyenne des notes — recalculée automatiquement.",
+    )
+    oc_score = models.DecimalField(
+        "OC — Objectif de Compétence",
+        max_digits=3,
+        decimal_places=1,
+        default=0,
+        help_text="Moyenne des objectifs renseignés — recalculée automatiquement.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Auto-évaluation managériale"
+        verbose_name_plural = "Auto-évaluations managériales"
+        ordering = ["-campaign__start_date", "category"]
+        unique_together = ("user", "campaign", "category")
+
+    def __str__(self):
+        return f"{self.user} — {self.get_category_display()} ({self.campaign.name})"
+
+
 def recompute_evaluation_scores(evaluation):
     """Reporte la fiche d'objectifs dans les deux scores de l'évaluation.
 

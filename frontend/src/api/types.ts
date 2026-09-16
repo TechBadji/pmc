@@ -195,6 +195,33 @@ export interface SkillNote {
   score: number | null;
 }
 
+export type ManagerialAssessmentCategory =
+  | "COMMUNICATION"
+  | "ECOUTE"
+  | "MOTIVATION"
+  | "DELEGATION"
+  | "TEMPS_PRIORITES";
+
+export interface ManagerialSelfAssessmentScoreEntry {
+  order: number;
+  score: number | null;
+  objective_score: number | null;
+}
+
+export interface ManagerialSelfAssessment {
+  id: number;
+  user: number;
+  campaign: number;
+  campaign_name: string;
+  campaign_is_closed: boolean;
+  category: ManagerialAssessmentCategory;
+  scores: ManagerialSelfAssessmentScoreEntry[];
+  ic_score: string;
+  oc_score: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface EvaluationCampaign {
   id: number;
   company: number;

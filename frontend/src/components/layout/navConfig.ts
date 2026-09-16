@@ -16,7 +16,8 @@ export interface NavItem {
     | "lockReset"
     | "history"
     | "event"
-    | "insights";
+    | "insights"
+    | "assignmentInd";
 }
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
@@ -37,6 +38,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { labelKey: "nav.talentsDashboard", path: "/talents-dashboard", icon: "insights" },
     { labelKey: "nav.evaluationCampaigns", path: "/evaluation-campaigns", icon: "event" },
     { labelKey: "nav.evaluations", path: "/evaluations", icon: "assignment" },
+    { labelKey: "nav.managerialSelfAssessment", path: "/managerial-self-assessment", icon: "assignmentInd" },
     { labelKey: "nav.actionPlans", path: "/action-plans", icon: "assignment" },
     { labelKey: "nav.performances", path: "/performances", icon: "person" },
     { labelKey: "nav.passwordRequests", path: "/password-requests", icon: "lockReset" },
@@ -48,6 +50,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { labelKey: "nav.id3aMatrix", path: "/id3a-matrix", icon: "scatterPlot" },
     { labelKey: "nav.talentsDashboard", path: "/talents-dashboard", icon: "insights" },
     { labelKey: "nav.evaluations", path: "/evaluations", icon: "assignment" },
+    { labelKey: "nav.managerialSelfAssessment", path: "/managerial-self-assessment", icon: "assignmentInd" },
     { labelKey: "nav.actionPlans", path: "/action-plans", icon: "assignment" },
     { labelKey: "nav.performances", path: "/performances", icon: "person" },
   ],

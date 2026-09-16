@@ -18,6 +18,7 @@ from apps.core.scoping import managed_department_ids
 from .models import (
     Evaluation,
     EvaluationCampaign,
+    ManagerialSelfAssessment,
     PerformanceObjective,
     SkillNote,
     recompute_evaluation_scores,
@@ -26,6 +27,7 @@ from .serializers import (
     EvaluationCampaignSerializer,
     EvaluationSerializer,
     EvaluationWriteSerializer,
+    ManagerialSelfAssessmentSerializer,
     PerformanceObjectiveSerializer,
     SkillNoteSerializer,
 )
@@ -265,6 +267,47 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             company=target_user.company,
         )
         return Response(SkillNoteSerializer(SkillNote.objects.filter(evaluation=evaluation), many=True).data)
+
+
+class ManagerialSelfAssessmentViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
+    """Auto-évaluation managériale : chacun ne voit et n'édite que la sienne —
+    à la différence des évaluations Hard/Soft Skills, ni un Company Admin ni
+    un Manager ne notent quelqu'un d'autre ici. `IsCompanyAdminOrManager`
+    couvre déjà la portée fonctionnelle (fiche réservée à l'encadrement) ;
+    le filtrage par `user=request.user` ci-dessous est ce qui empêche un
+    manager de lire l'auto-évaluation d'un autre manager de son entreprise."""
+
+    queryset = ManagerialSelfAssessment.objects.select_related("user", "campaign")
+    serializer_class = ManagerialSelfAssessmentSerializer
+    company_lookup = "user__company_id"
+    filterset_fields = ["campaign", "category"]
+
+    def get_permissions(self):
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            return [IsCompanyAdminOrManager()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        assessment = serializer.save()
+        log_event(
+            self.request.user,
+            "managerial_self_assessment.saved",
+            f"a enregistré son auto-évaluation « {assessment.get_category_display()} » ({assessment.campaign.name}).",
+            company=self.request.user.company,
+        )
+
+    def perform_update(self, serializer):
+        assessment = serializer.save()
+        log_event(
+            self.request.user,
+            "managerial_self_assessment.saved",
+            f"a mis à jour son auto-évaluation « {assessment.get_category_display()} » ({assessment.campaign.name}).",
+            company=self.request.user.company,
+        )
 
 
 class PerformanceObjectiveViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
