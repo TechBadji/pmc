@@ -19,8 +19,7 @@
     "directorsReview": "Revue des performances (Directeurs)",
     "performances": "Performance ID",
     "cohesionSurvey": "Mon avis sur ma direction",
-    "cohesionSurveyOrg": "Mon avis sur mon organisation",
-    "managerialSelfAssessment": "Auto-évaluation managériale"
+    "cohesionSurveyOrg": "Mon avis sur mon organisation"
   },
   "common": {
     "logout": "Déconnexion",
@@ -883,6 +882,7 @@
     "viewId3a": "Évaluations ID-3A",
     "viewEmployee": "Objectifs — employé",
     "viewTeam": "Objectifs — équipe",
+    "viewManagerial": "Auto-évaluation managériale",
     "pickPerson": "Choisissez un collaborateur et une période pour ouvrir sa fiche.",
     "pickTeam": "Choisissez une équipe et une période pour ouvrir la fiche.",
     "noEvaluation": "Aucune évaluation pour ce collaborateur sur cette période : la fiche s'ouvrira dès qu'elle existera.",

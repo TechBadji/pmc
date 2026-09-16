@@ -19,8 +19,7 @@
     "performances": "Performance ID",
     "logs": "Logs",
     "cohesionSurvey": "My view on my division",
-    "cohesionSurveyOrg": "My view on my organisation",
-    "managerialSelfAssessment": "Managerial self-assessment"
+    "cohesionSurveyOrg": "My view on my organisation"
   },
   "common": {
     "logout": "Log out",
@@ -883,6 +882,7 @@
     "viewId3a": "ID-3A evaluations",
     "viewEmployee": "Objectives — employee",
     "viewTeam": "Objectives — team",
+    "viewManagerial": "Managerial self-assessment",
     "pickPerson": "Pick a team member and a period to open their sheet.",
     "pickTeam": "Pick a team and a period to open the sheet.",
     "noEvaluation": "No evaluation for this person in this period: the sheet opens as soon as one exists.",

@@ -36,6 +36,7 @@ import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, EvaluationCampaign, Paginated, SkillScore, UserRecord } from "@/api/types";
 import PageHeader from "@/components/layout/PageHeader";
+import ManagerialSelfAssessmentPanel from "@/components/ManagerialSelfAssessmentPanel";
 import ObjectivesSheetPanel from "@/components/objectives/ObjectivesSheetPanel";
 import StatCard from "@/components/StatCard";
 import StrengthsWeaknesses from "@/components/StrengthsWeaknesses";
@@ -95,7 +96,7 @@ export default function EvaluationsPage() {
   const [loadError, setLoadError] = useState(false);
   // Trois lectures d'une même campagne : l'évaluation ID-3A, la fiche
   // d'objectifs d'un employé, celle de son équipe.
-  const [view, setView] = useState<"id3a" | "employee" | "team">("id3a");
+  const [view, setView] = useState<"id3a" | "employee" | "team" | "managerial">("id3a");
   const [departments, setDepartments] = useState<Department[]>([]);
 
   function load() {
@@ -286,19 +287,31 @@ export default function EvaluationsPage() {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
         <PageHeader
-          title={
+          title={t(
             view === "id3a"
-              ? t("evaluations.title")
-              : t(view === "employee" ? "objectivesSheet.title" : "objectivesSheet.titleTeam")
-          }
+              ? "evaluations.title"
+              : view === "employee"
+                ? "objectivesSheet.title"
+                : view === "team"
+                  ? "objectivesSheet.titleTeam"
+                  : "managerialSelfAssessment.title"
+          )}
           view={t(
             view === "id3a"
               ? "objectivesSheet.viewId3a"
               : view === "employee"
                 ? "objectivesSheet.viewEmployee"
-                : "objectivesSheet.viewTeam"
+                : view === "team"
+                  ? "objectivesSheet.viewTeam"
+                  : "objectivesSheet.viewManagerial"
           )}
-          subtitle={view === "id3a" ? t("evaluations.clickHint") : t("objectivesSheet.sheetHint")}
+          subtitle={t(
+            view === "id3a"
+              ? "evaluations.clickHint"
+              : view === "managerial"
+                ? "managerialSelfAssessment.subtitle"
+                : "objectivesSheet.sheetHint"
+          )}
           parent={
             searchParams.get("campaign")
               ? { label: t("nav.evaluationCampaigns"), to: "/evaluation-campaigns" }
@@ -338,10 +351,11 @@ export default function EvaluationsPage() {
           <ToggleButton value="id3a">{t("objectivesSheet.viewId3a")}</ToggleButton>
           <ToggleButton value="employee">{t("objectivesSheet.viewEmployee")}</ToggleButton>
           <ToggleButton value="team">{t("objectivesSheet.viewTeam")}</ToggleButton>
+          <ToggleButton value="managerial">{t("objectivesSheet.viewManagerial")}</ToggleButton>
         </ToggleButtonGroup>
       </Stack>
 
-      {view !== "id3a" && (
+      {(view === "employee" || view === "team") && (
         <ObjectivesSheetPanel
           mode={view}
           people={members}
@@ -352,6 +366,8 @@ export default function EvaluationsPage() {
           companyName={user?.company_name ?? ""}
         />
       )}
+
+      {view === "managerial" && <ManagerialSelfAssessmentPanel />}
 
       {view === "id3a" && loadError && (
         <Alert

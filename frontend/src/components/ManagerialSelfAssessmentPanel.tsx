@@ -21,7 +21,6 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import { DecimalField } from "@/components/inputs/DecimalField";
-import PageHeader from "@/components/layout/PageHeader";
 import { cohesionColor } from "@/theme";
 import type { EvaluationCampaign, ManagerialSelfAssessment, Paginated } from "@/api/types";
 import { useManagerialAssessmentCategories } from "@/utils/managerialSelfAssessment";
@@ -83,11 +82,16 @@ function emptyState(): CategoryState {
  * chacune notée par le manager sur lui-même pour la campagne sélectionnée —
  * une ligne `ManagerialSelfAssessment` par (campagne, fiche).
  *
+ * Panneau intégré à la page Évaluations (bandeau de vues ID-3A / Objectifs
+ * individuels / Objectifs équipe / Auto-évaluation managériale), sur le
+ * modèle d'`ObjectivesSheetPanel` : pas d'entête propre, la page hôte porte
+ * déjà le titre et le sous-titre pour la vue active.
+ *
  * Le chargement se fait par campagne (toutes les fiches d'un coup) plutôt
  * que fiche par fiche : changer d'onglet ne redemande rien au serveur, un
  * changement de campagne recharge les cinq d'un coup.
  */
-export default function ManagerialSelfAssessmentPage() {
+export default function ManagerialSelfAssessmentPanel() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   const categories = useManagerialAssessmentCategories();
@@ -195,18 +199,11 @@ export default function ManagerialSelfAssessmentPage() {
   }
 
   if (loadError) {
-    return (
-      <Stack spacing={3} maxWidth={1180}>
-        <PageHeader title={t("managerialSelfAssessment.title")} />
-        <Alert severity="error">{t("managerialSelfAssessment.saveFailed")}</Alert>
-      </Stack>
-    );
+    return <Alert severity="error">{t("managerialSelfAssessment.saveFailed")}</Alert>;
   }
 
   return (
-    <Stack spacing={3} maxWidth={1180}>
-      <PageHeader title={t("managerialSelfAssessment.title")} subtitle={t("managerialSelfAssessment.subtitle")} />
-
+    <Stack spacing={3}>
       <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
         <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap" useFlexGap>
           <Stack direction="row" spacing={2}>

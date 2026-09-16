@@ -1,4 +1,3 @@
-import AssignmentIndOutlinedIcon from "@mui/icons-material/AssignmentIndOutlined";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
@@ -60,7 +59,6 @@ const ICONS: Record<NavItem["icon"], React.ReactNode> = {
   insights: <InsightsOutlinedIcon />,
   scatterPlot: <ScatterPlotOutlinedIcon />,
   assignment: <AssignmentOutlinedIcon />,
-  assignmentInd: <AssignmentIndOutlinedIcon />,
   person: <PersonOutlineIcon />,
   school: <SchoolOutlinedIcon />,
   upload: <UploadFileOutlinedIcon />,
