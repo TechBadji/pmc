@@ -412,6 +412,65 @@ class ManagerialSelfAssessment(models.Model):
         return f"{self.user} — {self.get_category_display()} ({self.campaign.name})"
 
 
+class MonkeyManagementAssessment(models.Model):
+    """Auto-diagnostic ID-PMC « Monkey Management » : la capacité d'un manager
+    à déléguer, responsabiliser et développer l'autonomie de son équipe, pour
+    une campagne donnée.
+
+    Une seule fiche fixe de 10 affirmations (contre 5 fiches pour
+    `ManagerialSelfAssessment`), sans colonne objectif : le score est une
+    somme sur 50 (pas une moyenne), lue par palier d'interprétation plutôt
+    que par indice continu. S'y ajoutent cinq questions de débrief qualitatif
+    à texte libre — la partie "plan d'action" de la fiche papier, sans
+    équivalent noté ailleurs dans l'application.
+    """
+
+    user = models.ForeignKey(
+        "core.User",
+        verbose_name="Manager",
+        on_delete=models.CASCADE,
+        related_name="monkey_management_assessments",
+    )
+    campaign = models.ForeignKey(
+        "evaluations.EvaluationCampaign",
+        verbose_name="Campagne",
+        on_delete=models.PROTECT,
+        related_name="monkey_management_assessments",
+    )
+    scores = models.JSONField(
+        "Notes par affirmation",
+        default=list,
+        blank=True,
+        help_text="Liste de {order, score} — order 1-10, score 1-5 (entier).",
+    )
+    total_score = models.PositiveSmallIntegerField(
+        "Score total (/50)",
+        default=0,
+        help_text="Somme des 10 notes — recalculée automatiquement.",
+    )
+    monkeys = models.JSONField(
+        "Les trois \"monkeys\" portés à tort",
+        default=list,
+        blank=True,
+        help_text="Jusqu'à 3 réponses courtes.",
+    )
+    why_accepted = models.TextField("Pourquoi les avoir acceptés", blank=True)
+    return_to_whom = models.TextField("À qui les rendre", blank=True)
+    behavior_to_change = models.TextField("Comportement à changer pour ne pas les récupérer", blank=True)
+    next_responsibility = models.TextField("Responsabilité supplémentaire à confier cette semaine", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Auto-diagnostic Monkey Management"
+        verbose_name_plural = "Auto-diagnostics Monkey Management"
+        ordering = ["-campaign__start_date"]
+        unique_together = ("user", "campaign")
+
+    def __str__(self):
+        return f"{self.user} — Monkey Management ({self.campaign.name})"
+
+
 def recompute_evaluation_scores(evaluation):
     """Reporte la fiche d'objectifs dans les deux scores de l'évaluation.
 

@@ -883,6 +883,7 @@
     "viewEmployee": "Objectifs — employé",
     "viewTeam": "Objectifs — équipe",
     "viewManagerial": "Auto-évaluation managériale",
+    "viewMonkeyManagement": "Monkey Management",
     "pickPerson": "Choisissez un collaborateur et une période pour ouvrir sa fiche.",
     "pickTeam": "Choisissez une équipe et une période pour ouvrir la fiche.",
     "noEvaluation": "Aucune évaluation pour ce collaborateur sur cette période : la fiche s'ouvrira dès qu'elle existera.",
@@ -1045,6 +1046,80 @@
           "Habileté à réorganiser rapidement le planning pour faire face aux urgences et imprévus, en maintenant la productivité globale"
         ]
       }
+    }
+  },
+  "monkeyManagement": {
+    "title": "ID-PMC — Monkey Management",
+    "subtitle": "Diagnostic de la capacité à déléguer, responsabiliser et développer l'autonomie de l'équipe.",
+    "objectiveLabel": "Objectif",
+    "objectiveText": "Évaluer dans quelle mesure vous savez maintenir les responsabilités au bon niveau, accompagner vos collaborateurs sans reprendre leurs problèmes à leur place, et développer progressivement leur autonomie.",
+    "scaleHint": "1 = Jamais · 2 = Rarement · 3 = Parfois · 4 = Souvent · 5 = Toujours",
+    "scale": {
+      "1": "Jamais",
+      "2": "Rarement",
+      "3": "Parfois",
+      "4": "Souvent",
+      "5": "Toujours"
+    },
+    "statementCol": "Affirmation",
+    "scoreCol": "Score 1-5",
+    "totalLabel": "Score total",
+    "progress": "{{answered}} sur {{total}} affirmations notées",
+    "incomplete": "Notez les dix affirmations pour obtenir votre palier.",
+    "campaignLabel": "Campagne",
+    "noCampaign": "Aucune campagne d'évaluation disponible pour l'instant.",
+    "closedCampaign": "Cette campagne est clôturée : lecture seule.",
+    "save": "Enregistrer",
+    "update": "Mettre à jour",
+    "saved": "Auto-diagnostic enregistré.",
+    "saveFailed": "L'enregistrement a échoué.",
+    "levels": {
+      "EMPOWERING_LEADER": {
+        "title": "Empowering Leader",
+        "range": "41-50",
+        "subtitle": "Très bonne maîtrise du Monkey Management",
+        "description": "Vous maintenez généralement les responsabilités au bon niveau. Vous accompagnez sans créer de dépendance et développez l'autonomie de votre équipe."
+      },
+      "GOOD_DELEGATOR": {
+        "title": "Bon délégateur",
+        "range": "31-40",
+        "subtitle": "Quelques monkeys vous échappent encore",
+        "description": "Votre pratique est globalement saine, mais certaines situations vous conduisent encore à reprendre des responsabilités qui pourraient rester chez vos collaborateurs."
+      },
+      "MONKEY_RISK": {
+        "title": "Monkey Risk",
+        "range": "21-30",
+        "subtitle": "Risque significatif d'accumulation",
+        "description": "Vous récupérez probablement régulièrement les problèmes et actions de vos collaborateurs. Votre volonté d'aider peut progressivement créer surcharge pour vous et dépendance pour eux."
+      },
+      "MONKEY_MAGNET": {
+        "title": "Monkey Magnet",
+        "range": "10-20",
+        "subtitle": "Forte dépendance autour du manager",
+        "description": "Vous êtes probablement devenu le point de passage de trop nombreux problèmes, décisions et actions. Le risque est élevé de devenir le goulot d'étranglement de votre équipe."
+      }
+    },
+    "items": [
+      "Lorsqu'un collaborateur vient me voir avec un problème, je lui demande d'abord ce qu'il a déjà fait et quelles solutions il propose.",
+      "À la fin d'un échange avec un collaborateur, je m'assure que la responsabilité de la prochaine action est clairement attribuée.",
+      "Je résiste à la tentation de dire systématiquement : « Laisse-moi faire », « Envoie-moi le dossier » ou « Je vais m'en occuper ».",
+      "Je distingue clairement les situations où je dois coacher ou soutenir un collaborateur de celles où je dois réellement reprendre la responsabilité.",
+      "Je définis clairement les responsabilités, niveaux d'autonomie et limites de décision de mes collaborateurs.",
+      "Je sais accompagner un collaborateur dans la résolution d'un problème sans faire le travail à sa place.",
+      "Lorsque je délègue une responsabilité, je mets en place un suivi adapté sans tomber dans le micro-management.",
+      "Je challenge régulièrement mes collaborateurs pour qu'ils prennent davantage d'initiatives et proposent eux-mêmes des solutions.",
+      "Mon équipe sait quels problèmes elle doit résoudre elle-même et dans quelles situations elle doit réellement m'escalader une décision.",
+      "Mon absence pendant quelques jours ne bloque pas les décisions ou les activités importantes de mon équipe."
+    ],
+    "debrief": {
+      "title": "Questions de débrief personnel",
+      "hint": "À l'issue du diagnostic, prenez un moment pour répondre — ces réponses ne sont pas notées.",
+      "monkeysLabel": "Quels sont les trois « monkeys » que vous portez aujourd'hui et qui ne devraient pas vous appartenir ?",
+      "monkeyPlaceholder": "Monkey {{n}}",
+      "whyAcceptedLabel": "Pourquoi avez-vous accepté de les prendre ?",
+      "returnToWhomLabel": "À qui devez-vous rendre chacun de ces monkeys ?",
+      "behaviorToChangeLabel": "Quel comportement devez-vous changer pour éviter de les récupérer à nouveau ?",
+      "nextResponsibilityLabel": "Quelle responsabilité supplémentaire pouvez-vous confier à votre équipe dès cette semaine ?"
     }
   }
 }

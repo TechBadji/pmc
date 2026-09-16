@@ -19,6 +19,7 @@ from .models import (
     Evaluation,
     EvaluationCampaign,
     ManagerialSelfAssessment,
+    MonkeyManagementAssessment,
     PerformanceObjective,
     SkillNote,
     recompute_evaluation_scores,
@@ -28,6 +29,7 @@ from .serializers import (
     EvaluationSerializer,
     EvaluationWriteSerializer,
     ManagerialSelfAssessmentSerializer,
+    MonkeyManagementAssessmentSerializer,
     PerformanceObjectiveSerializer,
     SkillNoteSerializer,
 )
@@ -306,6 +308,43 @@ class ManagerialSelfAssessmentViewSet(CompanyScopedQuerySetMixin, viewsets.Model
             self.request.user,
             "managerial_self_assessment.saved",
             f"a mis à jour son auto-évaluation « {assessment.get_category_display()} » ({assessment.campaign.name}).",
+            company=self.request.user.company,
+        )
+
+
+class MonkeyManagementAssessmentViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
+    """Auto-diagnostic Monkey Management : même portée que l'auto-évaluation
+    managériale — chacun ne voit et n'édite que le sien."""
+
+    queryset = MonkeyManagementAssessment.objects.select_related("user", "campaign")
+    serializer_class = MonkeyManagementAssessmentSerializer
+    company_lookup = "user__company_id"
+    filterset_fields = ["campaign"]
+
+    def get_permissions(self):
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            return [IsCompanyAdminOrManager()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        assessment = serializer.save()
+        log_event(
+            self.request.user,
+            "monkey_management_assessment.saved",
+            f"a enregistré son auto-diagnostic Monkey Management ({assessment.campaign.name}).",
+            company=self.request.user.company,
+        )
+
+    def perform_update(self, serializer):
+        assessment = serializer.save()
+        log_event(
+            self.request.user,
+            "monkey_management_assessment.saved",
+            f"a mis à jour son auto-diagnostic Monkey Management ({assessment.campaign.name}).",
             company=self.request.user.company,
         )
 

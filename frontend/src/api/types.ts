@@ -222,6 +222,31 @@ export interface ManagerialSelfAssessment {
   updated_at: string;
 }
 
+export type MonkeyManagementLevel = "EMPOWERING_LEADER" | "GOOD_DELEGATOR" | "MONKEY_RISK" | "MONKEY_MAGNET";
+
+export interface MonkeyManagementScoreEntry {
+  order: number;
+  score: number | null;
+}
+
+export interface MonkeyManagementAssessment {
+  id: number;
+  user: number;
+  campaign: number;
+  campaign_name: string;
+  campaign_is_closed: boolean;
+  scores: MonkeyManagementScoreEntry[];
+  total_score: number;
+  level: MonkeyManagementLevel | null;
+  monkeys: string[];
+  why_accepted: string;
+  return_to_whom: string;
+  behavior_to_change: string;
+  next_responsibility: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface EvaluationCampaign {
   id: number;
   company: number;

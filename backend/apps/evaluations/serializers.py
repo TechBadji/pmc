@@ -12,6 +12,7 @@ from .models import (
     EvaluationCampaign,
     EvaluationSkillScore,
     ManagerialSelfAssessment,
+    MonkeyManagementAssessment,
     PerformanceObjective,
     SkillNote,
     recompute_evaluation_scores,
@@ -319,6 +320,111 @@ class ManagerialSelfAssessmentSerializer(DecimalCommaMixin, serializers.ModelSer
         instance.ic_score = round(sum(scores) / len(scores), 1) if scores else 0
         instance.oc_score = round(sum(objectives) / len(objectives), 1) if objectives else 0
         instance.save(update_fields=["ic_score", "oc_score"])
+
+
+class MonkeyManagementAssessmentSerializer(serializers.ModelSerializer):
+    """Auto-diagnostic Monkey Management : comme `ManagerialSelfAssessment`,
+    `user` est forcé côté serveur — personne ne note quelqu'un d'autre que
+    soi-même. Contrairement à cette dernière, les scores sont des entiers
+    (pas de virgule décimale : l'échelle Jamais..Toujours de la fiche papier
+    n'a pas de position intermédiaire), d'où l'absence de `DecimalCommaMixin`."""
+
+    campaign_name = serializers.CharField(source="campaign.name", read_only=True)
+    campaign_is_closed = serializers.BooleanField(source="campaign.is_closed", read_only=True)
+    level = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MonkeyManagementAssessment
+        fields = [
+            "id", "user", "campaign", "campaign_name", "campaign_is_closed",
+            "scores", "total_score", "level",
+            "monkeys", "why_accepted", "return_to_whom", "behavior_to_change", "next_responsibility",
+            "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "user", "total_score", "level", "created_at", "updated_at"]
+
+    def get_level(self, obj):
+        """Palier d'interprétation — seulement une fois les 10 affirmations
+        notées : un total partiel (fiche en cours de saisie) ne veut rien dire
+        rapporté aux bornes 10-50 de la fiche papier, toutes conçues pour une
+        fiche complète."""
+        answered = [e for e in obj.scores if e.get("score") is not None]
+        if len(answered) < 10:
+            return None
+        total = obj.total_score
+        if total >= 41:
+            return "EMPOWERING_LEADER"
+        if total >= 31:
+            return "GOOD_DELEGATOR"
+        if total >= 21:
+            return "MONKEY_RISK"
+        return "MONKEY_MAGNET"
+
+    def validate_campaign(self, campaign):
+        already_on_this_campaign = self.instance and self.instance.campaign_id == campaign.id
+        if campaign.is_closed and not already_on_this_campaign:
+            raise serializers.ValidationError("Cette campagne d'évaluation est clôturée.")
+        return campaign
+
+    def validate_scores(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Les notes doivent être une liste.")
+        seen_orders = set()
+        cleaned = []
+        for entry in value:
+            if not isinstance(entry, dict) or "order" not in entry:
+                raise serializers.ValidationError("Chaque note porte un rang (order).")
+            order = entry.get("order")
+            if not isinstance(order, int) or not (1 <= order <= 10) or order in seen_orders:
+                raise serializers.ValidationError("Rang de question invalide ou dupliqué.")
+            seen_orders.add(order)
+            score = entry.get("score")
+            if score is None:
+                cleaned.append({"order": order, "score": None})
+                continue
+            if not isinstance(score, int) or not (1 <= score <= 5):
+                raise serializers.ValidationError(f"Le score doit être un entier entre 1 et 5 (reçu {score!r}).")
+            cleaned.append({"order": order, "score": score})
+        return cleaned
+
+    def validate_monkeys(self, value):
+        if not isinstance(value, list) or len(value) > 3 or not all(isinstance(v, str) for v in value):
+            raise serializers.ValidationError("Trois réponses courtes au plus.")
+        return [v[:255] for v in value]
+
+    def validate(self, attrs):
+        actor = self.context["request"].user
+        campaign = attrs.get("campaign", getattr(self.instance, "campaign", None))
+        require_same_company(actor, campaign=campaign)
+        # `user` est read_only (forcé au serveur) : le UniqueTogetherValidator
+        # généré par DRF à partir de `unique_together` exclut les champs
+        # read_only de son contrôle, donc ne voit jamais ce doublon (même
+        # constat que sur ManagerialSelfAssessmentSerializer).
+        duplicate = MonkeyManagementAssessment.objects.filter(user=actor, campaign=campaign)
+        if self.instance:
+            duplicate = duplicate.exclude(pk=self.instance.pk)
+        if duplicate.exists():
+            raise serializers.ValidationError(
+                {"campaign": "Un auto-diagnostic Monkey Management existe déjà pour cette campagne."}
+            )
+        return attrs
+
+    def create(self, validated_data):
+        validated_data["user"] = self.context["request"].user
+        instance = super().create(validated_data)
+        self._recompute(instance)
+        return instance
+
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        self._recompute(instance)
+        return instance
+
+    @staticmethod
+    def _recompute(instance):
+        valid = [e["score"] for e in instance.scores if e.get("score") is not None]
+        instance.total_score = sum(valid) if valid else 0
+        instance.save(update_fields=["total_score"])
 
 
 class PerformanceObjectiveSerializer(DecimalCommaMixin, serializers.ModelSerializer):

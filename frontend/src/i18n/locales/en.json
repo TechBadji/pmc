@@ -883,6 +883,7 @@
     "viewEmployee": "Objectives — employee",
     "viewTeam": "Objectives — team",
     "viewManagerial": "Managerial self-assessment",
+    "viewMonkeyManagement": "Monkey Management",
     "pickPerson": "Pick a team member and a period to open their sheet.",
     "pickTeam": "Pick a team and a period to open the sheet.",
     "noEvaluation": "No evaluation for this person in this period: the sheet opens as soon as one exists.",
@@ -1045,6 +1046,80 @@
           "Ability to quickly reorganize the schedule to handle urgent and unforeseen situations while maintaining overall productivity"
         ]
       }
+    }
+  },
+  "monkeyManagement": {
+    "title": "ID-PMC — Monkey Management",
+    "subtitle": "Diagnostic of your ability to delegate, empower and grow your team's autonomy.",
+    "objectiveLabel": "Objective",
+    "objectiveText": "Assess how well you keep responsibilities at the right level, support your team members without taking their problems back onto yourself, and progressively grow their autonomy.",
+    "scaleHint": "1 = Never · 2 = Rarely · 3 = Sometimes · 4 = Often · 5 = Always",
+    "scale": {
+      "1": "Never",
+      "2": "Rarely",
+      "3": "Sometimes",
+      "4": "Often",
+      "5": "Always"
+    },
+    "statementCol": "Statement",
+    "scoreCol": "Score 1-5",
+    "totalLabel": "Total score",
+    "progress": "{{answered}} of {{total}} statements scored",
+    "incomplete": "Score all ten statements to get your level.",
+    "campaignLabel": "Campaign",
+    "noCampaign": "No evaluation campaign available yet.",
+    "closedCampaign": "This campaign is closed: read-only.",
+    "save": "Save",
+    "update": "Update",
+    "saved": "Self-assessment saved.",
+    "saveFailed": "Save failed.",
+    "levels": {
+      "EMPOWERING_LEADER": {
+        "title": "Empowering Leader",
+        "range": "41-50",
+        "subtitle": "Strong command of Monkey Management",
+        "description": "You generally keep responsibilities at the right level. You support without creating dependency, and you grow your team's autonomy."
+      },
+      "GOOD_DELEGATOR": {
+        "title": "Good Delegator",
+        "range": "31-40",
+        "subtitle": "A few monkeys still escape you",
+        "description": "Your practice is generally sound, but some situations still lead you to take back responsibilities that could stay with your team members."
+      },
+      "MONKEY_RISK": {
+        "title": "Monkey Risk",
+        "range": "21-30",
+        "subtitle": "Significant risk of accumulation",
+        "description": "You likely take back your team members' problems and actions on a regular basis. Your willingness to help can gradually create overload for you and dependency for them."
+      },
+      "MONKEY_MAGNET": {
+        "title": "Monkey Magnet",
+        "range": "10-20",
+        "subtitle": "Strong dependency on the manager",
+        "description": "You have likely become the go-through point for too many problems, decisions and actions. There is a high risk of becoming your team's bottleneck."
+      }
+    },
+    "items": [
+      "When a team member comes to me with a problem, I first ask what they have already tried and what solutions they suggest.",
+      "At the end of an exchange with a team member, I make sure responsibility for the next action is clearly assigned.",
+      "I resist the temptation to systematically say \"Let me handle it\", \"Send me the file\" or \"I'll take care of it\".",
+      "I clearly distinguish between situations where I should coach or support a team member and those where I should genuinely take back the responsibility.",
+      "I clearly define my team members' responsibilities, levels of autonomy and decision limits.",
+      "I know how to support a team member in solving a problem without doing the work for them.",
+      "When I delegate a responsibility, I put in place appropriate follow-up without falling into micromanagement.",
+      "I regularly challenge my team members to take more initiative and propose solutions themselves.",
+      "My team knows which problems it should solve itself and in which situations it should truly escalate a decision to me.",
+      "My absence for a few days does not block important decisions or activities for my team."
+    ],
+    "debrief": {
+      "title": "Personal debrief questions",
+      "hint": "After the diagnostic, take a moment to answer — these answers are not scored.",
+      "monkeysLabel": "What are the three \"monkeys\" you carry today that shouldn't belong to you?",
+      "monkeyPlaceholder": "Monkey {{n}}",
+      "whyAcceptedLabel": "Why did you accept to take them on?",
+      "returnToWhomLabel": "Who should you hand each of these monkeys back to?",
+      "behaviorToChangeLabel": "What behaviour do you need to change to avoid taking them back again?",
+      "nextResponsibilityLabel": "What extra responsibility can you hand to your team this week?"
     }
   }
 }
