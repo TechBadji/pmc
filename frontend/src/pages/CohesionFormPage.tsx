@@ -189,7 +189,6 @@ export default function CohesionFormPage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
-  const criteria = useCohesionCriteria();
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [teamId, setTeamId] = useState<number | "">("");
@@ -211,6 +210,10 @@ export default function CohesionFormPage() {
   const [directorsView, setDirectorsView] = useState(false);
   const [teamRelationships, setTeamRelationships] = useState<TeamRelationship[]>([]);
   const board = useTeamBoard(teamId);
+  // La fiche d'une direction la nomme, pas l'entreprise ; "Tous les
+  // directeurs" et l'organisation gardent l'entreprise (pas de nom fourni).
+  const currentDepartmentName = departments.find((d) => d.id === teamId)?.name;
+  const criteria = useCohesionCriteria(orgView || directorsView ? undefined : currentDepartmentName);
   const [rows, setRows] = useState<CriterionRow[]>(
     criteria.map((c) => ({ criterion: c, score: null, objective_score: null, achieved_score: null }))
   );

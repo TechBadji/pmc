@@ -70,7 +70,10 @@ function ScoreOval({
 export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" | "ORGANISATION" }) {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
-  const criteria = useCohesionCriteria();
+  // Un avis "sur sa direction" nomme la direction, pas l'entreprise : c'est
+  // sur elle qu'il porte. L'avis "sur l'organisation" garde l'entreprise
+  // (comportement par défaut du hook, sans nom fourni).
+  const criteria = useCohesionCriteria(scope === "TEAM" ? user?.department_name : undefined);
 
   const [scores, setScores] = useState<Record<string, number>>({});
   const [existing, setExisting] = useState<CohesionResponse | null>(null);
