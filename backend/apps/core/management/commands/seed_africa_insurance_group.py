@@ -1,8 +1,7 @@
 """
 Jeu de démonstration « Africa Insurance Group » : un groupe d'assurance
 panafricain organisé autour d'un CODIR présidé par le PDG, avec le Directeur
-de Zone (DZ), six directions fonctionnelles et SUNU Group (société du
-groupe) à son niveau hiérarchique.
+de Zone (DZ) et six directions fonctionnelles à son niveau hiérarchique.
 
 Organigramme :
     CODIR (comité de direction, présidé par le PDG — Admin Entreprise / CEO applicatif)
@@ -14,15 +13,14 @@ Organigramme :
     ├── Direction Marketing et Expérience Client
     ├── Direction Financière
     ├── Direction des Ressources Humaines
-    ├── Direction Planning Budgétaire et Pilotage
-    └── SUNU Group                  (société du groupe, pas une filiale de zone)
-    Le DZ, les six directions fonctionnelles et SUNU Group sont tous au même
-    niveau hiérarchique (rattachés directement au CODIR) ; seules les deux
-    filiales sont un niveau sous le DZ.
+    └── Direction Planning Budgétaire et Pilotage
+    Le DZ et les six directions fonctionnelles sont tous au même niveau
+    hiérarchique (rattachés directement au CODIR) ; seules les deux filiales
+    sont un niveau sous le DZ.
 
-Chacune des 10 directions actives (Zone, 2 filiales, 6 fonctionnelles, SUNU
-Group) reçoit un directeur + 5 collaborateurs, avec avatar généré et une
-date de naissance tirée pour une moyenne d'âge 40-50 ans.
+Chacune des 9 directions actives (Zone, 2 filiales, 6 fonctionnelles) reçoit
+un directeur + 5 collaborateurs, avec avatar généré et une date de naissance
+tirée pour une moyenne d'âge 40-50 ans.
 
 Quatre campagnes (Année 2023, 2024, 2025, Semestre 1 2026) : chaque personne
 est évaluée sur chacune, avec un niveau de hard skills et un niveau de soft
@@ -170,19 +168,6 @@ DIRECTIONS = [
             "Management Stratégique", "Business English",
         ],
     ),
-    (
-        # Société du groupe, pas une filiale géographique de la zone : au
-        # même niveau hiérarchique que le DZ et les directions fonctionnelles
-        # (rattachée directement au CODIR), pas sous la Direction de Zone.
-        "SUNU", "SUNU Group", None, "Directeur Général — SUNU Group",
-        [
-            "Pilotage stratégique de filiale", "Développement commercial multi-lignes",
-            "Gestion des partenariats de distribution", "Supervision des opérations d'assurance",
-            "Gestion des risques et conformité groupe", "Reporting consolidé au groupe",
-            "Optimisation de la rentabilité de la filiale", "Digitalisation des parcours clients",
-            "Management Stratégique", "Business English",
-        ],
-    ),
 ]
 
 CODIR_CODE, CODIR_NAME = "CDIR", "Comité de Direction (CODIR)"
@@ -226,10 +211,6 @@ JOB_TITLES = {
     "DPBP": [
         "Contrôleur Budgétaire", "Analyste Business Intelligence", "Chargé de Planification",
         "Responsable Reporting de Gestion", "Analyste Prévisions Financières",
-    ],
-    "SUNU": [
-        "Souscripteur Senior", "Gestionnaire Sinistres", "Responsable Partenariats",
-        "Contrôleur de Gestion Filiale", "Chargé de Conformité",
     ],
 }
 
