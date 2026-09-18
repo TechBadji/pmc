@@ -285,7 +285,7 @@ export default function CohesionFormPage() {
     const campaign = campaigns.find((c) => c.id === campaignId);
     if (!campaign) return;
     const inWindow = history.find(
-      (h) => h.date >= campaign.start_date && h.date <= campaign.end_date
+      (h) => h.date >= campaign.start_date && h.date <= campaign.effective_end_date
     );
     showAnalysis(inWindow ? inWindow.id : "");
     // eslint-disable-next-line react-hooks/exhaustive-deps

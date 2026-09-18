@@ -264,6 +264,7 @@ export interface EvaluationCampaign {
   name: string;
   start_date: string;
   end_date: string;
+  effective_end_date: string;
   is_closed: boolean;
   created_by: number | null;
   created_by_name: string | null;

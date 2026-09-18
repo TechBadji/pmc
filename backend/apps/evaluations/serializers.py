@@ -30,11 +30,12 @@ class SkillNoteSerializer(DecimalCommaMixin, serializers.ModelSerializer):
 class EvaluationCampaignSerializer(serializers.ModelSerializer):
     created_by_name = serializers.CharField(source="created_by.get_full_name", read_only=True, default=None)
     evaluations_count = serializers.IntegerField(source="evaluations.count", read_only=True)
+    effective_end_date = serializers.DateField(read_only=True)
 
     class Meta:
         model = EvaluationCampaign
         fields = [
-            "id", "company", "name", "start_date", "end_date", "is_closed",
+            "id", "company", "name", "start_date", "end_date", "effective_end_date", "is_closed",
             "created_by", "created_by_name", "evaluations_count", "created_at",
         ]
         read_only_fields = ["id", "company", "created_by", "created_at"]
@@ -114,6 +115,7 @@ class EvaluationWriteSerializer(DecimalCommaMixin, serializers.ModelSerializer):
         fields = [
             "id", "user", "campaign", "business_objectives_score",
             "people_objectives_score", "notes", "skill_scores",
+            "objectives_set_on", "evaluated_on", "next_evaluation_on", "manager_visa",
         ]
 
     def validate_campaign(self, campaign):

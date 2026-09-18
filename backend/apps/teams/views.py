@@ -256,7 +256,7 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
             ).first()
             if campaign is None:
                 raise ValidationError({"campaign": "Campagne introuvable."})
-            responses = responses.filter(date__range=(campaign.start_date, campaign.end_date))
+            responses = responses.filter(date__range=(campaign.start_date, campaign.effective_end_date))
 
         # Sans tour précisé, on lit l'état courant : le dernier avis de chacun.
         # Additionner tous les avis d'une personne la ferait peser autant de
@@ -281,7 +281,7 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         if date:
             sheets = sheets.filter(date=date)
         if campaign is not None:
-            sheets = sheets.filter(date__range=(campaign.start_date, campaign.end_date))
+            sheets = sheets.filter(date__range=(campaign.start_date, campaign.effective_end_date))
         for sheet in sheets.order_by("team_id", "-date"):
             own_sheets.setdefault(sheet.team_id, float(sheet.ice_score))
             if sheet.oce_score:
@@ -320,7 +320,7 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
             org_responses = org_responses.filter(date=date)
         if campaign is not None:
             org_responses = org_responses.filter(
-                date__range=(campaign.start_date, campaign.end_date)
+                date__range=(campaign.start_date, campaign.effective_end_date)
             )
         latest_org = {}
         for response in org_responses.order_by("date"):

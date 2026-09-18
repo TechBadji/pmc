@@ -195,7 +195,7 @@ export default function ObjectivesSheetPanel({
   async function patchHeader(field: string, value: string) {
     if (!evaluation) return;
     try {
-      await apiClient.patch(`/evaluations/${evaluation.id}/`, { [field]: value || null });
+      await apiClient.patch(`/evaluations/${evaluation.id}/`, { [field]: value || (field === "manager_visa" ? "" : null) });
       setSavedAt(new Date().toLocaleTimeString());
     } catch {
       setError(true);

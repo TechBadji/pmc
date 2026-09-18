@@ -3,6 +3,7 @@
 ID-3A evaluations: Hard Skills (Aptitudes), Soft Skills (Attitudes),
 and overall Performance (Altitude) against Business & People objectives.
 """
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -49,6 +50,26 @@ class EvaluationCampaign(models.Model):
 
     def __str__(self):
         return f"{self.company.name} — {self.name}"
+
+    @property
+    def effective_end_date(self):
+        """Fin réelle de la fenêtre de saisie. Une campagne clôturée s'arrête à
+        sa date de fin ; une campagne encore ouverte continue de recevoir des
+        saisies après elle (une fiche déposée en septembre pour un semestre
+        « janvier-juin » encore ouvert lui appartient), sans jamais déborder
+        sur la campagne suivante de l'entreprise."""
+        if self.is_closed:
+            return self.end_date
+        end = max(self.end_date, date.today())
+        following = (
+            EvaluationCampaign.objects.filter(company_id=self.company_id, start_date__gt=self.start_date)
+            .order_by("start_date")
+            .values_list("start_date", flat=True)
+            .first()
+        )
+        if following is not None:
+            end = min(end, following - timedelta(days=1))
+        return max(end, self.end_date)
 
 
 class Evaluation(models.Model):
