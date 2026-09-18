@@ -206,6 +206,7 @@ export interface ManagerialSelfAssessmentScoreEntry {
   order: number;
   score: number | null;
   objective_score: number | null;
+  comment?: string;
 }
 
 export interface ManagerialSelfAssessment {
@@ -218,6 +219,16 @@ export interface ManagerialSelfAssessment {
   scores: ManagerialSelfAssessmentScoreEntry[];
   ic_score: string;
   oc_score: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ManagerialSynthesis {
+  id: number;
+  user: number;
+  campaign: number;
+  key_skills: string[];
+  improvement_areas: string[];
   created_at: string;
   updated_at: string;
 }

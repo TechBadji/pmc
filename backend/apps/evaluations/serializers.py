@@ -12,6 +12,7 @@ from .models import (
     EvaluationCampaign,
     EvaluationSkillScore,
     ManagerialSelfAssessment,
+    ManagerialSynthesis,
     MonkeyManagementAssessment,
     PerformanceObjective,
     SkillNote,
@@ -273,6 +274,8 @@ class ManagerialSelfAssessmentSerializer(DecimalCommaMixin, serializers.ModelSer
                 if not 1 <= num <= 5:
                     raise serializers.ValidationError(f"{field} doit être compris entre 1 et 5 (reçu {num}).")
                 cleaned_entry[field] = round(num, 1)
+            comment = entry.get("comment")
+            cleaned_entry["comment"] = comment[:255] if isinstance(comment, str) else ""
             cleaned.append(cleaned_entry)
         return cleaned
 
@@ -320,6 +323,50 @@ class ManagerialSelfAssessmentSerializer(DecimalCommaMixin, serializers.ModelSer
         instance.ic_score = round(sum(scores) / len(scores), 1) if scores else 0
         instance.oc_score = round(sum(objectives) / len(objectives), 1) if objectives else 0
         instance.save(update_fields=["ic_score", "oc_score"])
+
+
+class ManagerialSynthesisSerializer(serializers.ModelSerializer):
+    """Compétences clés / axes d'amélioration de la synthèse — `user` forcé
+    côté serveur, même principe que les autres fiches d'auto-évaluation."""
+
+    class Meta:
+        model = ManagerialSynthesis
+        fields = ["id", "user", "campaign", "key_skills", "improvement_areas", "created_at", "updated_at"]
+        read_only_fields = ["id", "user", "created_at", "updated_at"]
+
+    def validate_campaign(self, campaign):
+        already_on_this_campaign = self.instance and self.instance.campaign_id == campaign.id
+        if campaign.is_closed and not already_on_this_campaign:
+            raise serializers.ValidationError("Cette campagne d'évaluation est clôturée.")
+        return campaign
+
+    def _validate_list(self, value, field_name):
+        if not isinstance(value, list) or len(value) > 3 or not all(isinstance(v, str) for v in value):
+            raise serializers.ValidationError(f"{field_name} : trois réponses courtes au plus.")
+        return [v[:255] for v in value]
+
+    def validate_key_skills(self, value):
+        return self._validate_list(value, "Compétences clés")
+
+    def validate_improvement_areas(self, value):
+        return self._validate_list(value, "Axes d'amélioration")
+
+    def validate(self, attrs):
+        actor = self.context["request"].user
+        campaign = attrs.get("campaign", getattr(self.instance, "campaign", None))
+        require_same_company(actor, campaign=campaign)
+        duplicate = ManagerialSynthesis.objects.filter(user=actor, campaign=campaign)
+        if self.instance:
+            duplicate = duplicate.exclude(pk=self.instance.pk)
+        if duplicate.exists():
+            raise serializers.ValidationError(
+                {"campaign": "Une synthèse existe déjà pour cette campagne."}
+            )
+        return attrs
+
+    def create(self, validated_data):
+        validated_data["user"] = self.context["request"].user
+        return super().create(validated_data)
 
 
 class MonkeyManagementAssessmentSerializer(serializers.ModelSerializer):

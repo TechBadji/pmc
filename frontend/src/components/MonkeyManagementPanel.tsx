@@ -18,14 +18,38 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
-import { cohesionColor } from "@/theme";
-import type { EvaluationCampaign, MonkeyManagementAssessment, MonkeyManagementLevel, Paginated } from "@/api/types";
+import { cohesionColor, performanceColors } from "@/theme";
+import type { EvaluationCampaign, MonkeyManagementAssessment, MonkeyManagementLevel, Paginated, UserRecord } from "@/api/types";
 
 const TIERS = [1, 2, 3, 4, 5];
 const ITEM_KEYS = Array.from({ length: 10 }, (_, i) => i + 1);
 
-/** Pastille de note — même geste que le reste de l'application (couleur du
- *  barème, cercle plein quand sélectionné). */
+// Les 4 paliers d'interprétation, du plus faible au plus haut — bornes
+// exactes de la fiche papier, pour dessiner une jauge à 4 zones égales et y
+// positionner précisément le score obtenu. Couleurs fixes (pas le dégradé
+// continu de `cohesionColor`) : le rouge/orange/vert de la palette de
+// performance existante, demandés explicitement plutôt que déduits du score.
+const MAGNET_RED = "#b71c1c";
+const RISK_ORANGE = "#ef6c00";
+
+const LEVEL_LADDER: { key: MonkeyManagementLevel; min: number; max: number; color: string }[] = [
+  { key: "MONKEY_MAGNET", min: 10, max: 20, color: MAGNET_RED },
+  { key: "MONKEY_RISK", min: 21, max: 30, color: RISK_ORANGE },
+  { key: "GOOD_DELEGATOR", min: 31, max: 40, color: performanceColors.GOOD },
+  { key: "EMPOWERING_LEADER", min: 41, max: 50, color: performanceColors.OUTSTANDING },
+];
+
+// JAMAIS et RAREMENT reprennent les couleurs de Monkey Magnet/Monkey Risk —
+// les trois autres gardent le dégradé continu de `cohesionColor`.
+function tierColor(tier: number): string {
+  if (tier === 1) return MAGNET_RED;
+  if (tier === 2) return RISK_ORANGE;
+  return cohesionColor(tier);
+}
+
+/** Pastille de note — même pilule arrondie que la fiche de cohésion de
+ *  l'encadrant et l'auto-évaluation managériale : un même code visuel pour
+ *  toutes les fiches remplies par un encadrant sur lui-même. */
 function ScoreOval({
   selected,
   color,
@@ -48,16 +72,16 @@ function ScoreOval({
       onClick={onClick}
       disabled={disabled}
       sx={{
-        width: 26,
-        height: 26,
-        borderRadius: "50%",
-        border: "2px solid",
+        width: 40,
+        height: 24,
+        borderRadius: 12,
+        border: "1px solid",
         borderColor: selected ? color : "divider",
         bgcolor: selected ? color : "background.paper",
         cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.6 : 1,
-        p: 0,
-        "&:hover": disabled ? undefined : { borderColor: color },
+        transition: "background-color 0.15s",
+        "&:hover": disabled ? undefined : { bgcolor: selected ? color : "action.hover" },
       }}
     />
   );
@@ -107,6 +131,28 @@ export default function MonkeyManagementPanel() {
   const [error, setError] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
+  // Le CODIR peut consulter la fiche de n'importe quel manager de son
+  // entreprise (lecture seule) — voir MonkeyManagementAssessmentViewSet.
+  // Un manager n'a personne d'autre à choisir : pas de sélecteur pour lui.
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
+  const [managers, setManagers] = useState<UserRecord[]>([]);
+  const [viewedUserId, setViewedUserId] = useState<number | "">(user?.id ?? "");
+
+  useEffect(() => {
+    if (!isCompanyAdmin || !user?.company) return;
+    apiClient
+      .get<Paginated<UserRecord>>("/users/", { params: { company: user.company, role: "MANAGER", page_size: 500 } })
+      .then((r) => setManagers(r.data.results))
+      .catch(() => setLoadError(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCompanyAdmin, user?.company]);
+
+  useEffect(() => {
+    if (viewedUserId === "" && user?.id) setViewedUserId(user.id);
+  }, [user?.id, viewedUserId]);
+
+  const viewedPerson = viewedUserId === user?.id ? user : managers.find((m) => m.id === viewedUserId);
+
   useEffect(() => {
     if (!user?.company) return;
     apiClient
@@ -125,10 +171,10 @@ export default function MonkeyManagementPanel() {
   }, [user?.company]);
 
   useEffect(() => {
-    if (!campaignId) return;
+    if (!campaignId || viewedUserId === "") return;
     apiClient
       .get<Paginated<MonkeyManagementAssessment>>("/monkey-management-assessments/", {
-        params: { campaign: campaignId, page_size: 1 },
+        params: { campaign: campaignId, user: viewedUserId, page_size: 1 },
       })
       .then((r) => {
         const existing = r.data.results[0] ?? null;
@@ -145,10 +191,11 @@ export default function MonkeyManagementPanel() {
         setSaved(false);
       })
       .catch(() => setLoadError(true));
-  }, [campaignId]);
+  }, [campaignId, viewedUserId]);
 
   const activeCampaign = campaigns.find((c) => c.id === campaignId) ?? null;
-  const readOnly = !!activeCampaign?.is_closed;
+  const viewingSelf = viewedUserId === user?.id;
+  const readOnly = !!activeCampaign?.is_closed || !viewingSelf;
 
   const { total, answered, level } = useMemo(() => {
     const values = Object.values(scores).filter((v): v is number => v !== null);
@@ -156,10 +203,14 @@ export default function MonkeyManagementPanel() {
     return { total: t, answered: values.length, level: levelFor(t, values.length) };
   }, [scores]);
 
-  const levelColor = cohesionColor(total / 10 || 1);
+  // Une fois le palier connu, sa couleur fixe prime sur le dégradé continu —
+  // utilisé seulement tant que la fiche est incomplète (pas encore de palier).
+  const levelColor = level
+    ? LEVEL_LADDER.find((b) => b.key === level)!.color
+    : cohesionColor(total / 10 || 1);
 
   async function handleSave() {
-    if (!campaignId) return;
+    if (!campaignId || !viewingSelf) return;
     setSaving(true);
     setError(false);
     const payload = {
@@ -191,53 +242,77 @@ export default function MonkeyManagementPanel() {
   return (
     <Stack spacing={3}>
       <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
-        <Stack direction="row" spacing={3} alignItems="flex-start" justifyContent="space-between" flexWrap="wrap" useFlexGap>
+        <Stack spacing={2} alignItems="flex-start">
           <Box maxWidth={640}>
             <Typography variant="subtitle2" fontWeight={700}>
               {t("monkeyManagement.objectiveLabel")}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body1" color="text.secondary">
               {t("monkeyManagement.objectiveText")}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
               {t("monkeyManagement.scaleHint")}
             </Typography>
           </Box>
-          <TextField
-            select
-            size="small"
-            label={t("monkeyManagement.campaignLabel")}
-            value={campaignId}
-            onChange={(e) => setCampaignId(e.target.value === "" ? "" : Number(e.target.value))}
-            sx={{ minWidth: 220 }}
-          >
-            {campaigns.map((c) => (
-              <MenuItem key={c.id} value={c.id}>
-                {c.name}
-                {c.is_closed ? ` (${t("monkeyManagement.closedCampaign")})` : ""}
-              </MenuItem>
-            ))}
-          </TextField>
+          <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+            {isCompanyAdmin && (
+              <TextField
+                select
+                size="small"
+                label={t("monkeyManagement.viewingLabel")}
+                value={viewedUserId}
+                onChange={(e) => setViewedUserId(e.target.value === "" ? "" : Number(e.target.value))}
+                sx={{ minWidth: 220 }}
+              >
+                {user && (
+                  <MenuItem value={user.id}>{t("monkeyManagement.myself", { name: user.full_name })}</MenuItem>
+                )}
+                {managers.map((m) => (
+                  <MenuItem key={m.id} value={m.id}>
+                    {m.full_name} — {m.position}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+            <TextField
+              select
+              size="small"
+              label={t("monkeyManagement.campaignLabel")}
+              value={campaignId}
+              onChange={(e) => setCampaignId(e.target.value === "" ? "" : Number(e.target.value))}
+              sx={{ minWidth: 220 }}
+            >
+              {campaigns.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.name}
+                  {c.is_closed ? ` (${t("monkeyManagement.closedCampaign")})` : ""}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
         </Stack>
       </Paper>
 
       {campaigns.length === 0 && <Alert severity="info">{t("monkeyManagement.noCampaign")}</Alert>}
+      {!viewingSelf && viewedPerson && (
+        <Alert severity="info">{t("monkeyManagement.viewingOther", { name: viewedPerson.full_name })}</Alert>
+      )}
 
       {campaignId !== "" && (
         <>
           <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
             <TableContainer>
-              <Table size="small" sx={{ "& .MuiTableCell-root": { border: "1px solid", borderColor: "divider" } }}>
+              <Table size="small" sx={{ "& .MuiTableCell-root": { border: "1px solid", borderColor: "divider", py: 0.5 } }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ width: "50%", bgcolor: "#dde5ef", color: "#243747", fontWeight: 800, fontSize: 12 }}>
-                      {t("monkeyManagement.statementCol")}
+                    <TableCell sx={{ width: "50%", bgcolor: "#dde5ef", color: "#243747", fontWeight: 800, fontSize: 12, py: 0.5 }}>
+                      {t("monkeyManagement.statementCol").toUpperCase()}
                     </TableCell>
                     {TIERS.map((tier) => (
                       <TableCell
                         key={tier}
                         align="center"
-                        sx={{ bgcolor: cohesionColor(tier), color: "#fff", fontWeight: 700, fontSize: 11, lineHeight: 1.25, minWidth: 78 }}
+                        sx={{ bgcolor: tierColor(tier), color: "#fff", fontWeight: 700, fontSize: 12, lineHeight: 1.15, minWidth: 52, px: 0.5 }}
                       >
                         {t(`monkeyManagement.scale.${tier}`).toUpperCase()}
                         <br />
@@ -253,15 +328,15 @@ export default function MonkeyManagementPanel() {
                     return (
                       <TableRow key={order}>
                         <TableCell>
-                          <Typography variant="body2">
+                          <Typography variant="body1">
                             {order}. {statement}
                           </Typography>
                         </TableCell>
                         {TIERS.map((tier) => (
-                          <TableCell key={tier} align="center">
+                          <TableCell key={tier} align="center" sx={{ px: 0.5 }}>
                             <ScoreOval
                               selected={value === tier}
-                              color={cohesionColor(tier)}
+                              color={tierColor(tier)}
                               disabled={readOnly}
                               ariaLabel={`${statement} — ${tier}`}
                               onClick={() => {
@@ -279,16 +354,16 @@ export default function MonkeyManagementPanel() {
             </TableContainer>
 
             <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" flexWrap="wrap" useFlexGap sx={{ p: 2 }}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="body1" fontWeight={700} color="text.secondary">
                 {t("monkeyManagement.progress", { answered, total: 10 })}
               </Typography>
               <Stack direction="row" spacing={2} alignItems="center">
                 <Stack alignItems="center">
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
                     {t("monkeyManagement.totalLabel")}
                   </Typography>
                   <Box sx={{ minWidth: 76, px: 1.5, py: 0.5, border: "1px solid", borderColor: "divider", borderRadius: 1, textAlign: "center" }}>
-                    <Typography variant="h6" fontWeight={800} sx={{ color: answered ? levelColor : "text.disabled" }}>
+                    <Typography variant="h4" fontWeight={800} sx={{ color: answered ? levelColor : "text.disabled" }}>
                       {total} / 50
                     </Typography>
                   </Box>
@@ -305,24 +380,94 @@ export default function MonkeyManagementPanel() {
             {!level && <Typography variant="caption" color="text.secondary" sx={{ display: "block", px: 2, pb: 2 }}>{t("monkeyManagement.incomplete")}</Typography>}
           </Paper>
 
-          {level && (
-            <Paper elevation={0} sx={{ p: 2.5, border: "2px solid", borderColor: levelColor }}>
-              <Stack direction="row" spacing={1} alignItems="baseline" flexWrap="wrap">
-                <Typography variant="h6" fontWeight={800} sx={{ color: levelColor }}>
-                  {t(`monkeyManagement.levels.${level}.title`)}
+          {level && (() => {
+            const activeIndex = LEVEL_LADDER.findIndex((b) => b.key === level);
+            const activeBand = LEVEL_LADDER[activeIndex];
+            const fracInBand = (total - activeBand.min) / (activeBand.max - activeBand.min);
+            const markerPct = ((activeIndex + Math.min(1, Math.max(0, fracInBand))) / LEVEL_LADDER.length) * 100;
+            return (
+              <Paper elevation={0} sx={{ p: 3, border: "1px solid", borderColor: "divider", maxWidth: { xs: "100%", md: "70%" } }}>
+                <Typography variant="overline" color="text.secondary" fontWeight={700} sx={{ display: "block", mb: 1.5, fontSize: 13 }}>
+                  {t("monkeyManagement.interpretationTitle")}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  ({t(`monkeyManagement.levels.${level}.range`)})
-                </Typography>
-              </Stack>
-              <Typography variant="subtitle2" fontWeight={700} sx={{ mt: 0.5 }}>
-                {t(`monkeyManagement.levels.${level}.subtitle`)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {t(`monkeyManagement.levels.${level}.description`)}
-              </Typography>
-            </Paper>
-          )}
+
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "flex-end" }} justifyContent="space-between" sx={{ mb: 3 }}>
+                  <Typography variant="h3" fontWeight={800} sx={{ color: levelColor, lineHeight: 1.15 }}>
+                    {t(`monkeyManagement.levels.${level}.title`)}
+                  </Typography>
+                  <Typography variant="h2" fontWeight={800} sx={{ color: levelColor, lineHeight: 1 }}>
+                    {total}
+                    <Typography component="span" variant="h4" color="text.secondary" fontWeight={700}>
+                      /50
+                    </Typography>
+                  </Typography>
+                </Stack>
+
+                {/* Jauge à 4 zones — le triangle marque le score exact dans sa zone. */}
+                <Box sx={{ position: "relative", mb: 1.5, mt: 3 }}>
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: -14,
+                      left: `${markerPct}%`,
+                      transform: "translateX(-50%)",
+                      width: 0,
+                      height: 0,
+                      borderLeft: "7px solid transparent",
+                      borderRight: "7px solid transparent",
+                      borderTop: `9px solid ${levelColor}`,
+                    }}
+                  />
+                  <Stack direction="row" spacing="2px" sx={{ height: 14, borderRadius: 7, overflow: "hidden" }}>
+                    {LEVEL_LADDER.map((band) => (
+                      <Box
+                        key={band.key}
+                        sx={{
+                          flex: 1,
+                          bgcolor: band.color,
+                          opacity: band.key === level ? 1 : 0.3,
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
+                <Stack direction="row">
+                  {LEVEL_LADDER.map((band) => (
+                    <Box key={band.key} sx={{ flex: 1, textAlign: "center", opacity: band.key === level ? 1 : 0.45 }}>
+                      <Typography
+                        variant="body1"
+                        fontWeight={band.key === level ? 800 : 600}
+                        sx={{ color: band.color }}
+                      >
+                        {t(`monkeyManagement.levels.${band.key}.title`)}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: band.color }}>
+                        {t(`monkeyManagement.levels.${band.key}.range`)}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+
+                <Box
+                  sx={{
+                    mt: 3,
+                    p: 2.5,
+                    borderRadius: 2,
+                    bgcolor: `${levelColor}14`,
+                    borderLeft: "4px solid",
+                    borderColor: levelColor,
+                  }}
+                >
+                  <Typography variant="h5" fontWeight={700} sx={{ mb: 0.75 }}>
+                    {t(`monkeyManagement.levels.${level}.subtitle`)}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ fontSize: 16 }}>
+                    {t(`monkeyManagement.levels.${level}.description`)}
+                  </Typography>
+                </Box>
+              </Paper>
+            );
+          })()}
 
           <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}>
             <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 0.5 }}>

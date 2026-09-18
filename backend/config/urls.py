@@ -24,6 +24,7 @@ from apps.evaluations.views import (
     EvaluationCampaignViewSet,
     EvaluationViewSet,
     ManagerialSelfAssessmentViewSet,
+    ManagerialSynthesisViewSet,
     MonkeyManagementAssessmentViewSet,
     PerformanceObjectiveViewSet,
     SkillNoteViewSet,
@@ -46,6 +47,7 @@ router.register("evaluation-campaigns", EvaluationCampaignViewSet, basename="eva
 router.register("evaluations", EvaluationViewSet, basename="evaluation")
 router.register("skill-notes", SkillNoteViewSet, basename="skill-note")
 router.register("managerial-self-assessments", ManagerialSelfAssessmentViewSet, basename="managerial-self-assessment")
+router.register("managerial-syntheses", ManagerialSynthesisViewSet, basename="managerial-synthesis")
 router.register("monkey-management-assessments", MonkeyManagementAssessmentViewSet, basename="monkey-management-assessment")
 router.register("performance-objectives", PerformanceObjectiveViewSet, basename="performance-objective")
 router.register("cohesion-analyses", TeamCohesionAnalysisViewSet, basename="cohesion-analysis")

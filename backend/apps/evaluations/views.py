@@ -19,6 +19,7 @@ from .models import (
     Evaluation,
     EvaluationCampaign,
     ManagerialSelfAssessment,
+    ManagerialSynthesis,
     MonkeyManagementAssessment,
     PerformanceObjective,
     SkillNote,
@@ -29,6 +30,7 @@ from .serializers import (
     EvaluationSerializer,
     EvaluationWriteSerializer,
     ManagerialSelfAssessmentSerializer,
+    ManagerialSynthesisSerializer,
     MonkeyManagementAssessmentSerializer,
     PerformanceObjectiveSerializer,
     SkillNoteSerializer,
@@ -272,17 +274,21 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
 
 
 class ManagerialSelfAssessmentViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
-    """Auto-évaluation managériale : chacun ne voit et n'édite que la sienne —
-    à la différence des évaluations Hard/Soft Skills, ni un Company Admin ni
-    un Manager ne notent quelqu'un d'autre ici. `IsCompanyAdminOrManager`
-    couvre déjà la portée fonctionnelle (fiche réservée à l'encadrement) ;
-    le filtrage par `user=request.user` ci-dessous est ce qui empêche un
-    manager de lire l'auto-évaluation d'un autre manager de son entreprise."""
+    """Auto-évaluation managériale : chacun n'édite que la sienne — ni un
+    Company Admin ni un Manager ne notent quelqu'un d'autre ici, `serializer.
+    create()` force `user` au collaborateur connecté quoi qu'il arrive.
+
+    En lecture, le CODIR (Company Admin) voit les fiches de tous les
+    managers de son entreprise, pour pouvoir suivre leur auto-évaluation —
+    un manager, lui, ne voit toujours que la sienne. La restriction en
+    écriture (`update`/`partial_update`/`destroy` bornés à `user=request.
+    user` ci-dessous, quel que soit le rôle) est ce qui empêche le CODIR de
+    modifier la fiche d'un manager sous prétexte qu'il peut désormais la lire."""
 
     queryset = ManagerialSelfAssessment.objects.select_related("user", "campaign")
     serializer_class = ManagerialSelfAssessmentSerializer
     company_lookup = "user__company_id"
-    filterset_fields = ["campaign", "category"]
+    filterset_fields = ["campaign", "category", "user"]
 
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):
@@ -291,7 +297,10 @@ class ManagerialSelfAssessmentViewSet(CompanyScopedQuerySetMixin, viewsets.Model
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(user=self.request.user)
+        user = self.request.user
+        if self.action in ("list", "retrieve") and user.role == user.Role.COMPANY_ADMIN:
+            return qs
+        return qs.filter(user=user)
 
     def perform_create(self, serializer):
         assessment = serializer.save()
@@ -312,14 +321,15 @@ class ManagerialSelfAssessmentViewSet(CompanyScopedQuerySetMixin, viewsets.Model
         )
 
 
-class MonkeyManagementAssessmentViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
-    """Auto-diagnostic Monkey Management : même portée que l'auto-évaluation
-    managériale — chacun ne voit et n'édite que le sien."""
+class ManagerialSynthesisViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
+    """Compétences clés / axes d'amélioration de la synthèse — même portée
+    que l'auto-évaluation managériale : le CODIR voit celles de tous les
+    managers de son entreprise, chacun n'édite que la sienne."""
 
-    queryset = MonkeyManagementAssessment.objects.select_related("user", "campaign")
-    serializer_class = MonkeyManagementAssessmentSerializer
+    queryset = ManagerialSynthesis.objects.select_related("user", "campaign")
+    serializer_class = ManagerialSynthesisSerializer
     company_lookup = "user__company_id"
-    filterset_fields = ["campaign"]
+    filterset_fields = ["campaign", "user"]
 
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):
@@ -328,7 +338,51 @@ class MonkeyManagementAssessmentViewSet(CompanyScopedQuerySetMixin, viewsets.Mod
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(user=self.request.user)
+        user = self.request.user
+        if self.action in ("list", "retrieve") and user.role == user.Role.COMPANY_ADMIN:
+            return qs
+        return qs.filter(user=user)
+
+    def perform_create(self, serializer):
+        synthesis = serializer.save()
+        log_event(
+            self.request.user,
+            "managerial_synthesis.saved",
+            f"a enregistré sa synthèse d'auto-évaluation managériale ({synthesis.campaign.name}).",
+            company=self.request.user.company,
+        )
+
+    def perform_update(self, serializer):
+        synthesis = serializer.save()
+        log_event(
+            self.request.user,
+            "managerial_synthesis.saved",
+            f"a mis à jour sa synthèse d'auto-évaluation managériale ({synthesis.campaign.name}).",
+            company=self.request.user.company,
+        )
+
+
+class MonkeyManagementAssessmentViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
+    """Auto-diagnostic Monkey Management : même portée que l'auto-évaluation
+    managériale — le CODIR voit celui de tous les managers de son
+    entreprise, chacun n'édite que le sien."""
+
+    queryset = MonkeyManagementAssessment.objects.select_related("user", "campaign")
+    serializer_class = MonkeyManagementAssessmentSerializer
+    company_lookup = "user__company_id"
+    filterset_fields = ["campaign", "user"]
+
+    def get_permissions(self):
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            return [IsCompanyAdminOrManager()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if self.action in ("list", "retrieve") and user.role == user.Role.COMPANY_ADMIN:
+            return qs
+        return qs.filter(user=user)
 
     def perform_create(self, serializer):
         assessment = serializer.save()

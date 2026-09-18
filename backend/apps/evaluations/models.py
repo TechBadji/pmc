@@ -383,7 +383,7 @@ class ManagerialSelfAssessment(models.Model):
         "Notes par question",
         default=list,
         blank=True,
-        help_text="Liste de {order, score, objective_score} — order 1-10, score/objective_score 1-5.",
+        help_text="Liste de {order, score, objective_score, comment} — order 1-10, score/objective_score 1-5.",
     )
     ic_score = models.DecimalField(
         "IC — Indice de Compétence",
@@ -410,6 +410,41 @@ class ManagerialSelfAssessment(models.Model):
 
     def __str__(self):
         return f"{self.user} — {self.get_category_display()} ({self.campaign.name})"
+
+
+class ManagerialSynthesis(models.Model):
+    """Synthèse de l'auto-évaluation managériale : la vue "radar" des 5
+    fiches (calculée, non stockée — voir `ManagerialSelfAssessment`), et les
+    deux listes qui l'accompagnent sur la planche ID-PMC de référence :
+    Compétences Clés et Axes d'Amélioration. Ces listes ne se rattachent à
+    aucune des 5 fiches en particulier, d'où un modèle séparé plutôt qu'un
+    champ de plus sur `ManagerialSelfAssessment` — une ligne par (personne,
+    campagne), pas par (personne, campagne, catégorie)."""
+
+    user = models.ForeignKey(
+        "core.User",
+        verbose_name="Manager",
+        on_delete=models.CASCADE,
+        related_name="managerial_syntheses",
+    )
+    campaign = models.ForeignKey(
+        "evaluations.EvaluationCampaign",
+        verbose_name="Campagne",
+        on_delete=models.PROTECT,
+        related_name="managerial_syntheses",
+    )
+    key_skills = models.JSONField("Compétences clés", default=list, blank=True, help_text="Jusqu'à 3 réponses courtes.")
+    improvement_areas = models.JSONField("Axes d'amélioration", default=list, blank=True, help_text="Jusqu'à 3 réponses courtes.")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Synthèse d'auto-évaluation managériale"
+        verbose_name_plural = "Synthèses d'auto-évaluation managériale"
+        unique_together = ("user", "campaign")
+
+    def __str__(self):
+        return f"{self.user} — Synthèse ({self.campaign.name})"
 
 
 class MonkeyManagementAssessment(models.Model):

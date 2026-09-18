@@ -18,18 +18,68 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+} from "recharts";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import { DecimalField } from "@/components/inputs/DecimalField";
 import { cohesionColor } from "@/theme";
-import type { EvaluationCampaign, ManagerialSelfAssessment, Paginated } from "@/api/types";
+import type { EvaluationCampaign, ManagerialSelfAssessment, ManagerialSynthesis, Paginated, UserRecord } from "@/api/types";
 import { useManagerialAssessmentCategories } from "@/utils/managerialSelfAssessment";
 
 const TIERS = [1, 2, 3, 4, 5];
 
-/** Pastille de note — même geste que la fiche de cohésion (couleur du barème,
- *  cercle plein quand sélectionné) : un même code visuel pour toute note 1-5
- *  dans l'application. */
+// Mêmes couleurs fixes que Monkey Management pour les deux premiers paliers
+// (Jamais/Très faible en rouge, Rarement/Faible en orange) — les trois
+// autres gardent le dégradé continu de `cohesionColor`.
+const MAGNET_RED = "#b71c1c";
+const RISK_ORANGE = "#ef6c00";
+function tierColor(tier: number): string {
+  if (tier === 1) return MAGNET_RED;
+  if (tier === 2) return RISK_ORANGE;
+  return cohesionColor(tier);
+}
+
+/** Encadré valeur (IC/OC) — même style "case Excel" que ICE/OCE sur la
+ *  fiche de cohésion de l'encadrant : boîte bordée, étiquette à gauche,
+ *  valeur en grand ; l'OC reprend le même fond jaune pâle que sa colonne. */
+function ValueBox({ label, value, bg }: { label: string; value: number | null; bg?: string }) {
+  return (
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Typography variant="subtitle2" fontWeight={700}>
+        {label}
+      </Typography>
+      <Box
+        sx={{
+          minWidth: 64,
+          px: 1.5,
+          py: 0.5,
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 1,
+          bgcolor: bg ?? "background.paper",
+          textAlign: "center",
+        }}
+      >
+        <Typography variant="h5" fontWeight={700}>
+          {value !== null ? value.toFixed(1) : "—"}
+        </Typography>
+      </Box>
+    </Stack>
+  );
+}
+
+/** Pastille de note — même forme que la fiche de cohésion de l'encadrant
+ *  (pilule arrondie, aplat plein quand sélectionnée), plutôt que le cercle
+ *  de la fiche individuelle de cohésion : un même code visuel pour les
+ *  fiches remplies par un encadrant sur lui-même. */
 function ScoreOval({
   selected,
   color,
@@ -52,27 +102,27 @@ function ScoreOval({
       onClick={onClick}
       disabled={disabled}
       sx={{
-        width: 26,
-        height: 26,
-        borderRadius: "50%",
-        border: "2px solid",
+        width: 40,
+        height: 24,
+        borderRadius: 12,
+        border: "1px solid",
         borderColor: selected ? color : "divider",
         bgcolor: selected ? color : "background.paper",
         cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.6 : 1,
-        p: 0,
-        "&:hover": disabled ? undefined : { borderColor: color },
+        transition: "background-color 0.15s",
+        "&:hover": disabled ? undefined : { bgcolor: selected ? color : "action.hover" },
       }}
     />
   );
 }
 
-type RowState = { score: number | null; objective_score: number | null };
+type RowState = { score: number | null; objective_score: number | null; comment: string };
 type CategoryState = Record<number, RowState>;
 
 function emptyState(): CategoryState {
   const state: CategoryState = {};
-  for (let order = 1; order <= 10; order += 1) state[order] = { score: null, objective_score: null };
+  for (let order = 1; order <= 10; order += 1) state[order] = { score: null, objective_score: null, comment: "" };
   return state;
 }
 
@@ -106,6 +156,38 @@ export default function ManagerialSelfAssessmentPanel() {
   const [error, setError] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
+  // Compétences clés / axes d'amélioration de la synthèse — une fiche à
+  // part, indépendante des 5 catégories (voir ManagerialSynthesis).
+  const [synthesis, setSynthesis] = useState<ManagerialSynthesis | null>(null);
+  const [keySkills, setKeySkills] = useState<string[]>(["", "", ""]);
+  const [improvementAreas, setImprovementAreas] = useState<string[]>(["", "", ""]);
+  const [synthesisSaving, setSynthesisSaving] = useState(false);
+  const [synthesisSaved, setSynthesisSaved] = useState(false);
+  const [synthesisError, setSynthesisError] = useState(false);
+
+  // Le CODIR peut consulter la fiche de n'importe quel manager de son
+  // entreprise (lecture seule) — voir ManagerialSelfAssessmentViewSet côté
+  // API. Un manager, lui, n'a personne d'autre à choisir : le sélecteur ne
+  // s'affiche que pour un Company Admin.
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
+  const [managers, setManagers] = useState<UserRecord[]>([]);
+  const [viewedUserId, setViewedUserId] = useState<number | "">(user?.id ?? "");
+
+  useEffect(() => {
+    if (!isCompanyAdmin || !user?.company) return;
+    apiClient
+      .get<Paginated<UserRecord>>("/users/", { params: { company: user.company, role: "MANAGER", page_size: 500 } })
+      .then((r) => setManagers(r.data.results))
+      .catch(() => setLoadError(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCompanyAdmin, user?.company]);
+
+  const viewedPerson = viewedUserId === user?.id ? user : managers.find((m) => m.id === viewedUserId);
+
+  useEffect(() => {
+    if (viewedUserId === "" && user?.id) setViewedUserId(user.id);
+  }, [user?.id, viewedUserId]);
+
   useEffect(() => {
     if (!user?.company) return;
     apiClient
@@ -127,10 +209,10 @@ export default function ManagerialSelfAssessmentPanel() {
   }, [user?.company]);
 
   useEffect(() => {
-    if (!campaignId) return;
+    if (!campaignId || viewedUserId === "") return;
     apiClient
       .get<Paginated<ManagerialSelfAssessment>>("/managerial-self-assessments/", {
-        params: { campaign: campaignId, page_size: 20 },
+        params: { campaign: campaignId, user: viewedUserId, page_size: 20 },
       })
       .then((r) => {
         const byCategory: Record<string, ManagerialSelfAssessment> = {};
@@ -139,7 +221,7 @@ export default function ManagerialSelfAssessmentPanel() {
           byCategory[a.category] = a;
           const state = emptyState();
           a.scores.forEach((s) => {
-            state[s.order] = { score: s.score, objective_score: s.objective_score };
+            state[s.order] = { score: s.score, objective_score: s.objective_score, comment: s.comment ?? "" };
           });
           nextDrafts[a.category] = state;
         });
@@ -148,12 +230,43 @@ export default function ManagerialSelfAssessmentPanel() {
         setSaved(false);
       })
       .catch(() => setLoadError(true));
-  }, [campaignId]);
 
+    apiClient
+      .get<Paginated<ManagerialSynthesis>>("/managerial-syntheses/", {
+        params: { campaign: campaignId, user: viewedUserId, page_size: 1 },
+      })
+      .then((r) => {
+        const existing = r.data.results[0] ?? null;
+        setSynthesis(existing);
+        const skills = existing?.key_skills ?? [];
+        const areas = existing?.improvement_areas ?? [];
+        setKeySkills([skills[0] ?? "", skills[1] ?? "", skills[2] ?? ""]);
+        setImprovementAreas([areas[0] ?? "", areas[1] ?? "", areas[2] ?? ""]);
+        setSynthesisSaved(false);
+      })
+      .catch(() => setLoadError(true));
+  }, [campaignId, viewedUserId]);
+
+  const isSynthesis = tab === categories.length;
   const activeCategory = categories[tab];
   const activeCampaign = campaigns.find((c) => c.id === campaignId) ?? null;
-  const readOnly = !!activeCampaign?.is_closed;
+  const viewingSelf = viewedUserId === user?.id;
+  const readOnly = !!activeCampaign?.is_closed || !viewingSelf;
   const draft = drafts[activeCategory?.key ?? ""] ?? emptyState();
+
+  // Radar de synthèse : l'IC de chacune des 5 fiches, sur la même campagne —
+  // lu depuis `drafts` (déjà chargé pour les 5 catégories d'un coup), pas
+  // besoin d'un nouvel appel serveur pour changer d'onglet.
+  const synthesisData = useMemo(
+    () =>
+      categories.map((c) => {
+        const catDraft = drafts[c.key] ?? emptyState();
+        const values = Object.values(catDraft).map((r) => r.score).filter((v): v is number => v !== null);
+        const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+        return { category: c.label, ic: Math.round(avg * 10) / 10 };
+      }),
+    [categories, drafts]
+  );
 
   const { ic, oc } = useMemo(() => {
     const scores = Object.values(draft).map((r) => r.score).filter((v): v is number => v !== null);
@@ -177,12 +290,17 @@ export default function ManagerialSelfAssessmentPanel() {
   }
 
   async function handleSave() {
-    if (!activeCategory || !campaignId) return;
+    if (!activeCategory || !campaignId || !viewingSelf) return;
     setSaving(true);
     setError(false);
     const scores = Object.entries(draft)
-      .map(([order, row]) => ({ order: Number(order), score: row.score, objective_score: row.objective_score }))
-      .filter((entry) => entry.score !== null || entry.objective_score !== null);
+      .map(([order, row]) => ({
+        order: Number(order),
+        score: row.score,
+        objective_score: row.objective_score,
+        comment: row.comment,
+      }))
+      .filter((entry) => entry.score !== null || entry.objective_score !== null || entry.comment);
     const payload = { campaign: campaignId, category: activeCategory.key, scores };
     const existing = assessments[activeCategory.key];
     try {
@@ -195,6 +313,28 @@ export default function ManagerialSelfAssessmentPanel() {
       setError(true);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSaveSynthesis() {
+    if (!campaignId || !viewingSelf) return;
+    setSynthesisSaving(true);
+    setSynthesisError(false);
+    const payload = {
+      campaign: campaignId,
+      key_skills: keySkills.map((s) => s.trim()).filter(Boolean),
+      improvement_areas: improvementAreas.map((s) => s.trim()).filter(Boolean),
+    };
+    try {
+      const r = synthesis
+        ? await apiClient.patch<ManagerialSynthesis>(`/managerial-syntheses/${synthesis.id}/`, payload)
+        : await apiClient.post<ManagerialSynthesis>("/managerial-syntheses/", payload);
+      setSynthesis(r.data);
+      setSynthesisSaved(true);
+    } catch {
+      setSynthesisError(true);
+    } finally {
+      setSynthesisSaving(false);
     }
   }
 
@@ -212,7 +352,7 @@ export default function ManagerialSelfAssessmentPanel() {
                 {t("managerialSelfAssessment.nomManager")}
               </Typography>
               <Typography variant="subtitle2" fontWeight={700}>
-                {user?.full_name}
+                {viewedPerson?.full_name}
               </Typography>
             </Box>
             <Box>
@@ -220,10 +360,29 @@ export default function ManagerialSelfAssessmentPanel() {
                 {t("managerialSelfAssessment.position")}
               </Typography>
               <Typography variant="subtitle2" fontWeight={700}>
-                {user?.position || "—"}
+                {viewedPerson?.position || "—"}
               </Typography>
             </Box>
           </Stack>
+          {isCompanyAdmin && (
+            <TextField
+              select
+              size="small"
+              label={t("managerialSelfAssessment.viewingLabel")}
+              value={viewedUserId}
+              onChange={(e) => setViewedUserId(e.target.value === "" ? "" : Number(e.target.value))}
+              sx={{ minWidth: 220 }}
+            >
+              {user && (
+                <MenuItem value={user.id}>{t("managerialSelfAssessment.myself", { name: user.full_name })}</MenuItem>
+              )}
+              {managers.map((m) => (
+                <MenuItem key={m.id} value={m.id}>
+                  {m.full_name} — {m.position}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
           <TextField
             select
             size="small"
@@ -243,6 +402,9 @@ export default function ManagerialSelfAssessmentPanel() {
       </Paper>
 
       {campaigns.length === 0 && <Alert severity="info">{t("managerialSelfAssessment.noCampaign")}</Alert>}
+      {!viewingSelf && viewedPerson && (
+        <Alert severity="info">{t("managerialSelfAssessment.viewingOther", { name: viewedPerson.full_name })}</Alert>
+      )}
 
       {campaignId !== "" && (
         <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
@@ -254,83 +416,171 @@ export default function ManagerialSelfAssessmentPanel() {
             sx={{ borderBottom: "1px solid", borderColor: "divider", px: 1 }}
           >
             {categories.map((c) => (
-              <Tab key={c.key} label={c.label} />
+              <Tab key={c.key} label={c.label.toUpperCase()} />
             ))}
+            <Tab label={t("managerialSelfAssessment.synthesisTab").toUpperCase()} />
           </Tabs>
 
+          {isSynthesis ? (
+            <Box sx={{ p: 3 }}>
+              <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 0.5 }}>
+                {t("managerialSelfAssessment.synthesisTitle")}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {t("managerialSelfAssessment.synthesisHint")}
+              </Typography>
+
+              <Stack direction={{ xs: "column", lg: "row" }} spacing={3} alignItems="stretch">
+                <Box sx={{ flex: "3 1 0", minWidth: 0 }}>
+                  <ResponsiveContainer width="100%" height={560}>
+                    <RadarChart data={synthesisData} outerRadius="85%">
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="category" tick={{ fontSize: 13, fontWeight: 600 }} />
+                      <PolarRadiusAxis domain={[0, 5]} tickCount={6} angle={90} />
+                      <Radar
+                        name={viewedPerson?.full_name}
+                        dataKey="ic"
+                        stroke="#2E8FCB"
+                        fill="#2E8FCB"
+                        fillOpacity={0.45}
+                        strokeWidth={2}
+                      />
+                      <RechartsTooltip formatter={(value: number) => value.toFixed(1)} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </Box>
+
+                <Stack sx={{ flex: "1 1 0", minWidth: { lg: 280 } }} spacing={2}>
+                  <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+                    <Box sx={{ bgcolor: "#3F9142", color: "#fff", px: 2, py: 0.75 }}>
+                      <Typography variant="subtitle2" fontWeight={800}>
+                        {t("managerialSelfAssessment.keySkillsTitle")}
+                      </Typography>
+                    </Box>
+                    <Stack spacing={1} sx={{ p: 1.5 }}>
+                      {[0, 1, 2].map((i) => (
+                        <TextField
+                          key={i}
+                          size="small"
+                          fullWidth
+                          placeholder={t("managerialSelfAssessment.keySkillPlaceholder", { n: i + 1 })}
+                          value={keySkills[i]}
+                          disabled={readOnly}
+                          onChange={(e) => {
+                            setKeySkills((current) => {
+                              const next = [...current];
+                              next[i] = e.target.value;
+                              return next;
+                            });
+                            setSynthesisSaved(false);
+                          }}
+                          inputProps={{ maxLength: 255 }}
+                        />
+                      ))}
+                    </Stack>
+                  </Paper>
+
+                  <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+                    <Box sx={{ bgcolor: "#8B2E2E", color: "#fff", px: 2, py: 0.75 }}>
+                      <Typography variant="subtitle2" fontWeight={800}>
+                        {t("managerialSelfAssessment.improvementAreasTitle")}
+                      </Typography>
+                    </Box>
+                    <Stack spacing={1} sx={{ p: 1.5 }}>
+                      {[0, 1, 2].map((i) => (
+                        <TextField
+                          key={i}
+                          size="small"
+                          fullWidth
+                          placeholder={t("managerialSelfAssessment.improvementAreaPlaceholder", { n: i + 1 })}
+                          value={improvementAreas[i]}
+                          disabled={readOnly}
+                          onChange={(e) => {
+                            setImprovementAreas((current) => {
+                              const next = [...current];
+                              next[i] = e.target.value;
+                              return next;
+                            });
+                            setSynthesisSaved(false);
+                          }}
+                          inputProps={{ maxLength: 255 }}
+                        />
+                      ))}
+                    </Stack>
+                  </Paper>
+
+                  <Stack direction="row" spacing={2} alignItems="center" justifyContent="flex-end" flexWrap="wrap" useFlexGap>
+                    {synthesisError && <Alert severity="error" sx={{ py: 0 }}>{t("managerialSelfAssessment.saveFailed")}</Alert>}
+                    {synthesisSaved && <Alert severity="success" sx={{ py: 0 }}>{t("managerialSelfAssessment.saved")}</Alert>}
+                    {!readOnly && (
+                      <Button variant="contained" onClick={handleSaveSynthesis} disabled={synthesisSaving}>
+                        {synthesis ? t("managerialSelfAssessment.update") : t("managerialSelfAssessment.save")}
+                      </Button>
+                    )}
+                  </Stack>
+                </Stack>
+              </Stack>
+            </Box>
+          ) : (
+            <>
           <Stack
             direction="row"
-            spacing={2}
+            spacing={3}
             alignItems="center"
-            justifyContent="flex-end"
+            justifyContent="center"
             flexWrap="wrap"
             useFlexGap
             sx={{ p: 2 }}
           >
-            <Stack alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                {t("managerialSelfAssessment.icLabel")}
-              </Typography>
-              <Box sx={{ minWidth: 64, px: 1.5, py: 0.5, border: "1px solid", borderColor: "divider", borderRadius: 1, textAlign: "center" }}>
-                <Typography variant="h6" fontWeight={800} sx={{ color: ic !== null ? cohesionColor(ic) : "text.disabled" }}>
-                  {ic !== null ? ic.toFixed(1) : "—"}
-                </Typography>
-              </Box>
-            </Stack>
-            <Stack alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                {t("managerialSelfAssessment.ocLabel")}
-              </Typography>
-              <Box sx={{ minWidth: 64, px: 1.5, py: 0.5, border: "1px solid", borderColor: "divider", borderRadius: 1, textAlign: "center" }}>
-                <Typography variant="h6" fontWeight={800} sx={{ color: oc !== null ? cohesionColor(oc) : "text.disabled" }}>
-                  {oc !== null ? oc.toFixed(1) : "—"}
-                </Typography>
-              </Box>
-            </Stack>
+            <ValueBox label={t("managerialSelfAssessment.icLabel")} value={ic} />
+            <ValueBox label={t("managerialSelfAssessment.ocLabel")} value={oc} bg="#fff4c2" />
           </Stack>
 
           <TableContainer>
             <Table size="small" sx={{ "& .MuiTableCell-root": { border: "1px solid", borderColor: "divider" } }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ width: "40%", bgcolor: "#dde5ef", color: "#243747", fontWeight: 800, fontSize: 12 }}>
-                    {activeCategory?.label}
+                  <TableCell sx={{ width: "36%", bgcolor: "#dde5ef", color: "#243747", fontWeight: 800, fontSize: 13, py: 0.5 }}>
+                    {activeCategory?.label.toUpperCase()}
                   </TableCell>
                   {TIERS.map((tier) => (
                     <TableCell
                       key={tier}
                       align="center"
-                      sx={{ bgcolor: cohesionColor(tier), color: "#fff", fontWeight: 700, fontSize: 11, lineHeight: 1.25, minWidth: 78 }}
+                      sx={{ bgcolor: tierColor(tier), color: "#fff", fontWeight: 700, fontSize: 10, lineHeight: 1.2, minWidth: 52, px: 0.5 }}
                     >
                       {t(`managerialSelfAssessment.scale${activeCategory?.scale === "level" ? "Level" : "Frequency"}.${tier}`).toUpperCase()}
                       <br />
                       {tier}
                     </TableCell>
                   ))}
-                  <TableCell align="center" sx={{ fontWeight: 800, fontSize: 12, minWidth: 70 }}>
+                  <TableCell align="center" sx={{ fontWeight: 800, fontSize: 12, minWidth: 60 }}>
                     {t("managerialSelfAssessment.totalCol")}
                   </TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 800, fontSize: 12, minWidth: 80, bgcolor: "#fffaf0" }}>
+                  <TableCell align="center" sx={{ fontWeight: 800, fontSize: 12, minWidth: 58, px: 0.5, bgcolor: "#fffaf0" }}>
                     {t("managerialSelfAssessment.objectiveCol")}
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800, fontSize: 12, minWidth: 200 }}>
+                    {t("managerialSelfAssessment.commentCol")}
                   </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {activeCategory?.items.map((statement, i) => {
                   const order = i + 1;
-                  const row = draft[order] ?? { score: null, objective_score: null };
+                  const row = draft[order] ?? { score: null, objective_score: null, comment: "" };
                   return (
                     <TableRow key={order}>
                       <TableCell>
-                        <Typography variant="body2">
+                        <Typography variant="body1">
                           {order}. {statement}
                         </Typography>
                       </TableCell>
                       {TIERS.map((tier) => (
-                        <TableCell key={tier} align="center">
+                        <TableCell key={tier} align="center" sx={{ px: 0.5 }}>
                           <ScoreOval
                             selected={row.score === tier}
-                            color={cohesionColor(tier)}
+                            color={tierColor(tier)}
                             disabled={readOnly}
                             ariaLabel={`${statement} — ${tier}`}
                             onClick={() => updateRow(order, { score: tier })}
@@ -340,7 +590,7 @@ export default function ManagerialSelfAssessmentPanel() {
                       <TableCell align="center" sx={{ fontWeight: 800 }}>
                         {row.score !== null ? row.score.toFixed(1) : "—"}
                       </TableCell>
-                      <TableCell align="center" sx={{ bgcolor: "#fffaf0" }}>
+                      <TableCell align="center" sx={{ bgcolor: "#fffaf0", px: 0.5 }}>
                         <DecimalField
                           value={row.objective_score}
                           onChange={(v) => updateRow(order, { objective_score: v === "" ? null : v })}
@@ -349,7 +599,18 @@ export default function ManagerialSelfAssessmentPanel() {
                           max={5}
                           decimals={1}
                           disabled={readOnly}
-                          width={64}
+                          width={52}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          placeholder={t("managerialSelfAssessment.commentPlaceholder")}
+                          value={row.comment}
+                          disabled={readOnly}
+                          onChange={(e) => updateRow(order, { comment: e.target.value })}
+                          inputProps={{ maxLength: 255 }}
                         />
                       </TableCell>
                     </TableRow>
@@ -368,6 +629,8 @@ export default function ManagerialSelfAssessmentPanel() {
               </Button>
             )}
           </Stack>
+            </>
+          )}
         </Paper>
       )}
     </Stack>
