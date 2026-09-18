@@ -350,8 +350,8 @@ export default function CohesionFormPage() {
         return {
           criterion,
           score: saved ? Number(saved.score) : 3,
-          objective_score: saved?.objective_score ?? null,
-          achieved_score: saved?.achieved_score ?? null,
+          objective_score: saved?.objective_score != null ? Number(saved.objective_score) : null,
+          achieved_score: saved?.achieved_score != null ? Number(saved.achieved_score) : null,
         };
       })
     );
