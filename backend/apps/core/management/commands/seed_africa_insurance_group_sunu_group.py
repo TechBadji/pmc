@@ -11,7 +11,11 @@ apporté à `useCohesionCriteria` (frontend/src/utils/cohesionCriteria.ts).
 Volontairement minimal par rapport au premier jeu SUNU Group (annulé) : pas
 de directeur, pas d'évaluations ID-3A/auto-évaluation managériale/Monkey
 Management, pas d'avis de cohésion pré-remplis — seulement la direction et
-ses 50 collaborateurs, pour que la démo se fasse en direct.
+ses collaborateurs, pour que la démo se fasse en direct.
+
+Idempotent : peut être relancée pour compléter jusqu'à EMPLOYEE_COUNT si la
+direction ou une partie des collaborateurs existent déjà (crée uniquement
+les logins SUNU<n> manquants).
 
 Usage:
     python manage.py seed_africa_insurance_group_sunu_group
@@ -25,11 +29,11 @@ from apps.core.models import Company, Department, User
 COMPANY_NAME = "Africa Insurance Group"
 DEPT_CODE, DEPT_NAME = "SUNU", "SUNU Group"
 PASSWORD = "123456"
-EMPLOYEE_COUNT = 50
+EMPLOYEE_COUNT = 60
 
 
 class Command(BaseCommand):
-    help = "Crée la direction SUNU Group (50 collaborateurs, logins SUNU1…SUNU50) au sein d'Africa Insurance Group."
+    help = "Crée/complète la direction SUNU Group (jusqu'à SUNU1…SUNU60) au sein d'Africa Insurance Group."
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -38,17 +42,22 @@ class Command(BaseCommand):
         except Company.DoesNotExist:
             raise CommandError(f"Entreprise « {COMPANY_NAME} » introuvable — lancez d'abord seed_africa_insurance_group.")
 
-        if Department.objects.filter(company=company, code=DEPT_CODE).exists():
-            raise CommandError("SUNU Group existe déjà pour cette entreprise — rien à faire.")
+        department, dept_created = Department.objects.get_or_create(
+            company=company, code=DEPT_CODE, defaults={"name": DEPT_NAME}
+        )
+        if dept_created:
+            self.stdout.write(self.style.SUCCESS(f"Direction créée : {DEPT_NAME}"))
 
+        existing_logins = set(
+            User.objects.filter(company=company, department=department).values_list("generated_login", flat=True)
+        )
         used_logins = set(User.objects.exclude(company=company).values_list("generated_login", flat=True))
-
-        department = Department.objects.create(company=company, code=DEPT_CODE, name=DEPT_NAME)
-        self.stdout.write(self.style.SUCCESS(f"Direction créée : {DEPT_NAME}"))
 
         created = 0
         for n in range(1, EMPLOYEE_COUNT + 1):
             login = f"SUNU{n}"
+            if login in existing_logins:
+                continue
             if login in used_logins:
                 raise CommandError(f"Le login {login} est déjà pris par un autre tenant.")
             user = User(
@@ -67,9 +76,13 @@ class Command(BaseCommand):
             user.save()
             created += 1
 
+        if created == 0:
+            raise CommandError(f"SUNU Group a déjà {len(existing_logins)} collaborateurs (cible {EMPLOYEE_COUNT}) — rien à faire.")
+
         company.employee_count = company.users.count()
         company.save(update_fields=["employee_count"])
 
+        total = len(existing_logins) + created
         self.stdout.write(self.style.SUCCESS(
-            f"\nTerminé — {DEPT_NAME} : {created} collaborateurs (SUNU1…SUNU{created} / {PASSWORD})."
+            f"\nTerminé — {DEPT_NAME} : {created} collaborateur(s) ajouté(s), {total} au total (SUNU1…SUNU{total} / {PASSWORD})."
         ))
