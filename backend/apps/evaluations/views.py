@@ -1,4 +1,5 @@
 from django.db.models import ProtectedError, Q
+from django.utils import timezone
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -103,7 +104,8 @@ class EvaluationCampaignViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
     def close(self, request, pk=None):
         campaign = self.get_object()
         campaign.is_closed = True
-        campaign.save(update_fields=["is_closed"])
+        campaign.closed_on = timezone.localdate()
+        campaign.save(update_fields=["is_closed", "closed_on"])
         log_event(
             request.user,
             "campaign.closed",
@@ -116,7 +118,8 @@ class EvaluationCampaignViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
     def reopen(self, request, pk=None):
         campaign = self.get_object()
         campaign.is_closed = False
-        campaign.save(update_fields=["is_closed"])
+        campaign.closed_on = None
+        campaign.save(update_fields=["is_closed", "closed_on"])
         log_event(
             request.user,
             "campaign.reopened",

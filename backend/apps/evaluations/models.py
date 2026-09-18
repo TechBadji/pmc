@@ -33,6 +33,10 @@ class EvaluationCampaign(models.Model):
         "Clôturée", default=False,
         help_text="Une campagne clôturée n'accepte plus de nouvelles évaluations.",
     )
+    closed_on = models.DateField(
+        "Clôturée le", null=True, blank=True,
+        help_text="Jour où le CEO a clôturé la campagne : les saisies faites jusque-là lui restent rattachées.",
+    )
     created_by = models.ForeignKey(
         "core.User",
         verbose_name="Créée par",
@@ -53,14 +57,18 @@ class EvaluationCampaign(models.Model):
 
     @property
     def effective_end_date(self):
-        """Fin réelle de la fenêtre de saisie. Une campagne clôturée s'arrête à
-        sa date de fin ; une campagne encore ouverte continue de recevoir des
-        saisies après elle (une fiche déposée en septembre pour un semestre
-        « janvier-juin » encore ouvert lui appartient), sans jamais déborder
-        sur la campagne suivante de l'entreprise."""
+        """Fin réelle de la fenêtre de saisie.
+
+        Une campagne reste ouverte tant que le CEO ne l'a pas clôturée, même
+        après sa date de fin : les saisies faites entre-temps (une fiche déposée
+        en septembre pour un semestre « janvier-juin ») lui appartiennent. À la
+        clôture, la fenêtre est figée au jour où le CEO l'a clôturée, pour que
+        ces saisies ne sortent pas de la campagne. Elle ne déborde jamais sur la
+        campagne suivante de l'entreprise."""
         if self.is_closed:
-            return self.end_date
-        end = max(self.end_date, date.today())
+            end = max(self.end_date, self.closed_on or self.end_date)
+        else:
+            end = max(self.end_date, date.today())
         following = (
             EvaluationCampaign.objects.filter(company_id=self.company_id, start_date__gt=self.start_date)
             .order_by("start_date")
