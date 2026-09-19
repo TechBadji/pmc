@@ -547,6 +547,11 @@ export default function CohesionFormPage() {
   const achievedValues = rows.map((r) => r.achieved_score).filter((v): v is number => v !== null);
   const achieved = achievedValues.length ? achievedValues.reduce((a, b) => a + b, 0) / achievedValues.length : null;
   const tco = achieved !== null && oce ? Math.round((achieved / oce) * 1000) / 10 : null;
+  // Sans fiche d'encadrant (une direction sans directeur, ou pas encore remplie),
+  // l'ICE de l'en-tête reprend la moyenne des avis des collaborateurs dès que
+  // le seuil de publication est atteint, au lieu de rester vide.
+  const opinionIce = !orgView && sheetOpinion?.published && sheetOpinion.score != null ? sheetOpinion.score : null;
+  const iceFromOpinion = ice === null && opinionIce !== null;
 
   function updateRow(i: number, patch: Partial<CriterionRow>) {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -976,7 +981,7 @@ export default function CohesionFormPage() {
                   l'entreprise, ce sont ses collaborateurs qui la notent. */}
               <ValueBox
                 label={t("cohesion.iceLabel")}
-                value={orgView ? sheetOpinion?.score ?? null : ice}
+                value={orgView ? sheetOpinion?.score ?? null : ice ?? opinionIce}
               />
               <ValueBox
                 label={t("cohesion.oceLabel")}
@@ -1004,6 +1009,11 @@ export default function CohesionFormPage() {
                 </>
               )}
             </Stack>
+            {iceFromOpinion && sheetOpinion && (
+              <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 420, textAlign: { sm: "right" } }}>
+                {t("cohesion.iceFromOpinion", { respondents: sheetOpinion.respondents, headcount: sheetOpinion.headcount ?? "?" })}
+              </Typography>
+            )}
           </Stack>
         )}
       </Stack>
