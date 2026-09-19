@@ -1,0 +1,92 @@
+{
+  "nav": { "settings": "Paramètres" },
+  "settings": {
+    "title": "Paramètres de l'entreprise",
+    "intro": "Réglages réservés au CEO : identité de l'entreprise, règles de la cohésion et remise à zéro des données de démonstration.",
+    "notAllowed": "Cette page est réservée au CEO de l'entreprise.",
+    "loadFailed": "Les paramètres n'ont pas pu être chargés. Réessayez avant de modifier quoi que ce soit.",
+    "retry": "Réessayer",
+    "company": {
+      "title": "Entreprise",
+      "name": "Nom de l'entreprise",
+      "sector": "Secteur d'activité",
+      "plan": "Formule d'abonnement",
+      "headcount": "Effectif",
+      "save": "Enregistrer les paramètres",
+      "saved": "Paramètres enregistrés.",
+      "unsaved": "Modifications non enregistrées"
+    },
+    "cohesion": {
+      "title": "Cohésion d'équipe",
+      "threshold": "Seuil de publication (nombre de répondants)",
+      "help": "Les indices d'une direction (ICE, OCE, TCO) ne sont publiés qu'à partir de ce nombre de collaborateurs ayant répondu. Un seuil bas fait apparaître les résultats plus tôt, mais un résultat calculé sur très peu de réponses se rattache plus facilement à des personnes. Valeur actuelle par défaut : 2."
+    },
+    "shortcuts": {
+      "title": "Accès rapides",
+      "campaigns": "Campagnes d'évaluation",
+      "campaignsHelp": "Créer, clôturer ou rouvrir une campagne.",
+      "teams": "Équipes et collaborateurs",
+      "teamsHelp": "Directions, services et comptes utilisateurs.",
+      "skills": "Référentiels de compétences",
+      "skillsHelp": "Hard skills et soft skills de l'entreprise.",
+      "passwords": "Demandes de mot de passe",
+      "passwordsHelp": "Réinitialisations demandées par les collaborateurs."
+    },
+    "validation": {
+      "nameRequired": "Le nom de l'entreprise est obligatoire.",
+      "nameTooLong": "Le nom de l'entreprise est limité à 255 caractères.",
+      "thresholdInvalid": "Le seuil de publication doit être un nombre entier entre 1 et 20 (vous avez saisi « {{value}} »).",
+      "noRubrique": "Cochez au moins une rubrique à remettre à zéro.",
+      "noCampaign": "Choisissez au moins une campagne, ou sélectionnez « Toutes les campagnes ».",
+      "wrongConfirmation": "Confirmation incorrecte : saisissez exactement « {{phrase}} » pour valider la suppression."
+    },
+    "reset": {
+      "title": "Remise à zéro des données",
+      "intro": "Pour reprendre une démonstration à zéro : supprimez les données d'une ou plusieurs rubriques, sur une campagne, plusieurs ou toutes, et pour une direction si besoin. Les comptes, les directions, les campagnes et les référentiels de compétences ne sont jamais supprimés.",
+      "warning": "Action irréversible. Vérifiez l'aperçu avant de confirmer.",
+      "campaigns": "Campagnes concernées",
+      "allCampaigns": "Toutes les campagnes",
+      "someCampaigns": "Choisir les campagnes",
+      "campaignPeriod": "{{name}} ({{start}} → {{end}})",
+      "department": "Direction concernée",
+      "allDepartments": "Toutes les directions",
+      "rubriques": "Rubriques à remettre à zéro",
+      "selectAll": "Tout cocher",
+      "selectNone": "Tout décocher",
+      "needsAllCampaigns": "Non rattaché à une campagne : disponible uniquement avec « Toutes les campagnes ».",
+      "preview": "Voir ce qui sera supprimé",
+      "previewTitle": "Aperçu de la suppression",
+      "previewEmpty": "Rien à supprimer dans ce périmètre : les rubriques choisies sont déjà vides.",
+      "count": "{{count}} ligne(s)",
+      "includes": "dont {{skill_scores}} notes de compétences, {{skill_notes}} lignes Forces & Faiblesses et {{objectives}} lignes d'objectifs",
+      "total": "Total : {{count}} élément(s) seront supprimés.",
+      "run": "Remettre à zéro…",
+      "dialogTitle": "Confirmer la remise à zéro",
+      "dialogText": "Vous allez supprimer définitivement {{count}} élément(s). Cette action est irréversible.",
+      "dialogType": "Pour confirmer, saisissez « {{phrase}} »",
+      "cancel": "Annuler",
+      "confirm": "Supprimer définitivement",
+      "running": "Suppression en cours…",
+      "done": "Remise à zéro terminée : {{count}} élément(s) supprimé(s).",
+      "groups": {
+        "evaluations": "Évaluations et objectifs",
+        "cohesion": "Cohésion d'équipe",
+        "teams": "Équipes et plans",
+        "people": "Fiches personnelles"
+      },
+      "items": {
+        "evaluations": { "label": "Évaluations ID-3A", "help": "Chaque évaluation avec ses notes de compétences, ses lignes Forces & Faiblesses et ses objectifs annuels." },
+        "skill_notes": { "label": "Forces & Faiblesses", "help": "Uniquement les lignes Forces & Faiblesses : les évaluations sont conservées." },
+        "objectives": { "label": "Objectifs annuels", "help": "Fiches d'objectifs des collaborateurs et des équipes ; les évaluations sont conservées avec leurs scores actuels." },
+        "managerial": { "label": "Auto-évaluation managériale", "help": "Les 5 fiches et la synthèse (compétences clés, axes d'amélioration) de chaque manager." },
+        "monkey": { "label": "Monkey Management", "help": "Le diagnostic Monkey Management de chaque manager." },
+        "cohesion_sheets": { "label": "Cohésion — fiches des encadrants", "help": "ICE, OCE et Réalisé saisis par les directeurs (ou le CEO)." },
+        "cohesion_answers": { "label": "Cohésion — avis des collaborateurs", "help": "Les avis sur sa direction et sur l'organisation." },
+        "team_boards": { "label": "Cartes d'équipe", "help": "Team Performance ID, Strengths & Weaknesses et Relationship Dynamic." },
+        "action_plans": { "label": "Plans d'action et de développement", "help": "Plans d'action libres et grilles de plan de développement." },
+        "relationships": { "label": "Relations d'équipe", "help": "Qualité des relations entre membres d'une équipe." },
+        "profiles": { "label": "Fiches Performance 360°", "help": "Les fiches personnelles saisies (parcours, réalisations, plan de développement)." }
+      }
+    }
+  }
+}

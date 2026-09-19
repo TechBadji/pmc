@@ -23,13 +23,14 @@ centaines de répondants — se comportent mal. D'où trois partis pris.
 """
 
 MIN_RESPONDENTS = 2
-"""En dessous, aucun résultat n'est publié pour la direction.
+"""Seuil par défaut ; chaque entreprise peut le régler dans ses paramètres
+(`Company.cohesion_min_respondents`). En dessous, aucun résultat n'est publié
+pour la direction.
 
-Fixé à deux réponses à la demande du produit, pour que les indices (ICE, OCE,
-TCO) apparaissent dès qu'un second collaborateur a répondu. Contrepartie
-assumée : avec si peu de réponses, un résultat se laisse plus facilement
-rattacher à des personnes. C'est ce seuil, et lui seul, qui décide si les
-données sont publiées.
+Deux réponses suffisent par défaut, pour que les indices (ICE, OCE, TCO)
+apparaissent dès qu'un second collaborateur a répondu. Contrepartie assumée :
+avec si peu de réponses, un résultat se laisse plus facilement rattacher à des
+personnes — c'est ce que le CEO arbitre en relevant le seuil.
 """
 
 LOW_SCORE = 2
@@ -68,7 +69,7 @@ def _mode(values, moyenne):
     return min(candidats, key=lambda note: (abs(note - (moyenne or 3)), note))
 
 
-def aggregate_responses(responses, criteria=None, headcount=None):
+def aggregate_responses(responses, criteria=None, headcount=None, min_respondents=None):
     """Résultat agrégé d'une direction pour un tour.
 
     `responses` est une suite de `CohesionResponse`. Renvoie le détail par
@@ -76,15 +77,16 @@ def aggregate_responses(responses, criteria=None, headcount=None):
     seuil de répondants n'est pas atteint, la structure étant alors vide de
     toute note.
     """
+    threshold = min_respondents or MIN_RESPONDENTS
     responses = list(responses)
     respondents = len(responses)
-    published = respondents >= MIN_RESPONDENTS
+    published = respondents >= threshold
 
     result = {
         "respondents": respondents,
         "headcount": headcount,
         "participation": (respondents / headcount) if headcount else None,
-        "min_respondents": MIN_RESPONDENTS,
+        "min_respondents": threshold,
         "published": published,
         "criteria": [],
         "score": None,
@@ -149,7 +151,7 @@ def aggregate_responses(responses, criteria=None, headcount=None):
     return result
 
 
-def aggregate_organisation(responses, headcount=None):
+def aggregate_organisation(responses, headcount=None, min_respondents=None):
     """Indice de l'organisation, vue par ses collaborateurs.
 
     C'est la même règle que pour une direction, appliquée à l'entreprise
@@ -163,7 +165,7 @@ def aggregate_organisation(responses, headcount=None):
     elles ne disent pas grand-chose non plus. La participation, affichée à
     côté, reste le meilleur garde-fou de lecture.
     """
-    return aggregate_responses(responses, headcount=headcount)
+    return aggregate_responses(responses, headcount=headcount, min_respondents=min_respondents)
 
 
 def company_score(directions):

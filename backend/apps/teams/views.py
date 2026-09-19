@@ -238,6 +238,7 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         team = request.query_params.get("team")
         if team:
             departments = departments.filter(id=team)
+        min_respondents = getattr(user.company, "cohesion_min_respondents", None)
 
         date = request.query_params.get("date")
         responses = CohesionResponse.objects.filter(team__in=departments)
@@ -290,7 +291,8 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         directions = []
         for department in departments.order_by("name"):
             summary = aggregate_responses(
-                by_team.get(department.id, []), headcount=headcounts.get(department.id)
+                by_team.get(department.id, []), headcount=headcounts.get(department.id),
+                min_respondents=min_respondents,
             )
             manager_score = own_sheets.get(department.id)
             summary.update(
@@ -328,6 +330,7 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         organisation = aggregate_organisation(
             list(latest_org.values()),
             headcount=User.objects.filter(company_id=user.company_id, is_active=True).count(),
+            min_respondents=min_respondents,
         )
         # Même forme qu'une direction : l'écran affiche les deux avec le même
         # composant, et rien ne l'oblige à distinguer les cas.

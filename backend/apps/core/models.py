@@ -3,6 +3,7 @@ Modèles fondamentaux : Entreprise (tenant), Utilisateur, Département.
 Core models: Company (tenant), User, Department.
 """
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Lower
@@ -25,6 +26,12 @@ class Company(models.Model):
         default=SubscriptionPlan.DEMO,
     )
     is_active = models.BooleanField("Actif", default=True)
+    cohesion_min_respondents = models.PositiveSmallIntegerField(
+        "Seuil de publication de la cohésion",
+        default=2,
+        validators=[MinValueValidator(1), MaxValueValidator(20)],
+        help_text="Nombre minimal de collaborateurs ayant répondu pour publier les indices de cohésion d'une direction.",
+    )
     admin_first_name = models.CharField("Prénom du CEO", max_length=150, blank=True)
     admin_last_name = models.CharField("Nom du CEO", max_length=150, blank=True)
     admin_user = models.OneToOneField(

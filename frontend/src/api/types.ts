@@ -14,6 +14,7 @@ export interface Me {
   position: string;
   company: number | null;
   company_name: string | null;
+  company_cohesion_min_respondents: number | null;
   department: number | null;
   department_name: string | null;
   manager: number | null;

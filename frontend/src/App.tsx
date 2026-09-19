@@ -38,6 +38,7 @@ const MyPerformanceIdPage = lazy(() => import("@/pages/MyPerformanceIdPage"));
 const PasswordResetRequestsPage = lazy(() => import("@/pages/PasswordResetRequestsPage"));
 const PerformancePage = lazy(() => import("@/pages/PerformancePage"));
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const SkillsAdminPage = lazy(() => import("@/pages/SkillsAdminPage"));
 const TalentsDashboardPage = lazy(() => import("@/pages/TalentsDashboardPage"));
 const SkillsPage = lazy(() => import("@/pages/SkillsPage"));
@@ -91,6 +92,7 @@ export default function App() {
           <Route path="/password-requests" element={<PasswordResetRequestsPage />} />
           <Route path="/logs" element={<LogsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>

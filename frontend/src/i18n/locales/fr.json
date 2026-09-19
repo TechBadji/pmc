@@ -897,7 +897,7 @@
   "cohesionSurvey": {
     "title": "Mon avis sur ma direction",
     "subtitle": "Votre regard sur {{team}}, sur les dix critères de cohésion.",
-    "privacy": "Vos réponses ne sont jamais lues nominativement. Le résultat n'est publié à votre direction qu'à partir de 2 répondants, sous forme de moyenne.",
+    "privacy": "Vos réponses ne sont jamais lues nominativement. Le résultat n'est publié à votre direction qu'à partir de {{min}} répondants, sous forme de moyenne.",
     "scaleHint": "1 = très faible · 5 = très élevé",
     "progress": "{{answered}} sur {{total}} critères notés",
     "incomplete": "Notez les dix critères pour pouvoir enregistrer.",

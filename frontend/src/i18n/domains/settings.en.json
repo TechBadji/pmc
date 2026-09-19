@@ -1,0 +1,92 @@
+{
+  "nav": { "settings": "Settings" },
+  "settings": {
+    "title": "Company settings",
+    "intro": "CEO-only settings: company identity, cohesion rules and reset of demo data.",
+    "notAllowed": "This page is reserved for the company's CEO.",
+    "loadFailed": "The settings could not be loaded. Try again before changing anything.",
+    "retry": "Retry",
+    "company": {
+      "title": "Company",
+      "name": "Company name",
+      "sector": "Business sector",
+      "plan": "Subscription plan",
+      "headcount": "Headcount",
+      "save": "Save settings",
+      "saved": "Settings saved.",
+      "unsaved": "Unsaved changes"
+    },
+    "cohesion": {
+      "title": "Team cohesion",
+      "threshold": "Publication threshold (number of respondents)",
+      "help": "A division's indices (ICE, OCE, TCO) are published only from this number of respondents. A low threshold shows results sooner, but a result based on very few answers is easier to trace back to people. Default: 2."
+    },
+    "shortcuts": {
+      "title": "Quick access",
+      "campaigns": "Evaluation campaigns",
+      "campaignsHelp": "Create, close or reopen a campaign.",
+      "teams": "Teams and employees",
+      "teamsHelp": "Divisions, services and user accounts.",
+      "skills": "Skills frameworks",
+      "skillsHelp": "The company's hard and soft skills.",
+      "passwords": "Password requests",
+      "passwordsHelp": "Resets requested by employees."
+    },
+    "validation": {
+      "nameRequired": "The company name is required.",
+      "nameTooLong": "The company name is limited to 255 characters.",
+      "thresholdInvalid": "The publication threshold must be a whole number between 1 and 20 (you entered \"{{value}}\").",
+      "noRubrique": "Tick at least one section to reset.",
+      "noCampaign": "Choose at least one campaign, or select \"All campaigns\".",
+      "wrongConfirmation": "Wrong confirmation: type exactly \"{{phrase}}\" to confirm the deletion."
+    },
+    "reset": {
+      "title": "Reset data",
+      "intro": "To restart a demo from zero: delete the data of one or more sections, for one, several or all campaigns, and for one division if needed. Accounts, divisions, campaigns and skills frameworks are never deleted.",
+      "warning": "Irreversible action. Check the preview before confirming.",
+      "campaigns": "Campaigns concerned",
+      "allCampaigns": "All campaigns",
+      "someCampaigns": "Choose campaigns",
+      "campaignPeriod": "{{name}} ({{start}} → {{end}})",
+      "department": "Division concerned",
+      "allDepartments": "All divisions",
+      "rubriques": "Sections to reset",
+      "selectAll": "Tick all",
+      "selectNone": "Untick all",
+      "needsAllCampaigns": "Not linked to a campaign: only available with \"All campaigns\".",
+      "preview": "See what will be deleted",
+      "previewTitle": "Deletion preview",
+      "previewEmpty": "Nothing to delete in this scope: the chosen sections are already empty.",
+      "count": "{{count}} row(s)",
+      "includes": "including {{skill_scores}} skill scores, {{skill_notes}} Strengths & Weaknesses lines and {{objectives}} objective lines",
+      "total": "Total: {{count}} item(s) will be deleted.",
+      "run": "Reset…",
+      "dialogTitle": "Confirm the reset",
+      "dialogText": "You are about to permanently delete {{count}} item(s). This cannot be undone.",
+      "dialogType": "To confirm, type \"{{phrase}}\"",
+      "cancel": "Cancel",
+      "confirm": "Delete permanently",
+      "running": "Deleting…",
+      "done": "Reset complete: {{count}} item(s) deleted.",
+      "groups": {
+        "evaluations": "Evaluations and objectives",
+        "cohesion": "Team cohesion",
+        "teams": "Teams and plans",
+        "people": "Personal sheets"
+      },
+      "items": {
+        "evaluations": { "label": "ID-3A evaluations", "help": "Each evaluation with its skill scores, Strengths & Weaknesses lines and annual objectives." },
+        "skill_notes": { "label": "Strengths & Weaknesses", "help": "Only the Strengths & Weaknesses lines: evaluations are kept." },
+        "objectives": { "label": "Annual objectives", "help": "Objective sheets of employees and teams; evaluations are kept with their current scores." },
+        "managerial": { "label": "Managerial self-assessment", "help": "The 5 sheets and the summary (key skills, improvement areas) of each manager." },
+        "monkey": { "label": "Monkey Management", "help": "Each manager's Monkey Management diagnostic." },
+        "cohesion_sheets": { "label": "Cohesion — manager sheets", "help": "ICE, OCE and Achieved entered by directors (or the CEO)." },
+        "cohesion_answers": { "label": "Cohesion — employee answers", "help": "Answers about one's division and about the organisation." },
+        "team_boards": { "label": "Team boards", "help": "Team Performance ID, Strengths & Weaknesses and Relationship Dynamic." },
+        "action_plans": { "label": "Action and development plans", "help": "Free action plans and development plan grids." },
+        "relationships": { "label": "Team relationships", "help": "Quality of relationships between team members." },
+        "profiles": { "label": "360° Performance sheets", "help": "Personal sheets entered (background, achievements, development plan)." }
+      }
+    }
+  }
+}

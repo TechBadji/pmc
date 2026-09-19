@@ -281,9 +281,12 @@ class MeSerializer(UserSerializer):
     company_name = serializers.CharField(
         source="company.name", read_only=True, default=None
     )
+    company_cohesion_min_respondents = serializers.IntegerField(
+        source="company.cohesion_min_respondents", read_only=True, default=None
+    )
 
     class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + ["company_name"]
+        fields = UserSerializer.Meta.fields + ["company_name", "company_cohesion_min_respondents"]
 
 
 class MeUpdateSerializer(serializers.ModelSerializer):

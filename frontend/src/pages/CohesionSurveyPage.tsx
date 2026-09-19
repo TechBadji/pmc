@@ -195,7 +195,7 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
       />
 
       <Alert severity="info">
-        {t(scope === "TEAM" ? "cohesionSurvey.privacy" : "cohesionSurvey.privacyOrg")}
+        {t(scope === "TEAM" ? "cohesionSurvey.privacy" : "cohesionSurvey.privacyOrg", { min: user?.company_cohesion_min_respondents ?? 2 })}
       </Alert>
 
       <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>

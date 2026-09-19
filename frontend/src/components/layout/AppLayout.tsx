@@ -9,6 +9,7 @@ import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ScatterPlotOutlinedIcon from "@mui/icons-material/ScatterPlotOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
@@ -116,6 +117,11 @@ export default function AppLayout() {
   function handleProfile() {
     setMenuAnchor(null);
     requestNavigation("/profile");
+  }
+
+  function handleSettings() {
+    setMenuAnchor(null);
+    requestNavigation("/settings");
   }
 
   // Garde "modifications non enregistrées" : la page en cours d'édition se
@@ -261,6 +267,12 @@ export default function AppLayout() {
                 <PersonOutlineIcon fontSize="small" sx={{ mr: 1.5 }} />
                 {t("nav.myProfile")}
               </MenuItem>
+              {user.role === "COMPANY_ADMIN" && (
+                <MenuItem onClick={handleSettings}>
+                  <SettingsOutlinedIcon fontSize="small" sx={{ mr: 1.5 }} />
+                  {t("nav.settings")}
+                </MenuItem>
+              )}
               <MenuItem onClick={handleLogout}>
                 <LogoutOutlinedIcon fontSize="small" sx={{ mr: 1.5 }} />
                 {t("common.logout")}
