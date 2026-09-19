@@ -22,13 +22,14 @@ centaines de répondants — se comportent mal. D'où trois partis pris.
    répondu, et un questionnaire incomplet ne déforme rien.
 """
 
-MIN_RESPONDENTS = 4
+MIN_RESPONDENTS = 2
 """En dessous, aucun résultat n'est publié pour la direction.
 
-À six personnes, un résultat calculé sur deux réponses rend l'attribution
-facile — et il suffit d'une fois pour que plus personne ne réponde
-sincèrement. C'est ce seuil, et lui seul, qui décide si les données valent
-quelque chose.
+Fixé à deux réponses à la demande du produit, pour que les indices (ICE, OCE,
+TCO) apparaissent dès qu'un second collaborateur a répondu. Contrepartie
+assumée : avec si peu de réponses, un résultat se laisse plus facilement
+rattacher à des personnes. C'est ce seuil, et lui seul, qui décide si les
+données sont publiées.
 """
 
 LOW_SCORE = 2
@@ -158,7 +159,7 @@ def aggregate_organisation(responses, headcount=None):
     cloisonnée, et c'est justement ce que cette lecture révèle.
 
     Le seuil de publication vaut ici aussi, quoique moins protecteur : à
-    l'échelle de l'entreprise, quatre réponses ne désignent personne, mais
+    l'échelle de l'entreprise, quelques réponses ne désignent personne, mais
     elles ne disent pas grand-chose non plus. La participation, affichée à
     côté, reste le meilleur garde-fou de lecture.
     """

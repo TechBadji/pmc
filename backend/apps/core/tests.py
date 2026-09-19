@@ -121,3 +121,19 @@ class OwnProfileTests(TestCase):
         bad_date = self.put(self.member, {"user": self.member.pk, "previous_position_dates": ["2999"]})
         self.assertEqual(bad_date.status_code, 400)
         self.assertIn("invalide", str(bad_date.data["previous_position_dates"]))
+
+
+class PublicationThresholdTests(TestCase):
+    def test_indices_are_published_from_two_answers(self):
+        from apps.teams.aggregation import MIN_RESPONDENTS, aggregate_responses
+
+        class Answer:
+            def __init__(self, score):
+                self.scores = [{"criterion": "c", "score": score}]
+
+        self.assertEqual(MIN_RESPONDENTS, 2)
+        one = aggregate_responses([Answer(3)], headcount=6)
+        two = aggregate_responses([Answer(3), Answer(4)], headcount=6)
+        self.assertFalse(one["published"])
+        self.assertTrue(two["published"])
+        self.assertAlmostEqual(two["score"], 3.5)

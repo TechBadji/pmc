@@ -336,9 +336,9 @@ class Command(BaseCommand):
                 rng = random.Random(f"resp-{code}-{camp.pk}")
                 members = list(self.members[code])
                 rng.shuffle(members)
-                # Une direction, un exercice : pas assez de réponses (seuil de 4)
+                # Une direction, un exercice : pas assez de réponses (seuil de 2)
                 # pour montrer l'écran « non publié ».
-                count = 3 if (code == "DPBP" and i == 0) else max(4, len(members) - rng.choice([0, 0, 1, 2]))
+                count = 1 if (code == "DPBP" and i == 0) else max(4, len(members) - rng.choice([0, 0, 1, 2]))
                 for respondent in members[:count]:
                     humeur = rng.gauss(0, 0.6)
                     base = CLIMATE[code] + CAMPAIGN_SHIFTS[i] + humeur
