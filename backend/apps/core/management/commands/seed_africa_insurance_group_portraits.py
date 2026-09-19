@@ -30,12 +30,12 @@ PASSWORD = "123456"
 
 # (genre, n° de portrait) — F = "women", M = "men".
 LEADERS = {
-    "CODIR": ("F", 69), "DIR1": ("M", 80), "DIR2": ("M", 83), "DIR3": ("F", 36),
-    "DIR4": ("M", 49), "DIR5": ("M", 53), "DIR6": ("F", 62), "DIR7": ("M", 30),
-    "DIR8": ("M", 91), "DIR9": ("F", 6), "DIR10": ("M", 55),
+    "CODIR": ("F", 6), "DIR1": ("M", 80), "DIR2": ("M", 83), "DIR3": ("F", 36),
+    "DIR4": ("M", 49), "DIR5": ("M", 53), "DIR6": ("F", 92), "DIR7": ("M", 30),
+    "DIR8": ("M", 91), "DIR9": ("F", 69), "DIR10": ("M", 55),
 }
 # Portraits d'apparence africaine restants, puis portraits variés.
-SUNU_FEMALE = [16, 30, 89, 92, 1, 13, 15, 19, 22, 26, 29, 33, 40, 46, 63, 75, 85, 99, 88, 95, 94, 98, 71, 76, 79, 84, 24, 47, 41, 42]
+SUNU_FEMALE = [16, 30, 89, 4, 1, 13, 15, 19, 22, 26, 29, 33, 40, 46, 63, 75, 85, 99, 88, 95, 94, 98, 71, 76, 79, 84, 24, 47, 41, 42]
 SUNU_MALE = [16, 25, 54, 59, 63, 70, 5, 7, 11, 35, 39, 48, 56, 58, 65, 69, 77, 86, 87, 95, 45, 41, 47, 9, 28, 20, 29, 46, 85, 94]
 
 FIRST_F = ["Abla", "Akossiwa", "Adjoa", "Mawuena", "Afi", "Ténéna", "Rokia", "Aïcha", "Khady", "Ndèye",
