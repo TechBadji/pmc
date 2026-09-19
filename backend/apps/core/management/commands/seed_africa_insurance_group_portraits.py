@@ -17,6 +17,7 @@ Usage:
     python manage.py seed_africa_insurance_group_portraits
 """
 import urllib.request
+from pathlib import Path
 
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand, CommandError
@@ -50,6 +51,11 @@ LAST = ["Agbéko", "Amouzou", "Atchou", "Awoki", "Dogbé", "Eklou", "Gbadamassi"
         "Seck", "Sow", "Thiam", "Faye", "Ndour", "Badji", "Camara", "Coulibaly", "Doumbia", "Kamara",
         "Bamba", "Diomandé", "Ouattara", "Sangaré", "Soro", "Tapé", "Zadi", "Ahoua", "Bédié", "Dago",
         "Gohou", "Kacou", "Lago", "Séry", "Tahi", "Yapi", "Zézé", "Gnahoré", "Koné", "Boka"]
+
+
+# Photos fournies à la main (prioritaires sur la banque) : portrait de la PDG en
+# tailleur-veste, Etty Fidele / Unsplash (licence libre), recadré en carré.
+LOCAL_PORTRAITS = Path(__file__).resolve().parent.parent / "portraits"
 
 
 def fetch(kind: str, n: int) -> ContentFile:
@@ -88,7 +94,9 @@ class Command(BaseCommand):
 
         for login, (kind, n) in LEADERS.items():
             u = User.objects.get(company=company, generated_login=login)
-            u.avatar.save(f"{login}_portrait.jpg", fetch(kind, n), save=True)
+            local = LOCAL_PORTRAITS / f"{login}.jpg"
+            photo = ContentFile(local.read_bytes()) if local.exists() else fetch(kind, n)
+            u.avatar.save(f"{login}_portrait.jpg", photo, save=True)
             self.stdout.write(f"  {login} {u.first_name} {u.last_name} → portrait {kind}{n}")
 
         staff = list(User.objects.filter(company=company, department=sunu, role=User.Role.MEMBER).exclude(generated_login="DIR10"))
