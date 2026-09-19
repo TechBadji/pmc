@@ -88,6 +88,9 @@ export default function EvaluationsPage() {
   // Un manager évalue les membres de son équipe ; l'Admin Entreprise évalue
   // ses directeurs (rôle MANAGER) — même page, même parcours, scope différent.
   const evaluatedRole = user?.role === "COMPANY_ADMIN" ? "MANAGER" : "MEMBER";
+  // Un collaborateur consulte ses propres évaluations, campagne par campagne :
+  // la liste se réduit à lui et rien ne s'y saisit.
+  const selfMode = user?.role === "MEMBER";
   const [members, setMembers] = useState<UserRecord[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [campaigns, setCampaigns] = useState<EvaluationCampaign[]>([]);
@@ -112,7 +115,8 @@ export default function EvaluationsPage() {
       apiClient.get<Paginated<Department>>("/departments/", { params: { page_size: 500 } }),
     ])
       .then(([membersRes, evaluationsRes, campaignsRes, departmentsRes]) => {
-        setMembers(membersRes.data.results);
+        setMembers(selfMode ? membersRes.data.results.filter((m) => m.id === user?.id) : membersRes.data.results);
+        if (selfMode && user) setSelectedMemberId(user.id);
         setEvaluations(evaluationsRes.data.results);
         setCampaigns(campaignsRes.data.results);
         setDepartments(departmentsRes.data.results);
@@ -410,7 +414,7 @@ export default function EvaluationsPage() {
 
       {view === "id3a" && <ValidationSummary issues={issues} onClose={clear} />}
 
-      {view === "id3a" && selectedCampaignId !== "" && members.length > 0 && (
+      {view === "id3a" && !selfMode && selectedCampaignId !== "" && members.length > 0 && (
         <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="stretch">
           <StatCard
             label={t("evaluations.completionLabel")}
@@ -440,7 +444,7 @@ export default function EvaluationsPage() {
         </Stack>
       )}
 
-      {view === "id3a" && (
+      {view === "id3a" && !selfMode && (
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
         <TableContainer>
           <Table size="small">
@@ -566,13 +570,15 @@ export default function EvaluationsPage() {
                 )}
               </Box>
             </Stack>
-            <Button
-              variant="contained"
-              startIcon={<AddOutlinedIcon />}
-              onClick={() => handleNewEvaluation(selectedMember)}
-            >
-              {t("evaluations.newEvaluation")}
-            </Button>
+            {!selfMode && (
+              <Button
+                variant="contained"
+                startIcon={<AddOutlinedIcon />}
+                onClick={() => handleNewEvaluation(selectedMember)}
+              >
+                {t("evaluations.newEvaluation")}
+              </Button>
+            )}
           </Stack>
 
           {selectedEvaluation ? (

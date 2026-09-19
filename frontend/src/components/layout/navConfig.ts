@@ -58,6 +58,8 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { labelKey: "nav.cohesionSurvey", path: "/cohesion-survey", icon: "hub" },
     { labelKey: "nav.cohesionSurveyOrg", path: "/cohesion-survey-org", icon: "business" },
     { labelKey: "nav.myPerformance", path: "/my-performance", icon: "scatterPlot" },
+    // Réservé aux collaborateurs de la direction SUNU (voir AppLayout).
+    { labelKey: "nav.evaluations", path: "/evaluations", icon: "assignment" },
     { labelKey: "nav.myPerformanceId", path: "/my-performance-id", icon: "person" },
   ],
 };

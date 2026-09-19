@@ -303,8 +303,9 @@ class ManagerialSelfAssessmentViewSet(CompanyScopedQuerySetMixin, viewsets.Model
     filterset_fields = ["campaign", "category", "user"]
 
     def get_permissions(self):
-        if self.action in ("create", "update", "partial_update", "destroy"):
-            return [IsCompanyAdminOrManager()]
+        # Chacun ne remplit que sa propre fiche (le serializer force `user` et
+        # `get_queryset` borne la modification à ses lignes) : tout rôle peut
+        # donc écrire, un collaborateur comme un manager.
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
@@ -344,8 +345,9 @@ class ManagerialSynthesisViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewS
     filterset_fields = ["campaign", "user"]
 
     def get_permissions(self):
-        if self.action in ("create", "update", "partial_update", "destroy"):
-            return [IsCompanyAdminOrManager()]
+        # Chacun ne remplit que sa propre fiche (le serializer force `user` et
+        # `get_queryset` borne la modification à ses lignes) : tout rôle peut
+        # donc écrire, un collaborateur comme un manager.
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
@@ -385,8 +387,9 @@ class MonkeyManagementAssessmentViewSet(CompanyScopedQuerySetMixin, viewsets.Mod
     filterset_fields = ["campaign", "user"]
 
     def get_permissions(self):
-        if self.action in ("create", "update", "partial_update", "destroy"):
-            return [IsCompanyAdminOrManager()]
+        # Chacun ne remplit que sa propre fiche (le serializer force `user` et
+        # `get_queryset` borne la modification à ses lignes) : tout rôle peut
+        # donc écrire, un collaborateur comme un manager.
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
@@ -451,7 +454,9 @@ class PerformanceObjectiveViewSet(CompanyScopedQuerySetMixin, viewsets.ModelView
                 | Q(team_id__in=scope)
             )
         elif user.role == user.Role.MEMBER:
-            qs = qs.filter(evaluation__user=user)
+            # Sa fiche, plus celle de sa direction (lecture seule) : la vue
+            # « Objectifs équipe » a un sens pour lui aussi.
+            qs = qs.filter(Q(evaluation__user=user) | Q(team_id=user.department_id))
         return qs.distinct()
 
     def perform_destroy(self, instance):
