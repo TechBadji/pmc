@@ -35,9 +35,11 @@ LEADERS = {
     "DIR4": ("M", 49), "DIR5": ("M", 53), "DIR6": ("F", 92), "DIR7": ("M", 30),
     "DIR8": ("M", 91), "DIR9": ("F", 69), "DIR10": ("M", 55),
 }
-# Portraits d'apparence africaine restants, puis portraits variés.
-SUNU_FEMALE = [16, 30, 89, 4, 1, 13, 15, 19, 22, 26, 29, 33, 40, 46, 63, 75, 85, 99, 88, 95, 94, 98, 71, 76, 79, 84, 24, 47, 41, 42]
-SUNU_MALE = [16, 25, 54, 59, 63, 70, 5, 7, 11, 35, 39, 48, 56, 58, 65, 69, 77, 86, 87, 95, 45, 41, 47, 9, 28, 20, 29, 46, 85, 94]
+# Collaborateurs SUNU : d'abord les portraits randomuser d'apparence africaine
+# restants (entiers, téléchargés), puis des portraits de personnes noires
+# (Unsplash, licence libre) rangés dans `management/portraits/sunu/<id>.jpg`.
+SUNU_FEMALE = [16, 30, 'Np8r_VcKZzw'] + ['vp9mRauo68c', 'DpfkkL1FD20', 'Q1QRTSeZIxI', '2JS_KD4vi7o', 'I49bIyEHaIs', 'nzR24yJ8Cvo', 'RJVQ_wnwXIM', 'hgVe54j2rt8', 'Ty2WpsNiVtQ', 'bxpiMBp0FtU', 'dQyfiYNJoHw', '5igzJ9dDOiA', 'nvvvAy3nhX8', '1I3_xTAXTxo', '62wQhEghaw0', '_cvwXhGqG-o', 'yRpe13BHdKw', 'HyoTmwZQwWU', 'J1jYLLlRpA4', 'o-f9IhaLB5k', 'unG5ZwUPY0Y', 'ws4fXSuVlkY', '30DeKCpDLD0', 'h1lA3N5wb8M', 'UzSPiVmnkAA', 'vH8imwT4RX0', 'Yi4Zs64l0tE']
+SUNU_MALE = [16, 25, 54, 59, 63, 70] + ['5tqiaBDE3pg', 'gisFZKWpKQ4', 'ST_4Rw_8rxA', 'gPT2JJdMnag', 'gsw3AP6I-EY', 'C4yxumSTemY', '7PxveE1Kh5M', '8PidEL3NJLM', 'kUGwR0S8qXo', 'jCeVRUQslTs', 'ZsObS42_i_0', '7TI-3jUObYg', '29pFbI_D1Sc', 'A5j5LonRRC4', 'M7i6iMgzPwc', '9y8HtS6Voi0', 'WDwOvs7QHIk', 'wQwns_wVjYY', '95UF6LXe-Lo', '0jLaMXX3wBU', 'ZoaWz5lst00', 's6tVlDVKz38', 'UHtIqPrSR_M', 'hWZP_MRoT6I']
 
 FIRST_F = ["Abla", "Akossiwa", "Adjoa", "Mawuena", "Afi", "Ténéna", "Rokia", "Aïcha", "Khady", "Ndèye",
            "Awa", "Astou", "Coumba", "Fama", "Salimata", "Nafissatou", "Yvette", "Sylvie", "Ornella", "Prisca",
@@ -111,7 +113,8 @@ class Command(BaseCommand):
             else:
                 n, first = SUNU_MALE[mi], FIRST_M[mi]; mi += 1
             u.first_name, u.last_name, u.manager = first, LAST[i], daniel
-            u.avatar.save(f"{u.generated_login}_portrait.jpg", fetch(kind, n), save=False)
+            photo = fetch(kind, n) if isinstance(n, int) else ContentFile((LOCAL_PORTRAITS / "sunu" / f"{n}.jpg").read_bytes())
+            u.avatar.save(f"{u.generated_login}_portrait.jpg", photo, save=False)
             u.save()
         self.stdout.write(self.style.SUCCESS(
             f"Terminé — 11 dirigeants et 60 collaborateurs SUNU photographiés ; SUNU Group sous la direction de {daniel.first_name} {daniel.last_name}."
