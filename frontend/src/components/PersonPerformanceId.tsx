@@ -1010,9 +1010,9 @@ export default function PersonPerformanceId({
               </Box>
             ))}
 
-            <SubHead sx={{ gridColumn: 5, gridRow: 2 }}>{t("performanceId.professionalAchievements")}</SubHead>
+            <SubHead sx={{ gridColumn: 5, gridRow: 2, fontSize: 10, letterSpacing: 0 }}>{t("performanceId.professionalAchievements")}</SubHead>
             {listCells(form.professional_achievements, 5, 5, 3, (v) => setList("professional_achievements", v))}
-            <SubHead sx={{ gridColumn: 6, gridRow: 2 }}>{t("performanceId.personalAchievements")}</SubHead>
+            <SubHead sx={{ gridColumn: 6, gridRow: 2, fontSize: 10, letterSpacing: 0 }}>{t("performanceId.personalAchievements")}</SubHead>
             {listCells(form.personal_achievements, 5, 6, 3, (v) => setList("personal_achievements", v))}
 
             {/* Synthèse de performance, sous les réalisations. */}
