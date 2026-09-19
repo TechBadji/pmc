@@ -1,13 +1,12 @@
 import { Stack, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { useAppSelector } from "@/app/hooks";
-import PersonPerformanceIdEntry from "@/components/PersonPerformanceIdEntry";
+import PersonPerformanceId from "@/components/PersonPerformanceId";
 
-/** L'écran de saisie de l'employé : sa fiche Performance ID, sans éléments de calcul. */
+/** Jeu de démo : la même fiche que « Manager Performance ID », à remplir pour un
+ * collègue dont on saisit le nom et prénom, afin de voir si l'on connaît ses aspirations.
+ * Rien n'est enregistré : la fiche du collègue n'est jamais modifiée. */
 export default function MyPerformanceIdPage() {
   const { t } = useTranslation();
-  const { user } = useAppSelector((s) => s.auth);
-  if (!user) return null;
   return (
     <Stack spacing={2}>
       <Typography variant="h5" fontWeight={700}>
@@ -16,7 +15,7 @@ export default function MyPerformanceIdPage() {
       <Typography variant="body2" color="text.secondary">
         {t("performanceEntry.pageIntro")}
       </Typography>
-      <PersonPerformanceIdEntry person={user} />
+      <PersonPerformanceId people={[]} guess />
     </Stack>
   );
 }

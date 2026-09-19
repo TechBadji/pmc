@@ -434,9 +434,13 @@ function emptyForm(): ProfileForm {
 export default function PersonPerformanceId({
   people,
   selectablePeople,
+  guess = false,
 }: {
   people: UserRecord[];
   selectablePeople?: UserRecord[];
+  /** Mode jeu (« Ma fiche ») : même fiche, vierge et saisie à la main pour un
+   * collègue dont on tape le nom et prénom. Rien n'est chargé ni enregistré. */
+  guess?: boolean;
 }) {
   const selectable = selectablePeople ?? people;
   const { t } = useTranslation();
@@ -454,13 +458,18 @@ export default function PersonPerformanceId({
   const [loadErrors, setLoadErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const selectedUser = people.find((p) => p.id === selectedId) ?? null;
+  const [guessName, setGuessName] = useState("");
+  const guessUser = useMemo(
+    () => ({ id: 0, email: "", full_name: guessName, position: "", department: null, manager: null, avatar: null, age: null } as unknown as UserRecord),
+    [guessName]
+  );
+  const selectedUser = guess ? guessUser : people.find((p) => p.id === selectedId) ?? null;
   const managerOf = selectedUser?.manager != null ? people.find((p) => p.id === selectedUser.manager) : null;
 
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    if (selectedId === "") return;
+    if (guess || selectedId === "") return;
     setSaved(false);
     setDirty(false);
     setLoadErrors([]);
@@ -572,7 +581,7 @@ export default function PersonPerformanceId({
   function patchForm(patch: Partial<ProfileForm>) {
     setForm((prev) => ({ ...prev, ...patch }));
     setSaved(false);
-    setDirty(true);
+    if (!guess) setDirty(true);
   }
 
   function setList(key: ListKey, value: string[]) {
@@ -689,21 +698,33 @@ export default function PersonPerformanceId({
         }}
       />
       <Stack direction="row" spacing={1.5} alignItems="center" className="pmc-no-print">
-        <TextField
-          select
-          size="small"
-          label={t("performanceId.selectPerson")}
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value === "" ? "" : Number(e.target.value))}
-          sx={{ width: 240 }}
-        >
-          {selectable.map((p) => (
-            <MenuItem key={p.id} value={p.id}>
-              {p.full_name || p.email}
-              {p.department_name ? ` — ${p.department_name}` : ""}
-            </MenuItem>
-          ))}
-        </TextField>
+        {guess ? (
+          <TextField
+            size="small"
+            label={t("performanceEntry.guessName")}
+            placeholder={t("performanceEntry.guessNamePlaceholder")}
+            value={guessName}
+            onChange={(e) => setGuessName(e.target.value)}
+            inputProps={{ maxLength: 120 }}
+            sx={{ width: 300 }}
+          />
+        ) : (
+          <TextField
+            select
+            size="small"
+            label={t("performanceId.selectPerson")}
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value === "" ? "" : Number(e.target.value))}
+            sx={{ width: 240 }}
+          >
+            {selectable.map((p) => (
+              <MenuItem key={p.id} value={p.id}>
+                {p.full_name || p.email}
+                {p.department_name ? ` — ${p.department_name}` : ""}
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
         {selectedUser && (
           <Button size="small" startIcon={<PrintOutlinedIcon />} onClick={() => window.print()}>
             {t("performanceId.print")}
@@ -727,7 +748,7 @@ export default function PersonPerformanceId({
           {t("performanceId.loadFailed", { details: loadErrors.join(" · ") })}
         </Alert>
       )}
-      {selectedUser && !loading && loadErrors.length === 0 && evaluations.length === 0 && (
+      {!guess && selectedUser && !loading && loadErrors.length === 0 && evaluations.length === 0 && (
         <Alert severity="info" className="pmc-no-print">
           {t("performanceId.noEvaluation", { name: selectedUser.full_name || selectedUser.email })}
         </Alert>
@@ -783,7 +804,15 @@ export default function PersonPerformanceId({
               >
                 {(selectedUser.full_name || selectedUser.email).charAt(0).toUpperCase()}
               </Avatar>
-              <Fld value={selectedUser.full_name || selectedUser.email} readOnly bold color="primary.main" sx={{ width: "100%" }} />
+              <Fld
+                value={selectedUser.full_name || selectedUser.email}
+                readOnly={!guess}
+                onChange={guess ? setGuessName : undefined}
+                placeholder={guess ? t("performanceEntry.guessNamePlaceholder") : undefined}
+                bold
+                color="primary.main"
+                sx={{ width: "100%" }}
+              />
               <Fld value={selectedUser.position || ""} readOnly sx={{ width: "100%" }} />
             </Box>
 
@@ -1190,6 +1219,7 @@ export default function PersonPerformanceId({
             {listCells(form.dev_risks_obstacles, 3, 4, 8, (v) => setList("dev_risks_obstacles", v))}
           </Box>
 
+          {!guess && (
           <Stack
             direction="row"
             justifyContent="flex-end"
@@ -1217,6 +1247,7 @@ export default function PersonPerformanceId({
               {t("common.save")}
             </Button>
           </Stack>
+          )}
         </Paper>
       )}
     </Stack>

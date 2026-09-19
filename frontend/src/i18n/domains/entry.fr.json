@@ -4,7 +4,9 @@
   },
   "performanceEntry": {
     "pageTitle": "Ma fiche ID-PMC Performance ID",
-    "pageIntro": "Remplissez votre fiche à votre rythme : seules vos informations personnelles sont à saisir. Les indices, pourcentages et graphiques de performance sont calculés par votre manager à partir des évaluations et n'apparaissent pas ici.",
+    "pageIntro": "Jeu : saisissez le nom et prénom d'un collègue, puis remplissez sa fiche comme vous pensez qu'il l'aurait remplie (aspirations, projets, motivations…). Cette saisie sert uniquement au jeu : elle n'est pas enregistrée et ne modifie jamais la fiche du collègue.",
+    "guessName": "Nom et prénom du collègue",
+    "guessNamePlaceholder": "Nom Prénom",
     "toggleLabel": "Saisie de la fiche",
     "viewIntro": "Version à remplir, sans éléments de calcul ni graphiques. Enregistrez pour que la fiche complète soit mise à jour.",
     "selectPerson": "Personne concernée",
