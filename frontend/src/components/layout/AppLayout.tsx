@@ -82,6 +82,7 @@ export default function AppLayout() {
       apiClient
         .get<{ count: number }>("/password-reset-requests/", {
           params: { resolved: false, page_size: 1 },
+          silent: true, // pastille décorative rafraîchie en boucle : un échec passager n'a rien à annoncer
         })
         .then((r) => setPendingResetCount(r.data.count))
         .catch(() => {});

@@ -1,0 +1,99 @@
+{
+  "validation": {
+    "login": {
+      "identifierRequired": "Enter your username or e-mail address.",
+      "passwordRequired": "Enter your password.",
+      "invalidTitle": "Incorrect username or password.",
+      "invalidAdvice": "Check the spelling of your username and that Caps Lock is off, then try again. After a few attempts the \"Forgot password?\" link appears so you can ask your administrator to reset it.",
+      "rejectedTitle": "Your account cannot sign in right now.",
+      "rejectedAdvice": "Contact your company administrator to find out why and restore access.",
+      "throttledTitle": "Too many sign-in attempts in a short time.",
+      "throttledAdvice": "For security, access is temporarily blocked. Wait {{wait}} before trying again.",
+      "waitAMoment": "a few moments",
+      "waitSeconds_one": "{{count}} second",
+      "waitSeconds_other": "{{count}} seconds",
+      "waitMinutes_one": "{{count}} minute",
+      "waitMinutes_other": "{{count}} minutes",
+      "timeoutTitle": "The server took too long to respond.",
+      "networkTitle": "Unable to reach the server.",
+      "networkAdvice": "Check your internet connection (Wi-Fi or mobile data), then try again. Your username and password were not rejected.",
+      "unavailableTitle": "The service is temporarily unavailable.",
+      "unavailableAdvice": "An update or restart is probably in progress. Wait a minute, then try again.",
+      "serverTitle": "An error occurred on our side while signing in.",
+      "serverAdvice": "Your username and password are not the problem. Try again in a moment; if it persists, contact support."
+    },
+    "departments": {
+      "nameRequired": "Enter the name of the department or service.",
+      "nameTooLong": "The name is too long ({{count}} characters): 255 characters maximum.",
+      "codeRequired": "Enter a short code of at most 4 characters (example: DSI, DAF).",
+      "codeInvalidChars": "The code must not contain spaces or commas: it is used as an identifier in import files.",
+      "nameDuplicate": "A department or service named \"{{name}}\" already exists: choose another name.",
+      "codeDuplicate": "The code \"{{code}}\" is already used by \"{{owner}}\": choose a unique code.",
+      "parentMissing": "The chosen parent department is no longer in the list: refresh the page and try again.",
+      "parentIsService": "A service cannot belong to another service: attach it to a department."
+    },
+    "teams": {
+      "firstNameRequired": "Enter the team member's first name.",
+      "lastNameRequired": "Enter the team member's last name.",
+      "emailRequired": "Enter the team member's e-mail address.",
+      "emailInvalid": "The e-mail address \"{{email}}\" is not valid (example: first.last@company.com).",
+      "emailDuplicate": "The address \"{{email}}\" is already used by {{name}}: enter another address.",
+      "passwordRequired": "Enter a temporary password.",
+      "passwordTooShort": "The temporary password must be at least 8 characters long (it has {{count}}).",
+      "noTeam": "No team is selected: close the window and reopen it from the relevant team."
+    },
+    "companies": {
+      "nameRequired": "Enter the company name.",
+      "nameTooLong": "The company name is too long ({{count}} characters): 255 maximum.",
+      "employeeCountInvalid": "Headcount must be a whole number, zero or more (example: 120).",
+      "adminNamesBoth": "Fill in both the CEO's first and last name, or leave both empty: an account cannot be created with an incomplete name.",
+      "deleteMismatch": "The text entered does not exactly match \"{{name}}\".",
+      "planSame": "This is already the current plan: choose another one."
+    },
+    "bulkUpload": {
+      "companyRequired": "Choose the company to import the users into.",
+      "fileRequired": "Choose a CSV file to import.",
+      "notCsv": "\"{{name}}\" is not a CSV file: choose a file whose name ends in .csv.",
+      "excelFile": "\"{{name}}\" is an Excel workbook. Open it, then choose File > Save As > CSV UTF-8 (comma delimited) and import that file.",
+      "empty": "The file \"{{name}}\" is empty.",
+      "tooLarge": "The file is {{size}} MB: the limit is {{max}} MB. Split it into several files.",
+      "badEncoding": "The file is not UTF-8 encoded (accented characters are unreadable). Save it again as CSV UTF-8.",
+      "wrongSeparator": "Columns are separated by semicolons or tabs. Save the file with a comma (,) as separator, as in the template.",
+      "missingColumns": "Required column(s) missing from the first line: {{columns}}. Download the template to get the right headings.",
+      "noRows": "The file only contains the header: add at least one user row."
+    },
+    "skillsAdmin": {
+      "companyRequired": "Choose the company first.",
+      "matrixNameRequired": "Enter the framework name (example: Finance & Administration Director).",
+      "matrixDuplicate": "A \"{{name}}\" framework of type {{type}} already exists for this company: choose another name or the other type.",
+      "itemNameRequired": "Enter the skill name.",
+      "itemDuplicate": "The skill \"{{name}}\" already exists in this framework: edit it instead of adding a second one.",
+      "weightInvalid": "The weight must be a number strictly greater than 0 (example: 1 or 1.5).",
+      "weightTooLarge": "The weight cannot exceed 99.99.",
+      "weightDecimals": "The weight accepts at most 2 decimals."
+    },
+    "profile": {
+      "phoneInvalid": "The phone number \"{{phone}}\" is not valid: use only digits, spaces and optionally a leading + (6 to 15 digits).",
+      "firstNameTooLong": "The first name is too long: 150 characters maximum.",
+      "lastNameTooLong": "The last name is too long: 150 characters maximum.",
+      "positionTooLong": "The position is too long: 255 characters maximum.",
+      "avatarNotImage": "The profile photo \"{{name}}\" is not a JPG, PNG, WebP or GIF image.",
+      "avatarTooLarge": "The profile photo is {{size}} MB: the limit is {{max}} MB. Choose a lighter image.",
+      "fullBodyNotImage": "The full-body photo \"{{name}}\" is not a JPG, PNG, WebP or GIF image.",
+      "fullBodyTooLarge": "The full-body photo is {{size}} MB: the limit is {{max}} MB. Choose a lighter image."
+    },
+    "changePassword": {
+      "currentRequired": "Enter your current password.",
+      "newRequired": "Enter the new password.",
+      "tooShort": "The new password must be at least 8 characters long (it has {{count}}).",
+      "digitsOnly": "The new password cannot consist only of digits: add letters.",
+      "sameAsOld": "The new password is the same as the current one: choose a different one.",
+      "confirmRequired": "Enter the new password again in the confirmation field.",
+      "mismatch": "The new password and its confirmation are not identical."
+    },
+    "logs": {
+      "dateOrder": "The start date ({{from}}) is after the end date ({{to}}): no event can match. Swap the two dates.",
+      "exportFailed": "The log export could not be generated. Your filters are kept: try again in a moment."
+    }
+  }
+}

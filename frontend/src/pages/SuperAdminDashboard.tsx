@@ -1,7 +1,7 @@
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import ToggleOnOutlinedIcon from "@mui/icons-material/ToggleOnOutlined";
-import { Stack } from "@mui/material";
+import { Alert, Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import PageHeader from "@/components/layout/PageHeader";
@@ -12,11 +12,13 @@ import StatCard from "@/components/StatCard";
 export default function SuperAdminDashboard() {
   const { t } = useTranslation();
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     apiClient
       .get<Paginated<Company>>("/companies/")
-      .then((r) => setCompanies(r.data.results));
+      .then((r) => setCompanies(r.data.results))
+      .catch(() => setLoadError(true));
   }, []);
 
   const activeCount = companies.filter((c) => c.is_active).length;
@@ -25,6 +27,7 @@ export default function SuperAdminDashboard() {
   return (
     <Stack spacing={3}>
       <PageHeader title={t("dashboard.superAdmin.title")} />
+      {loadError && <Alert severity="error">{t("common.loadError")}</Alert>}
       <Stack direction="row" spacing={2} flexWrap="wrap">
         <StatCard
           label={t("dashboard.superAdmin.companies")}

@@ -3,6 +3,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Accordion,
+  Alert,
   AccordionDetails,
   AccordionSummary,
   Button,
@@ -28,6 +29,8 @@ import { DecimalField } from "@/components/inputs/DecimalField";
 import PageHeader from "@/components/layout/PageHeader";
 import { apiClient } from "@/api/client";
 import type { Company, Paginated, SkillMatrix } from "@/api/types";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { isBlank, useIssues } from "@/utils/validation";
 import { HARD_SKILLS_COLOR as HARD_COLOR, SOFT_SKILLS_COLOR as SOFT_COLOR } from "@/theme";
 
 export default function SkillsAdminPage() {
@@ -39,28 +42,56 @@ export default function SkillsAdminPage() {
   const [matrixForm, setMatrixForm] = useState({ name: "", type: "HARD" as "HARD" | "SOFT" });
   const [itemDialog, setItemDialog] = useState<SkillMatrix | null>(null);
   const [itemForm, setItemForm] = useState({ name: "", weight: 1 });
+  const [loadError, setLoadError] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const matrixIssues = useIssues();
+  const itemIssues = useIssues();
 
   useEffect(() => {
-    apiClient.get<Paginated<Company>>("/companies/").then((r) => {
-      setCompanies(r.data.results);
-      if (r.data.results.length) setCompanyId(r.data.results[0].id);
-    });
+    apiClient
+      .get<Paginated<Company>>("/companies/")
+      .then((r) => {
+        setCompanies(r.data.results);
+        if (r.data.results.length) setCompanyId(r.data.results[0].id);
+      })
+      .catch(() => setLoadError(true));
   }, []);
 
   function loadMatrices() {
     if (!companyId) return;
+    setLoadError(false);
     apiClient
-      .get<Paginated<SkillMatrix>>("/skill-matrices/", { params: { company: companyId } })
-      .then((r) => setMatrices(r.data.results));
+      .get<Paginated<SkillMatrix>>("/skill-matrices/", { params: { company: companyId, page_size: 500 } })
+      .then((r) => setMatrices(r.data.results))
+      .catch(() => setLoadError(true));
   }
 
   useEffect(loadMatrices, [companyId]);
 
   async function handleCreateMatrix() {
-    await apiClient.post("/skill-matrices/", { ...matrixForm, company: companyId });
-    setMatrixDialog(false);
-    setMatrixForm({ name: "", type: "HARD" });
-    loadMatrices();
+    const name = matrixForm.name.trim();
+    const ok = matrixIssues.check([
+      [!companyId, t("validation.skillsAdmin.companyRequired")],
+      [isBlank(name), t("validation.skillsAdmin.matrixNameRequired"), "name"],
+      [
+        !isBlank(name) &&
+          matrices.some((m) => m.type === matrixForm.type && m.name.trim().toLowerCase() === name.toLowerCase()),
+        t("validation.skillsAdmin.matrixDuplicate", { name, type: matrixForm.type === "HARD" ? "Hard Skills" : "Soft Skills" }),
+        "name",
+      ],
+    ]);
+    if (!ok) return;
+    setSaving(true);
+    try {
+      await apiClient.post("/skill-matrices/", { ...matrixForm, name, company: companyId });
+      setMatrixDialog(false);
+      setMatrixForm({ name: "", type: "HARD" });
+      loadMatrices();
+    } catch {
+      // le toast du client explique le refus ; la fenêtre reste ouverte pour corriger
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDeleteMatrix(matrix: SkillMatrix) {
@@ -70,15 +101,36 @@ export default function SkillsAdminPage() {
 
   async function handleCreateItem() {
     if (!itemDialog) return;
-    await apiClient.post("/skill-items/", {
-      matrix: itemDialog.id,
-      name: itemForm.name,
-      weight: itemForm.weight,
-      order: itemDialog.items.length,
-    });
-    setItemForm({ name: "", weight: 1 });
-    setItemDialog(null);
-    loadMatrices();
+    const name = itemForm.name.trim();
+    const weight = itemForm.weight;
+    const ok = itemIssues.check([
+      [isBlank(name), t("validation.skillsAdmin.itemNameRequired"), "name"],
+      [
+        !isBlank(name) && itemDialog.items.some((i) => i.name.trim().toLowerCase() === name.toLowerCase()),
+        t("validation.skillsAdmin.itemDuplicate", { name }),
+        "name",
+      ],
+      [!Number.isFinite(weight) || weight <= 0, t("validation.skillsAdmin.weightInvalid"), "weight"],
+      [weight >= 100, t("validation.skillsAdmin.weightTooLarge"), "weight"],
+      [weight > 0 && Math.round(weight * 100) / 100 !== weight, t("validation.skillsAdmin.weightDecimals"), "weight"],
+    ]);
+    if (!ok) return;
+    setSaving(true);
+    try {
+      await apiClient.post("/skill-items/", {
+        matrix: itemDialog.id,
+        name,
+        weight,
+        order: itemDialog.items.length,
+      });
+      setItemForm({ name: "", weight: 1 });
+      setItemDialog(null);
+      loadMatrices();
+    } catch {
+      // le toast du client explique le refus ; la fenêtre reste ouverte pour corriger
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDeleteItem(itemId: number) {
@@ -89,6 +141,7 @@ export default function SkillsAdminPage() {
   return (
     <Stack spacing={3}>
       <PageHeader title={t("skillsAdmin.title")} />
+      {loadError && <Alert severity="error">{t("common.loadError")}</Alert>}
 
       <Stack direction="row" spacing={2} alignItems="center">
         <TextField
@@ -104,7 +157,10 @@ export default function SkillsAdminPage() {
             </MenuItem>
           ))}
         </TextField>
-        <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setMatrixDialog(true)}>
+        <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => {
+            matrixIssues.clear();
+            setMatrixDialog(true);
+          }}>
           {t("skillsAdmin.newMatrix")}
         </Button>
       </Stack>
@@ -160,7 +216,10 @@ export default function SkillsAdminPage() {
                 ))}
               </TableBody>
             </Table>
-            <Button size="small" startIcon={<AddOutlinedIcon />} sx={{ mt: 1 }} onClick={() => setItemDialog(matrix)}>
+            <Button size="small" startIcon={<AddOutlinedIcon />} sx={{ mt: 1 }} onClick={() => {
+              itemIssues.clear();
+              setItemDialog(matrix);
+            }}>
               {t("skillsAdmin.addCompetency")}
             </Button>
           </AccordionDetails>
@@ -174,23 +233,32 @@ export default function SkillsAdminPage() {
             <TextField
               label={t("skillsAdmin.matrixNameLabel")}
               value={matrixForm.name}
-              onChange={(e) => setMatrixForm({ ...matrixForm, name: e.target.value })}
+              onChange={(e) => {
+                setMatrixForm({ ...matrixForm, name: e.target.value });
+                matrixIssues.clear();
+              }}
+              error={matrixIssues.has("name")}
+              helperText={matrixIssues.messageFor("name")}
               fullWidth
             />
             <TextField
               select
               label={t("skillsAdmin.type")}
               value={matrixForm.type}
-              onChange={(e) => setMatrixForm({ ...matrixForm, type: e.target.value as "HARD" | "SOFT" })}
+              onChange={(e) => {
+                setMatrixForm({ ...matrixForm, type: e.target.value as "HARD" | "SOFT" });
+                matrixIssues.clear();
+              }}
             >
               <MenuItem value="HARD">Hard Skills ({t("skillsAdmin.aptitudes")})</MenuItem>
               <MenuItem value="SOFT">Soft Skills ({t("skillsAdmin.attitudes")})</MenuItem>
             </TextField>
+            <ValidationSummary issues={matrixIssues.issues} onClose={matrixIssues.clear} />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setMatrixDialog(false)}>{t("common.cancel")}</Button>
-          <Button variant="contained" onClick={handleCreateMatrix} disabled={!matrixForm.name}>
+          <Button variant="contained" onClick={handleCreateMatrix} disabled={saving}>
             {t("common.create")}
           </Button>
         </DialogActions>
@@ -205,21 +273,32 @@ export default function SkillsAdminPage() {
             <TextField
               label={t("skillsAdmin.competencyNameLabel")}
               value={itemForm.name}
-              onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
+              onChange={(e) => {
+                setItemForm({ ...itemForm, name: e.target.value });
+                itemIssues.clear();
+              }}
+              error={itemIssues.has("name")}
+              helperText={itemIssues.messageFor("name")}
               autoFocus
               fullWidth
             />
             <DecimalField
               label={t("skills.weight")}
               value={itemForm.weight}
-              onChange={(v) => setItemForm({ ...itemForm, weight: v === "" ? 0 : v })}
+              onChange={(v) => {
+                setItemForm({ ...itemForm, weight: v === "" ? 0 : v });
+                itemIssues.clear();
+              }}
+              error={itemIssues.has("weight")}
+              helperText={itemIssues.messageFor("weight")}
               fullWidth
             />
+            <ValidationSummary issues={itemIssues.issues} onClose={itemIssues.clear} />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setItemDialog(null)}>{t("common.cancel")}</Button>
-          <Button variant="contained" onClick={handleCreateItem} disabled={!itemForm.name}>
+          <Button variant="contained" onClick={handleCreateItem} disabled={saving}>
             {t("common.add")}
           </Button>
         </DialogActions>

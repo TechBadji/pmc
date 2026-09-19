@@ -28,6 +28,7 @@ import { memo, useCallback, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient, LAST_EMAIL_KEY } from "@/api/client";
+import { forgotErrorText, loginProblems, LoginErrorText } from "@/features/auth/loginFeedback";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { setAppLanguage } from "@/i18n";
 import { login } from "./authSlice";
@@ -260,7 +261,8 @@ export default function LoginPage() {
   const { t, i18n } = useTranslation();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { status, error } = useAppSelector((s) => s.auth);
+  const { status, error, errorInfo } = useAppSelector((s) => s.auth);
+  const [formIssues, setFormIssues] = useState<string[]>([]);
   const [email, setEmail] = useState(() => localStorage.getItem(LAST_EMAIL_KEY) ?? "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -275,15 +277,17 @@ export default function LoginPage() {
   const loading = status === "loading";
   // `error` porte un code, pas une phrase : le message reste traduisible et ne
   // distingue jamais l'identifiant du mot de passe (pas d'énumération de comptes).
-  const errorMessage = error
-    ? t(error === "network" ? "login.networkError" : "login.invalidCredentials")
-    : null;
+  const errorMessage =
+    formIssues.length || error ? <LoginErrorText t={t} issues={formIssues} failure={errorInfo} /> : null;
   // Les deux champs sont marqués invalides ensemble : on refuse de dire lequel
   // est fautif. Une panne réseau, elle, n'invalide aucune saisie.
   const credentialsRejected = error === "invalid_credentials";
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    const problems = loginProblems(t, email, password);
+    setFormIssues(problems);
+    if (problems.length) return;
     const result = await dispatch(login({ email, password, rememberMe }));
     if (login.fulfilled.match(result)) {
       navigate("/", { replace: true });
@@ -304,8 +308,8 @@ export default function LoginPage() {
     try {
       const { data } = await apiClient.post("/auth/forgot-password/", { email: forgotEmail });
       setForgotMessage(data.detail);
-    } catch {
-      setForgotMessage(t("login.forgotError"));
+    } catch (err) {
+      setForgotMessage(forgotErrorText(t, err));
     } finally {
       setForgotLoading(false);
     }
@@ -430,7 +434,7 @@ export default function LoginPage() {
                   autoFocus
                   required
                   fullWidth
-                  error={credentialsRejected}
+                  error={credentialsRejected || (formIssues.length > 0 && !email.trim())}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -448,7 +452,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   fullWidth
-                  error={credentialsRejected}
+                  error={credentialsRejected || (formIssues.length > 0 && password === "")}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">

@@ -1,5 +1,6 @@
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import {
+  Alert,
   Avatar,
   Chip,
   IconButton,
@@ -27,16 +28,21 @@ export default function DepartmentDetailPage() {
   const [department, setDepartment] = useState<Department | null>(null);
   const [members, setMembers] = useState<UserRecord[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    apiClient.get<Department>(`/departments/${id}/`).then((r) => setDepartment(r.data));
+    setLoadError(false);
+    const failed = () => setLoadError(true);
+    apiClient.get<Department>(`/departments/${id}/`).then((r) => setDepartment(r.data)).catch(failed);
     apiClient
       .get<Paginated<UserRecord>>("/users/", { params: { department: id, page_size: 500 } })
-      .then((r) => setMembers(r.data.results));
+      .then((r) => setMembers(r.data.results))
+      .catch(failed);
     apiClient
       .get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } })
-      .then((r) => setEvaluations(r.data.results));
+      .then((r) => setEvaluations(r.data.results))
+      .catch(failed);
   }, [id]);
 
   const lastEvaluationByUser = useMemo(() => lastEvalOf(evaluations), [evaluations]);
@@ -56,6 +62,8 @@ export default function DepartmentDetailPage() {
           </Typography>
         </Stack>
       </Stack>
+
+      {loadError && <Alert severity="error">{t("common.loadError")}</Alert>}
 
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
         <TableContainer>

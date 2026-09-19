@@ -1,4 +1,4 @@
-import { Chip, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Chip, Paper, Stack, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
@@ -11,11 +11,13 @@ export default function MyPerformancePage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     apiClient
       .get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 1 } })
-      .then((r) => setEvaluation(r.data.results[0] ?? null));
+      .then((r) => setEvaluation(r.data.results[0] ?? null))
+      .catch(() => setLoadError(true));
   }, []);
 
   return (
@@ -26,6 +28,8 @@ export default function MyPerformancePage() {
       <Typography variant="body2" color="text.secondary">
         {user?.position} — {user?.department_name ?? t("myPerformance.noDepartment")}
       </Typography>
+
+      {loadError && <Alert severity="error">{t("common.loadError")}</Alert>}
 
       {evaluation ? (
         <>
@@ -60,7 +64,7 @@ export default function MyPerformancePage() {
           </Paper>
         </>
       ) : (
-        <Typography color="text.secondary">{t("myPerformance.noEvaluation")}</Typography>
+        !loadError && <Typography color="text.secondary">{t("myPerformance.noEvaluation")}</Typography>
       )}
     </Stack>
   );

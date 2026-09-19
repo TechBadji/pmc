@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
 import PageHeader from "@/components/layout/PageHeader";
 import PersonPerformanceId from "@/components/PersonPerformanceId";
+import { PerformanceEntryWithPicker } from "@/components/PersonPerformanceIdEntry";
 import { BoardPeriodBar } from "@/components/teamBoard/BoardPieces";
 import TeamPerformanceIdBoard from "@/components/teamBoard/TeamPerformanceIdBoard";
 import { today, useTeamBoard } from "@/features/teamBoard";
@@ -17,7 +19,7 @@ export default function PerformancePage() {
   const [people, setPeople] = useState<UserRecord[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   // Deux fiches d'identité : celle d'une personne, celle de l'équipe.
-  const [view, setView] = useState<"person" | "team">("person");
+  const [view, setView] = useState<"person" | "team" | "entry">("person");
   const [teamId, setTeamId] = useState<number | "">("");
   const board = useTeamBoard(teamId);
   // La planche se lit en texte ; on n'ouvre les champs que pendant une saisie,
@@ -54,7 +56,9 @@ export default function PerformancePage() {
               ? isCompanyAdmin
                 ? "performanceId.viewManager"
                 : "performanceId.viewMember"
-              : "performanceId.viewTeam"
+              : view === "entry"
+                ? "performanceEntry.toggleLabel"
+                : "performanceId.viewTeam"
           )}
         />
       </Box>
@@ -75,6 +79,7 @@ export default function PerformancePage() {
             {isCompanyAdmin ? t("performanceId.viewManager") : t("performanceId.viewMember")}
           </ToggleButton>
           <ToggleButton value="team">{t("performanceId.viewTeam")}</ToggleButton>
+          <ToggleButton value="entry">{t("performanceEntry.toggleLabel")}</ToggleButton>
         </ToggleButtonGroup>
 
         {view === "team" && (
@@ -97,6 +102,11 @@ export default function PerformancePage() {
 
       {view === "person" ? (
         <PersonPerformanceId people={people} selectablePeople={selectablePeople} />
+      ) : view === "entry" ? (
+        <PerformanceEntryWithPicker
+          selectable={people}
+          canEditFor={(p) => isCompanyAdmin || user?.role === "MANAGER" || p.id === user?.id}
+        />
       ) : (
         <Stack spacing={2}>
           <BoardPeriodBar
@@ -108,8 +118,8 @@ export default function PerformancePage() {
               setEditing(true);
             }}
             onSave={async () => {
-              await board.save();
-              setEditing(false);
+              const ok = await board.save();
+              if (ok) setEditing(false);
             }}
             dirty={board.dirty}
             saving={board.saving}
@@ -122,6 +132,7 @@ export default function PerformancePage() {
               )
             }
           />
+          <ValidationSummary issues={board.issues} onClose={board.clearIssues} />
           {board.error === "duplicate" && <Alert severity="warning">{t("teamBoard.duplicateDate")}</Alert>}
           {board.error === "save" && <Alert severity="error">{t("teamBoard.saveFailed")}</Alert>}
           <TeamPerformanceIdBoard

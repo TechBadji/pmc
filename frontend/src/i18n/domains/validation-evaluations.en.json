@@ -1,0 +1,95 @@
+{
+  "validation": {
+    "evaluationForm": {
+      "memberRequired": "Choose the team member to evaluate before saving.",
+      "campaignRequired": "Choose the evaluation campaign (the period) this evaluation belongs to.",
+      "campaignClosed": "The campaign \"{{name}}\" is closed and no longer accepts new evaluations. Choose an open campaign or ask for this one to be reopened.",
+      "campaignUsed": "{{member}} already has an evaluation for the campaign \"{{name}}\". Open it from the evaluations list to edit it instead of creating a second one.",
+      "noSkills": "No skills to rate: {{member}} has no skills framework linked to their position or department. Ask your administrator to set it up.",
+      "noSkillSelected": "No skill is ticked: tick at least one skill to evaluate.",
+      "missingScores": "The current score is missing for {{count}} ticked skill(s): {{names}}. Rate them all, or untick those that do not apply to this person.",
+      "andOthers": "and {{count}} more",
+      "fieldCurrent": "The current score",
+      "fieldObjective": "The objective",
+      "fieldAchieved": "The achieved value",
+      "scoreRange": "{{label}} for \"{{skill}}\" must be between 1 and 5 (you entered {{value}}).",
+      "scoreDecimals": "{{label}} for \"{{skill}}\" accepts one decimal only (you entered {{value}}): write for instance 3.5.",
+      "businessRange": "The Business score must be between 0 and 200 % (you entered {{value}} %).",
+      "peopleRange": "The People score must be between 0 and 200 % (you entered {{value}} %).",
+      "decimalsPercent": "The {{which}} score accepts one decimal only (you entered {{value}} %): write for instance 85.5."
+    },
+    "campaigns": {
+      "nameRequired": "Give the campaign a name (for example: Semester 2 2026).",
+      "nameTooLong": "The campaign name is too long ({{count}} characters): 100 characters maximum.",
+      "nameDuplicate": "A campaign named \"{{name}}\" already exists. Choose a different name to tell them apart (for example: {{name}} bis).",
+      "startRequired": "Enter the campaign start date.",
+      "startInvalid": "The start date is not a valid date: pick it from the calendar (DD/MM/YYYY).",
+      "endRequired": "Enter the campaign end date.",
+      "endInvalid": "The end date is not a valid date: pick it from the calendar (DD/MM/YYYY).",
+      "endBeforeStart": "The end date ({{end}}) is before the start date ({{start}}). Choose an end date on or after the start."
+    },
+    "evaluations": {
+      "campaignClosed": "The campaign \"{{name}}\" is closed and no longer accepts new evaluations. Choose an open campaign, or reopen this one from the campaigns page.",
+      "alreadyEvaluated": "{{name}} already has an evaluation for the campaign \"{{campaign}}\". You can view it here; to evaluate another period, change the selected period."
+    },
+    "matrix": {
+      "compareReset": "The compared period was the same as the displayed period: the comparison has been removed."
+    },
+    "strengths": {
+      "scoreWithoutText": "{{where}}: an index ({{score}}) is entered without a label. Describe the strength or weakness, or clear the index.",
+      "duplicateInColumn": "{{where}}: \"{{text}}\" already appears above in this column. Remove the duplicate.",
+      "contradiction": "\"{{text}}\" is both a strength and a weakness ({{section}}). The same skill cannot be in both columns.",
+      "tooLong": "{{where}}: the text exceeds 255 characters ({{count}}). Shorten it.",
+      "rangeScore": "{{where}}: the index must be between 1 and 5 (you entered {{value}}).",
+      "notLoaded": "The sheet could not be loaded: saving now would replace its existing content with an empty sheet. Refresh the page and try again.",
+      "rowWhere": "{{section}}, row {{order}}",
+      "sectionSoftStrength": "Strengths — Soft Skills",
+      "sectionSoftWeakness": "Weaknesses — Soft Skills",
+      "sectionHardStrength": "Strengths — Hard Skills",
+      "sectionHardWeakness": "Weaknesses — Hard Skills",
+      "sectionSoft": "Soft Skills",
+      "sectionHard": "Hard Skills"
+    },
+    "objectives": {
+      "where": "{{block}}, row {{row}}",
+      "notNumber": "{{where}}: {{field}} \"{{value}}\" is not a number. Enter a number, for example 1250 or 12.5.",
+      "tooManyDecimals": "{{where}}: {{field}} accepts two decimals at most (you entered \"{{value}}\").",
+      "tooLarge": "{{where}}: {{field}} \"{{value}}\" is too large (12 digits before the decimal point at most).",
+      "weightNegative": "{{where}}: the weighting coefficient cannot be negative (you entered {{value}}). Enter 0 or a positive number.",
+      "weightTooLarge": "{{where}}: the weighting coefficient cannot exceed 999.99 (you entered {{value}}).",
+      "labelTooLong": "{{where}}: the objective label exceeds 500 characters ({{count}}). Shorten it.",
+      "indicatorTooLong": "{{where}}: the indicator exceeds 255 characters ({{count}}). Shorten it.",
+      "fieldReference": "the reference value",
+      "fieldTarget": "the target value",
+      "fieldActual": "the achieved value",
+      "dateInvalid": "{{field}} is not a valid date: pick it from the calendar (DD/MM/YYYY).",
+      "evaluatedBeforeSet": "The evaluation date ({{evaluated}}) is before the objectives-setting date ({{set}}). Objectives are set before they are evaluated: correct one of the two dates.",
+      "nextBeforeEvaluated": "The next evaluation date ({{next}}) is not after the evaluation date ({{evaluated}}). Choose a later date.",
+      "nextBeforeSet": "The next evaluation date ({{next}}) is before the objectives-setting date ({{set}}). Choose a later date.",
+      "visaTooLong": "The visa exceeds 150 characters ({{count}}). Shorten it.",
+      "notSaved": "These corrections are not saved yet: the sheet keeps the last valid values until the points above are fixed.",
+      "fieldSetOn": "The objectives-setting date",
+      "fieldEvaluatedOn": "The evaluation date",
+      "fieldNextOn": "The next evaluation date"
+    },
+    "managerial": {
+      "campaignRequired": "First choose the campaign concerned before saving.",
+      "nothingEntered": "The \"{{category}}\" sheet is empty: rate at least one statement (or enter an objective) before saving.",
+      "objectiveRange": "Statement {{order}}: the objective must be between 1 and 5 (you entered {{value}}).",
+      "objectiveDecimals": "Statement {{order}}: the objective accepts one decimal only (you entered {{value}}): write for instance 3.5.",
+      "commentTooLong": "Statement {{order}}: the comment exceeds 255 characters ({{count}}). Shorten it.",
+      "synthesisEmpty": "The summary is empty: enter at least one key skill or one area for improvement.",
+      "synthesisDuplicate": "\"{{text}}\" is entered twice in \"{{section}}\". Remove the duplicate.",
+      "synthesisContradiction": "\"{{text}}\" appears both in your key skills and in your areas for improvement. A skill cannot be both: keep it in one list only.",
+      "synthesisTooLong": "\"{{section}}\", answer {{n}}: more than 255 characters ({{count}}). Shorten it.",
+      "keySkills": "Key skills",
+      "improvementAreas": "Areas for improvement"
+    },
+    "monkey": {
+      "campaignRequired": "First choose the campaign concerned before saving.",
+      "nothingEntered": "The self-diagnosis is empty: rate at least one statement or fill in one of the free-text answers before saving.",
+      "monkeyDuplicate": "\"{{text}}\" is entered twice in the monkeys list. Remove the duplicate.",
+      "tooManyMonkeys": "You can list 3 monkeys at most (you entered {{count}})."
+    }
+  }
+}

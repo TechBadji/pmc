@@ -29,7 +29,10 @@ import {
 } from "recharts";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
 import { DecimalField } from "@/components/inputs/DecimalField";
+import { fmtNum, hasExtraDecimals, outOfRange } from "@/utils/evaluationValidation";
+import { useIssues } from "@/utils/validation";
 import { cohesionColor } from "@/theme";
 import type { EvaluationCampaign, ManagerialSelfAssessment, ManagerialSynthesis, Paginated, UserRecord } from "@/api/types";
 import { useManagerialAssessmentCategories } from "@/utils/managerialSelfAssessment";
@@ -155,6 +158,7 @@ export default function ManagerialSelfAssessmentPanel() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const { issues, check, clear } = useIssues();
 
   // Compétences clés / axes d'amélioration de la synthèse — une fiche à
   // part, indépendante des 5 catégories (voir ManagerialSynthesis).
@@ -209,6 +213,7 @@ export default function ManagerialSelfAssessmentPanel() {
   }, [user?.company]);
 
   useEffect(() => {
+    clear();
     if (!campaignId || viewedUserId === "") return;
     apiClient
       .get<Paginated<ManagerialSelfAssessment>>("/managerial-self-assessments/", {
@@ -245,7 +250,7 @@ export default function ManagerialSelfAssessmentPanel() {
         setSynthesisSaved(false);
       })
       .catch(() => setLoadError(true));
-  }, [campaignId, viewedUserId]);
+  }, [campaignId, viewedUserId, clear]);
 
   const isSynthesis = tab === categories.length;
   const activeCategory = categories[tab];
@@ -279,6 +284,7 @@ export default function ManagerialSelfAssessmentPanel() {
 
   function updateRow(order: number, patch: Partial<RowState>) {
     if (!activeCategory) return;
+    clear();
     setDrafts((current) => ({
       ...current,
       [activeCategory.key]: {
@@ -290,9 +296,7 @@ export default function ManagerialSelfAssessmentPanel() {
   }
 
   async function handleSave() {
-    if (!activeCategory || !campaignId || !viewingSelf) return;
-    setSaving(true);
-    setError(false);
+    if (!activeCategory || !viewingSelf) return;
     const scores = Object.entries(draft)
       .map(([order, row]) => ({
         order: Number(order),
@@ -301,6 +305,22 @@ export default function ManagerialSelfAssessmentPanel() {
         comment: row.comment,
       }))
       .filter((entry) => entry.score !== null || entry.objective_score !== null || entry.comment);
+    const rules: Parameters<typeof check>[0] = [
+      [!campaignId, t("validation.managerial.campaignRequired")],
+      // Vider une fiche déjà enregistrée reste permis ; en créer une vide n'a pas de sens.
+      [!assessments[activeCategory.key] && scores.length === 0, t("validation.managerial.nothingEntered", { category: activeCategory.label })],
+    ];
+    scores.forEach((entry) => {
+      const value = entry.objective_score === null ? "" : fmtNum(entry.objective_score);
+      rules.push(
+        [outOfRange(entry.objective_score, 1, 5), t("validation.managerial.objectiveRange", { order: entry.order, value })],
+        [entry.objective_score !== null && hasExtraDecimals(entry.objective_score), t("validation.managerial.objectiveDecimals", { order: entry.order, value })],
+        [entry.comment.length > 255, t("validation.managerial.commentTooLong", { order: entry.order, count: entry.comment.length })]
+      );
+    });
+    if (!check(rules)) return;
+    setSaving(true);
+    setError(false);
     const payload = { campaign: campaignId, category: activeCategory.key, scores };
     const existing = assessments[activeCategory.key];
     try {
@@ -317,7 +337,35 @@ export default function ManagerialSelfAssessmentPanel() {
   }
 
   async function handleSaveSynthesis() {
-    if (!campaignId || !viewingSelf) return;
+    if (!viewingSelf) return;
+    const skills = keySkills.map((v) => v.trim());
+    const areas = improvementAreas.map((v) => v.trim());
+    const norm = (v: string) => v.toLowerCase();
+    const rules: Parameters<typeof check>[0] = [
+      [!campaignId, t("validation.managerial.campaignRequired")],
+      [!synthesis && !skills.some(Boolean) && !areas.some(Boolean), t("validation.managerial.synthesisEmpty")],
+    ];
+    (
+      [
+        [skills, t("validation.managerial.keySkills")],
+        [areas, t("validation.managerial.improvementAreas")],
+      ] as const
+    ).forEach(([list, section]) => {
+      const seen = new Set<string>();
+      list.forEach((text, i) => {
+        if (!text) return;
+        rules.push(
+          [seen.has(norm(text)), t("validation.managerial.synthesisDuplicate", { text, section })],
+          [text.length > 255, t("validation.managerial.synthesisTooLong", { section, n: i + 1, count: text.length })]
+        );
+        seen.add(norm(text));
+      });
+    });
+    const areaSet = new Set(areas.filter(Boolean).map(norm));
+    [...new Set(skills.filter((v) => v && areaSet.has(norm(v))).map(norm))].forEach((key) => {
+      rules.push([true, t("validation.managerial.synthesisContradiction", { text: skills.find((v) => norm(v) === key) })]);
+    });
+    if (!check(rules)) return;
     setSynthesisSaving(true);
     setSynthesisError(false);
     const payload = {
@@ -410,7 +458,10 @@ export default function ManagerialSelfAssessmentPanel() {
         <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
           <Tabs
             value={tab}
-            onChange={(_, v) => setTab(v)}
+            onChange={(_, v) => {
+              clear();
+              setTab(v);
+            }}
             variant="scrollable"
             scrollButtons="auto"
             sx={{ borderBottom: "1px solid", borderColor: "divider", px: 1 }}
@@ -473,6 +524,7 @@ export default function ManagerialSelfAssessmentPanel() {
                               return next;
                             });
                             setSynthesisSaved(false);
+                            clear();
                           }}
                           inputProps={{ maxLength: 255 }}
                         />
@@ -502,6 +554,7 @@ export default function ManagerialSelfAssessmentPanel() {
                               return next;
                             });
                             setSynthesisSaved(false);
+                            clear();
                           }}
                           inputProps={{ maxLength: 255 }}
                         />
@@ -509,6 +562,7 @@ export default function ManagerialSelfAssessmentPanel() {
                     </Stack>
                   </Paper>
 
+                  <ValidationSummary issues={issues} onClose={clear} />
                   <Stack direction="row" spacing={2} alignItems="center" justifyContent="flex-end" flexWrap="wrap" useFlexGap>
                     {synthesisError && <Alert severity="error" sx={{ py: 0 }}>{t("managerialSelfAssessment.saveFailed")}</Alert>}
                     {synthesisSaved && <Alert severity="success" sx={{ py: 0 }}>{t("managerialSelfAssessment.saved")}</Alert>}
@@ -620,6 +674,11 @@ export default function ManagerialSelfAssessmentPanel() {
             </Table>
           </TableContainer>
 
+          {issues.length > 0 && (
+            <Box sx={{ px: 2, pt: 2 }}>
+              <ValidationSummary issues={issues} onClose={clear} />
+            </Box>
+          )}
           <Stack direction="row" spacing={2} alignItems="center" justifyContent="flex-end" sx={{ p: 2 }}>
             {error && <Alert severity="error" sx={{ py: 0 }}>{t("managerialSelfAssessment.saveFailed")}</Alert>}
             {saved && <Alert severity="success" sx={{ py: 0 }}>{t("managerialSelfAssessment.saved")}</Alert>}

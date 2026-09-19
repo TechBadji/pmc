@@ -4,7 +4,10 @@ import { Alert, Avatar, Box, Button, Paper, Stack, TextField, Typography } from 
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
 import { DecimalField } from "@/components/inputs/DecimalField";
+import { fmtNum, outOfRange } from "@/utils/evaluationValidation";
+import { useIssues } from "@/utils/validation";
 import type { Paginated, PerformanceRating, SkillNote, SkillNoteCategory } from "@/api/types";
 import { performanceColors } from "@/theme";
 
@@ -140,9 +143,14 @@ export default function StrengthsWeaknesses({
   const [notes, setNotes] = useState<NoteMap>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  // L'enregistrement remplace toute la fiche : sans chargement réussi, il l'effacerait.
+  const [loaded, setLoaded] = useState(false);
+  const { issues, check, clear } = useIssues();
 
   useEffect(() => {
     setSaved(false);
+    setLoaded(false);
+    clear();
     apiClient
       .get<Paginated<SkillNote>>("/skill-notes/", { params: { evaluation: evaluationId, page_size: 100 } })
       .then((r) => {
@@ -151,17 +159,21 @@ export default function StrengthsWeaknesses({
           map[key(n.category, n.order)] = { text: n.text, score: n.score };
         });
         setNotes(map);
-      });
-  }, [evaluationId]);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(false));
+  }, [evaluationId, clear]);
 
   function handleChangeText(category: SkillNoteCategory, order: number, text: string) {
     setNotes((prev) => ({ ...prev, [key(category, order)]: { text, score: prev[key(category, order)]?.score ?? null } }));
     setSaved(false);
+    clear();
   }
 
   function handleChangeScore(category: SkillNoteCategory, order: number, score: number | null) {
     setNotes((prev) => ({ ...prev, [key(category, order)]: { text: prev[key(category, order)]?.text ?? "", score } }));
     setSaved(false);
+    clear();
   }
 
   const payload = useMemo(() => {
@@ -176,11 +188,57 @@ export default function StrengthsWeaknesses({
     return list;
   }, [notes]);
 
+  const sectionLabel: Record<SkillNoteCategory, string> = {
+    SOFT_STRENGTH: t("validation.strengths.sectionSoftStrength"),
+    SOFT_WEAKNESS: t("validation.strengths.sectionSoftWeakness"),
+    HARD_STRENGTH: t("validation.strengths.sectionHardStrength"),
+    HARD_WEAKNESS: t("validation.strengths.sectionHardWeakness"),
+  };
+
+  function validate(): boolean {
+    const norm = (text: string) => text.trim().toLowerCase();
+    const rules: Parameters<typeof check>[0] = [[!loaded, t("validation.strengths.notLoaded")]];
+    const seen = new Map<string, number>();
+    payload.forEach((row) => {
+      const where = t("validation.strengths.rowWhere", { section: sectionLabel[row.category], order: row.order });
+      const text = row.text.trim();
+      rules.push(
+        [row.text.length > 255, t("validation.strengths.tooLong", { where, count: row.text.length })],
+        [!text && row.score !== null && !outOfRange(row.score, 1, 5), t("validation.strengths.scoreWithoutText", { where, score: row.score === null ? "" : fmtNum(row.score) })],
+        [outOfRange(row.score, 1, 5), t("validation.strengths.rangeScore", { where, value: row.score === null ? "" : fmtNum(row.score) })]
+      );
+      if (text) {
+        const id = `${row.category}|${norm(text)}`;
+        rules.push([seen.has(id), t("validation.strengths.duplicateInColumn", { where, text })]);
+        seen.set(id, row.order);
+      }
+    });
+    // Une même compétence ne peut pas être une force et une faiblesse de la même famille.
+    (["SOFT", "HARD"] as const).forEach((family) => {
+      const strengths = new Set(payload.filter((r) => r.category === `${family}_STRENGTH` && r.text.trim()).map((r) => norm(r.text)));
+      const shown = new Set<string>();
+      payload
+        .filter((r) => r.category === `${family}_WEAKNESS` && r.text.trim())
+        .forEach((r) => {
+          const id = norm(r.text);
+          if (strengths.has(id) && !shown.has(id)) {
+            shown.add(id);
+            rules.push([true, t("validation.strengths.contradiction", { text: r.text.trim(), section: t(family === "SOFT" ? "validation.strengths.sectionSoft" : "validation.strengths.sectionHard") })]);
+          }
+        });
+    });
+    return check(rules);
+  }
+
   async function handleSave() {
+    if (!validate()) return;
     setSaving(true);
     try {
       await apiClient.post("/skill-notes/bulk-save/", { evaluation: evaluationId, notes: payload });
       setSaved(true);
+    } catch {
+      // Le motif est annoncé par la bulle d'erreur ; la fiche reste marquée non enregistrée.
+      setSaved(false);
     } finally {
       setSaving(false);
     }
@@ -261,6 +319,10 @@ export default function StrengthsWeaknesses({
         >
           {userName.charAt(0).toUpperCase()}
         </Avatar>
+      </Box>
+
+      <Box sx={{ mt: 2 }}>
+        <ValidationSummary issues={issues} onClose={clear} />
       </Box>
 
       <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={2} sx={{ mt: 2 }}>

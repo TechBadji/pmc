@@ -1,0 +1,95 @@
+{
+  "validation": {
+    "evaluationForm": {
+      "memberRequired": "Choisissez le collaborateur à évaluer avant d'enregistrer.",
+      "campaignRequired": "Choisissez la campagne d'évaluation (la période) concernée.",
+      "campaignClosed": "La campagne « {{name}} » est clôturée : elle n'accepte plus de nouvelle évaluation. Choisissez une campagne ouverte ou demandez la réouverture de celle-ci.",
+      "campaignUsed": "{{member}} a déjà une évaluation pour la campagne « {{name}} ». Ouvrez-la depuis la liste des évaluations pour la modifier au lieu d'en créer une seconde.",
+      "noSkills": "Aucune compétence à noter : {{member}} n'a pas de référentiel de compétences rattaché à son poste ou à son département. Demandez à votre administrateur de le renseigner.",
+      "noSkillSelected": "Aucune compétence n'est cochée : cochez au moins une compétence à évaluer.",
+      "missingScores": "Il manque la note actuelle de {{count}} compétence(s) cochée(s) : {{names}}. Notez-les toutes, ou décochez celles qui ne s'appliquent pas à ce collaborateur.",
+      "andOthers": "et {{count}} autre(s)",
+      "fieldCurrent": "La note actuelle",
+      "fieldObjective": "L'objectif",
+      "fieldAchieved": "Le réalisé",
+      "scoreRange": "{{label}} de « {{skill}} » doit être comprise entre 1 et 5 (vous avez saisi {{value}}).",
+      "scoreDecimals": "{{label}} de « {{skill}} » n'accepte qu'une décimale (vous avez saisi {{value}}) : écrivez par exemple 3,5.",
+      "businessRange": "Le score Business doit être compris entre 0 et 200 % (vous avez saisi {{value}} %).",
+      "peopleRange": "Le score People doit être compris entre 0 et 200 % (vous avez saisi {{value}} %).",
+      "decimalsPercent": "Le score {{which}} n'accepte qu'une décimale (vous avez saisi {{value}} %) : écrivez par exemple 85,5."
+    },
+    "campaigns": {
+      "nameRequired": "Donnez un nom à la campagne (exemple : Semestre 2 2026).",
+      "nameTooLong": "Le nom de la campagne est trop long ({{count}} caractères) : 100 caractères au maximum.",
+      "nameDuplicate": "Une campagne nommée « {{name}} » existe déjà. Choisissez un nom différent pour les distinguer (exemple : {{name}} bis).",
+      "startRequired": "Indiquez la date de début de la campagne.",
+      "startInvalid": "La date de début n'est pas une date valide : choisissez-la dans le calendrier (JJ/MM/AAAA).",
+      "endRequired": "Indiquez la date de fin de la campagne.",
+      "endInvalid": "La date de fin n'est pas une date valide : choisissez-la dans le calendrier (JJ/MM/AAAA).",
+      "endBeforeStart": "La date de fin ({{end}}) est antérieure à la date de début ({{start}}). Choisissez une date de fin postérieure ou égale au début."
+    },
+    "evaluations": {
+      "campaignClosed": "La campagne « {{name}} » est clôturée : elle n'accepte plus de nouvelle évaluation. Choisissez une campagne ouverte, ou rouvrez celle-ci depuis la page des campagnes.",
+      "alreadyEvaluated": "{{name}} a déjà une évaluation pour la campagne « {{campaign}} ». Elle se consulte ici ; pour évaluer une autre période, changez la période sélectionnée."
+    },
+    "matrix": {
+      "compareReset": "La période comparée était la même que la période affichée : la comparaison a été retirée."
+    },
+    "strengths": {
+      "scoreWithoutText": "{{where}} : un indice ({{score}}) est saisi sans intitulé. Décrivez la force ou la faiblesse, ou effacez l'indice.",
+      "duplicateInColumn": "{{where}} : « {{text}} » figure déjà plus haut dans cette colonne. Supprimez le doublon.",
+      "contradiction": "« {{text}} » est à la fois une force et une faiblesse ({{section}}). Une même compétence ne peut pas figurer dans les deux colonnes.",
+      "tooLong": "{{where}} : le texte dépasse 255 caractères ({{count}}). Raccourcissez-le.",
+      "rangeScore": "{{where}} : l'indice doit être compris entre 1 et 5 (vous avez saisi {{value}}).",
+      "notLoaded": "La fiche n'a pas pu être chargée : enregistrer maintenant remplacerait son contenu existant par une fiche vide. Actualisez la page puis réessayez.",
+      "rowWhere": "{{section}}, ligne {{order}}",
+      "sectionSoftStrength": "Forces — Soft Skills",
+      "sectionSoftWeakness": "Faiblesses — Soft Skills",
+      "sectionHardStrength": "Forces — Hard Skills",
+      "sectionHardWeakness": "Faiblesses — Hard Skills",
+      "sectionSoft": "Soft Skills",
+      "sectionHard": "Hard Skills"
+    },
+    "objectives": {
+      "where": "{{block}}, ligne {{row}}",
+      "notNumber": "{{where}} : {{field}} « {{value}} » n'est pas un nombre. Saisissez un nombre, par exemple 1250 ou 12,5.",
+      "tooManyDecimals": "{{where}} : {{field}} n'accepte que deux décimales au plus (vous avez saisi « {{value}} »).",
+      "tooLarge": "{{where}} : {{field}} « {{value}} » est trop grand (12 chiffres avant la virgule au maximum).",
+      "weightNegative": "{{where}} : le coefficient de pondération ne peut pas être négatif (vous avez saisi {{value}}). Saisissez 0 ou un nombre positif.",
+      "weightTooLarge": "{{where}} : le coefficient de pondération ne peut pas dépasser 999,99 (vous avez saisi {{value}}).",
+      "labelTooLong": "{{where}} : l'intitulé de l'objectif dépasse 500 caractères ({{count}}). Raccourcissez-le.",
+      "indicatorTooLong": "{{where}} : l'indicateur dépasse 255 caractères ({{count}}). Raccourcissez-le.",
+      "fieldReference": "la valeur de référence",
+      "fieldTarget": "la valeur cible",
+      "fieldActual": "le réalisé",
+      "dateInvalid": "{{field}} n'est pas une date valide : choisissez-la dans le calendrier (JJ/MM/AAAA).",
+      "evaluatedBeforeSet": "La date de l'évaluation ({{evaluated}}) est antérieure à la date de fixation des objectifs ({{set}}). Les objectifs se fixent avant d'être évalués : corrigez l'une des deux dates.",
+      "nextBeforeEvaluated": "La date de la prochaine évaluation ({{next}}) n'est pas postérieure à la date de l'évaluation ({{evaluated}}). Choisissez une date ultérieure.",
+      "nextBeforeSet": "La date de la prochaine évaluation ({{next}}) est antérieure à la date de fixation des objectifs ({{set}}). Choisissez une date ultérieure.",
+      "visaTooLong": "Le visa dépasse 150 caractères ({{count}}). Raccourcissez-le.",
+      "notSaved": "Ces corrections ne sont pas encore enregistrées : la fiche garde les dernières valeurs valides tant que les points ci-dessus ne sont pas corrigés.",
+      "fieldSetOn": "La date de fixation des objectifs",
+      "fieldEvaluatedOn": "La date de l'évaluation",
+      "fieldNextOn": "La date de la prochaine évaluation"
+    },
+    "managerial": {
+      "campaignRequired": "Choisissez d'abord la campagne concernée avant d'enregistrer.",
+      "nothingEntered": "La fiche « {{category}} » est vide : notez au moins une affirmation (ou saisissez un objectif) avant d'enregistrer.",
+      "objectiveRange": "Affirmation {{order}} : l'objectif doit être compris entre 1 et 5 (vous avez saisi {{value}}).",
+      "objectiveDecimals": "Affirmation {{order}} : l'objectif n'accepte qu'une décimale (vous avez saisi {{value}}) : écrivez par exemple 3,5.",
+      "commentTooLong": "Affirmation {{order}} : le commentaire dépasse 255 caractères ({{count}}). Raccourcissez-le.",
+      "synthesisEmpty": "La synthèse est vide : indiquez au moins une compétence clé ou un axe d'amélioration.",
+      "synthesisDuplicate": "« {{text}} » est saisi deux fois dans « {{section}} ». Supprimez le doublon.",
+      "synthesisContradiction": "« {{text}} » figure à la fois dans vos compétences clés et dans vos axes d'amélioration. Une même compétence ne peut pas être les deux : gardez-la dans une seule liste.",
+      "synthesisTooLong": "« {{section}} », réponse {{n}} : plus de 255 caractères ({{count}}). Raccourcissez-la.",
+      "keySkills": "Compétences clés",
+      "improvementAreas": "Axes d'amélioration"
+    },
+    "monkey": {
+      "campaignRequired": "Choisissez d'abord la campagne concernée avant d'enregistrer.",
+      "nothingEntered": "L'auto-diagnostic est vide : notez au moins une affirmation ou remplissez une des réponses libres avant d'enregistrer.",
+      "monkeyDuplicate": "« {{text}} » est saisi deux fois dans la liste des singes. Supprimez le doublon.",
+      "tooManyMonkeys": "Vous ne pouvez lister que 3 singes au maximum (vous en avez saisi {{count}})."
+    }
+  }
+}

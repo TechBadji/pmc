@@ -3,6 +3,8 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Alert,
+  Button,
   Chip,
   Stack,
   Table,
@@ -21,10 +23,17 @@ import type { Paginated, SkillMatrix } from "@/api/types";
 export default function SkillsPage() {
   const { t } = useTranslation();
   const [matrices, setMatrices] = useState<SkillMatrix[]>([]);
+  const [loadError, setLoadError] = useState(false);
 
-  useEffect(() => {
-    apiClient.get<Paginated<SkillMatrix>>("/skill-matrices/").then((r) => setMatrices(r.data.results));
-  }, []);
+  function load() {
+    setLoadError(false);
+    apiClient
+      .get<Paginated<SkillMatrix>>("/skill-matrices/")
+      .then((r) => setMatrices(r.data.results))
+      .catch(() => setLoadError(true));
+  }
+
+  useEffect(load, []);
 
   const byPosition = matrices.reduce<Record<string, SkillMatrix[]>>((acc, m) => {
     (acc[m.name] ??= []).push(m);
@@ -34,6 +43,18 @@ export default function SkillsPage() {
   return (
     <Stack spacing={3}>
       <PageHeader title={t("nav.skillMatrices")} />
+      {loadError && (
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={load}>
+              {t("common.retry")}
+            </Button>
+          }
+        >
+          {t("common.loadError")}
+        </Alert>
+      )}
 
       {Object.entries(byPosition).map(([position, group]) => (
         <Accordion key={position} elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>

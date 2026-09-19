@@ -19,8 +19,26 @@ import PageHeader from "@/components/layout/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import InlineApiError from "@/components/feedback/InlineApiError";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
 import { fetchMe } from "@/features/auth/authSlice";
+import { describeApiError, type ApiErrorInfo } from "@/utils/apiError";
+import { isBlank, useIssues } from "@/utils/validation";
 import type { AppLanguage, ThemePreference } from "@/api/types";
+
+const MAX_PHOTO_MB = 5;
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+/** Numéro saisi librement : chiffres, espaces, points, tirets, parenthèses, « + » en tête ; 6 à 15 chiffres. */
+function isValidPhone(phone: string): boolean {
+  if (!/^\+?[\d\s.()-]+$/.test(phone.trim())) return false;
+  const digits = phone.replace(/\D/g, "").length;
+  return digits >= 6 && digits <= 15;
+}
+
+function megabytes(file: File): string {
+  return (file.size / 1024 / 1024).toFixed(1).replace(".", ",");
+}
 
 export default function ProfilePage() {
   const { t } = useTranslation();
@@ -53,7 +71,8 @@ export default function ProfilePage() {
   const [fullBodyPreview, setFullBodyPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiErrorInfo | null>(null);
+  const { issues, check, clear, has, messageFor } = useIssues();
 
   useEffect(() => {
     if (!user) return;
@@ -70,6 +89,7 @@ export default function ProfilePage() {
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
     if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    clear();
     setAvatarFile(file);
     setAvatarPreview(file ? URL.createObjectURL(file) : null);
   }
@@ -77,12 +97,26 @@ export default function ProfilePage() {
   function handleFullBodyChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
     if (fullBodyPreview) URL.revokeObjectURL(fullBodyPreview);
+    clear();
     setFullBodyFile(file);
     setFullBodyPreview(file ? URL.createObjectURL(file) : null);
   }
 
   async function handleSubmit() {
     if (submittingRef.current) return;
+    const tooBig = (file: File | null) => !!file && file.size > MAX_PHOTO_MB * 1024 * 1024;
+    const notImage = (file: File | null) => !!file && !IMAGE_TYPES.includes(file.type);
+    const ok = check([
+      [form.first_name.length > 150, t("validation.profile.firstNameTooLong"), "first_name"],
+      [form.last_name.length > 150, t("validation.profile.lastNameTooLong"), "last_name"],
+      [form.position.length > 255, t("validation.profile.positionTooLong"), "position"],
+      [!isBlank(form.phone) && !isValidPhone(form.phone), t("validation.profile.phoneInvalid", { phone: form.phone }), "phone"],
+      [notImage(avatarFile), t("validation.profile.avatarNotImage", { name: avatarFile?.name }), "avatar"],
+      [!notImage(avatarFile) && tooBig(avatarFile), t("validation.profile.avatarTooLarge", { size: avatarFile ? megabytes(avatarFile) : "", max: MAX_PHOTO_MB }), "avatar"],
+      [notImage(fullBodyFile), t("validation.profile.fullBodyNotImage", { name: fullBodyFile?.name }), "fullBody"],
+      [!notImage(fullBodyFile) && tooBig(fullBodyFile), t("validation.profile.fullBodyTooLarge", { size: fullBodyFile ? megabytes(fullBodyFile) : "", max: MAX_PHOTO_MB }), "fullBody"],
+    ]);
+    if (!ok) return;
     submittingRef.current = true;
     setSaving(true);
     setError(null);
@@ -98,15 +132,15 @@ export default function ProfilePage() {
       if (avatarFile) formData.append("avatar", avatarFile);
       if (fullBodyFile) formData.append("avatar_full_body", fullBodyFile);
 
-      await apiClient.patch("/auth/me/", formData);
+      await apiClient.patch("/auth/me/", formData, { silent: true });
       await dispatch(fetchMe());
       setMessage(t("profile.updated"));
       // On garde volontairement l'aperçu local (déjà chargé en mémoire) au
       // lieu de le vider : afficher immédiatement `user.avatar` obligerait
       // le navigateur à re-télécharger l'image depuis le serveur, ce qui
       // peut créer un flash "sans photo" le temps du chargement réseau.
-    } catch (err: any) {
-      setError(err.response?.data?.detail ?? t("profile.updateFailed"));
+    } catch (err) {
+      setError(describeApiError(err, t("profile.updateFailed")));
     } finally {
       setSaving(false);
       submittingRef.current = false;
@@ -128,11 +162,7 @@ export default function ProfilePage() {
           {message}
         </Alert>
       )}
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+      <InlineApiError info={error} onClose={() => setError(null)} />
 
       <Paper elevation={0} sx={{ p: 3, border: "1px solid", borderColor: "divider" }}>
         <Stack spacing={3}>
@@ -229,26 +259,46 @@ export default function ProfilePage() {
             <TextField
               label={t("common.firstName")}
               value={form.first_name}
-              onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, first_name: e.target.value });
+                clear();
+              }}
+              error={has("first_name")}
+              helperText={messageFor("first_name")}
               fullWidth
             />
             <TextField
               label={t("common.lastName")}
               value={form.last_name}
-              onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, last_name: e.target.value });
+                clear();
+              }}
+              error={has("last_name")}
+              helperText={messageFor("last_name")}
               fullWidth
             />
           </Stack>
           <TextField
             label={t("common.position")}
             value={form.position}
-            onChange={(e) => setForm({ ...form, position: e.target.value })}
+            onChange={(e) => {
+                setForm({ ...form, position: e.target.value });
+                clear();
+              }}
+              error={has("position")}
+              helperText={messageFor("position")}
             fullWidth
           />
           <TextField
             label={t("common.phone")}
             value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            onChange={(e) => {
+                setForm({ ...form, phone: e.target.value });
+                clear();
+              }}
+              error={has("phone")}
+              helperText={messageFor("phone")}
             fullWidth
           />
 
@@ -283,6 +333,7 @@ export default function ProfilePage() {
             </TextField>
           </Stack>
 
+          <ValidationSummary issues={issues} onClose={clear} />
           <Stack direction="row" spacing={2} justifyContent="space-between" alignItems="center">
             <Button onClick={() => navigate("/change-password")}>{t("profile.changePassword")}</Button>
             <Button variant="contained" onClick={handleSubmit} disabled={saving}>

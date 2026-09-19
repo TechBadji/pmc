@@ -59,6 +59,8 @@ import type {
 } from "@/api/types";
 import { cohesionColor } from "@/theme";
 import { useCohesionCriteria } from "@/utils/cohesionCriteria";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { isBlank, isRealDate, toNumber, useIssues } from "@/utils/validation";
 
 type PlanStatus = ActionPlan["status"];
 const PLAN_STATUSES: PlanStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
@@ -235,6 +237,9 @@ export default function CohesionFormPage() {
     target_user: "" as number | "",
   });
   const [planToDelete, setPlanToDelete] = useState<ActionPlan | null>(null);
+  const [planSaving, setPlanSaving] = useState(false);
+  const sheetCheck = useIssues();
+  const planCheck = useIssues();
 
   // Les avis agrégés : une seule requête, le serveur ayant déjà fait le calcul
   // et appliqué le seuil de publication.
@@ -249,6 +254,7 @@ export default function CohesionFormPage() {
     apiClient
       .get<CohesionAggregate>("/cohesion-responses/aggregate/", { params: { campaign: campaignId } })
       .then((r) => setAggregate(r.data))
+      // Le refus est déjà expliqué par la notification : l'écran affiche simplement un résultat vide.
       .catch(() => setAggregate({ directions: [], company_score: null }));
   }, [view, campaignId]);
 
@@ -259,7 +265,8 @@ export default function CohesionFormPage() {
         const sorted = [...r.data.results].sort((a, b) => a.start_date.localeCompare(b.start_date));
         setCampaigns(sorted);
         if (sorted.length) setCampaignId((prev) => (prev === "" ? sorted[sorted.length - 1].id : prev));
-      });
+      })
+      .catch(() => undefined);
   }, []);
 
   // Avis des collaborateurs pour la direction et la campagne affichées : c'est
@@ -301,7 +308,7 @@ export default function CohesionFormPage() {
       if (!isCompanyAdmin && r.data.results.length >= 1) {
         setTeamId(r.data.results[0].id);
       }
-    });
+    }).catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -311,6 +318,7 @@ export default function CohesionFormPage() {
     // affichés et risquaient d'être soumis par erreur pour la nouvelle équipe.
     setRows(criteria.map((c) => ({ criterion: c, score: null, objective_score: null, achieved_score: null })));
     setSaved(false);
+    sheetCheck.clear();
     setViewedAnalysisId("");
     if (!teamId) {
       setHistory([]);
@@ -319,10 +327,12 @@ export default function CohesionFormPage() {
     }
     apiClient
       .get<Paginated<TeamCohesionAnalysis>>("/cohesion-analyses/", { params: { team: teamId } })
-      .then((r) => setHistory(r.data.results));
+      .then((r) => setHistory(r.data.results))
+      .catch(() => undefined);
     apiClient
       .get<Paginated<ActionPlan>>("/action-plans/", { params: { team: teamId } })
-      .then((r) => setPlans(r.data.results));
+      .then((r) => setPlans(r.data.results))
+      .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
 
@@ -332,6 +342,7 @@ export default function CohesionFormPage() {
   function showAnalysis(id: number | "") {
     setViewedAnalysisId(id);
     setSaved(false);
+    sheetCheck.clear();
     if (id === "") {
       setRows(criteria.map((c) => ({ criterion: c, score: null, objective_score: null, achieved_score: null })));
       return;
@@ -385,11 +396,12 @@ export default function CohesionFormPage() {
         );
         const ceo = admins.data.results.find((a) => a.id === user?.id);
         setTeamMembers(ceo ? [ceo, ...directors] : directors);
-      });
+      }).catch(() => undefined);
     } else {
       apiClient
         .get<Paginated<UserRecord>>("/users/", { params: { department: teamId, page_size: 200 } })
-        .then((r) => setTeamMembers(r.data.results));
+        .then((r) => setTeamMembers(r.data.results))
+        .catch(() => undefined);
     }
     loadRelationships();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -400,7 +412,8 @@ export default function CohesionFormPage() {
     if (teamId === "") return;
     apiClient
       .get<Paginated<TeamRelationship>>("/team-relationships/", { params: { team: teamId, page_size: 500 } })
-      .then((r) => setTeamRelationships(r.data.results));
+      .then((r) => setTeamRelationships(r.data.results))
+      .catch(() => undefined);
   }
 
   // La fiche se remplit par l'encadrant de l'équipe. Côté CEO elle se consulte :
@@ -518,6 +531,8 @@ export default function CohesionFormPage() {
       });
       setDepartments((prev) => [...prev, r.data]);
       setTeamId(r.data.id);
+    } catch {
+      // Le motif du refus est donné par la notification ; rien n'a été créé.
     } finally {
       setProvisioning(false);
     }
@@ -536,47 +551,135 @@ export default function CohesionFormPage() {
   function updateRow(i: number, patch: Partial<CriterionRow>) {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
     setSaved(false);
+    sheetCheck.clear();
   }
 
   async function handleSubmit() {
     if (!teamId) return;
-    await apiClient.post("/cohesion-analyses/", {
-      team: teamId,
-      date: new Date().toISOString().slice(0, 10),
-      criterion_scores: rows
-        .filter((r): r is CriterionRow & { score: number } => r.score !== null)
-        .map((r) => ({
-          criterion: r.criterion,
-          score: r.score,
-          objective_score: r.objective_score,
-          achieved_score: r.achieved_score,
-        })),
-    });
+    const day = today();
+    const campaign = campaigns.find((c) => c.id === campaignId);
+    const rules = [
+      orgView && ([true, t("validation.cohesionSheet.orgReadOnly")] as const),
+      // Sans note, une ligne n'est pas envoyée : son OCE ou son Réalisé serait perdu en silence.
+      ...rows.map(
+        (r, i) =>
+          r.score === null &&
+          r.objective_score !== null &&
+          ([true, t("validation.cohesionSheet.oceWithoutScore", { n: i + 1, criterion: r.criterion })] as const)
+      ),
+      ...rows.map(
+        (r, i) =>
+          r.score === null &&
+          r.achieved_score !== null &&
+          ([true, t("validation.cohesionSheet.achievedWithoutScore", { n: i + 1, criterion: r.criterion })] as const)
+      ),
+      [!rows.some((r) => r.score !== null), t("validation.cohesionSheet.noScore")] as const,
+      ...rows.map(
+        (r, i) =>
+          r.score !== null &&
+          (!Number.isInteger(r.score) || r.score < 1 || r.score > 5) &&
+          ([true, t("validation.cohesionSheet.scoreRange", { n: i + 1, value: r.score })] as const)
+      ),
+      ...rows.map((r, i) => {
+        const v = r.objective_score === null ? NaN : toNumber(r.objective_score);
+        return (
+          r.objective_score !== null &&
+          (Number.isNaN(v) || v < 1 || v > 5) &&
+          ([true, t("validation.cohesionSheet.oceRange", { n: i + 1, value: String(r.objective_score).replace(".", ",") })] as const)
+        );
+      }),
+      ...rows.map((r, i) => {
+        const v = r.achieved_score === null ? NaN : toNumber(r.achieved_score);
+        return (
+          r.achieved_score !== null &&
+          (Number.isNaN(v) || v < 1 || v > 5) &&
+          ([true, t("validation.cohesionSheet.achievedRange", { n: i + 1, value: String(r.achieved_score).replace(".", ",") })] as const)
+        );
+      }),
+      // La fiche est datée du jour : hors de la fenêtre de la campagne affichée, elle n'y apparaîtrait pas.
+      campaign &&
+        (day < campaign.start_date || day > campaign.effective_end_date) &&
+        ([
+          true,
+          t("validation.cohesionSheet.outsideCampaign", {
+            campaign: campaign.name,
+            start: campaign.start_date,
+            end: campaign.effective_end_date,
+            today: day,
+          }),
+        ] as const),
+    ];
+    if (!sheetCheck.check(rules)) return;
+    try {
+      await apiClient.post("/cohesion-analyses/", {
+        team: teamId,
+        date: day,
+        criterion_scores: rows
+          .filter((r): r is CriterionRow & { score: number } => r.score !== null)
+          .map((r) => ({
+            criterion: r.criterion,
+            score: r.score,
+            objective_score: r.objective_score,
+            achieved_score: r.achieved_score,
+          })),
+      });
+    } catch {
+      // Le motif du refus est donné par la notification ; la fiche reste non enregistrée.
+      setSaved(false);
+      return;
+    }
     setSaved(true);
-    const r = await apiClient.get<Paginated<TeamCohesionAnalysis>>("/cohesion-analyses/", { params: { team: teamId } });
-    setHistory(r.data.results);
+    try {
+      const r = await apiClient.get<Paginated<TeamCohesionAnalysis>>("/cohesion-analyses/", { params: { team: teamId } });
+      setHistory(r.data.results);
+    } catch {
+      // La fiche est enregistrée : seul l'historique n'a pas pu être relu.
+    }
   }
 
   async function handleCreatePlan() {
     if (!teamId) return;
-    await apiClient.post("/action-plans/", {
-      team: teamId,
-      category: "SOFT_SKILLS",
-      status: "TODO",
-      ...planForm,
-      // Vide = l'action concerne toute l'équipe.
-      target_user: planForm.target_user === "" ? null : planForm.target_user,
-      due_date: planForm.due_date || null,
-    });
-    setPlanDialog(false);
-    setPlanForm({ priority: "", objective: "", due_date: "", responsible: "", target_user: "" });
-    await reloadPlans();
+    const day = today();
+    const due = planForm.due_date;
+    const proceed = planCheck.check([
+      [isBlank(planForm.priority), t("validation.actionPlan.priorityRequired"), "priority"],
+      [planForm.priority.length > 255, t("validation.actionPlan.priorityTooLong", { count: planForm.priority.length }), "priority"],
+      [isBlank(planForm.objective), t("validation.actionPlan.objectiveRequired"), "objective"],
+      [due !== "" && !isRealDate(due), t("validation.actionPlan.dueInvalid"), "due_date"],
+      [isRealDate(due) && due < day, t("validation.actionPlan.duePast", { date: due }), "due_date"],
+      [isRealDate(due) && due > sixMonthsFromNow(), t("validation.actionPlan.dueTooFar", { max: sixMonthsFromNow() }), "due_date"],
+    ]);
+    if (!proceed) return;
+    setPlanSaving(true);
+    try {
+      await apiClient.post("/action-plans/", {
+        team: teamId,
+        category: "SOFT_SKILLS",
+        status: "TODO",
+        ...planForm,
+        // Vide = l'action concerne toute l'équipe.
+        target_user: planForm.target_user === "" ? null : planForm.target_user,
+        due_date: planForm.due_date || null,
+      });
+      setPlanDialog(false);
+      setPlanForm({ priority: "", objective: "", due_date: "", responsible: "", target_user: "" });
+      planCheck.clear();
+      await reloadPlans();
+    } catch {
+      // Le motif du refus est donné par la notification ; le formulaire reste ouvert pour être corrigé.
+    } finally {
+      setPlanSaving(false);
+    }
   }
 
   async function reloadPlans() {
     if (!teamId) return;
-    const r = await apiClient.get<Paginated<ActionPlan>>("/action-plans/", { params: { team: teamId } });
-    setPlans(r.data.results);
+    try {
+      const r = await apiClient.get<Paginated<ActionPlan>>("/action-plans/", { params: { team: teamId } });
+      setPlans(r.data.results);
+    } catch {
+      // Le motif est donné par la notification ; la liste affichée reste celle d'avant.
+    }
   }
 
   /** Statut modifiable directement dans le tableau : l'écriture est optimiste
@@ -586,6 +689,8 @@ export default function CohesionFormPage() {
     setPlans((prev) => prev.map((p) => (p.id === plan.id ? { ...p, status } : p)));
     try {
       await apiClient.patch(`/action-plans/${plan.id}/`, { status });
+    } catch {
+      // Le changement optimiste est annulé par le rechargement ci-dessous ; la notification dit pourquoi.
     } finally {
       await reloadPlans();
     }
@@ -593,9 +698,13 @@ export default function CohesionFormPage() {
 
   async function handleDeletePlan() {
     if (!planToDelete) return;
-    await apiClient.delete(`/action-plans/${planToDelete.id}/`);
-    setPlanToDelete(null);
-    await reloadPlans();
+    try {
+      await apiClient.delete(`/action-plans/${planToDelete.id}/`);
+      setPlanToDelete(null);
+      await reloadPlans();
+    } catch {
+      // L'action reste dans le plan : la notification explique pourquoi elle n'a pas été supprimée.
+    }
   }
 
   /** Actions de cohésion de l'équipe : les lignes de la grille du Plan de
@@ -734,6 +843,7 @@ export default function CohesionFormPage() {
             saving={board.saving}
             canEdit={canEditBoard}
           />
+          <ValidationSummary issues={board.issues} onClose={board.clearIssues} />
           {board.error === "duplicate" && <Alert severity="warning">{t("teamBoard.duplicateDate")}</Alert>}
           {board.error === "save" && <Alert severity="error">{t("teamBoard.saveFailed")}</Alert>}
           {board.draft && board.draft.id !== 0 && !canEditBoard && (
@@ -1028,6 +1138,7 @@ export default function CohesionFormPage() {
             </TableContainer>
           </Paper>
 
+          <ValidationSummary issues={sheetCheck.issues} onClose={sheetCheck.clear} />
           {!isCompanyAdmin && (
             <Stack direction="row" justifyContent="flex-end">
               <Button variant="contained" onClick={handleSubmit} disabled={!teamId || readOnly}>
@@ -1210,7 +1321,15 @@ export default function CohesionFormPage() {
         </>
       )}
 
-      <Dialog open={planDialog} onClose={() => setPlanDialog(false)} fullWidth maxWidth="xs">
+      <Dialog
+        open={planDialog}
+        onClose={() => {
+          setPlanDialog(false);
+          planCheck.clear();
+        }}
+        fullWidth
+        maxWidth="xs"
+      >
         <DialogTitle>{t("cohesion.actionPlanTitle")}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
@@ -1220,13 +1339,23 @@ export default function CohesionFormPage() {
             <TextField
               label={t("actionPlans.priorityLabel")}
               value={planForm.priority}
-              onChange={(e) => setPlanForm({ ...planForm, priority: e.target.value })}
+              onChange={(e) => {
+                setPlanForm({ ...planForm, priority: e.target.value });
+                planCheck.clear();
+              }}
+              error={planCheck.has("priority")}
+              helperText={planCheck.messageFor("priority")}
               fullWidth
             />
             <TextField
               label={t("actionPlans.actionToTake")}
               value={planForm.objective}
-              onChange={(e) => setPlanForm({ ...planForm, objective: e.target.value })}
+              onChange={(e) => {
+                setPlanForm({ ...planForm, objective: e.target.value });
+                planCheck.clear();
+              }}
+              error={planCheck.has("objective")}
+              helperText={planCheck.messageFor("objective")}
               multiline
               minRows={2}
               fullWidth
@@ -1268,16 +1397,29 @@ export default function CohesionFormPage() {
               label={t("actionPlans.dueDate")}
               type="date"
               value={planForm.due_date}
-              onChange={(e) => setPlanForm({ ...planForm, due_date: e.target.value })}
+              onChange={(e) => {
+                setPlanForm({ ...planForm, due_date: e.target.value });
+                planCheck.clear();
+              }}
+              error={planCheck.has("due_date")}
+              helperText={planCheck.messageFor("due_date")}
               InputLabelProps={{ shrink: true }}
               inputProps={{ max: sixMonthsFromNow() }}
               fullWidth
             />
+            <ValidationSummary issues={planCheck.issues} onClose={planCheck.clear} />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPlanDialog(false)}>{t("common.cancel")}</Button>
-          <Button variant="contained" onClick={handleCreatePlan} disabled={!planForm.priority}>
+          <Button
+            onClick={() => {
+              setPlanDialog(false);
+              planCheck.clear();
+            }}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button variant="contained" onClick={handleCreatePlan} disabled={planSaving}>
             {t("common.create")}
           </Button>
         </DialogActions>

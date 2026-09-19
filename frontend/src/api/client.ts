@@ -1,4 +1,18 @@
 import axios from "axios";
+import { describeApiError } from "@/utils/apiError";
+import { feedbackBus } from "@/utils/feedbackBus";
+
+declare module "axios" {
+  interface AxiosRequestConfig {
+    /** L'appelant affiche lui-même l'erreur (message propre à son écran) :
+     * l'intercepteur ne publie alors aucune notification. */
+    silent?: boolean;
+    /** Titre de la notification, quand la route seule ne dit pas ce que l'utilisateur tentait. */
+    errorTitle?: string;
+  }
+}
+
+export const SESSION_EXPIRED_KEY = "idpmc_session_expired";
 
 const ACCESS_KEY = "idpmc_access";
 const REFRESH_KEY = "idpmc_refresh";
@@ -77,7 +91,16 @@ apiClient.interceptors.response.use(
         original.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(original);
       }
+      sessionStorage.setItem(SESSION_EXPIRED_KEY, "1");
       window.location.assign("/login");
+      return Promise.reject(error);
+    }
+    // Toute erreur qui remonte ici est expliquée à l'utilisateur, sauf si
+    // l'écran appelant l'a annoncé (`silent`), pour le refus d'identifiants —
+    // traité dans la page de connexion — et une requête annulée exprès.
+    const isAuthRoute = url.includes("/auth/login/") || url.includes("/auth/refresh/") || url.includes("/auth/forgot-password/");
+    if (!original?.silent && !isAuthRoute && !axios.isCancel(error) && error.response?.status !== 401) {
+      feedbackBus.publishApiError(describeApiError(error, original?.errorTitle));
     }
     return Promise.reject(error);
   }

@@ -37,6 +37,12 @@ import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, Paginated, UserRecord } from "@/api/types";
 import StatCard from "@/components/StatCard";
+import InlineApiError from "@/components/feedback/InlineApiError";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { describeApiError, type ApiErrorInfo } from "@/utils/apiError";
+import { isBlank, useIssues } from "@/utils/validation";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function TeamsPage() {
   const { t } = useTranslation();
@@ -59,6 +65,10 @@ export default function TeamsPage() {
     position: "",
   });
   const [loadError, setLoadError] = useState(false);
+  const deptIssues = useIssues();
+  const memberIssues = useIssues();
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<ApiErrorInfo | null>(null);
   const [memberToRemove, setMemberToRemove] = useState<{ member: UserRecord; dept: Department } | null>(null);
 
   function load() {
@@ -97,29 +107,84 @@ export default function TeamsPage() {
   }, [evaluations, user]);
 
   async function handleCreateDepartment() {
-    await apiClient.post("/departments/", {
-      name: deptName,
-      code: deptCode,
-      parent: deptParent === "" ? null : deptParent,
-    });
-    setDeptDialog(false);
-    setDeptName("");
-    setDeptCode("");
-    setDeptParent("");
-    load();
+    const name = deptName.trim();
+    const code = deptCode.trim().toUpperCase();
+    const sameName = departments.find((d) => d.name.trim().toLowerCase() === name.toLowerCase());
+    const sameCode = departments.find((d) => d.code.toUpperCase() === code);
+    const parent = deptParent === "" ? undefined : departments.find((d) => d.id === deptParent);
+    const ok = deptIssues.check([
+      [isBlank(name), t("validation.departments.nameRequired"), "name"],
+      [name.length > 255, t("validation.departments.nameTooLong", { count: name.length }), "name"],
+      [!isBlank(name) && !!sameName, t("validation.departments.nameDuplicate", { name }), "name"],
+      [code === "", t("validation.departments.codeRequired"), "code"],
+      [/[\s,;]/.test(deptCode), t("validation.departments.codeInvalidChars"), "code"],
+      [code !== "" && !!sameCode, t("validation.departments.codeDuplicate", { code, owner: sameCode?.name }), "code"],
+      [deptParent !== "" && !parent, t("validation.departments.parentMissing"), "parent"],
+      [!!parent && parent.parent !== null, t("validation.departments.parentIsService"), "parent"],
+    ]);
+    if (!ok) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await apiClient.post(
+        "/departments/",
+        { name, code, parent: deptParent === "" ? null : deptParent },
+        { silent: true }
+      );
+      setDeptDialog(false);
+      setDeptName("");
+      setDeptCode("");
+      setDeptParent("");
+      load();
+    } catch (err) {
+      setSaveError(describeApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openDeptDialog() {
+    deptIssues.clear();
+    setSaveError(null);
+    setDeptDialog(true);
+  }
+
+  function openMemberDialog(dept: Department) {
+    memberIssues.clear();
+    setSaveError(null);
+    setMemberDialog(dept);
   }
 
   async function handleCreateMember() {
-    if (!memberDialog) return;
-    await apiClient.post("/users/", {
-      ...memberForm,
-      role: "MEMBER",
-      department: memberDialog.id,
-      manager: user?.id,
-    });
-    setMemberDialog(null);
-    setMemberForm({ email: "", password: "", first_name: "", last_name: "", position: "" });
-    load();
+    const email = memberForm.email.trim();
+    const duplicate = members.find((m) => m.email.toLowerCase() === email.toLowerCase());
+    const ok = memberIssues.check([
+      [!memberDialog, t("validation.teams.noTeam")],
+      [isBlank(memberForm.first_name), t("validation.teams.firstNameRequired"), "first_name"],
+      [isBlank(memberForm.last_name), t("validation.teams.lastNameRequired"), "last_name"],
+      [email === "", t("validation.teams.emailRequired"), "email"],
+      [email !== "" && !EMAIL_PATTERN.test(email), t("validation.teams.emailInvalid", { email }), "email"],
+      [!!duplicate && EMAIL_PATTERN.test(email), t("validation.teams.emailDuplicate", { email, name: duplicate?.full_name || duplicate?.email }), "email"],
+      [memberForm.password === "", t("validation.teams.passwordRequired"), "password"],
+      [memberForm.password !== "" && memberForm.password.length < 8, t("validation.teams.passwordTooShort", { count: memberForm.password.length }), "password"],
+    ]);
+    if (!ok || !memberDialog) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await apiClient.post(
+        "/users/",
+        { ...memberForm, email, role: "MEMBER", department: memberDialog.id, manager: user?.id },
+        { silent: true }
+      );
+      setMemberDialog(null);
+      setMemberForm({ email: "", password: "", first_name: "", last_name: "", position: "" });
+      load();
+    } catch (err) {
+      setSaveError(describeApiError(err));
+    } finally {
+      setSaving(false);
+    }
   }
 
   const canCreateDepartment = user?.role === "COMPANY_ADMIN";
@@ -187,7 +252,7 @@ export default function TeamsPage() {
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <PageHeader title={user?.role === "MANAGER" ? t("nav.myTeam") : t("nav.teams")} />
         {canCreateDepartment && (
-          <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setDeptDialog(true)}>
+          <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={openDeptDialog}>
             {t("departments.newDepartment")}
           </Button>
         )}
@@ -364,7 +429,7 @@ export default function TeamsPage() {
                   size="small"
                   startIcon={<AddOutlinedIcon />}
                   sx={{ mt: 1 }}
-                  onClick={() => setMemberDialog(dept)}
+                  onClick={() => openMemberDialog(dept)}
                 >
                   {t("teams.addMember")}
                 </Button>
@@ -457,15 +522,24 @@ export default function TeamsPage() {
             <TextField
               label={t("departments.departmentName")}
               value={deptName}
-              onChange={(e) => setDeptName(e.target.value)}
+              onChange={(e) => {
+                setDeptName(e.target.value);
+                deptIssues.clear();
+              }}
+              error={deptIssues.has("name")}
+              helperText={deptIssues.messageFor("name")}
               autoFocus
               fullWidth
             />
             <TextField
               label={t("departments.code")}
               value={deptCode}
-              onChange={(e) => setDeptCode(e.target.value.toUpperCase().slice(0, 4))}
-              helperText={t("departments.codeHelper")}
+              onChange={(e) => {
+                setDeptCode(e.target.value.toUpperCase().slice(0, 4));
+                deptIssues.clear();
+              }}
+              error={deptIssues.has("code")}
+              helperText={deptIssues.messageFor("code") ?? t("departments.codeHelper")}
               fullWidth
             />
             {/* Une direction se crée sans rattachement ; choisir une direction
@@ -474,8 +548,12 @@ export default function TeamsPage() {
               select
               label={t("departments.parent")}
               value={deptParent}
-              onChange={(e) => setDeptParent(e.target.value === "" ? "" : Number(e.target.value))}
-              helperText={t("departments.parentHelper")}
+              onChange={(e) => {
+                setDeptParent(e.target.value === "" ? "" : Number(e.target.value));
+                deptIssues.clear();
+              }}
+              error={deptIssues.has("parent")}
+              helperText={deptIssues.messageFor("parent") ?? t("departments.parentHelper")}
               fullWidth
             >
               <MenuItem value="">{t("departments.noParent")}</MenuItem>
@@ -485,11 +563,13 @@ export default function TeamsPage() {
                 </MenuItem>
               ))}
             </TextField>
+            <ValidationSummary issues={deptIssues.issues} onClose={deptIssues.clear} />
+            <InlineApiError info={saveError} onClose={() => setSaveError(null)} />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeptDialog(false)}>{t("common.cancel")}</Button>
-          <Button variant="contained" onClick={handleCreateDepartment} disabled={!deptName || !deptCode}>
+          <Button variant="contained" onClick={handleCreateDepartment} disabled={saving}>
             {t("common.create")}
           </Button>
         </DialogActions>
@@ -504,44 +584,65 @@ export default function TeamsPage() {
             <TextField
               label={t("common.firstName")}
               value={memberForm.first_name}
-              onChange={(e) => setMemberForm({ ...memberForm, first_name: e.target.value })}
+              onChange={(e) => {
+                setMemberForm({ ...memberForm, first_name: e.target.value });
+                memberIssues.clear();
+              }}
+              error={memberIssues.has("first_name")}
+              helperText={memberIssues.messageFor("first_name")}
               fullWidth
             />
             <TextField
               label={t("common.lastName")}
               value={memberForm.last_name}
-              onChange={(e) => setMemberForm({ ...memberForm, last_name: e.target.value })}
+              onChange={(e) => {
+                setMemberForm({ ...memberForm, last_name: e.target.value });
+                memberIssues.clear();
+              }}
+              error={memberIssues.has("last_name")}
+              helperText={memberIssues.messageFor("last_name")}
               fullWidth
             />
             <TextField
               label={t("common.position")}
               value={memberForm.position}
-              onChange={(e) => setMemberForm({ ...memberForm, position: e.target.value })}
+              onChange={(e) => {
+                setMemberForm({ ...memberForm, position: e.target.value });
+                memberIssues.clear();
+              }}
               fullWidth
             />
             <TextField
               label={t("common.email")}
               type="email"
               value={memberForm.email}
-              onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
+              onChange={(e) => {
+                setMemberForm({ ...memberForm, email: e.target.value });
+                memberIssues.clear();
+              }}
+              error={memberIssues.has("email")}
+              helperText={memberIssues.messageFor("email")}
               fullWidth
             />
             <TextField
               label={t("teams.temporaryPassword")}
               type="password"
               value={memberForm.password}
-              onChange={(e) => setMemberForm({ ...memberForm, password: e.target.value })}
+              onChange={(e) => {
+                setMemberForm({ ...memberForm, password: e.target.value });
+                memberIssues.clear();
+              }}
+              error={memberIssues.has("password")}
+              helperText={memberIssues.messageFor("password")}
               fullWidth
             />
+            <ValidationSummary issues={memberIssues.issues} onClose={memberIssues.clear} />
+            <InlineApiError info={saveError} onClose={() => setSaveError(null)} />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setMemberDialog(null)}>{t("common.cancel")}</Button>
-          <Button
-            variant="contained"
-            onClick={handleCreateMember}
-            disabled={!memberForm.email || memberForm.password.length < 8}
-          >
+          <Button variant="contained" onClick={handleCreateMember} disabled={saving}>
             {t("common.add")}
           </Button>
         </DialogActions>

@@ -1,0 +1,88 @@
+{
+  "nav": {
+    "myPerformanceId": "Ma fiche ID-PMC"
+  },
+  "performanceEntry": {
+    "pageTitle": "Ma fiche ID-PMC Performance ID",
+    "pageIntro": "Remplissez votre fiche à votre rythme : seules vos informations personnelles sont à saisir. Les indices, pourcentages et graphiques de performance sont calculés par votre manager à partir des évaluations et n'apparaissent pas ici.",
+    "toggleLabel": "Saisie de la fiche",
+    "viewIntro": "Version à remplir, sans éléments de calcul ni graphiques. Enregistrez pour que la fiche complète soit mise à jour.",
+    "selectPerson": "Personne concernée",
+    "pickPerson": "Choisissez la personne dont vous souhaitez renseigner la fiche.",
+    "completion": "Fiche renseignée à {{percent}} %",
+    "completionHint": "{{filled}} rubrique(s) sur {{total}} contiennent au moins une réponse.",
+    "unsaved": "Modifications non enregistrées",
+    "savedAt": "Fiche enregistrée à {{time}}",
+    "save": "Enregistrer ma fiche",
+    "saveFor": "Enregistrer la fiche",
+    "loadFailed": "La fiche n'a pas pu être chargée : les champs ci-dessous sont vides mais votre fiche existante n'est pas perdue. Réessayez avant de saisir quoi que ce soit.",
+    "retry": "Réessayer",
+    "itemPlaceholder": "{{n}}.",
+    "counter": "{{count}}/{{max}}",
+    "since": "Depuis",
+    "sinceHelp": "Année (2019) ou mois (2019-03)",
+    "sections": {
+      "professional": "Informations professionnelles",
+      "achievements": "Réalisations",
+      "vision": "Vision et projets",
+      "personality": "Personnalité et motivations",
+      "contribution": "Contribution et attentes",
+      "development": "Plan de développement personnel"
+    },
+    "fields": {
+      "gender": "Genre",
+      "contract_type": "Type de contrat",
+      "qualifications": "Qualifications et diplômes",
+      "previous_positions": "Postes précédents",
+      "professional_achievements": "Réalisations professionnelles",
+      "personal_achievements": "Réalisations personnelles",
+      "vision_aspirations": "Vision et aspirations",
+      "personal_projects": "Projets personnels",
+      "professional_role_models": "Modèles professionnels",
+      "role_models_in_life": "Modèles dans la vie",
+      "motivates": "Ce qui me motive",
+      "dislikes": "Ce que je n'aime pas",
+      "personality_traits": "Traits de personnalité",
+      "hobbies": "Loisirs",
+      "bono_hat": "Chapeau de Bono",
+      "brings_to_team": "Ce que j'apporte à l'équipe",
+      "brings_to_manager": "Ce que j'apporte à mon manager",
+      "expects_from_team": "Ce que j'attends de l'équipe",
+      "expects_from_manager": "Ce que j'attends de mon manager",
+      "dev_priorities": "Mes priorités de développement",
+      "dev_professional_perspectives": "Mes perspectives professionnelles",
+      "dev_actions_support": "Actions pour soutenir ma performance",
+      "dev_risks_obstacles": "Risques, obstacles et incertitudes"
+    },
+    "genders": {
+      "Femme": "Femme",
+      "Homme": "Homme",
+      "Autre": "Autre"
+    },
+    "contracts": {
+      "CDI": "CDI",
+      "CDD": "CDD",
+      "Intérim": "Intérim",
+      "Stage": "Stage",
+      "Alternance": "Alternance",
+      "Consultant": "Consultant"
+    },
+    "hats": {
+      "Blanc": "Blanc — faits et données",
+      "Rouge": "Rouge — émotions et intuition",
+      "Noir": "Noir — prudence et risques",
+      "Jaune": "Jaune — optimisme et bénéfices",
+      "Vert": "Vert — créativité et idées",
+      "Bleu": "Bleu — organisation et pilotage"
+    },
+    "hatHelp": "Le chapeau de Bono décrit votre façon dominante de réfléchir en équipe.",
+    "validation": {
+      "nothingToSave": "Rien à enregistrer : renseignez au moins une rubrique de votre fiche.",
+      "duplicate": "« {{value}} » apparaît deux fois dans « {{field}} » : gardez une seule ligne.",
+      "tooLong": "Une ligne de « {{field}} » dépasse {{max}} caractères. Raccourcissez-la.",
+      "textTooLong": "« {{field}} » est limité à {{max}} caractères (vous en avez saisi {{count}}).",
+      "sinceInvalid": "La date de prise de fonction « {{value}} » est invalide : indiquez une année (2019) ou un mois (2019-03), entre 1950 et aujourd'hui.",
+      "sinceWithoutPosition": "Une date de prise de fonction est renseignée sans le poste correspondant : indiquez le poste précédent ou effacez la date."
+    }
+  }
+}

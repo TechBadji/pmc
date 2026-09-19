@@ -22,6 +22,8 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { HARD_SKILLS_COLOR, SOFT_SKILLS_COLOR } from "@/theme";
 import type { ActionPlan, Paginated } from "@/api/types";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { isBlank, isRealDate, useIssues, type Rule } from "@/utils/validation";
 
 const PRIORITIES = [1, 2, 3];
 const CATEGORIES: DevCategory[] = ["SOFT_SKILLS", "HARD_SKILLS"];
@@ -130,6 +132,10 @@ function CompactDateField({ value, onChange, ariaLabel }: { value: string; onCha
   );
 }
 
+/** Longueurs au-delà desquelles le serveur tronque sans prévenir. */
+const MAX_ACTIONS_PER_PRIORITY = 20;
+const MAX_LEN = { priority: 255, baseline: 50, target: 50, cost: 100, responsible: 150, eval_note: 150 } as const;
+
 const MAX_COST = 1_000_000;
 const COST_AMOUNT = /\d+(?:[.,]\d+)?/;
 
@@ -184,9 +190,11 @@ export default function ManagerDevelopmentPlan({
   const [groups, setGroups] = useState<GroupMap>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const { issues, check, clear } = useIssues();
 
   useEffect(() => {
     setSaved(false);
+    clear();
     const params =
       scope.kind === "user"
         ? { target_user: scope.id, page_size: 200 }
@@ -217,7 +225,9 @@ export default function ManagerDevelopmentPlan({
             map[k] = group;
           });
         setGroups(map);
-      });
+      })
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope.kind, scope.id]);
 
   function group(category: DevCategory, priorityOrder: number): PriorityGroup {
@@ -230,6 +240,7 @@ export default function ManagerDevelopmentPlan({
       [key(category, priorityOrder)]: { ...(prev[key(category, priorityOrder)] ?? emptyGroup()), ...patch },
     }));
     setSaved(false);
+    clear();
   }
 
   function updateAction(category: DevCategory, priorityOrder: number, index: number, field: keyof ActionItem, value: string) {
@@ -248,8 +259,51 @@ export default function ManagerDevelopmentPlan({
     updateGroup(category, priorityOrder, { actions: current.actions.filter((_, i) => i !== index) });
   }
 
+  /** Contrôle de la grille avant l'envoi : ce que le serveur refuserait ou, pire, tronquerait sans le dire. */
+  function validateGrid(): boolean {
+    const rules: Rule[] = [];
+    for (const category of CATEGORIES) {
+      const categoryLabel = t(category === "SOFT_SKILLS" ? "managerDevPlan.softSkills" : "managerDevPlan.hardSkills");
+      for (const priorityOrder of PRIORITIES) {
+        const g = group(category, priorityOrder);
+        const where = t("validation.devPlan.wherePriority", { category: categoryLabel, priority: priorityOrder });
+        rules.push([
+          g.actions.length > MAX_ACTIONS_PER_PRIORITY,
+          t("validation.devPlan.tooManyActions", { where, count: g.actions.length, max: MAX_ACTIONS_PER_PRIORITY }),
+        ]);
+        const hasContent = g.actions.some((a) => !isBlank(a.objective) || a.start_date !== "" || a.due_date !== "" || !isBlank(a.cost));
+        rules.push([hasContent && isBlank(g.priority), t("validation.devPlan.priorityMissing", { where })]);
+        for (const field of ["priority", "baseline", "target"] as const) {
+          rules.push([
+            g[field].length > MAX_LEN[field],
+            t("validation.devPlan.tooLong", { where, field: t(`validation.devPlan.fields.${field}`), count: g[field].length, max: MAX_LEN[field] }),
+          ]);
+        }
+        g.actions.forEach((a, i) => {
+          const at = t("validation.devPlan.whereAction", { where, action: i + 1 });
+          rules.push([a.start_date !== "" && !isRealDate(a.start_date), t("validation.devPlan.startInvalid", { where: at })]);
+          rules.push([a.due_date !== "" && !isRealDate(a.due_date), t("validation.devPlan.endInvalid", { where: at })]);
+          rules.push([
+            isRealDate(a.start_date) && isRealDate(a.due_date) && a.due_date < a.start_date,
+            t("validation.devPlan.endBeforeStart", { where: at, start: a.start_date, end: a.due_date }),
+          ]);
+          rules.push([costExceedsMax(a.cost), t("validation.devPlan.costMax", { where: at, max: MAX_COST.toLocaleString(i18n.language) })]);
+          for (const field of ["cost", "responsible", "eval_note"] as const) {
+            rules.push([
+              a[field].length > MAX_LEN[field],
+              t("validation.devPlan.tooLong", { where: at, field: t(`validation.devPlan.fields.${field}`), count: a[field].length, max: MAX_LEN[field] }),
+            ]);
+          }
+        });
+      }
+    }
+    return check(rules);
+  }
+
   async function handleSave() {
+    if (!validateGrid()) return;
     setSaving(true);
+    setSaved(false);
     try {
       // Une ligne d'API par action : la priorité et ses KPIs sont recopiés sur
       // chacune (chaque plan d'action reste lisible seul, hors de la grille).
@@ -276,6 +330,9 @@ export default function ManagerDevelopmentPlan({
         items,
       });
       setSaved(true);
+    } catch {
+      // Le motif du refus est donné par la notification ; la grille reste modifiée et non enregistrée.
+      setSaved(false);
     } finally {
       setSaving(false);
     }
@@ -478,6 +535,9 @@ export default function ManagerDevelopmentPlan({
         </Table>
       </TableContainer>
 
+      <Box sx={{ mt: 2 }}>
+        <ValidationSummary issues={issues} onClose={clear} />
+      </Box>
       <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={2} sx={{ mt: 2 }}>
         {saved && (
           <Alert severity="success" sx={{ py: 0 }}>

@@ -1,10 +1,11 @@
 import { CircularProgress, Stack } from "@mui/material";
 import { Suspense, lazy } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import ChangePasswordPage from "@/features/auth/ChangePasswordPage";
 import LoginPage from "@/features/auth/LoginPage";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 /* Chaque écran est chargé à la demande. Les planches de cette application
  * embarquent des bibliothèques graphiques lourdes — Recharts est importé par
@@ -33,6 +34,7 @@ const EvaluationsPage = lazy(() => import("@/pages/EvaluationsPage"));
 const ID3AMatrixPage = lazy(() => import("@/pages/ID3AMatrixPage"));
 const LogsPage = lazy(() => import("@/pages/LogsPage"));
 const MyPerformancePage = lazy(() => import("@/pages/MyPerformancePage"));
+const MyPerformanceIdPage = lazy(() => import("@/pages/MyPerformanceIdPage"));
 const PasswordResetRequestsPage = lazy(() => import("@/pages/PasswordResetRequestsPage"));
 const PerformancePage = lazy(() => import("@/pages/PerformancePage"));
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
@@ -85,13 +87,13 @@ export default function App() {
           <Route path="/action-plans" element={<ActionPlansPage />} />
           <Route path="/performances" element={<PerformancePage />} />
           <Route path="/my-performance" element={<MyPerformancePage />} />
+          <Route path="/my-performance-id" element={<MyPerformanceIdPage />} />
           <Route path="/password-requests" element={<PasswordResetRequestsPage />} />
           <Route path="/logs" element={<LogsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>
-
-      <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );

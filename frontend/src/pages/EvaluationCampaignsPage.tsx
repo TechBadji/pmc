@@ -29,6 +29,9 @@ import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
 import { apiClient } from "@/api/client";
 import type { EvaluationCampaign, Paginated } from "@/api/types";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { apiMessage, fmtDate } from "@/utils/evaluationValidation";
+import { isBlank, isRealDate, useIssues } from "@/utils/validation";
 
 export default function EvaluationCampaignsPage() {
   const { t } = useTranslation();
@@ -41,6 +44,9 @@ export default function EvaluationCampaignsPage() {
   const [loadError, setLoadError] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [dialogError, setDialogError] = useState<string | null>(null);
+  const { issues, check, clear, has, messageFor } = useIssues();
 
   function load() {
     setLoadError(false);
@@ -55,29 +61,67 @@ export default function EvaluationCampaignsPage() {
   function openCreateDialog() {
     setEditingCampaign(null);
     setForm({ name: "", start_date: "", end_date: "" });
+    clear();
+    setDialogError(null);
     setDialogOpen(true);
   }
 
   function openEditDialog(campaign: EvaluationCampaign) {
     setEditingCampaign(campaign);
     setForm({ name: campaign.name, start_date: campaign.start_date, end_date: campaign.end_date });
+    clear();
+    setDialogError(null);
     setDialogOpen(true);
   }
 
+  function updateForm(values: Partial<typeof form>) {
+    if (issues.length) clear();
+    setForm((current) => ({ ...current, ...values }));
+  }
+
   async function handleSubmit() {
+    const name = form.name.trim();
+    const startOk = isRealDate(form.start_date);
+    const endOk = isRealDate(form.end_date);
+    const others = campaigns.filter((c) => c.id !== editingCampaign?.id);
+    const ok = check([
+      [isBlank(form.name), t("validation.campaigns.nameRequired"), "name"],
+      [name.length > 100, t("validation.campaigns.nameTooLong", { count: name.length }), "name"],
+      [
+        !!name && others.some((c) => c.name.trim().toLowerCase() === name.toLowerCase()),
+        t("validation.campaigns.nameDuplicate", { name }),
+        "name",
+      ],
+      [!form.start_date, t("validation.campaigns.startRequired"), "start_date"],
+      [!!form.start_date && !startOk, t("validation.campaigns.startInvalid"), "start_date"],
+      [!form.end_date, t("validation.campaigns.endRequired"), "end_date"],
+      [!!form.end_date && !endOk, t("validation.campaigns.endInvalid"), "end_date"],
+      [
+        startOk && endOk && form.end_date < form.start_date,
+        t("validation.campaigns.endBeforeStart", { end: fmtDate(form.end_date), start: fmtDate(form.start_date) }),
+        "end_date",
+      ],
+    ]);
+    if (!ok) return;
     setActionError(null);
+    setDialogError(null);
+    setSaving(true);
     try {
+      const payload = { ...form, name };
+      // Le serveur refuse aussi un nom déjà pris : le motif s'affiche dans la fenêtre, pas en double.
       if (editingCampaign) {
-        await apiClient.patch(`/evaluation-campaigns/${editingCampaign.id}/`, form);
+        await apiClient.patch(`/evaluation-campaigns/${editingCampaign.id}/`, payload, { silent: true });
       } else {
-        await apiClient.post("/evaluation-campaigns/", form);
+        await apiClient.post("/evaluation-campaigns/", payload, { silent: true });
       }
       setDialogOpen(false);
       setEditingCampaign(null);
       setForm({ name: "", start_date: "", end_date: "" });
       load();
-    } catch {
-      setActionError(t("common.saveError"));
+    } catch (err) {
+      setDialogError(apiMessage(err));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -85,11 +129,12 @@ export default function EvaluationCampaignsPage() {
     if (!deleteTarget) return;
     setDeleteError(null);
     try {
-      await apiClient.delete(`/evaluation-campaigns/${deleteTarget.id}/`);
+      // Motif affiché dans la fenêtre de confirmation : pas de bulle en plus.
+      await apiClient.delete(`/evaluation-campaigns/${deleteTarget.id}/`, { silent: true });
       setDeleteTarget(null);
       load();
-    } catch (err: any) {
-      setDeleteError(err.response?.data?.detail ?? t("common.saveError"));
+    } catch (err) {
+      setDeleteError(apiMessage(err));
     }
   }
 
@@ -240,8 +285,10 @@ export default function EvaluationCampaignsPage() {
             <TextField
               label={t("evaluationCampaigns.name")}
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => updateForm({ name: e.target.value })}
               placeholder={t("evaluationCampaigns.namePlaceholder")}
+              error={has("name")}
+              helperText={messageFor("name")}
               autoFocus
               fullWidth
             />
@@ -249,7 +296,9 @@ export default function EvaluationCampaignsPage() {
               label={t("evaluationCampaigns.startDate")}
               type="date"
               value={form.start_date}
-              onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+              onChange={(e) => updateForm({ start_date: e.target.value })}
+              error={has("start_date")}
+              helperText={messageFor("start_date")}
               InputLabelProps={{ shrink: true }}
               fullWidth
             />
@@ -257,19 +306,23 @@ export default function EvaluationCampaignsPage() {
               label={t("evaluationCampaigns.endDate")}
               type="date"
               value={form.end_date}
-              onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+              onChange={(e) => updateForm({ end_date: e.target.value })}
+              error={has("end_date")}
+              helperText={messageFor("end_date")}
               InputLabelProps={{ shrink: true }}
               fullWidth
             />
+            <ValidationSummary issues={issues} onClose={clear} />
+            {dialogError && (
+              <Alert severity="error" onClose={() => setDialogError(null)}>
+                {dialogError}
+              </Alert>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>{t("common.cancel")}</Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={!form.name || !form.start_date || !form.end_date}
-          >
+          <Button variant="contained" onClick={handleSubmit} disabled={saving}>
             {editingCampaign ? t("common.save") : t("common.create")}
           </Button>
         </DialogActions>

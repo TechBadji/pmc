@@ -1,9 +1,13 @@
-import { Alert, Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import InlineApiError from "@/components/feedback/InlineApiError";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { describeApiError, type ApiErrorInfo } from "@/utils/apiError";
+import { useIssues } from "@/utils/validation";
 import { fetchMe } from "./authSlice";
 
 export default function ChangePasswordPage() {
@@ -14,33 +18,34 @@ export default function ChangePasswordPage() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiErrorInfo | null>(null);
+  const { issues, check, clear, has, messageFor } = useIssues();
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (newPassword !== confirmPassword) {
-      setError(t("changePassword.mismatch"));
-      return;
-    }
-    if (newPassword.length < 8) {
-      setError(t("changePassword.tooShort"));
-      return;
-    }
+    const ok = check([
+      [oldPassword === "", t("validation.changePassword.currentRequired"), "old"],
+      [newPassword === "", t("validation.changePassword.newRequired"), "new"],
+      [newPassword !== "" && newPassword.length < 8, t("validation.changePassword.tooShort", { count: newPassword.length }), "new"],
+      [newPassword.length >= 8 && /^\d+$/.test(newPassword), t("validation.changePassword.digitsOnly"), "new"],
+      [newPassword !== "" && newPassword === oldPassword, t("validation.changePassword.sameAsOld"), "new"],
+      [newPassword !== "" && confirmPassword === "", t("validation.changePassword.confirmRequired"), "confirm"],
+      [confirmPassword !== "" && newPassword !== confirmPassword, t("validation.changePassword.mismatch"), "confirm"],
+    ]);
+    if (!ok) return;
     setLoading(true);
     try {
-      await apiClient.post("/auth/change-password/", {
-        old_password: oldPassword,
-        new_password: newPassword,
-      });
+      await apiClient.post(
+        "/auth/change-password/",
+        { old_password: oldPassword, new_password: newPassword },
+        { silent: true }
+      );
       await dispatch(fetchMe());
       navigate("/", { replace: true });
-    } catch (err: any) {
-      const data = err.response?.data;
-      setError(
-        data?.old_password?.[0] ?? data?.new_password?.[0] ?? data?.detail ?? t("changePassword.failed")
-      );
+    } catch (err) {
+      setError(describeApiError(err, t("changePassword.failed")));
     } finally {
       setLoading(false);
     }
@@ -67,14 +72,18 @@ export default function ChangePasswordPage() {
             {t("changePassword.greeting", { name: user?.full_name || user?.email })}
           </Typography>
         </Stack>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <Stack spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
+            <InlineApiError info={error} onClose={() => setError(null)} />
             <TextField
               label={t("changePassword.current")}
               type="password"
               value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
+              onChange={(e) => {
+                setOldPassword(e.target.value);
+                clear();
+              }}
+              error={has("old")}
               autoFocus
               required
               fullWidth
@@ -83,8 +92,12 @@ export default function ChangePasswordPage() {
               label={t("changePassword.new")}
               type="password"
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              helperText={t("changePassword.newHelper")}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                clear();
+              }}
+              error={has("new")}
+              helperText={messageFor("new") ?? t("changePassword.newHelper")}
               required
               fullWidth
             />
@@ -92,10 +105,15 @@ export default function ChangePasswordPage() {
               label={t("changePassword.confirm")}
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                clear();
+              }}
+              error={has("confirm")}
               required
               fullWidth
             />
+            <ValidationSummary issues={issues} onClose={clear} />
             <Button type="submit" variant="contained" size="large" disabled={loading} fullWidth>
               {loading ? t("changePassword.saving") : t("changePassword.submit")}
             </Button>

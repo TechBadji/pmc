@@ -748,7 +748,8 @@ export default function TalentsDashboardPage() {
       .then((r) => setDepartmentRecords(r.data.results))
       .catch(() => setDepartmentRecords([]));
     apiClient
-      .get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } })
+      // Décor (silhouettes) : son absence ne gêne pas la lecture, inutile d'alerter.
+      .get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 }, silent: true })
       .then((r) => setFullBodyByUser(new Map(r.data.results.map((u) => [u.id, u.avatar_full_body]))))
       .catch(() => setFullBodyByUser(new Map()));
   }

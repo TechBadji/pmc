@@ -1,0 +1,88 @@
+{
+  "nav": {
+    "myPerformanceId": "My ID-PMC sheet"
+  },
+  "performanceEntry": {
+    "pageTitle": "My ID-PMC Performance ID sheet",
+    "pageIntro": "Fill in your sheet at your own pace: only your personal information is to be entered. Performance indices, percentages and charts are calculated by your manager from the evaluations and do not appear here.",
+    "toggleLabel": "Sheet entry",
+    "viewIntro": "Entry version, without calculation elements or charts. Save to update the full sheet.",
+    "selectPerson": "Person concerned",
+    "pickPerson": "Choose the person whose sheet you want to fill in.",
+    "completion": "Sheet {{percent}}% complete",
+    "completionHint": "{{filled}} of {{total}} sections contain at least one answer.",
+    "unsaved": "Unsaved changes",
+    "savedAt": "Sheet saved at {{time}}",
+    "save": "Save my sheet",
+    "saveFor": "Save the sheet",
+    "loadFailed": "The sheet could not be loaded: the fields below are empty but your existing sheet is not lost. Try again before entering anything.",
+    "retry": "Retry",
+    "itemPlaceholder": "{{n}}.",
+    "counter": "{{count}}/{{max}}",
+    "since": "Since",
+    "sinceHelp": "Year (2019) or month (2019-03)",
+    "sections": {
+      "professional": "Professional information",
+      "achievements": "Achievements",
+      "vision": "Vision and projects",
+      "personality": "Personality and motivations",
+      "contribution": "Contribution and expectations",
+      "development": "Personal development plan"
+    },
+    "fields": {
+      "gender": "Gender",
+      "contract_type": "Contract type",
+      "qualifications": "Qualifications and degrees",
+      "previous_positions": "Previous positions",
+      "professional_achievements": "Professional achievements",
+      "personal_achievements": "Personal achievements",
+      "vision_aspirations": "Vision and aspirations",
+      "personal_projects": "Personal projects",
+      "professional_role_models": "Professional role models",
+      "role_models_in_life": "Role models in life",
+      "motivates": "What motivates me",
+      "dislikes": "What I dislike",
+      "personality_traits": "Personality traits",
+      "hobbies": "Hobbies",
+      "bono_hat": "Bono hat",
+      "brings_to_team": "What I bring to the team",
+      "brings_to_manager": "What I bring to my manager",
+      "expects_from_team": "What I expect from the team",
+      "expects_from_manager": "What I expect from my manager",
+      "dev_priorities": "My development priorities",
+      "dev_professional_perspectives": "My professional perspectives",
+      "dev_actions_support": "Actions to support my performance",
+      "dev_risks_obstacles": "Risks, obstacles and uncertainties"
+    },
+    "genders": {
+      "Femme": "Woman",
+      "Homme": "Man",
+      "Autre": "Other"
+    },
+    "contracts": {
+      "CDI": "Permanent",
+      "CDD": "Fixed-term",
+      "Intérim": "Temp",
+      "Stage": "Internship",
+      "Alternance": "Apprenticeship",
+      "Consultant": "Consultant"
+    },
+    "hats": {
+      "Blanc": "White — facts and data",
+      "Rouge": "Red — emotions and intuition",
+      "Noir": "Black — caution and risks",
+      "Jaune": "Yellow — optimism and benefits",
+      "Vert": "Green — creativity and ideas",
+      "Bleu": "Blue — organisation and steering"
+    },
+    "hatHelp": "The Bono hat describes your dominant way of thinking in a team.",
+    "validation": {
+      "nothingToSave": "Nothing to save: fill in at least one section of your sheet.",
+      "duplicate": "\"{{value}}\" appears twice in \"{{field}}\": keep a single line.",
+      "tooLong": "A line of \"{{field}}\" exceeds {{max}} characters. Shorten it.",
+      "textTooLong": "\"{{field}}\" is limited to {{max}} characters (you entered {{count}}).",
+      "sinceInvalid": "The start date \"{{value}}\" is invalid: enter a year (2019) or a month (2019-03), between 1950 and today.",
+      "sinceWithoutPosition": "A start date is filled in without the matching position: enter the previous position or clear the date."
+    }
+  }
+}

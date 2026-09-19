@@ -698,6 +698,7 @@ export default function ID3AMatrixPage() {
   const [matrixBackground, setMatrixBackground] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [compareNotice, setCompareNotice] = useState(false);
 
   function loadEvaluations() {
     setLoading(true);
@@ -714,7 +715,8 @@ export default function ID3AMatrixPage() {
     // Hiérarchie des départements : seule source qui relie un service à sa
     // direction, une évaluation ne portant que le nom du département.
     apiClient
-      .get<Paginated<Department>>("/departments/", { params: { page_size: 500 } })
+      // Liste secondaire (hiérarchie des services) : son absence ne bloque pas l'écran.
+      .get<Paginated<Department>>("/departments/", { params: { page_size: 500 }, silent: true })
       .then((r) => setDepartmentRecords(r.data.results))
       .catch(() => setDepartmentRecords([]));
   }
@@ -984,7 +986,15 @@ export default function ID3AMatrixPage() {
           label={viewMode === "matrix" ? t("common.period") : t("id3aMatrix.targetPeriod")}
           size="small"
           value={selectedCampaignId}
-          onChange={(e) => setSelectedCampaignId(Number(e.target.value))}
+          onChange={(e) => {
+            const next = Number(e.target.value);
+            // Comparer une période avec elle-même n'a pas de sens : on retire la comparaison et on le dit.
+            if (next === compareCampaignId) {
+              setCompareCampaignId(NONE_PERIOD);
+              setCompareNotice(true);
+            }
+            setSelectedCampaignId(next);
+          }}
           sx={{ minWidth: 160 }}
         >
           {campaignOptions.map((c) => (
@@ -999,9 +1009,18 @@ export default function ID3AMatrixPage() {
           label={t("id3aMatrix.compareWith")}
           size="small"
           value={compareCampaignId}
-          onChange={(e) => setCompareCampaignId(e.target.value === NONE_PERIOD ? NONE_PERIOD : Number(e.target.value))}
+          onChange={(e) => {
+            setCompareNotice(false);
+            setCompareCampaignId(e.target.value === NONE_PERIOD ? NONE_PERIOD : Number(e.target.value));
+          }}
           sx={{ minWidth: 190 }}
-          helperText={viewMode === "objectives" && compareCampaignId === NONE_PERIOD ? t("id3aMatrix.autoPrevious") : " "}
+          helperText={
+            compareNotice
+              ? t("validation.matrix.compareReset")
+              : viewMode === "objectives" && compareCampaignId === NONE_PERIOD
+                ? t("id3aMatrix.autoPrevious")
+                : " "
+          }
         >
           <MenuItem value={NONE_PERIOD}>{t("id3aMatrix.none")}</MenuItem>
           {campaignOptions

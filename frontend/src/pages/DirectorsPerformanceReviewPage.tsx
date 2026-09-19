@@ -116,8 +116,12 @@ export default function DirectorsPerformanceReviewPage() {
       .get<Paginated<UserRecord>>("/users/", {
         params: { page_size: 500, ...(isCompanyAdmin ? { role: "MANAGER" } : {}) },
       })
-      .then((r) => setDirectors(r.data.results.filter((u) => isCompanyAdmin || u.id !== user?.id)));
-    apiClient.get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } }).then((r) => setEvaluations(r.data.results));
+      .then((r) => setDirectors(r.data.results.filter((u) => isCompanyAdmin || u.id !== user?.id)))
+      .catch(() => undefined);
+    apiClient
+      .get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } })
+      .then((r) => setEvaluations(r.data.results))
+      .catch(() => undefined);
   }, [isCompanyAdmin, user?.id]);
 
   const pointsByDirector = useMemo(() => {

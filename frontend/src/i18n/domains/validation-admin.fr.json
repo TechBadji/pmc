@@ -1,0 +1,99 @@
+{
+  "validation": {
+    "login": {
+      "identifierRequired": "Saisissez votre identifiant ou votre adresse e-mail.",
+      "passwordRequired": "Saisissez votre mot de passe.",
+      "invalidTitle": "Identifiant ou mot de passe incorrect.",
+      "invalidAdvice": "Vérifiez l'orthographe de votre identifiant et le verrouillage des majuscules, puis réessayez. Après quelques essais, le lien « Mot de passe oublié ? » apparaît pour demander une réinitialisation à votre administrateur.",
+      "rejectedTitle": "Votre compte ne peut pas se connecter pour le moment.",
+      "rejectedAdvice": "Contactez l'administrateur de votre entreprise pour connaître la raison et rétablir l'accès.",
+      "throttledTitle": "Trop de tentatives de connexion en peu de temps.",
+      "throttledAdvice": "Par sécurité, l'accès est bloqué temporairement. Patientez {{wait}} avant de réessayer.",
+      "waitAMoment": "quelques instants",
+      "waitSeconds_one": "{{count}} seconde",
+      "waitSeconds_other": "{{count}} secondes",
+      "waitMinutes_one": "{{count}} minute",
+      "waitMinutes_other": "{{count}} minutes",
+      "timeoutTitle": "Le serveur a mis trop de temps à répondre.",
+      "networkTitle": "Impossible de joindre le serveur.",
+      "networkAdvice": "Vérifiez votre connexion internet (Wi-Fi ou données mobiles), puis réessayez. Votre identifiant et votre mot de passe n'ont pas été refusés.",
+      "unavailableTitle": "Le service est momentanément indisponible.",
+      "unavailableAdvice": "Une mise à jour ou un redémarrage est probablement en cours. Patientez une minute, puis réessayez.",
+      "serverTitle": "Une erreur est survenue de notre côté pendant la connexion.",
+      "serverAdvice": "Votre identifiant et votre mot de passe ne sont pas en cause. Réessayez dans un instant ; si cela persiste, contactez le support."
+    },
+    "departments": {
+      "nameRequired": "Saisissez le nom de la direction ou du service.",
+      "nameTooLong": "Le nom est trop long ({{count}} caractères) : 255 caractères au maximum.",
+      "codeRequired": "Saisissez un code court de 4 caractères au maximum (exemple : DSI, DAF).",
+      "codeInvalidChars": "Le code ne doit contenir ni espace ni virgule : il sert d'identifiant dans les fichiers d'import.",
+      "nameDuplicate": "Une direction ou un service nommé « {{name}} » existe déjà : choisissez un autre nom.",
+      "codeDuplicate": "Le code « {{code}} » est déjà utilisé par « {{owner}} » : choisissez un code unique.",
+      "parentMissing": "La direction de rattachement choisie n'existe plus dans la liste : actualisez la page puis réessayez.",
+      "parentIsService": "Un service ne peut pas dépendre d'un autre service : rattachez-le à une direction."
+    },
+    "teams": {
+      "firstNameRequired": "Saisissez le prénom du collaborateur.",
+      "lastNameRequired": "Saisissez le nom du collaborateur.",
+      "emailRequired": "Saisissez l'adresse e-mail du collaborateur.",
+      "emailInvalid": "L'adresse e-mail « {{email}} » n'est pas valide (exemple : prenom.nom@entreprise.com).",
+      "emailDuplicate": "L'adresse « {{email}} » est déjà utilisée par {{name}} : saisissez une autre adresse.",
+      "passwordRequired": "Saisissez un mot de passe provisoire.",
+      "passwordTooShort": "Le mot de passe provisoire doit contenir au moins 8 caractères (il en compte {{count}}).",
+      "noTeam": "Aucune équipe n'est sélectionnée : fermez la fenêtre et rouvrez-la depuis l'équipe concernée."
+    },
+    "companies": {
+      "nameRequired": "Saisissez le nom de l'entreprise.",
+      "nameTooLong": "Le nom de l'entreprise est trop long ({{count}} caractères) : 255 au maximum.",
+      "employeeCountInvalid": "L'effectif doit être un nombre entier, positif ou nul (exemple : 120).",
+      "adminNamesBoth": "Renseignez à la fois le prénom et le nom du CEO, ou laissez les deux champs vides : un accès ne peut pas être créé avec un nom incomplet.",
+      "deleteMismatch": "Le texte saisi ne correspond pas exactement à « {{name}} ».",
+      "planSame": "C'est déjà la formule actuelle : choisissez-en une autre."
+    },
+    "bulkUpload": {
+      "companyRequired": "Choisissez l'entreprise dans laquelle importer les utilisateurs.",
+      "fileRequired": "Choisissez un fichier CSV à importer.",
+      "notCsv": "« {{name}} » n'est pas un fichier CSV : choisissez un fichier dont le nom se termine par .csv.",
+      "excelFile": "« {{name}} » est un classeur Excel. Ouvrez-le, puis faites Fichier > Enregistrer sous > CSV UTF-8 (délimité par des virgules) et importez ce fichier.",
+      "empty": "Le fichier « {{name}} » est vide.",
+      "tooLarge": "Le fichier fait {{size}} Mo : la limite est de {{max}} Mo. Scindez-le en plusieurs fichiers.",
+      "badEncoding": "Le fichier n'est pas encodé en UTF-8 (des caractères accentués sont illisibles). Réenregistrez-le au format CSV UTF-8.",
+      "wrongSeparator": "Les colonnes sont séparées par des points-virgules ou des tabulations. Enregistrez le fichier avec la virgule (,) comme séparateur, comme dans le modèle.",
+      "missingColumns": "Colonne(s) obligatoire(s) absente(s) de la première ligne : {{columns}}. Téléchargez le modèle pour reprendre les bons intitulés.",
+      "noRows": "Le fichier ne contient que l'en-tête : ajoutez au moins une ligne d'utilisateur."
+    },
+    "skillsAdmin": {
+      "companyRequired": "Choisissez d'abord l'entreprise concernée.",
+      "matrixNameRequired": "Saisissez le nom du référentiel (exemple : Dir Finances & Administration).",
+      "matrixDuplicate": "Un référentiel « {{name}} » de type {{type}} existe déjà pour cette entreprise : choisissez un autre nom ou l'autre type.",
+      "itemNameRequired": "Saisissez le nom de la compétence.",
+      "itemDuplicate": "La compétence « {{name}} » existe déjà dans ce référentiel : modifiez-la au lieu d'en ajouter une seconde.",
+      "weightInvalid": "La pondération doit être un nombre strictement supérieur à 0 (exemple : 1 ou 1,5).",
+      "weightTooLarge": "La pondération ne peut pas dépasser 99,99.",
+      "weightDecimals": "La pondération accepte 2 décimales au maximum."
+    },
+    "profile": {
+      "phoneInvalid": "Le numéro de téléphone « {{phone}} » n'est pas valide : utilisez uniquement des chiffres, des espaces et éventuellement un + au début (6 à 15 chiffres).",
+      "firstNameTooLong": "Le prénom est trop long : 150 caractères au maximum.",
+      "lastNameTooLong": "Le nom est trop long : 150 caractères au maximum.",
+      "positionTooLong": "Le poste est trop long : 255 caractères au maximum.",
+      "avatarNotImage": "La photo de profil « {{name}} » n'est pas une image JPG, PNG, WebP ou GIF.",
+      "avatarTooLarge": "La photo de profil fait {{size}} Mo : la limite est de {{max}} Mo. Choisissez une image plus légère.",
+      "fullBodyNotImage": "La photo en pied « {{name}} » n'est pas une image JPG, PNG, WebP ou GIF.",
+      "fullBodyTooLarge": "La photo en pied fait {{size}} Mo : la limite est de {{max}} Mo. Choisissez une image plus légère."
+    },
+    "changePassword": {
+      "currentRequired": "Saisissez votre mot de passe actuel.",
+      "newRequired": "Saisissez le nouveau mot de passe.",
+      "tooShort": "Le nouveau mot de passe doit contenir au moins 8 caractères (il en compte {{count}}).",
+      "digitsOnly": "Le nouveau mot de passe ne peut pas être composé uniquement de chiffres : ajoutez des lettres.",
+      "sameAsOld": "Le nouveau mot de passe est identique à l'actuel : choisissez-en un différent.",
+      "confirmRequired": "Saisissez à nouveau le nouveau mot de passe dans le champ de confirmation.",
+      "mismatch": "Le nouveau mot de passe et sa confirmation ne sont pas identiques."
+    },
+    "logs": {
+      "dateOrder": "La date de début ({{from}}) est postérieure à la date de fin ({{to}}) : aucun événement ne peut correspondre. Inversez les deux dates.",
+      "exportFailed": "L'export du journal n'a pas pu être généré. Vos filtres sont conservés : réessayez dans un instant."
+    }
+  }
+}

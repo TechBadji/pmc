@@ -257,6 +257,17 @@ function TargetsVsActuals({
   const [open, setOpen] = useState(false);
   const data = rows.filter((r) => r.year);
 
+  /** Ce qui empêcherait l'enregistrement d'une ligne, dit sous son champ Année dès la frappe. */
+  function yearIssue(row: TeamBoard["targets_vs_actuals"][number], index: number): string | undefined {
+    const year = row.year.trim();
+    if (year === "") {
+      return row.target !== null || row.actual !== null ? t("validation.teamBoard.yearMissing") : undefined;
+    }
+    if (!/^\d{4}$/.test(year)) return t("validation.teamBoard.yearFormat");
+    if (rows.some((r, j) => j !== index && r.year.trim() === year)) return t("validation.teamBoard.yearTwice", { year });
+    return undefined;
+  }
+
   function setAt(i: number, patch: Partial<TeamBoard["targets_vs_actuals"][number]>) {
     onChange(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   }
@@ -362,6 +373,8 @@ function TargetsVsActuals({
                   label={t("teamBoard.year")}
                   value={row.year}
                   onChange={(e) => setAt(i, { year: e.target.value })}
+                  error={yearIssue(row, i) !== undefined}
+                  helperText={yearIssue(row, i)}
                   sx={{ width: 110 }}
                 />
                 <DecimalField
@@ -589,16 +602,20 @@ export default function TeamPerformanceIdBoard({
     if (teamId === "") return;
     apiClient
       .get<Paginated<UserRecord>>("/users/", { params: { department: teamId, page_size: 200 } })
-      .then((r) => setMembers(r.data.results));
+      .then((r) => setMembers(r.data.results))
+      .catch(() => undefined);
     apiClient
       .get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } })
-      .then((r) => setEvaluations(r.data.results));
+      .then((r) => setEvaluations(r.data.results))
+      .catch(() => undefined);
     apiClient
       .get<Paginated<TeamCohesionAnalysis>>("/cohesion-analyses/", { params: { team: teamId, page_size: 100 } })
-      .then((r) => setCohesion(r.data.results));
+      .then((r) => setCohesion(r.data.results))
+      .catch(() => undefined);
     apiClient
       .get<Paginated<TeamRelationship>>("/team-relationships/", { params: { team: teamId, page_size: 500 } })
-      .then((r) => setRelationships(r.data.results));
+      .then((r) => setRelationships(r.data.results))
+      .catch(() => undefined);
   }, [teamId]);
 
   const memberIds = useMemo(() => new Set(members.map((m) => m.id)), [members]);

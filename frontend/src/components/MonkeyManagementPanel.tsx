@@ -18,7 +18,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
 import { cohesionColor, performanceColors } from "@/theme";
+import { useIssues } from "@/utils/validation";
 import type { EvaluationCampaign, MonkeyManagementAssessment, MonkeyManagementLevel, Paginated, UserRecord } from "@/api/types";
 
 const TIERS = [1, 2, 3, 4, 5];
@@ -130,6 +132,7 @@ export default function MonkeyManagementPanel() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const { issues, check, clear } = useIssues();
 
   // Le CODIR peut consulter la fiche de n'importe quel manager de son
   // entreprise (lecture seule) — voir MonkeyManagementAssessmentViewSet.
@@ -171,6 +174,7 @@ export default function MonkeyManagementPanel() {
   }, [user?.company]);
 
   useEffect(() => {
+    clear();
     if (!campaignId || viewedUserId === "") return;
     apiClient
       .get<Paginated<MonkeyManagementAssessment>>("/monkey-management-assessments/", {
@@ -189,9 +193,10 @@ export default function MonkeyManagementPanel() {
         setBehaviorToChange(existing?.behavior_to_change ?? "");
         setNextResponsibility(existing?.next_responsibility ?? "");
         setSaved(false);
+                  clear();
       })
       .catch(() => setLoadError(true));
-  }, [campaignId, viewedUserId]);
+  }, [campaignId, viewedUserId, clear]);
 
   const activeCampaign = campaigns.find((c) => c.id === campaignId) ?? null;
   const viewingSelf = viewedUserId === user?.id;
@@ -210,7 +215,27 @@ export default function MonkeyManagementPanel() {
     : cohesionColor(total / 10 || 1);
 
   async function handleSave() {
-    if (!campaignId || !viewingSelf) return;
+    if (!viewingSelf) return;
+    const filledMonkeys = monkeys.map((m) => m.trim()).filter(Boolean);
+    const seen = new Set<string>();
+    const duplicates = filledMonkeys.filter((m) => {
+      const key = m.toLowerCase();
+      const dup = seen.has(key);
+      seen.add(key);
+      return dup;
+    });
+    const hasContent =
+      answered > 0 || filledMonkeys.length > 0 || [whyAccepted, returnToWhom, behaviorToChange, nextResponsibility].some((v) => v.trim());
+    const ok = check([
+      [!campaignId, t("validation.monkey.campaignRequired")],
+      // Vider une fiche déjà enregistrée reste permis ; en créer une vide n'a pas de sens.
+      [!assessment && !hasContent, t("validation.monkey.nothingEntered")],
+      [filledMonkeys.length > 3, t("validation.monkey.tooManyMonkeys", { count: filledMonkeys.length })],
+      ...[...new Set(duplicates.map((m) => m.toLowerCase()))].map(
+        (key) => [true, t("validation.monkey.monkeyDuplicate", { text: filledMonkeys.find((m) => m.toLowerCase() === key) })] as const
+      ),
+    ]);
+    if (!ok || !campaignId) return;
     setSaving(true);
     setError(false);
     const payload = {
@@ -342,6 +367,7 @@ export default function MonkeyManagementPanel() {
                               onClick={() => {
                                 setScores((current) => ({ ...current, [order]: tier }));
                                 setSaved(false);
+                  clear();
                               }}
                             />
                           </TableCell>
@@ -375,6 +401,11 @@ export default function MonkeyManagementPanel() {
                 )}
               </Stack>
             </Stack>
+            {issues.length > 0 && (
+              <Box sx={{ mx: 2, mb: 2 }}>
+                <ValidationSummary issues={issues} onClose={clear} />
+              </Box>
+            )}
             {error && <Alert severity="error" sx={{ mx: 2, mb: 2 }}>{t("monkeyManagement.saveFailed")}</Alert>}
             {saved && <Alert severity="success" sx={{ mx: 2, mb: 2 }}>{t("monkeyManagement.saved")}</Alert>}
             {!level && <Typography variant="caption" color="text.secondary" sx={{ display: "block", px: 2, pb: 2 }}>{t("monkeyManagement.incomplete")}</Typography>}
@@ -498,6 +529,7 @@ export default function MonkeyManagementPanel() {
                           return next;
                         });
                         setSaved(false);
+                  clear();
                       }}
                       inputProps={{ maxLength: 255 }}
                     />
@@ -516,6 +548,7 @@ export default function MonkeyManagementPanel() {
                 onChange={(e) => {
                   setWhyAccepted(e.target.value);
                   setSaved(false);
+                  clear();
                 }}
               />
               <TextField
@@ -529,6 +562,7 @@ export default function MonkeyManagementPanel() {
                 onChange={(e) => {
                   setReturnToWhom(e.target.value);
                   setSaved(false);
+                  clear();
                 }}
               />
               <TextField
@@ -542,6 +576,7 @@ export default function MonkeyManagementPanel() {
                 onChange={(e) => {
                   setBehaviorToChange(e.target.value);
                   setSaved(false);
+                  clear();
                 }}
               />
               <TextField
@@ -555,6 +590,7 @@ export default function MonkeyManagementPanel() {
                 onChange={(e) => {
                   setNextResponsibility(e.target.value);
                   setSaved(false);
+                  clear();
                 }}
               />
             </Stack>

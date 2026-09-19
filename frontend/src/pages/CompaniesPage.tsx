@@ -33,6 +33,10 @@ import PageHeader from "@/components/layout/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import type { Company, Paginated, Plan } from "@/api/types";
+import InlineApiError from "@/components/feedback/InlineApiError";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { describeApiError, type ApiErrorInfo } from "@/utils/apiError";
+import { isBlank, useIssues } from "@/utils/validation";
 
 const PLAN_COLOR: Record<Plan, "default" | "info" | "success"> = {
   DEMO: "default",
@@ -70,6 +74,9 @@ export default function CompaniesPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<ApiErrorInfo | null>(null);
+  const { issues, check, clear, has, messageFor } = useIssues();
 
   function load() {
     setLoadError(false);
@@ -81,12 +88,40 @@ export default function CompaniesPage() {
 
   useEffect(load, []);
 
+  function openCreateDialog() {
+    clear();
+    setCreateError(null);
+    setOpen(true);
+  }
+
   async function handleCreate() {
-    const { data } = await apiClient.post<Company>("/companies/", form);
-    setOpen(false);
-    setForm(emptyForm);
-    setCredentials(data);
-    load();
+    const name = form.name.trim();
+    const first = form.admin_first_name.trim();
+    const last = form.admin_last_name.trim();
+    const ok = check([
+      [isBlank(name), t("validation.companies.nameRequired"), "name"],
+      [name.length > 255, t("validation.companies.nameTooLong", { count: name.length }), "name"],
+      [!Number.isInteger(form.employee_count) || form.employee_count < 0, t("validation.companies.employeeCountInvalid"), "employee_count"],
+      [(first === "") !== (last === ""), t("validation.companies.adminNamesBoth"), first === "" ? "admin_first_name" : "admin_last_name"],
+    ]);
+    if (!ok) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const { data } = await apiClient.post<Company>(
+        "/companies/",
+        { ...form, name, admin_first_name: first, admin_last_name: last },
+        { silent: true }
+      );
+      setOpen(false);
+      setForm(emptyForm);
+      setCredentials(data);
+      load();
+    } catch (err) {
+      setCreateError(describeApiError(err));
+    } finally {
+      setCreating(false);
+    }
   }
 
   async function handleResetAdminPassword(company: Company) {
@@ -150,7 +185,7 @@ export default function CompaniesPage() {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <PageHeader title={t("companies.title")} />
-        <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setOpen(true)}>
+        <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={openCreateDialog}>
           {t("companies.newCompany")}
         </Button>
       </Stack>
@@ -307,7 +342,12 @@ export default function CompaniesPage() {
             <TextField
               label={t("companies.companyName")}
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                clear();
+              }}
+              error={has("name")}
+              helperText={messageFor("name")}
               autoFocus
               fullWidth
             />
@@ -321,7 +361,13 @@ export default function CompaniesPage() {
               label={t("companies.employeeCount")}
               type="number"
               value={form.employee_count}
-              onChange={(e) => setForm({ ...form, employee_count: Number(e.target.value) })}
+              onChange={(e) => {
+                setForm({ ...form, employee_count: e.target.value === "" ? 0 : Number(e.target.value) });
+                clear();
+              }}
+              error={has("employee_count")}
+              helperText={messageFor("employee_count")}
+              inputProps={{ min: 0, step: 1 }}
               fullWidth
             />
             <TextField
@@ -344,24 +390,34 @@ export default function CompaniesPage() {
               <TextField
                 label={t("common.firstName")}
                 value={form.admin_first_name}
-                onChange={(e) => setForm({ ...form, admin_first_name: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, admin_first_name: e.target.value });
+                  clear();
+                }}
+                error={has("admin_first_name")}
                 fullWidth
               />
               <TextField
                 label={t("common.lastName")}
                 value={form.admin_last_name}
-                onChange={(e) => setForm({ ...form, admin_last_name: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, admin_last_name: e.target.value });
+                  clear();
+                }}
+                error={has("admin_last_name")}
                 fullWidth
               />
             </Stack>
             <Typography variant="caption" color="text.secondary">
               {t("companies.creationHint")}
             </Typography>
+            <ValidationSummary issues={issues} onClose={clear} />
+            <InlineApiError info={createError} onClose={() => setCreateError(null)} />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-          <Button variant="contained" onClick={handleCreate} disabled={!form.name}>
+          <Button variant="contained" onClick={handleCreate} disabled={creating}>
             {t("common.create")}
           </Button>
         </DialogActions>
@@ -406,6 +462,10 @@ export default function CompaniesPage() {
               label={t("companies.newPlan")}
               value={selectedPlan}
               onChange={(e) => setSelectedPlan(e.target.value as Plan)}
+              error={!!planDialogCompany && selectedPlan === planDialogCompany.plan}
+              helperText={
+                planDialogCompany && selectedPlan === planDialogCompany.plan ? t("validation.companies.planSame") : undefined
+              }
               fullWidth
             >
               {PLAN_ORDER.map((p) => (
@@ -439,6 +499,12 @@ export default function CompaniesPage() {
             <TextField
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
+              error={deleteConfirmText !== "" && deleteConfirmText !== deleteDialogCompany?.name}
+              helperText={
+                deleteConfirmText !== "" && deleteConfirmText !== deleteDialogCompany?.name
+                  ? t("validation.companies.deleteMismatch", { name: deleteDialogCompany?.name })
+                  : undefined
+              }
               placeholder={deleteDialogCompany?.name}
               autoFocus
               fullWidth

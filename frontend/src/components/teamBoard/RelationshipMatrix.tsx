@@ -21,6 +21,8 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import type { TeamRelationship, UserRecord } from "@/api/types";
 import { RELATION_COLORS } from "./BoardPieces";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { useIssues } from "@/utils/validation";
 
 const QUALITIES: TeamRelationship["quality"][] = ["EXCELLENT", "CORRECT", "DIFFICULT", "TOXIC"];
 
@@ -59,6 +61,7 @@ export default function RelationshipMatrix({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<number | "">("");
+  const { issues, check, clear } = useIssues();
 
   const byPair = useMemo(() => {
     const map = new Map<string, TeamRelationship>();
@@ -86,6 +89,13 @@ export default function RelationshipMatrix({
 
   async function setQuality(a: UserRecord, b: UserRecord, quality: TeamRelationship["quality"]) {
     const existing = byPair.get(pairKey(a.id, b.id));
+    const memberIds = new Set(members.map((m) => m.id));
+    const proceed = check([
+      [a.id === b.id, t("validation.relationship.samePerson")],
+      [!memberIds.has(a.id) || !memberIds.has(b.id), t("validation.relationship.notMember")],
+      [!QUALITIES.includes(quality), t("validation.relationship.noQuality", { a: a.full_name || a.email, b: b.full_name || b.email })],
+    ]);
+    if (!proceed) return;
     setBusy(true);
     setError(null);
     try {
@@ -102,6 +112,8 @@ export default function RelationshipMatrix({
       onChanged();
     } catch {
       setError("save");
+      // Un binôme déjà créé ailleurs : recharger montre l'état réel au lieu de laisser un choix périmé.
+      onChanged();
     } finally {
       setBusy(false);
     }
@@ -109,6 +121,8 @@ export default function RelationshipMatrix({
 
   /** Pose en une fois les binômes non encore qualifiés, en « correcte ». */
   async function fillMissing() {
+    const proceed = check([[missing.some((p) => p.a.id === p.b.id), t("validation.relationship.samePerson")]]);
+    if (!proceed) return;
     setBusy(true);
     setError(null);
     try {
@@ -125,6 +139,8 @@ export default function RelationshipMatrix({
       onChanged();
     } catch {
       setError("save");
+      // Les binômes déjà posés avant l'échec doivent apparaître : on recharge quand même.
+      onChanged();
     } finally {
       setBusy(false);
     }
@@ -140,7 +156,10 @@ export default function RelationshipMatrix({
         <Select
           size="small"
           value={focus?.id ?? ""}
-          onChange={(e) => setFocusId(Number(e.target.value))}
+          onChange={(e) => {
+            setFocusId(Number(e.target.value));
+            clear();
+          }}
           sx={{ minWidth: 260 }}
         >
           {members.map((m) => (
@@ -171,6 +190,11 @@ export default function RelationshipMatrix({
         )}
       </Stack>
 
+      {issues.length > 0 && (
+        <Box sx={{ mb: 1 }}>
+          <ValidationSummary issues={issues} onClose={clear} />
+        </Box>
+      )}
       {error && (
         <Alert severity="error" sx={{ mb: 1 }}>
           {t("teamBoard.saveFailed")}

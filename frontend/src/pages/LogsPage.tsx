@@ -39,6 +39,7 @@ export default function LogsPage() {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [newEventsAnnouncement, setNewEventsAnnouncement] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(false);
 
   // Champs de saisie affichés (mise à jour immédiate) vs filtres réellement
   // appliqués à la requête (mise à jour après un court silence de frappe
@@ -79,11 +80,13 @@ export default function LogsPage() {
     };
   }
 
-  function load() {
+  // `quiet` : actualisation automatique, dont l'échec ne mérite pas une notification à chaque passage.
+  function load(quiet = false) {
     setLoadError(false);
     apiClient
       .get<Paginated<AuditLog>>("/audit-logs/", {
         params: { page: page + 1, page_size: rowsPerPage, ...filterParams() },
+        silent: quiet,
       })
       .then((r) => {
         setLogs(r.data.results);
@@ -107,14 +110,14 @@ export default function LogsPage() {
       .catch(() => setLoadError(true));
   }
 
-  useEffect(load, [page, rowsPerPage, dateFrom, dateTo, appliedCompany, appliedSearch]);
+  useEffect(() => load(), [page, rowsPerPage, dateFrom, dateTo, appliedCompany, appliedSearch]);
 
   // Actualisation automatique — seulement sur la première page (les plus
   // récents événements), pour ne pas perturber la pagination d'un
   // utilisateur en train de consulter l'historique plus ancien.
   useEffect(() => {
     const interval = setInterval(() => {
-      if (pageRef.current === 0) load();
+      if (pageRef.current === 0) load(true);
     }, POLL_MS);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,6 +125,7 @@ export default function LogsPage() {
 
   async function handleExport() {
     setExporting(true);
+    setExportError(false);
     try {
       const r = await apiClient.get("/audit-logs/export/", {
         params: filterParams(),
@@ -136,7 +140,7 @@ export default function LogsPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      setLoadError(true);
+      setExportError(true);
     } finally {
       setExporting(false);
     }
@@ -157,7 +161,7 @@ export default function LogsPage() {
               {t("logs.lastRefreshed", { time: lastRefreshed.toLocaleTimeString(locale) })}
             </Typography>
           )}
-          <Button size="small" startIcon={<HistoryOutlinedIcon />} onClick={load}>
+          <Button size="small" startIcon={<HistoryOutlinedIcon />} onClick={() => load()}>
             {t("common.refresh")}
           </Button>
         </Stack>
@@ -186,13 +190,22 @@ export default function LogsPage() {
         <Alert
           severity="error"
           action={
-            <Button color="inherit" size="small" onClick={load}>
+            <Button color="inherit" size="small" onClick={() => load()}>
               {t("common.retry")}
             </Button>
           }
         >
           {t("common.loadError")}
         </Alert>
+      )}
+
+      {exportError && (
+        <Alert severity="error" onClose={() => setExportError(false)}>
+          {t("validation.logs.exportFailed")}
+        </Alert>
+      )}
+      {dateFrom && dateTo && dateFrom > dateTo && (
+        <Alert severity="warning">{t("validation.logs.dateOrder", { from: dateFrom, to: dateTo })}</Alert>
       )}
 
       <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>

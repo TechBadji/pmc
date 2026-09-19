@@ -21,6 +21,9 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DecimalField } from "@/components/inputs/DecimalField";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { apiMessage, fmtNum, hasExtraDecimals, nameList, outOfRange } from "@/utils/evaluationValidation";
+import { useIssues } from "@/utils/validation";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
@@ -50,17 +53,19 @@ function ScoreField({
   value,
   onChange,
   helperText,
+  invalid,
 }: {
   value: number | "";
   onChange: (value: number | "") => void;
   helperText?: string;
+  invalid?: boolean;
 }) {
   return (
     <DecimalField
       value={value}
       onChange={onChange}
       helperText={helperText}
-      error={typeof value === "number" && (value < 1 || value > 5)}
+      error={invalid || outOfRange(value, 1, 5)}
       width={54}
       ariaLabel="note"
     />
@@ -74,16 +79,22 @@ function PercentField({
   label,
   value,
   onChange,
+  error,
+  helperText,
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
+  error?: boolean;
+  helperText?: string;
 }) {
   return (
     <DecimalField
       label={label}
       value={value}
       onChange={(v) => onChange(v === "" ? 0 : v)}
+      error={error || outOfRange(value, 0, 200)}
+      helperText={helperText}
       sx={{ maxWidth: 200 }}
     />
   );
@@ -127,6 +138,8 @@ export default function EvaluationFormPage() {
   const [selectedSkills, setSelectedSkills] = useState<Set<number>>(new Set());
   const [loadError, setLoadError] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const { issues, check, clear, has, messageFor } = useIssues();
 
   // Un Company Admin évalue directement les managers ; les collaborateurs
   // sont évalués par leur propre manager (même règle que EvaluationsPage,
@@ -260,9 +273,71 @@ export default function EvaluationFormPage() {
   const previewAltitude = Math.round(((businessScore + peopleScore) / 2) * 10) / 10;
   const previewRating = ratingFor(previewAltitude);
 
+  const memberName = selectedMember?.full_name || selectedMember?.email || "";
+  const chosenCampaign = campaigns.find((c) => c.id === campaignId);
+
+  // Toute modification efface le constat précédent : il ne doit pas rester affiché sur une saisie corrigée.
+  function edited() {
+    if (issues.length) clear();
+  }
+
+  function validate(): boolean {
+    const missing = allSelectedItems.filter((item) => scores[item.id] === undefined || scores[item.id] === "");
+    const scaleRules = allSelectedItems.flatMap((item) =>
+      (
+        [
+          ["score", scores, "fieldCurrent"],
+          ["objective", objectives, "fieldObjective"],
+          ["achieved", achievements, "fieldAchieved"],
+        ] as const
+      ).flatMap(([kind, source, label]) => {
+        const value = source[item.id];
+        const decimals = typeof value === "number" && hasExtraDecimals(value);
+        return [
+          [
+            outOfRange(value, 1, 5),
+            t("validation.evaluationForm.scoreRange", { label: t(`validation.evaluationForm.${label}`), skill: item.name, value: fmtNum(Number(value)) }),
+            `${kind}:${item.id}`,
+          ],
+          [
+            decimals,
+            t("validation.evaluationForm.scoreDecimals", { label: t(`validation.evaluationForm.${label}`), skill: item.name, value: fmtNum(Number(value)) }),
+            `${kind}:${item.id}`,
+          ],
+        ] as const;
+      })
+    );
+    return check([
+      [!userId, t("validation.evaluationForm.memberRequired"), "member"],
+      [!campaignId, t("validation.evaluationForm.campaignRequired"), "campaign"],
+      [!isEdit && !!campaignId && !!chosenCampaign?.is_closed, t("validation.evaluationForm.campaignClosed", { name: chosenCampaign?.name }), "campaign"],
+      [
+        !isEdit && !!campaignId && usedCampaignIds.has(Number(campaignId)),
+        t("validation.evaluationForm.campaignUsed", { member: memberName, name: chosenCampaign?.name }),
+        "campaign",
+      ],
+      [!!userId && hardItems.length + softItems.length === 0, t("validation.evaluationForm.noSkills", { member: memberName })],
+      [hardItems.length + softItems.length > 0 && allSelectedItems.length === 0, t("validation.evaluationForm.noSkillSelected")],
+      [
+        missing.length > 0,
+        t("validation.evaluationForm.missingScores", {
+          count: missing.length,
+          names: nameList(missing.map((item) => item.name), (n) => t("validation.evaluationForm.andOthers", { count: n })),
+        }),
+        "missing",
+      ],
+      ...scaleRules,
+      [outOfRange(businessScore, 0, 200), t("validation.evaluationForm.businessRange", { value: fmtNum(businessScore) }), "business"],
+      [outOfRange(peopleScore, 0, 200), t("validation.evaluationForm.peopleRange", { value: fmtNum(peopleScore) }), "people"],
+      [hasExtraDecimals(businessScore), t("validation.evaluationForm.decimalsPercent", { which: "Business", value: fmtNum(businessScore) }), "business"],
+      [hasExtraDecimals(peopleScore), t("validation.evaluationForm.decimalsPercent", { which: "People", value: fmtNum(peopleScore) }), "people"],
+    ]);
+  }
+
   async function handleSubmit() {
-    if (!userId || !campaignId || !allCurrentScoresFilled) return;
+    if (!validate()) return;
     setSubmitError(null);
+    setSaving(true);
     const payload = {
       user: userId,
       campaign: campaignId,
@@ -276,17 +351,17 @@ export default function EvaluationFormPage() {
       })),
     };
     try {
+      // L'écran affiche lui-même le motif du refus : pas de second message en bulle.
       if (isEdit) {
-        await apiClient.put(`/evaluations/${id}/`, payload);
+        await apiClient.put(`/evaluations/${id}/`, payload, { silent: true });
       } else {
-        await apiClient.post("/evaluations/", payload);
+        await apiClient.post("/evaluations/", payload, { silent: true });
       }
       navigate("/evaluations");
-    } catch (err: any) {
-      const data = err.response?.data;
-      const fieldError =
-        data?.campaign?.[0] ?? data?.user?.[0] ?? data?.skill_scores?.[0] ?? data?.non_field_errors?.[0];
-      setSubmitError(fieldError ?? data?.detail ?? t("common.saveError"));
+    } catch (err) {
+      setSubmitError(apiMessage(err));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -352,6 +427,7 @@ export default function EvaluationFormPage() {
                           } else {
                             newSelected.delete(item.id);
                           }
+                          edited();
                           setSelectedSkills(newSelected);
                         }}
                       />
@@ -362,19 +438,31 @@ export default function EvaluationFormPage() {
                     <TableCell align="center">
                       <ScoreField
                         value={scores[item.id] ?? ""}
-                        onChange={(v) => setScores((prev) => ({ ...prev, [item.id]: v }))}
+                        invalid={has(`score:${item.id}`) || (has("missing") && selectedSkills.has(item.id) && (scores[item.id] ?? "") === "")}
+                        onChange={(v) => {
+                          edited();
+                          setScores((prev) => ({ ...prev, [item.id]: v }));
+                        }}
                       />
                     </TableCell>
                     <TableCell align="center">
                       <ScoreField
                         value={objectives[item.id] ?? ""}
-                        onChange={(v) => setObjectives((prev) => ({ ...prev, [item.id]: v }))}
+                        invalid={has(`objective:${item.id}`)}
+                        onChange={(v) => {
+                          edited();
+                          setObjectives((prev) => ({ ...prev, [item.id]: v }));
+                        }}
                       />
                     </TableCell>
                     <TableCell align="center">
                       <ScoreField
                         value={achievements[item.id] ?? ""}
-                        onChange={(v) => setAchievements((prev) => ({ ...prev, [item.id]: v }))}
+                        invalid={has(`achieved:${item.id}`)}
+                        onChange={(v) => {
+                          edited();
+                          setAchievements((prev) => ({ ...prev, [item.id]: v }));
+                        }}
                         helperText={
                           hasPreviousObjective
                             ? t("evaluationForm.previousObjective", { value: previousObjective.toFixed(1) })
@@ -431,10 +519,15 @@ export default function EvaluationFormPage() {
             select
             label={t("dashboard.manager.member")}
             value={userId}
-            onChange={(e) => setUserId(Number(e.target.value))}
+            onChange={(e) => {
+              edited();
+              setUserId(Number(e.target.value));
+            }}
             sx={{ minWidth: 220 }}
             disabled={isEdit}
             size="small"
+            error={has("member")}
+            helperText={messageFor("member")}
           >
             {members.map((m) => (
               <MenuItem key={m.id} value={m.id}>
@@ -446,13 +539,19 @@ export default function EvaluationFormPage() {
             select
             label={t("evaluationCampaigns.selectCampaign")}
             value={campaignId}
-            onChange={(e) => setCampaignId(Number(e.target.value))}
+            onChange={(e) => {
+              edited();
+              setCampaignId(Number(e.target.value));
+            }}
             size="small"
+            error={has("campaign")}
             sx={{ minWidth: 240 }}
             disabled={isEdit || (!isEdit && availableCampaigns.length === 0)}
             required
             helperText={
-              !isEdit && availableCampaigns.length === 0
+              has("campaign")
+                ? messageFor("campaign")
+                : !isEdit && availableCampaigns.length === 0
                 ? t("evaluationCampaigns.noCampaign")
                 : !campaignId
                   ? t("evaluationCampaigns.selectCampaignHint")
@@ -484,12 +583,20 @@ export default function EvaluationFormPage() {
             <PercentField
               label={t("evaluationForm.businessScore")}
               value={businessScore}
-              onChange={setBusinessScore}
+              onChange={(v) => {
+                edited();
+                setBusinessScore(v);
+              }}
+              error={has("business")}
             />
             <PercentField
               label={t("evaluationForm.peopleScore")}
               value={peopleScore}
-              onChange={setPeopleScore}
+              onChange={(v) => {
+                edited();
+                setPeopleScore(v);
+              }}
+              error={has("people")}
             />
           </Stack>
           <Stack sx={{ flexGrow: 1 }} />
@@ -536,6 +643,8 @@ export default function EvaluationFormPage() {
         </Typography>
       )}
 
+      <ValidationSummary issues={issues} onClose={clear} />
+
       {/* Actions */}
       <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ pt: 1 }}>
         <Button onClick={() => navigate("/evaluations")} variant="outlined">
@@ -544,7 +653,7 @@ export default function EvaluationFormPage() {
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={!userId || !campaignId || !allCurrentScoresFilled}
+          disabled={saving}
           sx={{ minWidth: 120 }}
         >
           {t("common.save")}

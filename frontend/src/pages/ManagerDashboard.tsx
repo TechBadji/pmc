@@ -41,10 +41,12 @@ export default function ManagerDashboard() {
   useEffect(() => {
     apiClient
       .get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } })
-      .then((r) => setMembers(r.data.results));
+      .then((r) => setMembers(r.data.results))
+      .catch(() => undefined);
     apiClient
       .get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } })
-      .then((r) => setEvaluations(r.data.results));
+      .then((r) => setEvaluations(r.data.results))
+      .catch(() => undefined);
     // Départements encadrés : la direction et, le cas échéant, ses services.
     apiClient
       .get<Paginated<Department>>("/departments/", { params: { page_size: 500 } })

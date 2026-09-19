@@ -87,6 +87,7 @@ function Field({
   align,
   numeric,
   placeholder,
+  problem,
 }: {
   value: string;
   onChange?: (v: string) => void;
@@ -94,6 +95,8 @@ function Field({
   align?: "center" | "right";
   numeric?: boolean;
   placeholder?: string;
+  /** Motif du refus de cette case : elle passe en rouge, le détail est au-dessus de la fiche. */
+  problem?: string;
 }) {
   return (
     <InputBase
@@ -102,9 +105,12 @@ function Field({
       placeholder={placeholder}
       inputMode={numeric ? "decimal" : undefined}
       onChange={(e) => onChange?.(e.target.value)}
+      error={!!problem}
+      title={problem}
       sx={{
         width: "100%",
         fontSize: 11.5,
+        ...(problem ? { color: "#c0392b", bgcolor: "#fdecea" } : {}),
         "& input": { p: 0, textAlign: align ?? "left" },
       }}
     />
@@ -137,6 +143,7 @@ function ObjectiveBlock({
   onAdd,
   onRemove,
   footerLabel,
+  problems,
 }: {
   title: string;
   color: string;
@@ -147,8 +154,10 @@ function ObjectiveBlock({
   onAdd: () => void;
   onRemove: (id: number) => void;
   footerLabel: string;
+  problems: Record<string, string>;
 }) {
   const { t } = useTranslation();
+  const problemOf = (id: number, field: string) => problems[`row:${id}:${field}`];
   const percent = blockPercent(rows);
 
   return (
@@ -186,12 +195,18 @@ function ObjectiveBlock({
               <Field
                 value={row.label}
                 readOnly={readOnly}
+                problem={problemOf(row.id, "label")}
                 onChange={(v) => onPatch(row.id, { label: v })}
                 placeholder={t("objectivesSheet.objectivePlaceholder")}
               />
             </Cell>
             <Cell>
-              <Field value={row.indicator} readOnly={readOnly} onChange={(v) => onPatch(row.id, { indicator: v })} />
+              <Field
+                value={row.indicator}
+                readOnly={readOnly}
+                problem={problemOf(row.id, "indicator")}
+                onChange={(v) => onPatch(row.id, { indicator: v })}
+              />
             </Cell>
             <Cell center>
               <Field
@@ -199,6 +214,7 @@ function ObjectiveBlock({
                 readOnly={readOnly}
                 numeric
                 align="center"
+                problem={problemOf(row.id, "reference_value")}
                 onChange={(v) => onPatch(row.id, { reference_value: v })}
               />
             </Cell>
@@ -208,6 +224,7 @@ function ObjectiveBlock({
                 readOnly={readOnly}
                 numeric
                 align="center"
+                problem={problemOf(row.id, "target_value")}
                 onChange={(v) => onPatch(row.id, { target_value: v })}
               />
             </Cell>
@@ -217,6 +234,7 @@ function ObjectiveBlock({
                 readOnly={readOnly}
                 numeric
                 align="center"
+                problem={problemOf(row.id, "actual_value")}
                 onChange={(v) => onPatch(row.id, { actual_value: v })}
               />
             </Cell>
@@ -246,7 +264,8 @@ function ObjectiveBlock({
                   readOnly={readOnly}
                   numeric
                   align="center"
-                  onChange={(v) => onPatch(row.id, { weight: v })}
+                  problem={problemOf(row.id, "weight")}
+                onChange={(v) => onPatch(row.id, { weight: v })}
                 />
                 {!readOnly && (
                   <IconButton size="small" onClick={() => onRemove(row.id)} aria-label={t("common.delete")}>
@@ -288,6 +307,7 @@ export default function AnnualObjectivesSheet({
   onDateChange,
   previousPercent,
   teamSheet,
+  problems = {},
 }: {
   identity: SheetIdentity;
   rows: PerformanceObjective[];
@@ -306,6 +326,8 @@ export default function AnnualObjectivesSheet({
   previousPercent: number | null;
   /** La fiche d'équipe reprend la même forme, ses intitulés seuls diffèrent. */
   teamSheet?: boolean;
+  /** Cases refusées à la validation, par clé « row:<id>:<champ> » ou « header:<champ> ». */
+  problems?: Record<string, string>;
 }) {
   const { t } = useTranslation();
   const business = rows.filter((r) => r.category === "BUSINESS");
@@ -338,7 +360,14 @@ export default function AnnualObjectivesSheet({
               type={type}
               value={value}
               onChange={(e) => onDateChange(field, e.target.value)}
-              sx={{ width: "100%", fontSize: 11.5, "& input": { p: 0 } }}
+              error={!!problems[`header:${field}`]}
+              title={problems[`header:${field}`]}
+              sx={{
+                width: "100%",
+                fontSize: 11.5,
+                ...(problems[`header:${field}`] ? { color: "#c0392b", bgcolor: "#fdecea" } : {}),
+                "& input": { p: 0 },
+              }}
             />
           ) : (
             <Typography sx={{ fontSize: 11.5 }}>{value || "—"}</Typography>
@@ -452,6 +481,7 @@ export default function AnnualObjectivesSheet({
         onPatch={onPatch}
         onAdd={() => onAdd("BUSINESS")}
         onRemove={onRemove}
+        problems={problems}
         footerLabel={t(teamSheet ? "objectivesSheet.businessTeamFooter" : "objectivesSheet.businessFooter").toUpperCase()}
       />
 
@@ -464,6 +494,7 @@ export default function AnnualObjectivesSheet({
         onPatch={onPatch}
         onAdd={() => onAdd("MANAGERIAL")}
         onRemove={onRemove}
+        problems={problems}
         footerLabel={t(teamSheet ? "objectivesSheet.managerialTeamFooter" : "objectivesSheet.managerialFooter").toUpperCase()}
       />
 

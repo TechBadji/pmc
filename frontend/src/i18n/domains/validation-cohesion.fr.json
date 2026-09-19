@@ -1,0 +1,91 @@
+{
+  "validation": {
+    "cohesionSurvey": {
+      "noTeam": "Vous n'êtes rattaché à aucune direction : votre avis porte sur votre direction, demandez à votre administrateur de vous y rattacher.",
+      "criterionMissing": "Le critère n°{{n}} n'est pas noté (« {{criterion}} ») : donnez une note de 1 à 5 avant d'envoyer votre avis. Les dix critères doivent être notés.",
+      "scoreRange": "La note du critère n°{{n}} ({{value}}) doit être un entier de 1 à 5."
+    },
+    "cohesionSheet": {
+      "orgReadOnly": "Vous consultez la fiche de l'organisation, qui se lit sans se saisir : choisissez votre direction dans la liste « Équipe » pour enregistrer votre fiche.",
+      "oceWithoutScore": "Le critère n°{{n}} (« {{criterion}} ») a un OCE mais pas de note : donnez-lui d'abord une note de 1 à 5, sinon son OCE ne serait pas enregistré.",
+      "achievedWithoutScore": "Le critère n°{{n}} (« {{criterion}} ») a un Réalisé mais pas de note : donnez-lui d'abord une note de 1 à 5, sinon son Réalisé ne serait pas enregistré.",
+      "noScore": "Aucun critère n'est noté : notez au moins un critère (de 1 à 5) avant d'enregistrer la fiche.",
+      "scoreRange": "La note du critère n°{{n}} ({{value}}) doit être un entier compris entre 1 et 5.",
+      "oceRange": "L'OCE du critère n°{{n}} ({{value}}) doit être un nombre compris entre 1 et 5.",
+      "achievedRange": "Le Réalisé du critère n°{{n}} ({{value}}) doit être un nombre compris entre 1 et 5.",
+      "outsideCampaign": "La fiche est enregistrée à la date du jour ({{today}}), qui n'est pas dans la campagne « {{campaign}} » (du {{start}} au {{end}}) : elle n'y apparaîtrait pas. Choisissez la campagne en cours."
+    },
+    "actionPlan": {
+      "priorityRequired": "Indiquez la priorité de développement de l'action.",
+      "priorityTooLong": "La priorité est trop longue ({{count}} caractères) : 255 caractères au plus. Résumez-la et détaillez dans « Action à mener ».",
+      "objectiveRequired": "Décrivez l'action à mener : ce champ est obligatoire.",
+      "dueInvalid": "L'échéance n'est pas une date valide : choisissez-la dans le calendrier (JJ/MM/AAAA).",
+      "duePast": "L'échéance ({{date}}) est déjà passée : choisissez une date à partir d'aujourd'hui.",
+      "dueTooFar": "L'échéance dépasse l'horizon de 6 mois : choisissez une date au plus tard le {{max}}.",
+      "startInvalid": "La date de début n'est pas une date valide.",
+      "endBeforeStart": "La date de fin ne peut pas précéder la date de début.",
+      "teamRequired": "Choisissez d'abord l'équipe concernée par l'action.",
+      "responsibleTooLong": "Le nom du responsable est trop long : 150 caractères au plus."
+    },
+    "relationship": {
+      "samePerson": "Une relation lie deux personnes différentes : choisissez deux collaborateurs distincts.",
+      "notMember": "Une des deux personnes ne fait pas partie de cette équipe : rechargez la page puis réessayez.",
+      "noQuality": "Choisissez la nature de la relation entre {{a}} et {{b}}."
+    },
+    "teamBoard": {
+      "dateInvalid": "La date de la saisie ({{date}}) n'est pas une date valide.",
+      "dateFuture": "La date de la saisie ({{date}}) est dans le futur : une saisie porte la date du jour ou une date passée.",
+      "dateDuplicate": "Une saisie existe déjà au {{date}} pour cette équipe : sélectionnez-la dans « Saisie du » pour la modifier, ou choisissez une autre date.",
+      "listTooLong": "{{list}} : {{count}} lignes, c'est trop — {{max}} lignes au plus. Regroupez ou supprimez des lignes.",
+      "lineTooLong": "{{list}}, ligne {{n}} : {{count}} caractères, {{max}} au plus. Raccourcissez le texte.",
+      "yearInvalid": "{{series}}, ligne {{n}} : l'année « {{year}} » doit comporter 4 chiffres (exemple : 2026).",
+      "yearDuplicate": "{{series}} : l'année {{year}} apparaît deux fois. Regroupez-la sur une seule ligne.",
+      "valueNotNumber": "{{series}}, année {{year}} : la valeur « {{field}} » doit être un nombre.",
+      "yearMissing": "Indiquez l'année (4 chiffres).",
+      "yearFormat": "4 chiffres attendus (ex. 2026).",
+      "yearTwice": "{{year}} est déjà saisie.",
+      "target": "Objectif",
+      "actual": "Réalisé",
+      "series": {
+        "targets_vs_actuals": "Réalisations vs objectifs",
+        "objectives_plan": "Objectifs par année"
+      },
+      "lists": {
+        "people_strengths": "Forces People",
+        "people_weaknesses": "Faiblesses People",
+        "business_strengths": "Forces Business",
+        "business_weaknesses": "Faiblesses Business",
+        "catalysts": "Catalyseurs",
+        "nourishers": "Nourrisseurs",
+        "inhibitors": "Inhibiteurs",
+        "toxins": "Toxines",
+        "values": "Valeurs",
+        "counter_values": "Contre-valeurs",
+        "achievements": "Grandes réalisations",
+        "failures_lessons": "Échecs / leçons",
+        "objectives": "Objectifs",
+        "priorities_cohesion": "Priorités — cohésion d'équipe",
+        "priorities_business": "Priorités — business"
+      }
+    },
+    "devPlan": {
+      "wherePriority": "{{category}} — priorité {{priority}}",
+      "whereAction": "{{where}}, action {{action}}",
+      "tooManyActions": "{{where}} : {{count}} actions, {{max}} au plus par priorité. Supprimez-en ou regroupez-les.",
+      "priorityMissing": "{{where}} : des actions sont renseignées mais la priorité n'a pas d'intitulé. Nommez la priorité de développement.",
+      "tooLong": "{{where}} : « {{field}} » fait {{count}} caractères, {{max}} au plus — le texte serait coupé à l'enregistrement. Raccourcissez-le.",
+      "startInvalid": "{{where}} : la date de début n'est pas une date valide.",
+      "endInvalid": "{{where}} : la date de fin n'est pas une date valide.",
+      "endBeforeStart": "{{where}} : la date de fin ({{end}}) précède la date de début ({{start}}). Corrigez l'une des deux dates.",
+      "costMax": "{{where}} : le coût dépasse le plafond de {{max}}. Saisissez un montant inférieur.",
+      "fields": {
+        "priority": "Priorité",
+        "baseline": "Score de départ",
+        "target": "Score cible",
+        "cost": "Coût",
+        "responsible": "Responsable",
+        "eval_note": "Éval."
+      }
+    }
+  }
+}

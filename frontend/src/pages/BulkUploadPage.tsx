@@ -20,6 +20,17 @@ import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import type { BulkUploadResult, Company, Paginated } from "@/api/types";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { useIssues } from "@/utils/validation";
+
+const MAX_FILE_MB = 2;
+const REQUIRED_COLUMNS = ["prenom", "nom", "departement_code"];
+
+/** Première ligne du CSV, sans BOM ni guillemets, séparée par des virgules. */
+function readHeader(text: string): string[] {
+  const firstLine = text.replace(/^\uFEFF/, "").split(/\r?\n/, 1)[0] ?? "";
+  return firstLine.split(",").map((c) => c.trim().replace(/^"|"$/g, "").toLowerCase());
+}
 
 // `service_code` est facultatif : laissé vide, la personne est rattachée
 // directement à la direction, comme avant l'introduction des services.
@@ -39,13 +50,18 @@ export default function BulkUploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<BulkUploadResult | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const { issues, check, clear } = useIssues();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    apiClient.get<Paginated<Company>>("/companies/").then((r) => {
-      setCompanies(r.data.results);
-      if (!companyIdParam && r.data.results.length) setCompanyId(r.data.results[0].id);
-    });
+    apiClient
+      .get<Paginated<Company>>("/companies/")
+      .then((r) => {
+        setCompanies(r.data.results);
+        if (!companyIdParam && r.data.results.length) setCompanyId(r.data.results[0].id);
+      })
+      .catch(() => setLoadError(true));
   }, [companyIdParam]);
 
   function downloadTemplate() {
@@ -59,7 +75,33 @@ export default function BulkUploadPage() {
   }
 
   async function handleUpload() {
-    if (!companyId || !file) return;
+    const name = file?.name ?? "";
+    const isExcel = /\.xlsx?$/i.test(name);
+    const isCsv = /\.csv$/i.test(name);
+    // Le contenu n'est lu que si le fichier a passé les contrôles de forme.
+    let text = "";
+    if (file && isCsv && file.size > 0 && file.size <= MAX_FILE_MB * 1024 * 1024) text = await file.text();
+    const header = readHeader(text);
+    const missing = REQUIRED_COLUMNS.filter((c) => !header.includes(c));
+    const readable = text !== "";
+    const semicolons = readable && missing.length > 0 && /[;\t]/.test(text.split(/\r?\n/, 1)[0] ?? "");
+    const dataLines = text.split(/\r?\n/).slice(1).filter((l) => l.replace(/[,;\s"]/g, "") !== "");
+    const ok = check([
+      [!companyId, t("validation.bulkUpload.companyRequired")],
+      [!file, t("validation.bulkUpload.fileRequired")],
+      [!!file && isExcel, t("validation.bulkUpload.excelFile", { name })],
+      [!!file && !isExcel && !isCsv, t("validation.bulkUpload.notCsv", { name })],
+      [!!file && isCsv && file.size === 0, t("validation.bulkUpload.empty", { name })],
+      [
+        !!file && isCsv && file.size > MAX_FILE_MB * 1024 * 1024,
+        t("validation.bulkUpload.tooLarge", { size: file ? (file.size / 1024 / 1024).toFixed(1).replace(".", ",") : "", max: MAX_FILE_MB }),
+      ],
+      [readable && text.includes("\uFFFD"), t("validation.bulkUpload.badEncoding")],
+      [semicolons, t("validation.bulkUpload.wrongSeparator")],
+      [readable && !semicolons && missing.length > 0, t("validation.bulkUpload.missingColumns", { columns: missing.join(", ") })],
+      [readable && missing.length === 0 && dataLines.length === 0, t("validation.bulkUpload.noRows")],
+    ]);
+    if (!ok || !companyId || !file) return;
     setUploading(true);
     setResult(null);
     const formData = new FormData();
@@ -97,7 +139,10 @@ export default function BulkUploadPage() {
               select
               label={t("bulkUpload.company")}
               value={companyId}
-              onChange={(e) => setCompanyId(Number(e.target.value))}
+              onChange={(e) => {
+                setCompanyId(Number(e.target.value));
+                clear();
+              }}
               sx={{ minWidth: 260 }}
             >
               {companies.map((c) => (
@@ -111,6 +156,7 @@ export default function BulkUploadPage() {
             </Button>
           </Stack>
 
+          <ValidationSummary issues={issues} onClose={clear} />
           <Stack direction="row" spacing={2} alignItems="center">
             <Button variant="outlined" component="label" startIcon={<UploadFileOutlinedIcon />}>
               {t("bulkUpload.chooseFile")}
@@ -119,20 +165,25 @@ export default function BulkUploadPage() {
                 hidden
                 type="file"
                 accept=".csv,text/csv"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  clear();
+                }}
               />
             </Button>
             {file && <Typography variant="body2">{file.name}</Typography>}
             <Button
               variant="contained"
               onClick={handleUpload}
-              disabled={!file || !companyId || uploading}
+              disabled={uploading}
             >
               {uploading ? t("common.loading") : t("bulkUpload.launch")}
             </Button>
           </Stack>
         </Stack>
       </Paper>
+
+      {loadError && <Alert severity="error">{t("common.loadError")}</Alert>}
 
       {result && (
         <Stack spacing={2}>

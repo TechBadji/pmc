@@ -20,6 +20,8 @@ import PageHeader from "@/components/layout/PageHeader";
 import { cohesionColor } from "@/theme";
 import type { CohesionResponse, Paginated } from "@/api/types";
 import { useCohesionCriteria } from "@/utils/cohesionCriteria";
+import { useIssues } from "@/utils/validation";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
 
 const TIERS = [1, 2, 3, 4, 5];
 const TIER_LABELS = ["cohesion.legend.1", "cohesion.legend.2", "cohesion.legend.3", "cohesion.legend.4", "cohesion.legend.5"];
@@ -80,6 +82,7 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(false);
+  const { issues, check, clear } = useIssues();
 
   useEffect(() => {
     apiClient
@@ -122,6 +125,23 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
 
   async function handleSave() {
     if (scope === "TEAM" && !user?.department) return;
+    const proceed = check([
+      scope === "TEAM" && !user?.department && [true, t("validation.cohesionSurvey.noTeam")],
+      ...criteria.map(
+        (c, i) =>
+          scoreOf(c, i) === undefined &&
+          ([true, t("validation.cohesionSurvey.criterionMissing", { n: i + 1, criterion: c })] as const)
+      ),
+      ...criteria.map((c, i) => {
+        const v = scoreOf(c, i);
+        return (
+          v !== undefined &&
+          (!Number.isInteger(v) || v < 1 || v > 5) &&
+          ([true, t("validation.cohesionSurvey.scoreRange", { n: i + 1, value: v })] as const)
+        );
+      }),
+    ]);
+    if (!proceed) return;
     setSaving(true);
     setError(false);
     const today = new Date().toISOString().slice(0, 10);
@@ -146,7 +166,9 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
         setExisting(r.data);
       }
       setSaved(true);
+      clear();
     } catch {
+      setSaved(false);
       setError(true);
     } finally {
       setSaving(false);
@@ -280,6 +302,7 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
                           onClick={() => {
                             setScores((current) => ({ ...current, [criterion]: tier }));
                             setSaved(false);
+                            clear();
                           }}
                         />
                       </TableCell>
@@ -294,10 +317,15 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
           </Table>
         </TableContainer>
 
+        {issues.length > 0 && (
+          <Box sx={{ px: 2, pt: 2 }}>
+            <ValidationSummary issues={issues} onClose={clear} />
+          </Box>
+        )}
         <Stack direction="row" spacing={2} alignItems="center" justifyContent="flex-end" sx={{ p: 2 }}>
           {error && <Alert severity="error" sx={{ py: 0 }}>{t("cohesionSurvey.saveFailed")}</Alert>}
           {saved && <Alert severity="success" sx={{ py: 0 }}>{t("cohesionSurvey.saved")}</Alert>}
-          <Button variant="contained" onClick={handleSave} disabled={saving || !complete}>
+          <Button variant="contained" onClick={handleSave} disabled={saving}>
             {existing ? t("cohesionSurvey.update") : t("common.save")}
           </Button>
         </Stack>

@@ -3,6 +3,7 @@ import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import WorkspacesOutlinedIcon from "@mui/icons-material/WorkspacesOutlined";
 import {
+  Alert,
   Paper,
   Stack,
   Table,
@@ -40,12 +41,16 @@ export default function CompanyAdminDashboard() {
   const [members, setMembers] = useState<UserRecord[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
 
+  const [loadError, setLoadError] = useState(false);
+
   useEffect(() => {
-    apiClient.get<Paginated<Department>>("/departments/", { params: { page_size: 500 } }).then((r) => setDepartments(r.data.results));
-    apiClient.get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } }).then((r) => setMembers(r.data.results));
+    const failed = () => setLoadError(true);
+    apiClient.get<Paginated<Department>>("/departments/", { params: { page_size: 500 } }).then((r) => setDepartments(r.data.results)).catch(failed);
+    apiClient.get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } }).then((r) => setMembers(r.data.results)).catch(failed);
     apiClient
       .get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } })
-      .then((r) => setEvaluations(r.data.results));
+      .then((r) => setEvaluations(r.data.results))
+      .catch(failed);
   }, []);
 
   // Dernière évaluation connue par collaborateur (même logique que
@@ -80,6 +85,7 @@ export default function CompanyAdminDashboard() {
 
   return (
     <Stack spacing={3}>
+      {loadError && <Alert severity="error">{t("common.loadError")}</Alert>}
       {user && (
         <LeadershipOverview
           root={user}

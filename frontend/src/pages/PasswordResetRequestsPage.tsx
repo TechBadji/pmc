@@ -27,18 +27,31 @@ export default function PasswordResetRequestsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const locale = i18n.language === "en" ? "en-US" : "fr-FR";
 
+  const [loadError, setLoadError] = useState(false);
+  const [resolving, setResolving] = useState<number | null>(null);
+
   function load() {
+    setLoadError(false);
     apiClient
       .get<Paginated<PasswordResetRequest>>("/password-reset-requests/")
-      .then((r) => setRequests(r.data.results));
+      .then((r) => setRequests(r.data.results))
+      .catch(() => setLoadError(true));
   }
 
   useEffect(load, []);
 
   async function handleResolve(req: PasswordResetRequest) {
-    await apiClient.post(`/password-reset-requests/${req.id}/resolve/`);
-    setMessage(t("passwordRequests.resolvedMessage", { name: req.user_name || req.user_email }));
-    load();
+    if (resolving === req.id) return;
+    setResolving(req.id);
+    try {
+      await apiClient.post(`/password-reset-requests/${req.id}/resolve/`);
+      setMessage(t("passwordRequests.resolvedMessage", { name: req.user_name || req.user_email }));
+      load();
+    } catch {
+      // le toast du client explique l'échec ; la demande reste en attente dans la liste
+    } finally {
+      setResolving(null);
+    }
   }
 
   const pending = requests.filter((r) => !r.resolved);
@@ -52,6 +65,19 @@ export default function PasswordResetRequestsPage() {
           ? t("passwordRequests.subtitleSuperAdmin")
           : t("passwordRequests.subtitleCompanyAdmin")}
       </Typography>
+
+      {loadError && (
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={load}>
+              {t("common.retry")}
+            </Button>
+          }
+        >
+          {t("common.loadError")}
+        </Alert>
+      )}
 
       {message && (
         <Alert severity="success" onClose={() => setMessage(null)}>
@@ -90,6 +116,7 @@ export default function PasswordResetRequestsPage() {
                       size="small"
                       variant="contained"
                       startIcon={<LockResetOutlinedIcon />}
+                      disabled={resolving === req.id}
                       onClick={() => handleResolve(req)}
                     >
                       {t("passwordRequests.resolve")}

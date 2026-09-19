@@ -27,6 +27,8 @@ import PageHeader from "@/components/layout/PageHeader";
 import ManagerDevelopmentPlan from "@/components/ManagerDevelopmentPlan";
 import type { ActionPlan, Department, Evaluation, Paginated, UserRecord } from "@/api/types";
 import { performanceColors } from "@/theme";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { isBlank, isRealDate, useIssues } from "@/utils/validation";
 import { SUPPORT_THRESHOLD, lastEvaluationByUser, ratingForAltitude } from "@/utils/performance";
 
 const EMPTY_FORM = {
@@ -73,23 +75,31 @@ export default function ActionPlansPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const supportRef = useRef<HTMLDivElement>(null);
+  const [creating, setCreating] = useState(false);
+  const { issues, check, clear, has, messageFor } = useIssues();
 
   function load() {
     // page_size explicite : sans lui, la pagination par défaut tronquait la
     // liste dès qu'une équipe accumulait des actions.
     apiClient
       .get<Paginated<ActionPlan>>("/action-plans/", { params: { page_size: 500 } })
-      .then((r) => setPlans(r.data.results));
-    apiClient.get<Paginated<Department>>("/departments/").then((r) => setDepartments(r.data.results));
+      .then((r) => setPlans(r.data.results))
+      .catch(() => undefined);
+    apiClient
+      .get<Paginated<Department>>("/departments/")
+      .then((r) => setDepartments(r.data.results))
+      .catch(() => undefined);
     // Collaborateurs : alimentent le sélecteur "Collaborateur concerné" et,
     // pour un manager, la liste des personnes à accompagner. Les deux API sont
     // déjà restreintes côté serveur à son équipe.
     apiClient
       .get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } })
-      .then((r) => setPeople(r.data.results));
+      .then((r) => setPeople(r.data.results))
+      .catch(() => undefined);
     apiClient
       .get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } })
-      .then((r) => setEvaluations(r.data.results));
+      .then((r) => setEvaluations(r.data.results))
+      .catch(() => undefined);
   }
 
   useEffect(load, []);
@@ -141,6 +151,7 @@ export default function ActionPlansPage() {
         target: SUPPORT_THRESHOLD,
       }),
     });
+    clear();
     setOpen(true);
   }
 
@@ -151,28 +162,50 @@ export default function ActionPlansPage() {
     if (user?.role === "COMPANY_ADMIN") {
       apiClient
         .get<Paginated<UserRecord>>("/users/", { params: { role: "MANAGER", page_size: 500 } })
-        .then((r) => setManagers(r.data.results));
+        .then((r) => setManagers(r.data.results))
+        .catch(() => undefined);
     } else if (user?.role === "MANAGER") {
       apiClient
         .get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 } })
-        .then((r) => setManagers(r.data.results.filter((u) => u.id !== user.id)));
+        .then((r) => setManagers(r.data.results.filter((u) => u.id !== user.id)))
+        .catch(() => undefined);
     }
   }, [user?.role, user?.id]);
 
   async function handleCreate() {
-    // Les dates vides doivent partir en null : "" n'est pas une date valide
-    // pour un DateField côté API. Idem pour le collaborateur, facultatif :
-    // vide signifie "toute l'équipe".
-    await apiClient.post("/action-plans/", {
-      ...form,
-      target_user: form.target_user === "" ? null : form.target_user,
-      start_date: form.start_date || null,
-      due_date: form.due_date || null,
-      status: "TODO",
-    });
-    setOpen(false);
-    setForm(EMPTY_FORM);
-    load();
+    const validStart = isRealDate(form.start_date);
+    const validDue = isRealDate(form.due_date);
+    const proceed = check([
+      [form.team === "", t("validation.actionPlan.teamRequired"), "team"],
+      [isBlank(form.priority), t("validation.actionPlan.priorityRequired"), "priority"],
+      [form.priority.length > 255, t("validation.actionPlan.priorityTooLong", { count: form.priority.length }), "priority"],
+      [isBlank(form.objective), t("validation.actionPlan.objectiveRequired"), "objective"],
+      [form.start_date !== "" && !validStart, t("validation.actionPlan.startInvalid"), "start_date"],
+      [form.due_date !== "" && !validDue, t("validation.actionPlan.dueInvalid"), "due_date"],
+      [validStart && validDue && form.due_date < form.start_date, t("validation.actionPlan.endBeforeStart"), "due_date"],
+    ]);
+    if (!proceed) return;
+    setCreating(true);
+    try {
+      // Les dates vides doivent partir en null : "" n'est pas une date valide
+      // pour un DateField côté API. Idem pour le collaborateur, facultatif :
+      // vide signifie "toute l'équipe".
+      await apiClient.post("/action-plans/", {
+        ...form,
+        target_user: form.target_user === "" ? null : form.target_user,
+        start_date: form.start_date || null,
+        due_date: form.due_date || null,
+        status: "TODO",
+      });
+      setOpen(false);
+      setForm(EMPTY_FORM);
+      clear();
+      load();
+    } catch {
+      // Le motif du refus est donné par la notification ; le formulaire reste ouvert pour être corrigé.
+    } finally {
+      setCreating(false);
+    }
   }
 
   // Membres proposés au formulaire : ceux de l'équipe choisie.
@@ -346,7 +379,15 @@ export default function ActionPlansPage() {
           />
         ))}
 
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          clear();
+        }}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>{t("actionPlans.newPlan")}</DialogTitle>
         <DialogContent>
           {/* Champs courts (listes, dates) volontairement bornés en largeur :
@@ -361,7 +402,12 @@ export default function ActionPlansPage() {
                 value={form.team}
                 // Changer d'équipe invalide le collaborateur déjà choisi :
                 // il n'appartient pas forcément à la nouvelle.
-                onChange={(e) => setForm({ ...form, team: Number(e.target.value), target_user: "" })}
+                onChange={(e) => {
+                  setForm({ ...form, team: Number(e.target.value), target_user: "" });
+                  clear();
+                }}
+                error={has("team")}
+                helperText={messageFor("team")}
                 sx={{ width: 240 }}
               >
                 {departments.map((d) => (
@@ -406,14 +452,24 @@ export default function ActionPlansPage() {
               size="small"
               label={t("actionPlans.priorityLabel")}
               value={form.priority}
-              onChange={(e) => setForm({ ...form, priority: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, priority: e.target.value });
+                clear();
+              }}
+              error={has("priority")}
+              helperText={messageFor("priority")}
               fullWidth
             />
             <TextField
               size="small"
               label={t("actionPlans.actionToTake")}
               value={form.objective}
-              onChange={(e) => setForm({ ...form, objective: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, objective: e.target.value });
+                clear();
+              }}
+              error={has("objective")}
+              helperText={messageFor("objective")}
               multiline
               minRows={2}
               fullWidth
@@ -424,7 +480,11 @@ export default function ActionPlansPage() {
                 label={t("actionPlans.startDate")}
                 type="date"
                 value={form.start_date}
-                onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, start_date: e.target.value });
+                  clear();
+                }}
+                error={has("start_date")}
                 InputLabelProps={{ shrink: true }}
                 sx={{ width: 180 }}
               />
@@ -433,16 +493,30 @@ export default function ActionPlansPage() {
                 label={t("actionPlans.endDate")}
                 type="date"
                 value={form.due_date}
-                onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, due_date: e.target.value });
+                  clear();
+                }}
+                error={has("due_date")}
                 InputLabelProps={{ shrink: true }}
                 sx={{ width: 180 }}
               />
             </Stack>
+            <Box sx={{ width: "100%" }}>
+              <ValidationSummary issues={issues} onClose={clear} />
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-          <Button variant="contained" onClick={handleCreate} disabled={!form.team || !form.priority}>
+          <Button
+            onClick={() => {
+              setOpen(false);
+              clear();
+            }}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button variant="contained" onClick={handleCreate} disabled={creating}>
             {t("common.create")}
           </Button>
         </DialogActions>

@@ -35,6 +35,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, EvaluationCampaign, Paginated, SkillScore, UserRecord } from "@/api/types";
+import ValidationSummary from "@/components/feedback/ValidationSummary";
 import PageHeader from "@/components/layout/PageHeader";
 import ManagerialSelfAssessmentPanel from "@/components/ManagerialSelfAssessmentPanel";
 import MonkeyManagementPanel from "@/components/MonkeyManagementPanel";
@@ -42,6 +43,7 @@ import ObjectivesSheetPanel from "@/components/objectives/ObjectivesSheetPanel";
 import StatCard from "@/components/StatCard";
 import StrengthsWeaknesses from "@/components/StrengthsWeaknesses";
 import { performanceColors } from "@/theme";
+import { useIssues } from "@/utils/validation";
 
 function average(values: number[]): number | null {
   if (!values.length) return null;
@@ -95,6 +97,7 @@ export default function EvaluationsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loadError, setLoadError] = useState(false);
+  const { issues, check, clear } = useIssues();
   // Trois lectures d'une même campagne : l'évaluation ID-3A, la fiche
   // d'objectifs d'un employé, celle de son équipe.
   const [view, setView] = useState<"id3a" | "employee" | "team" | "managerial" | "monkey">("id3a");
@@ -232,6 +235,16 @@ export default function EvaluationsPage() {
   }, [skillDialog, selectedHistory]);
 
   function handleNewEvaluation(member: UserRecord) {
+    const chosen = campaigns.find((c) => c.id === selectedCampaignId);
+    const existing = selectedCampaignId !== "" ? evaluations.find((e) => e.user === member.id && e.campaign === selectedCampaignId) : undefined;
+    const name = member.full_name || member.email;
+    if (
+      !check([
+        [!!chosen?.is_closed, t("validation.evaluations.campaignClosed", { name: chosen?.name })],
+        [!!existing && !chosen?.is_closed, t("validation.evaluations.alreadyEvaluated", { name, campaign: chosen?.name })],
+      ])
+    )
+      return;
     const campaignParam = selectedCampaignId !== "" ? `&campaign=${selectedCampaignId}` : "";
     navigate(`/evaluations/new?user=${member.id}${campaignParam}`);
   }
@@ -353,7 +366,10 @@ export default function EvaluationsPage() {
           size="small"
           label={t("common.period")}
           value={selectedCampaignId}
-          onChange={(e) => setSelectedCampaignId(Number(e.target.value))}
+          onChange={(e) => {
+            clear();
+            setSelectedCampaignId(Number(e.target.value));
+          }}
           sx={{ minWidth: 200, alignSelf: "flex-start" }}
         >
           {campaignOptions.map((c) => (
@@ -391,6 +407,8 @@ export default function EvaluationsPage() {
           {t("common.loadError")}
         </Alert>
       )}
+
+      {view === "id3a" && <ValidationSummary issues={issues} onClose={clear} />}
 
       {view === "id3a" && selectedCampaignId !== "" && members.length > 0 && (
         <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="stretch">

@@ -1,0 +1,91 @@
+{
+  "validation": {
+    "cohesionSurvey": {
+      "noTeam": "You are not attached to any department: your opinion is about your department, ask your administrator to attach you to one.",
+      "criterionMissing": "Criterion no. {{n}} is not rated (\"{{criterion}}\"): give a score from 1 to 5 before sending your opinion. All ten criteria must be rated.",
+      "scoreRange": "The score of criterion no. {{n}} ({{value}}) must be a whole number from 1 to 5."
+    },
+    "cohesionSheet": {
+      "orgReadOnly": "You are viewing the organisation sheet, which is read-only: pick your department in the \"Team\" list to save your sheet.",
+      "oceWithoutScore": "Criterion no. {{n}} (\"{{criterion}}\") has an OCE but no score: give it a score from 1 to 5 first, otherwise its OCE would not be saved.",
+      "achievedWithoutScore": "Criterion no. {{n}} (\"{{criterion}}\") has an Achieved value but no score: give it a score from 1 to 5 first, otherwise it would not be saved.",
+      "noScore": "No criterion is rated: rate at least one criterion (1 to 5) before saving the sheet.",
+      "scoreRange": "The score of criterion no. {{n}} ({{value}}) must be a whole number between 1 and 5.",
+      "oceRange": "The OCE of criterion no. {{n}} ({{value}}) must be a number between 1 and 5.",
+      "achievedRange": "The Achieved value of criterion no. {{n}} ({{value}}) must be a number between 1 and 5.",
+      "outsideCampaign": "The sheet is saved with today's date ({{today}}), which is not within campaign \"{{campaign}}\" ({{start}} to {{end}}): it would not appear there. Pick the current campaign."
+    },
+    "actionPlan": {
+      "priorityRequired": "Enter the development priority of the action.",
+      "priorityTooLong": "The priority is too long ({{count}} characters): 255 at most. Summarise it and put the details in \"Action to take\".",
+      "objectiveRequired": "Describe the action to take: this field is required.",
+      "dueInvalid": "The due date is not a valid date: pick it from the calendar.",
+      "duePast": "The due date ({{date}}) has already passed: pick a date from today onwards.",
+      "dueTooFar": "The due date is beyond the 6-month horizon: pick a date no later than {{max}}.",
+      "startInvalid": "The start date is not a valid date.",
+      "endBeforeStart": "The end date cannot be earlier than the start date.",
+      "teamRequired": "First choose the team the action applies to.",
+      "responsibleTooLong": "The responsible person's name is too long: 150 characters at most."
+    },
+    "relationship": {
+      "samePerson": "A relationship links two different people: choose two distinct colleagues.",
+      "notMember": "One of the two people is not in this team: reload the page and try again.",
+      "noQuality": "Choose the nature of the relationship between {{a}} and {{b}}."
+    },
+    "teamBoard": {
+      "dateInvalid": "The entry date ({{date}}) is not a valid date.",
+      "dateFuture": "The entry date ({{date}}) is in the future: an entry carries today's date or a past date.",
+      "dateDuplicate": "An entry already exists on {{date}} for this team: select it in \"Entry of\" to edit it, or choose another date.",
+      "listTooLong": "{{list}}: {{count}} lines is too many — {{max}} lines at most. Merge or delete some lines.",
+      "lineTooLong": "{{list}}, line {{n}}: {{count}} characters, {{max}} at most. Shorten the text.",
+      "yearInvalid": "{{series}}, line {{n}}: the year \"{{year}}\" must have 4 digits (example: 2026).",
+      "yearDuplicate": "{{series}}: the year {{year}} appears twice. Merge it into a single line.",
+      "valueNotNumber": "{{series}}, year {{year}}: the \"{{field}}\" value must be a number.",
+      "yearMissing": "Enter the year (4 digits).",
+      "yearFormat": "4 digits expected (e.g. 2026).",
+      "yearTwice": "{{year}} is already entered.",
+      "target": "Target",
+      "actual": "Achieved",
+      "series": {
+        "targets_vs_actuals": "Achievements vs targets",
+        "objectives_plan": "Targets by year"
+      },
+      "lists": {
+        "people_strengths": "People strengths",
+        "people_weaknesses": "People weaknesses",
+        "business_strengths": "Business strengths",
+        "business_weaknesses": "Business weaknesses",
+        "catalysts": "Catalysts",
+        "nourishers": "Nourishers",
+        "inhibitors": "Inhibitors",
+        "toxins": "Toxins",
+        "values": "Values",
+        "counter_values": "Counter-values",
+        "achievements": "Major achievements",
+        "failures_lessons": "Failures / lessons",
+        "objectives": "Objectives",
+        "priorities_cohesion": "Priorities — team cohesion",
+        "priorities_business": "Priorities — business"
+      }
+    },
+    "devPlan": {
+      "wherePriority": "{{category}} — priority {{priority}}",
+      "whereAction": "{{where}}, action {{action}}",
+      "tooManyActions": "{{where}}: {{count}} actions, {{max}} at most per priority. Delete or merge some.",
+      "priorityMissing": "{{where}}: actions are filled in but the priority has no title. Name the development priority.",
+      "tooLong": "{{where}}: \"{{field}}\" is {{count}} characters long, {{max}} at most — the text would be cut when saving. Shorten it.",
+      "startInvalid": "{{where}}: the start date is not a valid date.",
+      "endInvalid": "{{where}}: the end date is not a valid date.",
+      "endBeforeStart": "{{where}}: the end date ({{end}}) is before the start date ({{start}}). Fix one of the two dates.",
+      "costMax": "{{where}}: the cost exceeds the {{max}} ceiling. Enter a lower amount.",
+      "fields": {
+        "priority": "Priority",
+        "baseline": "Starting score",
+        "target": "Target score",
+        "cost": "Cost",
+        "responsible": "Responsible",
+        "eval_note": "Eval."
+      }
+    }
+  }
+}
