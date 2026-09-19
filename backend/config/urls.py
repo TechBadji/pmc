@@ -16,6 +16,7 @@ from apps.core.views import (
     ForgotPasswordView,
     MeView,
     PasswordResetRequestViewSet,
+    GuessSheetViewSet,
     PerformanceProfileViewSet,
     PMCTokenObtainPairView,
     UserViewSet,
@@ -63,6 +64,7 @@ router.register("team-boards", TeamBoardViewSet, basename="team-board")
 router.register("action-plans", ActionPlanViewSet, basename="action-plan")
 router.register("password-reset-requests", PasswordResetRequestViewSet, basename="password-reset-request")
 router.register("audit-logs", AuditLogViewSet, basename="audit-log")
+router.register("guess-sheets", GuessSheetViewSet, basename="guess-sheet")
 router.register("performance-profiles", PerformanceProfileViewSet, basename="performance-profile")
 
 urlpatterns = [

@@ -4,7 +4,7 @@
   },
   "performanceEntry": {
     "pageTitle": "Ma fiche ID-PMC Performance ID",
-    "pageIntro": "Jeu : saisissez le nom et prénom d'un collègue, puis remplissez sa fiche comme vous pensez qu'il l'aurait remplie (aspirations, projets, motivations…). Cette saisie sert uniquement au jeu : elle n'est pas enregistrée et ne modifie jamais la fiche du collègue.",
+    "pageIntro": "Jeu : saisissez le nom et prénom d'un collègue, puis remplissez sa fiche comme vous pensez qu'il l'aurait remplie (aspirations, projets, motivations…). Tous les champs sont libres. Cliquez sur Enregistrer pour la retrouver plus tard : elle n'est visible que par vous et ne modifie jamais la fiche réelle du collègue.",
     "guessName": "Nom et prénom du collègue",
     "guessNamePlaceholder": "Nom Prénom",
     "toggleLabel": "Saisie de la fiche",
@@ -85,6 +85,16 @@
       "textTooLong": "« {{field}} » est limité à {{max}} caractères (vous en avez saisi {{count}}).",
       "sinceInvalid": "La date de prise de fonction « {{value}} » est invalide : indiquez une année (2019) ou un mois (2019-03), entre 1950 et aujourd'hui.",
       "sinceWithoutPosition": "Une date de prise de fonction est renseignée sans le poste correspondant : indiquez le poste précédent ou effacez la date."
-    }
+    },
+    "guessSaved": "Mes fiches enregistrées",
+    "guessNoneSaved": "Aucune fiche pour l'instant",
+    "guessNew": "Nouvelle fiche",
+    "guessPosition": "Poste",
+    "guessGraph": "Évolution de la performance (années, %)…",
+    "guessId3a": "ID-3A : aptitudes, attitudes…",
+    "guessNameRequired": "Saisissez le nom et prénom du collègue avant d'enregistrer.",
+    "guessLoadFailed": "Vos fiches enregistrées n'ont pas pu être chargées : rechargez la page.",
+    "guessSaveFailedStatus": "La fiche n'a pas pu être enregistrée (erreur {{status}}). Réessayez dans un instant.",
+    "guessSaveFailedNetwork": "La fiche n'a pas pu être enregistrée : le serveur ne répond pas. Vérifiez votre connexion et réessayez."
   }
 }

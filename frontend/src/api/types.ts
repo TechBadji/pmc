@@ -514,3 +514,11 @@ export interface CohesionAggregate {
    *  donne la forme d'une direction pour que l'écran les affiche pareil. */
   organisation?: CohesionDirectionResult;
 }
+
+export interface GuessSheet {
+  id: number;
+  guessed_name: string;
+  data: { form?: Record<string, any>; extras?: Record<string, string> };
+  created_at: string;
+  updated_at: string;
+}

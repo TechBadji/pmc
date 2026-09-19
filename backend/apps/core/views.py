@@ -16,7 +16,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from .audit import log_event
 from .constants import DEFAULT_PASSWORD
-from .models import AuditLog, Company, Department, PasswordResetRequest, PerformanceProfile, User
+from .models import AuditLog, Company, Department, GuessSheet, PasswordResetRequest, PerformanceProfile, User
 from .permissions import (
     CompanyScopedQuerySetMixin,
     IsCompanyAdminOrManager,
@@ -31,6 +31,7 @@ from .serializers import (
     CompanySerializer,
     DepartmentSerializer,
     ForgotPasswordSerializer,
+    GuessSheetSerializer,
     MeSerializer,
     MeUpdateSerializer,
     PasswordResetRequestSerializer,
@@ -733,3 +734,17 @@ class PerformanceProfileViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
             company=target_user.company,
         )
         return Response(serializer.data)
+
+
+class GuessSheetViewSet(viewsets.ModelViewSet):
+    """Fiches du jeu « Ma fiche ID-PMC » : chacun ne voit, ne modifie et ne
+    supprime que les siennes, quel que soit son rôle."""
+
+    serializer_class = GuessSheetSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return GuessSheet.objects.filter(author=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, company=self.request.user.company)

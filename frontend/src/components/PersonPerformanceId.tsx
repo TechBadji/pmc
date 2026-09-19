@@ -26,6 +26,7 @@ import { CHART_NEUTRALS, HARD_SKILLS_COLOR, SOFT_SKILLS_COLOR, performanceColors
 import type {
   Evaluation,
   Paginated,
+  GuessSheet,
   PerformanceProfile,
   PerformanceRating,
   SkillNote,
@@ -268,17 +269,27 @@ function listCells(values: string[], count: number, column: number, startRow: nu
 const SKILL_ORDERS = [1, 2, 3, 4, 5];
 
 /** Forces/faiblesses : libellé en lecture seule + note SI, sur deux colonnes. */
-function noteCells(notes: SkillNote[], colText: number, colScore: number, startRow: number) {
+function noteCells(
+  notes: SkillNote[],
+  colText: number,
+  colScore: number,
+  startRow: number,
+  ctl?: { prefix: string; get: (k: string) => string; set: (k: string, v: string) => void }
+) {
   return SKILL_ORDERS.map((order, i) => {
     const note = notes.find((n) => n.order === order);
+    // Mode jeu : libellé et note SI se saisissent, faute d'évaluation à lire.
+    const edit = (field: "text" | "score") =>
+      ctl ? { value: ctl.get(`${ctl.prefix}-${order}-${field}`), onChange: (v: string) => ctl.set(`${ctl.prefix}-${order}-${field}`, v), readOnly: false } : {};
     return (
       <Fragment key={`${colText}-${startRow}-${order}`}>
-        <Fld value={note?.text ?? ""} readOnly placeholder={`${order}.`} sx={{ gridColumn: colText, gridRow: startRow + i }} />
+        <Fld value={note?.text ?? ""} readOnly placeholder={`${order}.`} sx={{ gridColumn: colText, gridRow: startRow + i }} {...edit("text")} />
         <Fld
           value={note?.score != null ? String(note.score) : ""}
           readOnly
           align="center"
           sx={{ gridColumn: colScore, gridRow: startRow + i }}
+          {...edit("score")}
         />
       </Fragment>
     );
@@ -459,6 +470,25 @@ export default function PersonPerformanceId({
   const [loading, setLoading] = useState(false);
 
   const [guessName, setGuessName] = useState("");
+  // Mode jeu : tout ce que la fiche affiche d'ordinaire en lecture seule (âge,
+  // indices, forces, graphique…) devient un champ libre, rangé ici par clé.
+  const [extras, setExtras] = useState<Record<string, string>>({});
+  const [sheets, setSheets] = useState<GuessSheet[]>([]);
+  const [sheetId, setSheetId] = useState<number | null>(null);
+  const [guessError, setGuessError] = useState<string | null>(null);
+  const editGuessName = (v: string) => {
+    setGuessName(v);
+    setSaved(false);
+    setDirty(true);
+  };
+  const getExtra = (k: string) => extras[k] ?? "";
+  const setExtra = (k: string, v: string) => {
+    setExtras((prev) => ({ ...prev, [k]: v }));
+    setSaved(false);
+    setDirty(true);
+  };
+  /** Props à étaler sur une case calculée pour la rendre saisissable en mode jeu. */
+  const gx = (k: string) => (guess ? { value: getExtra(k), onChange: (v: string) => setExtra(k, v), readOnly: false } : {});
   const guessUser = useMemo(
     () => ({ id: 0, email: "", full_name: guessName, position: "", department: null, manager: null, avatar: null, age: null } as unknown as UserRecord),
     [guessName]
@@ -467,6 +497,34 @@ export default function PersonPerformanceId({
   const managerOf = selectedUser?.manager != null ? people.find((p) => p.id === selectedUser.manager) : null;
 
   const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    if (!guess) return;
+    apiClient
+      .get<Paginated<GuessSheet>>("/guess-sheets/", { params: { page_size: 200 } })
+      .then((r) => setSheets(r.data.results))
+      .catch(() => setGuessError(t("performanceEntry.guessLoadFailed")));
+  }, [guess, t]);
+
+  function newGuessSheet() {
+    setSheetId(null);
+    setGuessName("");
+    setExtras({});
+    setForm(emptyForm());
+    setSaved(false);
+    setDirty(false);
+    setGuessError(null);
+  }
+
+  function openGuessSheet(sheet: GuessSheet) {
+    setSheetId(sheet.id);
+    setGuessName(sheet.guessed_name);
+    setForm({ ...emptyForm(), ...(sheet.data?.form ?? {}) });
+    setExtras(sheet.data?.extras ?? {});
+    setSaved(false);
+    setDirty(false);
+    setGuessError(null);
+  }
 
   useEffect(() => {
     if (guess || selectedId === "") return;
@@ -581,14 +639,40 @@ export default function PersonPerformanceId({
   function patchForm(patch: Partial<ProfileForm>) {
     setForm((prev) => ({ ...prev, ...patch }));
     setSaved(false);
-    if (!guess) setDirty(true);
+    setDirty(true);
   }
 
   function setList(key: ListKey, value: string[]) {
     patchForm({ [key]: value } as Partial<ProfileForm>);
   }
 
+  async function handleSaveGuess() {
+    if (!guessName.trim()) {
+      setGuessError(t("performanceEntry.guessNameRequired"));
+      return;
+    }
+    setSaving(true);
+    setGuessError(null);
+    try {
+      const body = { guessed_name: guessName, data: { form, extras } };
+      const r = sheetId
+        ? await apiClient.put<GuessSheet>(`/guess-sheets/${sheetId}/`, body)
+        : await apiClient.post<GuessSheet>("/guess-sheets/", body);
+      setSheetId(r.data.id);
+      setSheets((prev) => [r.data, ...prev.filter((x) => x.id !== r.data.id)]);
+      setSaved(true);
+      setDirty(false);
+    } catch (err: any) {
+      const d = err?.response?.data;
+      const detail = d && typeof d === "object" ? Object.values(d).flat().join(" ") : "";
+      setGuessError(detail || (err?.response?.status ? t("performanceEntry.guessSaveFailedStatus", { status: err.response.status }) : t("performanceEntry.guessSaveFailedNetwork")));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleSave() {
+    if (guess) return handleSaveGuess();
     if (selectedId === "") return;
     setSaving(true);
     try {
@@ -622,6 +706,17 @@ export default function PersonPerformanceId({
    * premières cases, la suivante propose la liste des collègues, le reste
    * reste vide — la colonne garde ainsi toujours la même hauteur. */
   function relationshipCells(quality: "EXCELLENT" | "DIFFICULT", count: number, column: number, startRow: number) {
+    if (guess) {
+      return Array.from({ length: count }, (_, i) => (
+        <Fld
+          key={`${quality}-${i}`}
+          value={getExtra(`rel-${quality}-${i}`)}
+          onChange={(v) => setExtra(`rel-${quality}-${i}`, v)}
+          placeholder={`${i + 1}.`}
+          sx={{ gridColumn: column, gridRow: startRow + i }}
+        />
+      ));
+    }
     const rows = relationships.filter((r) => r.quality === quality);
     const used = new Set(rows.map((r) => r.to_user));
     const available = teamCandidates.filter((c) => !used.has(c.id));
@@ -698,13 +793,39 @@ export default function PersonPerformanceId({
         }}
       />
       <Stack direction="row" spacing={1.5} alignItems="center" className="pmc-no-print">
+        {guess && (
+          <>
+            <TextField
+              select
+              size="small"
+              label={t("performanceEntry.guessSaved")}
+              value={sheetId ?? ""}
+              onChange={(e) => {
+                const found = sheets.find((x) => x.id === Number(e.target.value));
+                if (found) openGuessSheet(found);
+              }}
+              sx={{ width: 260 }}
+              disabled={sheets.length === 0}
+              helperText={sheets.length === 0 ? t("performanceEntry.guessNoneSaved") : undefined}
+            >
+              {sheets.map((x) => (
+                <MenuItem key={x.id} value={x.id}>
+                  {x.guessed_name}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Button size="small" variant="outlined" onClick={newGuessSheet}>
+              {t("performanceEntry.guessNew")}
+            </Button>
+          </>
+        )}
         {guess ? (
           <TextField
             size="small"
             label={t("performanceEntry.guessName")}
             placeholder={t("performanceEntry.guessNamePlaceholder")}
             value={guessName}
-            onChange={(e) => setGuessName(e.target.value)}
+            onChange={(e) => editGuessName(e.target.value)}
             inputProps={{ maxLength: 120 }}
             sx={{ width: 300 }}
           />
@@ -807,13 +928,13 @@ export default function PersonPerformanceId({
               <Fld
                 value={selectedUser.full_name || selectedUser.email}
                 readOnly={!guess}
-                onChange={guess ? setGuessName : undefined}
+                onChange={guess ? editGuessName : undefined}
                 placeholder={guess ? t("performanceEntry.guessNamePlaceholder") : undefined}
                 bold
                 color="primary.main"
                 sx={{ width: "100%" }}
               />
-              <Fld value={selectedUser.position || ""} readOnly sx={{ width: "100%" }} />
+              <Fld value={selectedUser.position || ""} readOnly sx={{ width: "100%" }} placeholder={guess ? t("performanceEntry.guessPosition") : undefined} {...gx("position")} />
             </Box>
 
             <Band sx={{ gridColumn: "2 / 5", gridRow: 1 }}>{t("performanceId.professionalInfo")}</Band>
@@ -824,13 +945,14 @@ export default function PersonPerformanceId({
             <Lab sx={{ gridColumn: 2, gridRow: 2 }}>{t("performanceId.gender")}</Lab>
             <Fld value={form.gender} onChange={(v) => patchForm({ gender: v })} sx={{ gridColumn: 3, gridRow: 2 }} />
             <Lab sx={{ gridColumn: 2, gridRow: 3 }}>{t("performanceId.age")}</Lab>
-            <Fld value={selectedUser.age != null ? String(selectedUser.age) : "—"} readOnly align="center" sx={{ gridColumn: 3, gridRow: 3 }} />
+            <Fld value={selectedUser.age != null ? String(selectedUser.age) : "—"} readOnly align="center" sx={{ gridColumn: 3, gridRow: 3 }} {...gx("age")} />
             <Lab sx={{ gridColumn: 2, gridRow: 4 }}>{t("performanceId.yearsInPosition")}</Lab>
             <Fld
               value={selectedUser.years_in_current_role != null ? String(selectedUser.years_in_current_role) : "—"}
               readOnly
               align="center"
               sx={{ gridColumn: 3, gridRow: 4 }}
+              {...gx("yearsInPosition")}
             />
             <Lab sx={{ gridColumn: 2, gridRow: 5 }}>{t("performanceId.yearsInCompany")}</Lab>
             <Fld
@@ -838,6 +960,7 @@ export default function PersonPerformanceId({
               readOnly
               align="center"
               sx={{ gridColumn: 3, gridRow: 5 }}
+              {...gx("yearsInCompany")}
             />
             <Lab sx={{ gridColumn: 2, gridRow: 6 }}>{t("performanceId.totalExperience")}</Lab>
             <Fld
@@ -845,12 +968,13 @@ export default function PersonPerformanceId({
               readOnly
               align="center"
               sx={{ gridColumn: 3, gridRow: 6 }}
+              {...gx("totalExperience")}
             />
             <Lab sx={{ gridColumn: 2, gridRow: 7 }}>{t("performanceId.contractType")}</Lab>
             <Fld value={form.contract_type} onChange={(v) => patchForm({ contract_type: v })} sx={{ gridColumn: 3, gridRow: 7 }} />
             <Box sx={{ gridColumn: "2 / 4", gridRow: 8, display: "grid", gridTemplateColumns: "auto 1fr", gap: SHEET_GAP }}>
               <Lab>{t("performanceId.reportTo")}</Lab>
-              <Fld value={managerOf?.full_name ?? "—"} readOnly />
+              <Fld value={managerOf?.full_name ?? "—"} readOnly {...gx("manager")} />
             </Box>
 
             {/* Qualifications puis postes précédents, sur la même colonne. */}
@@ -913,7 +1037,7 @@ export default function PersonPerformanceId({
               <Lab center bg={HARD_BAND} sx={{ color: "#fff" }}>
                 HSO
               </Lab>
-              <Fld value={latestEvaluation ? String(latestEvaluation.hso) : "—"} readOnly align="center" bold />
+              <Fld value={latestEvaluation ? String(latestEvaluation.hso) : "—"} readOnly align="center" bold {...gx("hso")} />
             </Box>
 
             <Box sx={{ gridColumn: 5, gridRow: 10, display: "grid", gridTemplateColumns: SYNTHESIS_COLS, gap: SHEET_GAP }}>
@@ -963,7 +1087,7 @@ export default function PersonPerformanceId({
               <Lab center bg={SOFT_BAND} sx={{ color: "#fff" }}>
                 SSIO
               </Lab>
-              <Fld value={latestEvaluation ? String(latestEvaluation.ssio) : "—"} readOnly align="center" bold />
+              <Fld value={latestEvaluation ? String(latestEvaluation.ssio) : "—"} readOnly align="center" bold {...gx("ssio")} />
             </Box>
 
             {/* Graphe de performance : lisible par un lecteur non initié —
@@ -982,7 +1106,16 @@ export default function PersonPerformanceId({
                 flexDirection: "column",
               }}
             >
-              {history.length > 0 ? (
+              {guess ? (
+                <InputBase
+                  multiline
+                  fullWidth
+                  value={getExtra("graph")}
+                  onChange={(e) => setExtra("graph", e.target.value)}
+                  placeholder={t("performanceEntry.guessGraph")}
+                  sx={{ ...bigTextSx, p: 0.5 }}
+                />
+              ) : history.length > 0 ? (
                 <>
                   <Box sx={{ flex: 1, minHeight: 0 }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -1095,11 +1228,11 @@ export default function PersonPerformanceId({
             <SubHead bg={HARD_BAND} color="#fff" right="SI" sx={{ gridColumn: "1 / 3", gridRow: 2 }}>
               {t("managerDevPlan.hardSkills")}
             </SubHead>
-            {noteCells(notesFor("HARD_STRENGTH"), 1, 2, 3)}
+            {noteCells(notesFor("HARD_STRENGTH"), 1, 2, 3, guess ? { prefix: "HARD_STRENGTH", get: getExtra, set: setExtra } : undefined)}
             <SubHead bg={SOFT_BAND} color="#fff" right="SI" sx={{ gridColumn: "1 / 3", gridRow: 9 }}>
               {t("managerDevPlan.softSkills")}
             </SubHead>
-            {noteCells(notesFor("SOFT_STRENGTH"), 1, 2, 10)}
+            {noteCells(notesFor("SOFT_STRENGTH"), 1, 2, 10, guess ? { prefix: "SOFT_STRENGTH", get: getExtra, set: setExtra } : undefined)}
             <Lab center bg="#fff" sx={{ gridColumn: 1, gridRow: 16, color: HARD_SKILLS_COLOR }}>
               {t("performanceId.hardSkillsIndex")}
             </Lab>
@@ -1109,16 +1242,17 @@ export default function PersonPerformanceId({
               align="center"
               bold
               sx={{ gridColumn: 2, gridRow: 16 }}
+              {...gx("hsi")}
             />
 
             <SubHead bg={HARD_BAND} color="#fff" right="SI" sx={{ gridColumn: "3 / 5", gridRow: 2 }}>
               {t("managerDevPlan.hardSkills")}
             </SubHead>
-            {noteCells(notesFor("HARD_WEAKNESS"), 3, 4, 3)}
+            {noteCells(notesFor("HARD_WEAKNESS"), 3, 4, 3, guess ? { prefix: "HARD_WEAKNESS", get: getExtra, set: setExtra } : undefined)}
             <SubHead bg={SOFT_BAND} color="#fff" right="SI" sx={{ gridColumn: "3 / 5", gridRow: 9 }}>
               {t("managerDevPlan.softSkills")}
             </SubHead>
-            {noteCells(notesFor("SOFT_WEAKNESS"), 3, 4, 10)}
+            {noteCells(notesFor("SOFT_WEAKNESS"), 3, 4, 10, guess ? { prefix: "SOFT_WEAKNESS", get: getExtra, set: setExtra } : undefined)}
             <Lab center bg="#fff" sx={{ gridColumn: 3, gridRow: 16, color: SOFT_SKILLS_COLOR }}>
               {t("performanceId.softSkillsIndex")}
             </Lab>
@@ -1128,6 +1262,7 @@ export default function PersonPerformanceId({
               align="center"
               bold
               sx={{ gridColumn: 4, gridRow: 16 }}
+              {...gx("ssi")}
             />
 
             {/* Vision puis projets personnels : deux grandes zones de texte. */}
@@ -1168,7 +1303,16 @@ export default function PersonPerformanceId({
 
             {/* ID-3A : la matrice, puis loisirs, traits et chapeau de Bono. */}
             <Box sx={{ gridColumn: 8, gridRow: "2 / span 7", border: SHEET_BORDER, bgcolor: "#fff", p: 0.25 }}>
-              {latestEvaluation ? (
+              {guess ? (
+                <InputBase
+                  multiline
+                  fullWidth
+                  value={getExtra("id3a")}
+                  onChange={(e) => setExtra("id3a", e.target.value)}
+                  placeholder={t("performanceEntry.guessId3a")}
+                  sx={{ ...bigTextSx, p: 0.5 }}
+                />
+              ) : latestEvaluation ? (
                 <Id3aMiniMatrix
                   hsi={Number(latestEvaluation.hsi)}
                   ssi={Number(latestEvaluation.ssi)}
@@ -1219,7 +1363,6 @@ export default function PersonPerformanceId({
             {listCells(form.dev_risks_obstacles, 3, 4, 8, (v) => setList("dev_risks_obstacles", v))}
           </Box>
 
-          {!guess && (
           <Stack
             direction="row"
             justifyContent="flex-end"
@@ -1237,6 +1380,7 @@ export default function PersonPerformanceId({
               zIndex: 1,
             }}
           >
+            {guessError && <Alert severity="error" sx={{ py: 0 }}>{guessError}</Alert>}
             {saved && <Alert severity="success" sx={{ py: 0 }}>{t("performanceId.saved")}</Alert>}
             {dirty && (
               <Typography sx={{ fontSize: 12, color: "warning.main", fontWeight: 700 }}>
@@ -1247,7 +1391,6 @@ export default function PersonPerformanceId({
               {t("common.save")}
             </Button>
           </Stack>
-          )}
         </Paper>
       )}
     </Stack>

@@ -4,7 +4,7 @@
   },
   "performanceEntry": {
     "pageTitle": "My ID-PMC Performance ID sheet",
-    "pageIntro": "Game: type a colleague's last and first name, then fill in their sheet the way you think they would have (aspirations, projects, motivations…). This is for the game only: nothing is saved and the colleague's real sheet is never changed.",
+    "pageIntro": "Game: type a colleague's name, then fill in their sheet the way you think they would have (aspirations, projects, motivations…). Every field is free text. Click Save to find it again later: only you can see it and the colleague's real sheet is never changed.",
     "guessName": "Colleague's last and first name",
     "guessNamePlaceholder": "Last name First name",
     "toggleLabel": "Sheet entry",
@@ -85,6 +85,16 @@
       "textTooLong": "\"{{field}}\" is limited to {{max}} characters (you entered {{count}}).",
       "sinceInvalid": "The start date \"{{value}}\" is invalid: enter a year (2019) or a month (2019-03), between 1950 and today.",
       "sinceWithoutPosition": "A start date is filled in without the matching position: enter the previous position or clear the date."
-    }
+    },
+    "guessSaved": "My saved sheets",
+    "guessNoneSaved": "No sheet yet",
+    "guessNew": "New sheet",
+    "guessPosition": "Position",
+    "guessGraph": "Performance trend (years, %)…",
+    "guessId3a": "ID-3A: aptitudes, attitudes…",
+    "guessNameRequired": "Enter the colleague's name before saving.",
+    "guessLoadFailed": "Your saved sheets could not be loaded: reload the page.",
+    "guessSaveFailedStatus": "The sheet could not be saved (error {{status}}). Try again shortly.",
+    "guessSaveFailedNetwork": "The sheet could not be saved: the server is not responding. Check your connection and try again."
   }
 }

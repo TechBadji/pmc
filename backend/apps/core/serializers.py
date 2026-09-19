@@ -5,7 +5,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .audit import log_event
 from .constants import DEFAULT_DEPARTMENTS, PLAN_FEATURES, DEFAULT_PASSWORD
-from .models import AuditLog, Company, Department, PasswordResetRequest, PerformanceProfile, User
+from .models import AuditLog, Company, Department, GuessSheet, PasswordResetRequest, PerformanceProfile, User
 from .text_utils import make_login, slugify_company
 
 
@@ -465,3 +465,37 @@ class PerformanceProfileSerializer(serializers.ModelSerializer):
                 if not re.fullmatch(r"\d{4}(-\d{2})?", raw) or int(raw[:4]) > date.today().year or int(raw[:4]) < 1950:
                     raise serializers.ValidationError({"previous_position_dates": f"Date de prise de fonction « {raw} » invalide : indiquez une année (2019) ou un mois (2019-03) qui ne soit pas dans le futur."})
         return attrs
+
+
+class GuessSheetSerializer(serializers.ModelSerializer):
+    """Le contenu est un dictionnaire libre {form, extras} : on vérifie sa forme
+    et sa taille plutôt que chaque champ, pour renvoyer un message clair."""
+
+    MAX_BYTES = 200_000
+
+    class Meta:
+        model = GuessSheet
+        fields = ["id", "guessed_name", "data", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
+        extra_kwargs = {
+            "guessed_name": {"error_messages": {
+                "blank": "Saisissez le nom et prénom du collègue avant d'enregistrer.",
+                "required": "Saisissez le nom et prénom du collègue avant d'enregistrer.",
+                "max_length": "Le nom et prénom ne peut pas dépasser 120 caractères.",
+            }},
+        }
+
+    def validate_guessed_name(self, value):
+        value = " ".join((value or "").split())
+        if not value:
+            raise serializers.ValidationError("Saisissez le nom et prénom du collègue avant d'enregistrer.")
+        return value
+
+    def validate_data(self, value):
+        import json
+
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Le contenu de la fiche est invalide.")
+        if len(json.dumps(value)) > self.MAX_BYTES:
+            raise serializers.ValidationError("La fiche est trop volumineuse pour être enregistrée : raccourcissez certains champs.")
+        return value

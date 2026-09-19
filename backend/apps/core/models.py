@@ -395,3 +395,25 @@ class PerformanceProfile(models.Model):
 
     def __str__(self):
         return f"Fiche performance — {self.user}"
+
+
+class GuessSheet(models.Model):
+    """Fiche « Ma fiche ID-PMC » remplie pour le jeu de démo : un collaborateur
+    saisit ce qu'il croit savoir d'un collègue (nom et prénom libres). Elle
+    n'est jamais rattachée au profil réel du collègue, qu'elle ne modifie pas ;
+    seul son auteur la voit."""
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="guess_sheets")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="guess_sheets")
+    guessed_name = models.CharField("Nom et prénom du collègue", max_length=120)
+    data = models.JSONField("Contenu de la fiche", default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Fiche jeu"
+        verbose_name_plural = "Fiches jeu"
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        return f"Fiche jeu — {self.guessed_name} (par {self.author})"
