@@ -1,3 +1,5 @@
+from datetime import date as _date
+
 from rest_framework import serializers
 
 from apps.core.serializer_fields import DecimalCommaMixin
@@ -55,6 +57,16 @@ class TeamCohesionAnalysisSerializer(DecimalCommaMixin, serializers.ModelSeriali
         team = attrs.get("team", getattr(self.instance, "team", None))
         require_same_company(actor, team=team)
         require_manages_team(actor, team)
+        day = attrs.get("date")
+        if day and day > _date.today():
+            raise serializers.ValidationError({"date": "La date de la fiche ne peut pas être dans le futur : saisissez la date du jour ou une date passée."})
+        criteria = attrs.get("criterion_scores")
+        if criteria is not None:
+            if not criteria and self.instance is None:
+                raise serializers.ValidationError({"criterion_scores": "Renseignez la note d'au moins un critère avant d'enregistrer la fiche."})
+            labels = [(c.get("criterion") or "").strip().lower() for c in criteria]
+            if len(set(labels)) != len(labels):
+                raise serializers.ValidationError({"criterion_scores": "Un même critère apparaît deux fois dans la fiche : chaque critère ne doit être noté qu'une seule fois."})
         return attrs
 
     def create(self, validated_data):
@@ -103,10 +115,15 @@ class TeamRelationshipSerializer(serializers.ModelSerializer):
         from_user = attrs.get("from_user", getattr(self.instance, "from_user", None))
         to_user = attrs.get("to_user", getattr(self.instance, "to_user", None))
         require_same_company(actor, team=team, from_user=from_user, to_user=to_user)
+        if from_user and to_user and from_user.pk == to_user.pk:
+            raise serializers.ValidationError({"to_user": "Choisissez deux personnes différentes : une relation lie deux collaborateurs."})
+        if team and from_user and to_user and self.instance is None:
+            if TeamRelationship.objects.filter(team=team, from_user=from_user, to_user=to_user).exists() or TeamRelationship.objects.filter(team=team, from_user=to_user, to_user=from_user).exists():
+                raise serializers.ValidationError({"to_user": "La relation entre ces deux personnes existe déjà dans cette équipe : modifiez sa qualité au lieu d'en créer une seconde."})
         for field_name, member in (("from_user", from_user), ("to_user", to_user)):
             if team and member and member.company_id != team.company_id:
                 raise serializers.ValidationError(
-                    {field_name: "Ce membre n'appartient pas à cette équipe."}
+                    {field_name: "Cette personne n'appartient pas à l'entreprise de cette équipe."}
                 )
         require_manages_team(actor, team)
         return attrs
@@ -133,11 +150,47 @@ class TeamBoardSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
+    TEXT_LISTS = [
+        "people_strengths", "people_weaknesses", "business_strengths", "business_weaknesses",
+        "catalysts", "nourishers", "inhibitors", "toxins", "values", "counter_values",
+        "achievements", "failures_lessons", "objectives", "priorities_cohesion", "priorities_business",
+    ]
+    SERIES = {"targets_vs_actuals": "Réalisations vs objectifs", "objectives_plan": "Objectifs par année"}
+
     def validate(self, attrs):
         actor = self.context["request"].user
         team = attrs.get("team", getattr(self.instance, "team", None))
         require_same_company(actor, team=team)
         require_manages_team(actor, team)
+        day = attrs.get("date")
+        if day and day > _date.today():
+            raise serializers.ValidationError({"date": "La date de la carte ne peut pas être dans le futur : saisissez la date du jour ou une date passée."})
+        for name in self.TEXT_LISTS:
+            value = attrs.get(name)
+            if value is None:
+                continue
+            if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+                raise serializers.ValidationError({name: "Ce champ attend une liste de textes."})
+            if len(value) > 30 or any(len(v) > 500 for v in value):
+                raise serializers.ValidationError({name: "Liste trop longue : 30 lignes au plus, 500 caractères par ligne."})
+        for name, label in self.SERIES.items():
+            rows = attrs.get(name)
+            if rows is None:
+                continue
+            if not isinstance(rows, list):
+                raise serializers.ValidationError({name: f"{label} : format de liste attendu."})
+            years = set()
+            for row in rows:
+                year = str(row.get("year", "")).strip() if isinstance(row, dict) else ""
+                if not (year.isdigit() and len(year) == 4):
+                    raise serializers.ValidationError({name: f"{label} : chaque ligne doit porter une année à 4 chiffres (exemple : 2026)."})
+                if year in years:
+                    raise serializers.ValidationError({name: f"{label} : l'année {year} apparaît deux fois. Regroupez-la sur une seule ligne."})
+                years.add(year)
+                for key in ("target", "actual"):
+                    v = row.get(key)
+                    if v is not None and (isinstance(v, bool) or not isinstance(v, (int, float))):
+                        raise serializers.ValidationError({name: f"{label} : la valeur « {key} » de l'année {year} doit être un nombre."})
         return attrs
 
 
@@ -163,16 +216,29 @@ class CohesionResponseSerializer(serializers.ModelSerializer):
         scope = attrs.get("scope", getattr(self.instance, "scope", None)) or "TEAM"
         team = attrs.get("team", getattr(self.instance, "team", None))
         if scope == "TEAM" and team is None:
-            raise serializers.ValidationError({"team": "Indiquez la direction notée."})
+            raise serializers.ValidationError({"team": "Indiquez la direction notée : votre avis porte sur votre direction, elle doit être précisée."})
+        actor = self.context["request"].user
+        if team is not None:
+            require_same_company(actor, team=team)
+        day = attrs.get("date")
+        if day and day > _date.today():
+            raise serializers.ValidationError({"date": "La date de l'avis ne peut pas être dans le futur."})
         return attrs
 
     def validate_scores(self, value):
         if not isinstance(value, list):
-            raise serializers.ValidationError("Les notes doivent être une liste.")
-        for entry in value:
-            if not isinstance(entry, dict) or "criterion" not in entry:
-                raise serializers.ValidationError("Chaque note porte un critère.")
+            raise serializers.ValidationError("Les notes doivent être envoyées sous forme de liste.")
+        if not value:
+            raise serializers.ValidationError("Notez au moins un critère avant d'envoyer votre avis.")
+        seen = set()
+        for position, entry in enumerate(value, start=1):
+            if not isinstance(entry, dict) or not str(entry.get("criterion", "")).strip():
+                raise serializers.ValidationError(f"La note n°{position} n'indique pas le critère noté.")
+            label = str(entry["criterion"]).strip()
+            if label in seen:
+                raise serializers.ValidationError(f"Le critère n°{position} est noté deux fois.")
+            seen.add(label)
             score = entry.get("score")
-            if not isinstance(score, int) or not (1 <= score <= 5):
-                raise serializers.ValidationError("Chaque note va de 1 à 5.")
+            if isinstance(score, bool) or not isinstance(score, int) or not (1 <= score <= 5):
+                raise serializers.ValidationError(f"La note du critère n°{position} doit être un entier de 1 à 5 (vous avez saisi {score!r}).")
         return value

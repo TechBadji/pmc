@@ -51,7 +51,11 @@ class ActionPlanSerializer(serializers.ModelSerializer):
         require_same_company(actor, team=team, target_user=target_user)
         if team and target_user and target_user.company_id != team.company_id:
             raise serializers.ValidationError(
-                {"target_user": "Ce collaborateur n'appartient pas à cette équipe."}
+                {"target_user": "Ce collaborateur n'appartient pas à l'entreprise de cette équipe."}
             )
         require_manages_team(actor, team, target_user=target_user)
+        start = attrs.get("start_date", getattr(self.instance, "start_date", None))
+        due = attrs.get("due_date", getattr(self.instance, "due_date", None))
+        if start and due and due < start:
+            raise serializers.ValidationError({"due_date": "La date de fin ne peut pas précéder la date de début."})
         return attrs

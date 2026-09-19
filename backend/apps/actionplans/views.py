@@ -1,3 +1,4 @@
+from django.utils.dateparse import parse_date
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -137,10 +138,14 @@ class ActionPlanViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             if actor.role == User.Role.MANAGER and not manages_department(actor, team):
                 raise ValidationError({"team": "Cette équipe ne fait pas partie de votre périmètre."})
 
+        if not isinstance(items, list):
+            raise ValidationError({"items": "Le plan de développement doit être envoyé sous forme de liste d'actions."})
         valid_categories = {c.value for c in ActionPlan.Category}
         cleaned = []
         seen = set()
         for item in items:
+            if not isinstance(item, dict):
+                continue
             if item.get("category") not in valid_categories:
                 continue
             priority_order = item.get("priority_order")
@@ -157,8 +162,13 @@ class ActionPlanViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             if (item["category"], priority_order, order) in seen:
                 continue
             seen.add((item["category"], priority_order, order))
-            start_date = item.get("start_date") or None
-            due_date = item.get("due_date") or None
+            where = f"{'Hard Skills' if item['category'] == 'HARD_SKILLS' else 'Soft Skills'} — priorité {priority_order}, action {order}"
+            start_date, due_date = item.get("start_date") or None, item.get("due_date") or None
+            for label, raw in (("de début", start_date), ("de fin", due_date)):
+                if raw is not None and parse_date(str(raw)) is None:
+                    raise ValidationError({"items": f"{where} : la date {label} « {raw} » n'est pas valide (format attendu : JJ/MM/AAAA)."})
+            if start_date and due_date and parse_date(str(due_date)) < parse_date(str(start_date)):
+                raise ValidationError({"items": f"{where} : la date de fin ne peut pas précéder la date de début."})
             cleaned.append(
                 ActionPlan(
                     manager=request.user,

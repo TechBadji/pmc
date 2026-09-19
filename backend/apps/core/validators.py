@@ -20,7 +20,7 @@ def require_same_company(actor, **named_objects):
     errors = {}
     for field_name, obj in named_objects.items():
         if obj is not None and obj.company_id != actor.company_id:
-            errors[field_name] = "Introuvable."
+            errors[field_name] = "Cet élément n'existe plus ou n'appartient pas à votre entreprise. Actualisez la page puis réessayez."
     if errors:
         raise serializers.ValidationError(errors)
 
@@ -38,4 +38,4 @@ def require_manages_team(actor, team, target_user=None):
         return
     if team is not None and manages_department(actor, team):
         return
-    raise serializers.ValidationError({"team": "Vous ne gérez pas cette équipe."})
+    raise serializers.ValidationError({"team": "Vous ne gérez pas cette équipe : seuls le CEO et le manager de l'équipe peuvent y saisir des données."})

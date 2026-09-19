@@ -1,5 +1,6 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .audit import log_event
@@ -151,6 +152,18 @@ class DepartmentSerializer(serializers.ModelSerializer):
         et être une direction — la profondeur s'arrête à un niveau de services.
         Un département qui porte déjà des services ne peut pas, à l'inverse,
         devenir lui-même un service."""
+        request_user = self.context["request"].user
+        scope_company = getattr(self.instance, "company_id", None) or self.initial_data.get("company") or getattr(request_user, "company_id", None)
+        if scope_company is not None:
+            siblings = Department.objects.filter(company_id=scope_company)
+            if self.instance is not None:
+                siblings = siblings.exclude(pk=self.instance.pk)
+            name = (attrs.get("name") or "").strip()
+            code = attrs.get("code")
+            if name and siblings.filter(name__iexact=name).exists():
+                raise serializers.ValidationError({"name": f"Une direction ou un service nommé « {name} » existe déjà dans votre entreprise. Choisissez un autre nom."})
+            if code and siblings.filter(code=code).exists():
+                raise serializers.ValidationError({"code": f"Le code « {code} » est déjà utilisé par un autre département. Choisissez un code unique (par exemple {code}2)."})
         parent = attrs.get("parent", getattr(self.instance, "parent", None))
         if parent is None:
             return attrs
@@ -161,7 +174,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
         if company_id is None:
             company_id = getattr(self.context["request"].user, "company_id", None)
         if company_id is not None and parent.company_id != int(company_id):
-            raise serializers.ValidationError({"parent": "Introuvable."})
+            raise serializers.ValidationError({"parent": "La direction de rattachement choisie n'appartient pas à cette entreprise."})
         if self.instance is not None:
             if parent.id == self.instance.id:
                 raise serializers.ValidationError(
@@ -217,9 +230,37 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "date_joined", "company", "generated_login"]
 
+    def validate(self, attrs):
+        """Dates de carrière cohérentes entre elles : la naissance précède le
+        début de carrière, qui précède l'embauche, qui précède la prise de poste."""
+        get = lambda name: attrs.get(name, getattr(self.instance, name, None))
+        birth, career, hire, role_start = get("birth_date"), get("career_start_date"), get("hire_date"), get("role_start_date")
+        from datetime import date
+        errors = {}
+        if birth and birth >= date.today():
+            errors["birth_date"] = "La date de naissance doit être dans le passé."
+        if birth and career and career <= birth:
+            errors["career_start_date"] = "Le début de carrière doit être postérieur à la date de naissance."
+        if career and hire and hire < career:
+            errors["hire_date"] = "La date d'embauche ne peut pas précéder le début de carrière."
+        elif birth and hire and hire <= birth:
+            errors["hire_date"] = "La date d'embauche doit être postérieure à la date de naissance."
+        if hire and role_start and role_start < hire:
+            errors["role_start_date"] = "La prise de poste ne peut pas précéder la date d'embauche."
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
+
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
+    password = serializers.CharField(
+        write_only=True, min_length=8,
+        error_messages={"min_length": "Le mot de passe doit contenir au moins 8 caractères.", "blank": "Saisissez un mot de passe provisoire.", "required": "Saisissez un mot de passe provisoire."},
+    )
+    email = serializers.EmailField(
+        validators=[UniqueValidator(queryset=User.objects.all(), message="Cette adresse e-mail est déjà utilisée par un autre compte.")],
+        error_messages={"invalid": "Saisissez une adresse e-mail valide (exemple : prenom.nom@entreprise.com).", "blank": "Saisissez l'adresse e-mail du collaborateur.", "required": "Saisissez l'adresse e-mail du collaborateur."},
+    )
 
     class Meta:
         model = User
@@ -376,3 +417,48 @@ class PerformanceProfileSerializer(serializers.ModelSerializer):
             "dev_risks_obstacles", "updated_at",
         ]
         read_only_fields = ["id", "user", "updated_at"]
+
+    LIST_LIMITS = {
+        "qualifications": 5, "previous_positions": 2, "previous_position_dates": 2,
+        "professional_achievements": 5, "personal_achievements": 5,
+        "professional_role_models": 4, "role_models_in_life": 4, "dislikes": 4, "motivates": 4,
+        "personality_traits": 3, "hobbies": 2, "brings_to_team": 4, "brings_to_manager": 4,
+        "expects_from_team": 3, "expects_from_manager": 3, "dev_priorities": 4,
+        "dev_professional_perspectives": 4, "dev_actions_support": 3, "dev_risks_obstacles": 3,
+    }
+    LIST_LABELS = {
+        "qualifications": "Qualifications", "previous_positions": "Postes précédents",
+        "previous_position_dates": "Dates des postes précédents",
+        "professional_achievements": "Réalisations professionnelles", "personal_achievements": "Réalisations personnelles",
+        "professional_role_models": "Modèles professionnels", "role_models_in_life": "Modèles dans la vie",
+        "dislikes": "Ce que vous n'aimez pas", "motivates": "Ce qui vous motive",
+        "personality_traits": "Traits de personnalité", "hobbies": "Loisirs",
+        "brings_to_team": "Ce que vous apportez à l'équipe", "brings_to_manager": "Ce que vous apportez à votre manager",
+        "expects_from_team": "Ce que vous attendez de l'équipe", "expects_from_manager": "Ce que vous attendez de votre manager",
+        "dev_priorities": "Priorités de développement", "dev_professional_perspectives": "Perspectives professionnelles",
+        "dev_actions_support": "Actions de soutien à la performance", "dev_risks_obstacles": "Risques et obstacles",
+    }
+
+    def validate(self, attrs):
+        for name, limit in self.LIST_LIMITS.items():
+            value = attrs.get(name)
+            if value is None:
+                continue
+            label = self.LIST_LABELS[name]
+            if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+                raise serializers.ValidationError({name: f"{label} : une liste de textes est attendue."})
+            if len(value) > limit:
+                raise serializers.ValidationError({name: f"{label} : {limit} lignes au plus (vous en avez saisi {len(value)})."})
+            if any(len(v) > 300 for v in value):
+                raise serializers.ValidationError({name: f"{label} : chaque ligne est limitée à 300 caractères. Raccourcissez le texte."})
+        dates = attrs.get("previous_position_dates")
+        if dates:
+            import re
+            from datetime import date
+            for raw in dates:
+                raw = raw.strip()
+                if not raw:
+                    continue
+                if not re.fullmatch(r"\d{4}(-\d{2})?", raw) or int(raw[:4]) > date.today().year or int(raw[:4]) < 1950:
+                    raise serializers.ValidationError({"previous_position_dates": f"Date de prise de fonction « {raw} » invalide : indiquez une année (2019) ou un mois (2019-03) qui ne soit pas dans le futur."})
+        return attrs

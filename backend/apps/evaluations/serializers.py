@@ -47,6 +47,18 @@ class EvaluationCampaignSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"end_date": "La date de fin doit être postérieure à la date de début."}
             )
+        name = (attrs.get("name") or "").strip()
+        if "name" in attrs and not name:
+            raise serializers.ValidationError({"name": "Donnez un nom à la campagne (exemple : Semestre 2 2026)."})
+        request_user = self.context["request"].user
+        company_id = getattr(self.instance, "company_id", None) or request_user.company_id or self.initial_data.get("company")
+        if name and company_id:
+            clash = EvaluationCampaign.objects.filter(company_id=company_id, name__iexact=name)
+            if self.instance is not None:
+                clash = clash.exclude(pk=self.instance.pk)
+            if clash.exists():
+                raise serializers.ValidationError({"name": f"Une campagne nommée « {name} » existe déjà. Choisissez un nom différent pour la distinguer."})
+            attrs["name"] = name
         return attrs
 
 
@@ -117,6 +129,9 @@ class EvaluationWriteSerializer(DecimalCommaMixin, serializers.ModelSerializer):
             "people_objectives_score", "notes", "skill_scores",
             "objectives_set_on", "evaluated_on", "next_evaluation_on", "manager_visa",
         ]
+        # Le contrôle d'unicité (collaborateur, campagne) est fait plus bas, avec
+        # un message qui dit quoi faire ; celui de DRF n'énonçait que les champs.
+        validators = []
 
     def validate_campaign(self, campaign):
         # Une campagne clôturée n'accepte plus de nouvelles évaluations, ni de
@@ -136,6 +151,14 @@ class EvaluationWriteSerializer(DecimalCommaMixin, serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"campaign": "Cette campagne ne correspond pas à l'entreprise du collaborateur."}
             )
+        if target_user and campaign:
+            existing = Evaluation.objects.filter(user=target_user, campaign=campaign)
+            if self.instance is not None:
+                existing = existing.exclude(pk=self.instance.pk)
+            if existing.exists():
+                raise serializers.ValidationError({
+                    "user": f"{target_user.get_full_name()} a déjà une évaluation pour la campagne « {campaign.name} ». Ouvrez-la pour la modifier au lieu d'en créer une seconde."
+                })
         if actor.role == actor.Role.MANAGER and target_user and target_user.id != actor.id:
             is_own_team_member = (
                 manages_user(actor, target_user)
@@ -163,7 +186,7 @@ class EvaluationWriteSerializer(DecimalCommaMixin, serializers.ModelSerializer):
             )
             if requested_ids - valid_ids:
                 raise serializers.ValidationError(
-                    {"skill_scores": "Compétence invalide pour cette entreprise."}
+                    {"skill_scores": "Une des compétences envoyées n'existe plus ou n'appartient pas à votre entreprise. Actualisez la page pour recharger la grille de compétences."}
                 )
             # skill_scores est un ListField(DictField()) écrit ensuite via
             # bulk_create (_save_scores) : ni les validators du modèle
@@ -178,15 +201,16 @@ class EvaluationWriteSerializer(DecimalCommaMixin, serializers.ModelSerializer):
                     # elle qui part en base plus bas, `_save_scores` écrivant
                     # le dictionnaire tel quel.
                     item[field] = value
+                    label = {"score": "La note", "objective_score": "L'objectif", "achievement_rate": "Le taux de réalisation"}[field]
                     try:
                         value = float(value)
                     except (TypeError, ValueError):
                         raise serializers.ValidationError(
-                            {"skill_scores": f"Valeur invalide pour {field}: {item.get(field)!r}."}
+                            {"skill_scores": f"{label} d'une compétence n'est pas un nombre valide ({item.get(field)!r}). Saisissez un nombre entre 1 et 5, par exemple 3,5."}
                         )
                     if not 1 <= value <= 5:
                         raise serializers.ValidationError(
-                            {"skill_scores": f"{field} doit être compris entre 1 et 5 (reçu {value})."}
+                            {"skill_scores": f"{label} d'une compétence doit être compris entre 1 et 5 (vous avez saisi {value:g})."}
                         )
         return attrs
 
@@ -505,11 +529,14 @@ class PerformanceObjectiveSerializer(DecimalCommaMixin, serializers.ModelSeriali
             )
         if evaluation is None and team is None:
             raise serializers.ValidationError(
-                {"evaluation": "Rattachez la ligne à une évaluation ou à une équipe."}
+                {"evaluation": "Choisissez d'abord la personne (ou l'équipe) et la campagne concernées avant d'ajouter un objectif."}
             )
+        weight = attrs.get("weight")
+        if weight is not None and weight < 0:
+            raise serializers.ValidationError({"weight": "Le coefficient de pondération ne peut pas être négatif."})
         if team is not None:
             if campaign is None:
-                raise serializers.ValidationError({"campaign": "La fiche d'équipe se rapporte à une campagne."})
+                raise serializers.ValidationError({"campaign": "La fiche d'équipe se rapporte à une campagne : choisissez la campagne concernée."})
             require_same_company(actor, team=team)
             require_manages_team(actor, team)
         else:

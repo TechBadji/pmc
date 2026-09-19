@@ -225,7 +225,7 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         try:
             evaluation = Evaluation.objects.select_related("user", "user__department").get(pk=evaluation_id)
         except (Evaluation.DoesNotExist, TypeError, ValueError):
-            raise ValidationError({"evaluation": "Évaluation introuvable."})
+            raise ValidationError({"evaluation": "Évaluation introuvable : elle a peut-être été supprimée. Actualisez la page puis réessayez."})
         require_same_company(request.user, target_user=evaluation.user)
 
         actor = request.user
@@ -233,28 +233,37 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         if actor.role == actor.Role.MANAGER and target_user.department_id and target_user.department.manager_id != actor.id and target_user.id != actor.id:
             raise ValidationError({"evaluation": "Ce collaborateur ne fait pas partie de votre équipe."})
 
+        if not isinstance(notes, list):
+            raise ValidationError({"notes": "Les lignes Forces & Faiblesses doivent être envoyées sous forme de liste."})
+        section = {
+            "SOFT_STRENGTH": "Forces — Soft Skills", "SOFT_WEAKNESS": "Faiblesses — Soft Skills",
+            "HARD_STRENGTH": "Forces — Hard Skills", "HARD_WEAKNESS": "Faiblesses — Hard Skills",
+        }
         valid_categories = {c.value for c in SkillNote.Category}
         cleaned = []
         for n in notes:
-            if n.get("category") not in valid_categories:
+            if not isinstance(n, dict) or n.get("category") not in valid_categories:
                 continue
             order = n.get("order")
             if not isinstance(order, int) or not (1 <= order <= 5):
                 continue
+            where = f"{section[n['category']]}, ligne {order}"
+            if len(n.get("text") or "") > 255:
+                raise ValidationError({"notes": f"{where} : le texte dépasse 255 caractères. Raccourcissez-le."})
             score = n.get("score")
-            if score is not None:
+            if score not in (None, ""):
                 try:
-                    # La virgule décimale passe ici comme ailleurs : sans cette
-                    # normalisation, « 3,5 » levait une ValueError et l'indice
-                    # était effacé au lieu d'être refusé — l'écran enregistrant
-                    # les vingt lignes d'un bloc, rien ne le signalait.
-                    score = min(5, max(1, float(normalize_decimal(score))))
+                    # La virgule décimale passe ici comme ailleurs.
+                    score = float(normalize_decimal(score))
                 except (TypeError, ValueError):
-                    score = None
-                else:
-                    # La colonne ne garde qu'une décimale : on arrondit ici
-                    # plutôt que de laisser le SGBD le faire en silence.
-                    score = round(score, 1)
+                    raise ValidationError({"notes": f"{where} : l'indice « {score} » n'est pas un nombre. Saisissez une valeur entre 1 et 5, par exemple 3,5."})
+                if not 1 <= score <= 5:
+                    raise ValidationError({"notes": f"{where} : l'indice doit être compris entre 1 et 5 (vous avez saisi {score:g})."})
+                # La colonne ne garde qu'une décimale : on arrondit ici
+                # plutôt que de laisser le SGBD le faire en silence.
+                score = round(score, 1)
+            else:
+                score = None
             cleaned.append(
                 SkillNote(
                     evaluation=evaluation,

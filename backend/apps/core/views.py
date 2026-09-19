@@ -678,8 +678,16 @@ class PerformanceProfileViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
     company_lookup = "user__company_id"
     filterset_fields = ["user"]
 
+    # Ce que l'évaluation ou le manager attribue : un collaborateur ne le fixe pas
+    # lui-même en remplissant sa propre fiche.
+    ASSESSED_FIELDS = ("performance_pct", "performer_category")
+
     def get_permissions(self):
-        if self.action in ("create", "update", "partial_update", "destroy", "save_for_user"):
+        # Chacun peut renseigner sa propre fiche (l'écran de saisie de l'employé) ;
+        # les autres écritures restent réservées au CEO et aux managers.
+        if self.action == "save_for_user":
+            return [permissions.IsAuthenticated()]
+        if self.action in ("create", "update", "partial_update", "destroy"):
             return [IsCompanyAdminOrManager()]
         return [permissions.IsAuthenticated()]
 
@@ -702,13 +710,20 @@ class PerformanceProfileViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
         require_same_company(request.user, target_user=target_user)
 
         actor = request.user
+        if actor.role == actor.Role.SUPER_ADMIN:
+            raise PermissionDenied("Le Super Admin n'est rattaché à aucune entreprise : il ne renseigne pas de fiche.")
+        data = request.data
+        if actor.role == actor.Role.MEMBER:
+            if target_user.id != actor.id:
+                raise PermissionDenied("Vous ne pouvez renseigner que votre propre fiche.")
+            data = {k: v for k, v in request.data.items() if k not in self.ASSESSED_FIELDS}
         if actor.role == actor.Role.MANAGER and target_user.id != actor.id:
             is_own_team_member = manages_user(actor, target_user)
             if not is_own_team_member:
                 raise ValidationError({"user": "Ce collaborateur ne fait pas partie de votre équipe."})
 
         profile, _ = PerformanceProfile.objects.get_or_create(user=target_user)
-        serializer = PerformanceProfileSerializer(profile, data=request.data, partial=True)
+        serializer = PerformanceProfileSerializer(profile, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         log_event(
