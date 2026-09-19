@@ -456,7 +456,12 @@ class PerformanceObjectiveViewSet(CompanyScopedQuerySetMixin, viewsets.ModelView
         elif user.role == user.Role.MEMBER:
             # Sa fiche, plus celle de sa direction (lecture seule) : la vue
             # « Objectifs équipe » a un sens pour lui aussi.
-            qs = qs.filter(Q(evaluation__user=user) | Q(team_id=user.department_id))
+            own = Q(evaluation__user=user)
+            # Sans direction, `team_id=None` filtrerait « équipe IS NULL », soit
+            # toutes les lignes d'employés : on n'ajoute l'équipe que si elle existe.
+            if user.department_id:
+                own |= Q(team_id=user.department_id)
+            qs = qs.filter(own)
         return qs.distinct()
 
     def perform_destroy(self, instance):
