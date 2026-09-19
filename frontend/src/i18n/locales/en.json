@@ -897,7 +897,7 @@
   "cohesionSurvey": {
     "title": "My view on my division",
     "subtitle": "Your view on {{team}}, across the ten cohesion criteria.",
-    "privacy": "Your answers are never read individually. Results are published to your division only from 4 respondents, as an average.",
+    "privacy": "Your answers are never read individually. Results are published to your division only from 2 respondents, as an average.",
     "scaleHint": "1 = very low · 5 = very high",
     "progress": "{{answered}} of {{total}} criteria rated",
     "incomplete": "Rate all ten criteria to save.",
