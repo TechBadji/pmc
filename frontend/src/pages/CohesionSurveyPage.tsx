@@ -31,11 +31,13 @@ const TIER_LABELS = ["cohesion.legend.1", "cohesion.legend.2", "cohesion.legend.
 function ScoreOval({
   selected,
   color,
+  label,
   onClick,
   ariaLabel,
 }: {
   selected: boolean;
   color: string;
+  label: string | number;
   onClick: () => void;
   ariaLabel: string;
 }) {
@@ -47,17 +49,25 @@ function ScoreOval({
       aria-pressed={selected}
       onClick={onClick}
       sx={{
-        width: 26,
+        minWidth: 48,
         height: 26,
-        borderRadius: "50%",
+        px: 1.5,
+        borderRadius: 13,
         border: "2px solid",
-        borderColor: selected ? color : "divider",
-        bgcolor: selected ? color : "background.paper",
+        borderColor: color,
+        bgcolor: selected ? color : "transparent",
+        color: selected ? "#fff" : color,
+        fontSize: 12,
+        fontWeight: 800,
+        fontFamily: "inherit",
         cursor: "pointer",
-        p: 0,
-        "&:hover": { borderColor: color },
+        opacity: selected ? 1 : 0.55,
+        transition: "all .15s",
+        "&:hover": { opacity: 1, bgcolor: selected ? color : `${color}22` },
       }}
-    />
+    >
+      {label}
+    </Box>
   );
 }
 
@@ -298,6 +308,7 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
                         <ScoreOval
                           selected={value === tier}
                           color={cohesionColor(tier)}
+                          label={tier}
                           ariaLabel={`${criterion} — ${tier}`}
                           onClick={() => {
                             setScores((current) => ({ ...current, [criterion]: tier }));
