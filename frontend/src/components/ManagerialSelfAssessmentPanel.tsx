@@ -781,7 +781,9 @@ export default function ManagerialSelfAssessmentPanel() {
                       {TIERS.map((tier) => (
                         <TableCell key={tier} align="center" sx={{ px: 0.5 }}>
                           <ScoreOval
-                            selected={row.score === tier}
+                            // Une note décimale (3,2 ; 4,7…) allume le palier le plus proche : la pilule
+                            // n'est qu'un repère, la valeur exacte s'affiche dans la colonne suivante.
+                            selected={row.score !== null && Math.min(5, Math.max(1, Math.round(row.score))) === tier}
                             color={tierColor(tier)}
                             disabled={readOnly}
                             ariaLabel={`${statement} — ${tier}`}
