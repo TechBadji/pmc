@@ -508,11 +508,15 @@ export default function ManagerialSelfAssessmentPanel() {
                         fillOpacity={0.45}
                         strokeWidth={2}
                         dot={(props: any) => {
-                          const { cx, cy, payload, index } = props;
+                          const { cx, cy, index } = props;
+                          // La ligne est relue dans les données par son rang : `payload`
+                          // est ici l'enveloppe du point Recharts, pas notre ligne.
+                          const row = synthesisData[index];
+                          if (!row || typeof cx !== "number" || typeof cy !== "number") return <g key={index} />;
                           return (
-                            <g key={index} style={{ cursor: "pointer" }} onMouseEnter={() => setRadarHover({ x: cx, y: cy, row: payload })} onMouseLeave={() => setRadarHover(null)}>
+                            <g key={index} style={{ cursor: "pointer" }} onMouseEnter={() => setRadarHover({ x: cx, y: cy, row })} onMouseLeave={() => setRadarHover(null)}>
                               <circle cx={cx} cy={cy} r={16} fill="transparent" />
-                              <circle cx={cx} cy={cy} r={radarHover?.row.category === payload.category ? 7 : 5} fill="#2E8FCB" stroke="#fff" strokeWidth={2} />
+                              <circle cx={cx} cy={cy} r={radarHover?.row.category === row.category ? 7 : 5} fill="#2E8FCB" stroke="#fff" strokeWidth={2} />
                             </g>
                           );
                         }}
