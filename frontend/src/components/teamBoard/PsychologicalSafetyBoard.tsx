@@ -62,9 +62,6 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
           </Typography>
         )}
       </Stack>
-      <Typography variant="body2" color="text.secondary">
-        {t("psi.objective")}
-      </Typography>
 
       {error && <Alert severity="error">{t("psi.dash.loadFailed")}</Alert>}
       {summary && summary.respondents === 0 && <Alert severity="info">{t("psi.dash.noData")}</Alert>}
