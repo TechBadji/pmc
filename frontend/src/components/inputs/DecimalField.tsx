@@ -78,8 +78,15 @@ export function DecimalField({
   const [typing, setTyping] = useState<string | null>(null);
   // Avec un nombre de décimales imposé, la valeur relâchée garde ses zéros :
   // « 4.0 » ne doit pas redevenir « 4 » quand on quitte la cellule.
+  // L'API renvoie les décimales en texte (« 4.00 ») : on passe par Number, et
+  // une valeur illisible s'affiche telle quelle plutôt que de faire planter la page.
+  const numeric = value === "" || value === null ? NaN : Number(value);
   const formatted =
-    value === "" || value === null ? "" : decimals !== undefined ? value.toFixed(decimals) : String(value);
+    value === "" || value === null
+      ? ""
+      : decimals !== undefined && !Number.isNaN(numeric)
+        ? numeric.toFixed(decimals)
+        : String(value);
   const shown = typing ?? formatted;
   return (
     <TextField
