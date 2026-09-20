@@ -422,20 +422,35 @@ export default function MonkeyManagementPanel() {
                   {t("monkeyManagement.interpretationTitle")}
                 </Typography>
 
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "flex-end" }} justifyContent="space-between" sx={{ mb: 3 }}>
-                  <Typography variant="h3" fontWeight={800} sx={{ color: levelColor, lineHeight: 1.15 }}>
+                <Typography variant="h2" fontWeight={800} sx={{ color: levelColor, lineHeight: 1, textAlign: "right", mb: 1 }}>
+                  {total}
+                  <Typography component="span" variant="h4" color="text.secondary" fontWeight={700}>
+                    /50
+                  </Typography>
+                </Typography>
+
+                {/* Le niveau se lit au-dessus de la flèche qui le désigne : centré sur elle,
+                    borné à 18–82 % pour ne pas déborder de l'encadré aux deux extrémités. */}
+                <Box sx={{ position: "relative", height: 52, mt: 1 }}>
+                  <Typography
+                    variant="h4"
+                    fontWeight={800}
+                    sx={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: `${Math.min(82, Math.max(18, markerPct))}%`,
+                      transform: "translateX(-50%)",
+                      whiteSpace: "nowrap",
+                      color: levelColor,
+                      lineHeight: 1.15,
+                    }}
+                  >
                     {t(`monkeyManagement.levels.${level}.title`)}
                   </Typography>
-                  <Typography variant="h2" fontWeight={800} sx={{ color: levelColor, lineHeight: 1 }}>
-                    {total}
-                    <Typography component="span" variant="h4" color="text.secondary" fontWeight={700}>
-                      /50
-                    </Typography>
-                  </Typography>
-                </Stack>
+                </Box>
 
                 {/* Jauge à 4 zones — le triangle marque le score exact dans sa zone. */}
-                <Box sx={{ position: "relative", mb: 1.5, mt: 3 }}>
+                <Box sx={{ position: "relative", mb: 1.5, mt: 2 }}>
                   <Box
                     sx={{
                       position: "absolute",
