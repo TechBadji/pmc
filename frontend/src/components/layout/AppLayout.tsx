@@ -101,13 +101,8 @@ export default function AppLayout() {
   // collaborateurs rattachés directement à l'entreprise n'ont que l'avis sur
   // l'organisation, et l'entrée de menu ne menait pour eux qu'à un message
   // d'indisponibilité.
-  // Les Évaluations d'un collaborateur (ses propres résultats par campagne) ne
-  // sont ouvertes qu'à la direction SUNU.
-  const inSunu = /^sunu/i.test(user.department_name ?? "");
   const items = NAV_BY_ROLE[user.role].filter(
-    (item) =>
-      (item.path !== "/cohesion-survey" || Boolean(user.department)) &&
-      (item.path !== "/evaluations" || user.role !== "MEMBER" || inSunu)
+    (item) => item.path !== "/cohesion-survey" || Boolean(user.department)
   );
 
   function handleLogout() {
