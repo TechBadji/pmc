@@ -83,17 +83,17 @@ export default function MonkeyProfileSummary({ campaignId, people }: { campaignI
         <Alert severity="info">{t("monkeyManagement.summary.empty")}</Alert>
       ) : (
         <Stack direction={{ xs: "column", lg: "row" }} spacing={3} alignItems="stretch">
-          <div style={{ flex: "3 1 0", minWidth: 0 }}>
-            <ResponsiveContainer width="100%" height={380}>
-              <BarChart data={data} margin={{ top: 28, right: 16, left: 0, bottom: 8 }}>
+          <div style={{ flex: "2 1 0", minWidth: 0, maxWidth: 560 }}>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={data} margin={{ top: 24, right: 8, left: 0, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 13, fontWeight: 600 }} />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 600 }} />
                 <YAxis domain={[0, 100]} tickFormatter={(v) => `${v} %`} />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={110} isAnimationActive={false}>
+                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={70} isAnimationActive={false}>
                   {data.map((d) => (
                     <Cell key={d.key} fill={d.color} />
                   ))}
-                  <LabelList dataKey="value" position="top" formatter={(v: number) => fmt(v)} style={{ fontSize: 14, fontWeight: 800 }} />
+                  <LabelList dataKey="value" position="top" formatter={(v: number) => fmt(v)} style={{ fontSize: 13, fontWeight: 800 }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
