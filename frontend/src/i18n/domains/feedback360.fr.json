@@ -1,0 +1,48 @@
+{
+  "feedback360": {
+    "feedbackTitle": "360° Feedback",
+    "forwardTitle": "360° Forward",
+    "feedbackSubtitle": "Regard sur le passé : votre manager, vos collaborateurs et vos pairs notent vos compétences sur la campagne. Les avis restent anonymes.",
+    "forwardSubtitle": "Conseils pour l'avenir : ce qu'il vous est suggéré de commencer, d'arrêter et de continuer. Les avis restent anonymes.",
+    "campaign": "Campagne",
+    "tabReceived": "Avis reçus",
+    "tabGive": "Donner un avis",
+    "person": "Personne",
+    "me": "Moi-même",
+    "relation": {
+      "SELF": "Auto-évaluation",
+      "MANAGER": "Manager",
+      "REPORT": "Collaborateurs directs",
+      "PEER": "Pairs"
+    },
+    "count": "{{n}} avis",
+    "hidden": "Masqué : au moins {{min}} avis sont nécessaires pour garder l'anonymat ({{n}} pour l'instant).",
+    "noneReceived": "Aucun avis reçu pour cette campagne.",
+    "comments": "Commentaires",
+    "competency": "Compétence",
+    "competencies": [
+      "Communication",
+      "Collaboration et esprit d'équipe",
+      "Fiabilité et qualité du travail",
+      "Initiative et autonomie",
+      "Leadership et influence",
+      "Orientation résultats"
+    ],
+    "strengths": "Points forts",
+    "improvements": "Axes de progrès",
+    "start": "À commencer",
+    "stop": "À arrêter",
+    "continue": "À continuer",
+    "pickPerson": "Choisissez la personne sur laquelle vous donnez votre avis.",
+    "rate": "Notez chaque compétence de 1 à 5",
+    "save": "Enregistrer mon avis",
+    "update": "Mettre à jour mon avis",
+    "saved": "Votre avis est enregistré. Il reste anonyme pour la personne concernée.",
+    "incomplete": "Il reste {{count}} compétence(s) sans note : notez les 6 compétences avant d'enregistrer.",
+    "closed": "Cette campagne est clôturée : les avis sont en lecture seule.",
+    "loadFailed": "Les avis n'ont pas pu être chargés : rechargez la page.",
+    "saveFailed": "L'avis n'a pas pu être enregistré. Réessayez dans un instant.",
+    "existing": "Vous avez déjà donné un avis à cette personne : il est ouvert pour modification.",
+    "viewHint": "Avis anonymes de votre manager, de vos collaborateurs et de vos pairs."
+  }
+}

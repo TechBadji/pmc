@@ -1,0 +1,48 @@
+{
+  "feedback360": {
+    "feedbackTitle": "360° Feedback",
+    "forwardTitle": "360° Forward",
+    "feedbackSubtitle": "Looking back: your manager, direct reports and peers rate your skills for the campaign. Answers stay anonymous.",
+    "forwardSubtitle": "Looking ahead: what you are advised to start, stop and continue. Answers stay anonymous.",
+    "campaign": "Campaign",
+    "tabReceived": "Feedback received",
+    "tabGive": "Give feedback",
+    "person": "Person",
+    "me": "Myself",
+    "relation": {
+      "SELF": "Self-assessment",
+      "MANAGER": "Manager",
+      "REPORT": "Direct reports",
+      "PEER": "Peers"
+    },
+    "count": "{{n}} answer(s)",
+    "hidden": "Hidden: at least {{min}} answers are needed to keep anonymity ({{n}} so far).",
+    "noneReceived": "No feedback received for this campaign.",
+    "comments": "Comments",
+    "competency": "Skill",
+    "competencies": [
+      "Communication",
+      "Collaboration and team spirit",
+      "Reliability and quality of work",
+      "Initiative and autonomy",
+      "Leadership and influence",
+      "Results orientation"
+    ],
+    "strengths": "Strengths",
+    "improvements": "Areas to improve",
+    "start": "Start",
+    "stop": "Stop",
+    "continue": "Continue",
+    "pickPerson": "Choose the person you are giving feedback on.",
+    "rate": "Rate each skill from 1 to 5",
+    "save": "Save my feedback",
+    "update": "Update my feedback",
+    "saved": "Your feedback is saved. It stays anonymous for the person concerned.",
+    "incomplete": "{{count}} skill(s) still have no rating: rate all 6 before saving.",
+    "closed": "This campaign is closed: feedback is read-only.",
+    "loadFailed": "Feedback could not be loaded: reload the page.",
+    "saveFailed": "The feedback could not be saved. Try again shortly.",
+    "existing": "You already gave feedback to this person: it is open for editing.",
+    "viewHint": "Anonymous input from your manager, direct reports and peers."
+  }
+}

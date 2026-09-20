@@ -11,9 +11,11 @@ from apps.core.permissions import CompanyScopedQuerySetMixin, IsCompanyAdminOrMa
 from apps.core.scoping import managed_department_ids
 
 from .aggregation import aggregate_organisation, aggregate_responses, company_score
-from .models import CohesionResponse, TeamBoard, TeamCohesionAnalysis, TeamRelationship
+from .models import CohesionResponse, PsychologicalSafetyResponse, TeamBoard, TeamCohesionAnalysis, TeamRelationship
 from .serializers import (
     CohesionResponseSerializer,
+    PSI_DIMENSIONS,
+    PsychologicalSafetyResponseSerializer,
     TeamBoardSerializer,
     TeamCohesionAnalysisSerializer,
     TeamRelationshipSerializer,
@@ -353,4 +355,67 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         # n'y a pas accès, ni à l'écran ni dans la réponse de l'API.
         if user.role in (user.Role.COMPANY_ADMIN, user.Role.SUPER_ADMIN):
             payload["organisation"] = organisation
+        return Response(payload)
+
+
+class PsychologicalSafetyResponseViewSet(viewsets.ModelViewSet):
+    """Questionnaire Psychological Safety Index : chacun dépose et relit sa propre
+    réponse ; `results` livre les moyennes par direction à l'encadrement, jamais
+    une réponse nominative."""
+
+    serializer_class = PsychologicalSafetyResponseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ["campaign"]
+
+    def get_queryset(self):
+        return PsychologicalSafetyResponse.objects.filter(respondent=self.request.user)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        serializer.save(respondent=user, company=user.company, team=user.department)
+
+    @action(detail=False, methods=["get"], url_path="results")
+    def results(self, request):
+        """Indice par direction et par dimension pour une campagne. Le CEO voit
+        toutes les directions, un encadrant les siennes ; une direction n'est
+        publiée qu'à partir du seuil de répondants de l'entreprise, pour que
+        personne ne puisse être reconnu derrière une moyenne."""
+        user = request.user
+        if user.role == user.Role.MEMBER:
+            raise PermissionDenied("Les résultats sont réservés à l'encadrement.")
+        campaign = EvaluationCampaign.objects.filter(
+            pk=request.query_params.get("campaign"), company_id=user.company_id
+        ).first()
+        if campaign is None:
+            raise ValidationError({"campaign": "Choisissez une campagne."})
+        departments = Department.objects.filter(company_id=user.company_id)
+        if user.role == user.Role.MANAGER:
+            departments = departments.filter(id__in=managed_department_ids(user))
+        team = request.query_params.get("team")
+        if team:
+            departments = departments.filter(id=team)
+        min_respondents = getattr(user.company, "cohesion_min_respondents", None) or 2
+
+        def summarise(responses, headcount):
+            n = len(responses)
+            out = {"respondents": n, "headcount": headcount, "published": n >= min_respondents, "min_respondents": min_respondents}
+            if out["published"]:
+                dims = []
+                for d, key in enumerate(PSI_DIMENSIONS):
+                    vals = [sum(r.scores[d * 3 : d * 3 + 3]) / 3 for r in responses]
+                    dims.append({"key": key, "score": round(sum(vals) / n, 2)})
+                out["dimensions"] = dims
+                out["global"] = round(sum(x["score"] for x in dims) / len(dims), 2)
+            return out
+
+        teams, everything = [], []
+        for dept in departments.order_by("name"):
+            rs = list(PsychologicalSafetyResponse.objects.filter(team=dept, campaign=campaign))
+            everything += rs
+            summary = summarise(rs, User.objects.filter(department=dept, is_active=True).count())
+            summary.update({"team": dept.id, "team_name": dept.name})
+            teams.append(summary)
+        payload = {"teams": teams}
+        if user.role in (user.Role.COMPANY_ADMIN, user.Role.SUPER_ADMIN) and not team:
+            payload["company"] = summarise(everything, User.objects.filter(company_id=user.company_id, is_active=True).count())
         return Response(payload)

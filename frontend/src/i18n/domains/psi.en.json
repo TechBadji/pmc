@@ -1,0 +1,84 @@
+{
+  "psi": {
+    "navLabel": "Psychological Safety",
+    "title": "ID-PMC Psychological Safety Index — PSI",
+    "objective": "Measure how far team members can speak up, learn, contribute and challenge without fear of being humiliated, marginalised or penalised.",
+    "quote": "Psychological safety is not the freedom to say anything. It is the ability to say what needs to be said, respectfully, when collective performance requires it.",
+    "question": "To what extent do the following statements match what you actually experience in your team?",
+    "scale": "1 = Strongly disagree · 2 = Somewhat disagree · 3 = Mixed · 4 = Somewhat agree · 5 = Strongly agree",
+    "campaign": "Campaign",
+    "save": "Save my answers",
+    "update": "Update my answers",
+    "saved": "Your answers are saved. They stay anonymous: only the team average is read.",
+    "incomplete": "{{count}} statement(s) still have no rating: rate all 12 before saving.",
+    "noDepartment": "You are not attached to any department: the questionnaire is about your team and cannot be filled in.",
+    "closed": "This campaign is closed: your answers are read-only.",
+    "saveFailed": "Your answers could not be saved. Try again shortly.",
+    "loadFailed": "The questionnaire could not be loaded: reload the page.",
+    "dimension": {
+      "belonging": "Belonging Safety",
+      "learning": "Learning Safety",
+      "contributing": "Contributing Safety",
+      "challenging": "Challenging Safety"
+    },
+    "dimensionTitle": {
+      "belonging": "Belonging, respect and inclusion",
+      "learning": "Learning, asking and acknowledging limits",
+      "contributing": "Contributing, taking initiative and using one's abilities",
+      "challenging": "Challenging, telling the truth and questioning the status quo"
+    },
+    "dimensionQuestion": {
+      "belonging": "Can I be a full member of this team without having to conform or fear being marginalised?",
+      "learning": "Can I show that I don't know without losing credibility?",
+      "contributing": "Can I really bring what I can do and take initiative?",
+      "challenging": "Can I say what I think when what I think is uncomfortable?"
+    },
+    "statements": [
+      "I feel respected and considered a full member of this team, regardless of my role, seniority or status.",
+      "Differences in personality, background, culture, working style or point of view are genuinely accepted in this team.",
+      "I am involved in the discussions and decisions concerning my scope, and I do not feel deliberately kept out.",
+      "I can ask a question, request clarification or admit I do not master a topic without fear of being seen as incompetent.",
+      "I can openly acknowledge a mistake or a bad decision without fear that it will later be used against me.",
+      "When something does not work, we first seek to understand and learn before looking for someone to blame.",
+      "My ideas, proposals and contributions are listened to and considered, even when they are ultimately not adopted.",
+      "I have enough autonomy to take initiative and solve problems within my level of responsibility.",
+      "The leader deliberately creates opportunities for everyone to contribute, including those who speak up less spontaneously.",
+      "I can openly express disagreement with a decision, even when it is backed by my superior or someone more influential than me.",
+      "I can report a risk, bad news or an important problem even when the message is likely to be unwelcome.",
+      "In this team, questioning an old way of doing things or proposing a radically different approach is encouraged when it can improve performance."
+    ],
+    "dash": {
+      "title": "Psychological Safety Index",
+      "team": "Department",
+      "score": "Score /5",
+      "reading": "Reading",
+      "global": "OVERALL PSI",
+      "respondents": "{{n}} respondent(s) out of {{total}}",
+      "notPublished": "Results hidden: at least {{min}} respondents are needed to protect anonymity ({{n}} so far).",
+      "noData": "No answers for this campaign.",
+      "radar": "Radar of the 4 dimensions",
+      "debriefTitle": "Debrief question",
+      "debrief": "What are we not telling each other today that we would benefit from saying to succeed?",
+      "insight": "The overall figure often hides a gap between dimensions: {{high}} is the strongest ({{highScore}}), {{low}} the weakest ({{lowScore}}).",
+      "allDirections": "All departments",
+      "loadFailed": "The results could not be loaded."
+    },
+    "readingDim": {
+      "strong": "Strong",
+      "consolidate": "To consolidate",
+      "watch": "Watch",
+      "priority": "Priority"
+    },
+    "readingGlobal": {
+      "solid": "Solid psychological safety",
+      "improvable": "Improvable psychological safety",
+      "fragile": "Fragile psychological safety"
+    }
+  },
+  "cohesion": {
+    "viewPsi": "PSYCHOLOGICAL SAFETY"
+  },
+  "nav": {
+    "psychologicalSafety": "Psychological Safety"
+  }
+}

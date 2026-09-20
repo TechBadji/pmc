@@ -269,3 +269,27 @@ class CohesionResponse(models.Model):
     def __str__(self):
         cible = self.team if self.scope == self.Scope.TEAM else self.company
         return f"Avis {self.respondent} — {cible} — {self.date}"
+
+
+class PsychologicalSafetyResponse(models.Model):
+    """Réponse d'un collaborateur au questionnaire ID-PMC Psychological Safety
+    Index (PSI) pour une campagne : 12 affirmations notées de 1 à 5, rangées par
+    dimension de trois — Belonging (1-3), Learning (4-6), Contributing (7-9),
+    Challenging (10-12). Une réponse par personne et par campagne, portant sur
+    sa propre direction ; seules les moyennes de l'équipe sont jamais lues."""
+
+    company = models.ForeignKey("core.Company", on_delete=models.CASCADE, related_name="psi_responses")
+    team = models.ForeignKey("core.Department", on_delete=models.CASCADE, related_name="psi_responses")
+    campaign = models.ForeignKey("evaluations.EvaluationCampaign", on_delete=models.CASCADE, related_name="psi_responses")
+    respondent = models.ForeignKey("core.User", on_delete=models.CASCADE, related_name="psi_responses")
+    scores = models.JSONField("Notes (12 affirmations)", default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Réponse Psychological Safety"
+        verbose_name_plural = "Réponses Psychological Safety"
+        constraints = [models.UniqueConstraint(fields=["respondent", "campaign"], name="unique_psi_per_respondent_campaign")]
+
+    def __str__(self):
+        return f"PSI — {self.respondent} ({self.campaign})"

@@ -1,0 +1,84 @@
+{
+  "psi": {
+    "navLabel": "Psychological Safety",
+    "title": "ID-PMC Psychological Safety Index — PSI",
+    "objective": "Mesurer dans quelle mesure les membres d'une équipe peuvent s'exprimer, apprendre, contribuer et challenger sans craindre d'être humiliés, marginalisés ou pénalisés.",
+    "quote": "Psychological Safety n'est pas la liberté de dire n'importe quoi. C'est la possibilité de dire ce qui doit être dit, de manière respectueuse, lorsque la performance collective l'exige.",
+    "question": "Dans quelle mesure les affirmations suivantes correspondent-elles à ce que vous vivez réellement au sein de votre équipe ?",
+    "scale": "1 = Pas du tout d'accord · 2 = Plutôt pas d'accord · 3 = Mitigé · 4 = Plutôt d'accord · 5 = Tout à fait d'accord",
+    "campaign": "Campagne",
+    "save": "Enregistrer ma réponse",
+    "update": "Mettre à jour ma réponse",
+    "saved": "Votre réponse est enregistrée. Elle reste anonyme : seule la moyenne de l'équipe est lue.",
+    "incomplete": "Il reste {{count}} affirmation(s) sans note : notez les 12 affirmations avant d'enregistrer.",
+    "noDepartment": "Vous n'êtes rattaché à aucune direction : le questionnaire porte sur votre équipe et ne peut pas être rempli.",
+    "closed": "Cette campagne est clôturée : votre réponse est en lecture seule.",
+    "saveFailed": "La réponse n'a pas pu être enregistrée. Réessayez dans un instant.",
+    "loadFailed": "Le questionnaire n'a pas pu être chargé : rechargez la page.",
+    "dimension": {
+      "belonging": "Belonging Safety",
+      "learning": "Learning Safety",
+      "contributing": "Contributing Safety",
+      "challenging": "Challenging Safety"
+    },
+    "dimensionTitle": {
+      "belonging": "Appartenance, respect et inclusion",
+      "learning": "Apprendre, demander et reconnaître ses limites",
+      "contributing": "Contribuer, prendre des initiatives et utiliser ses capacités",
+      "challenging": "Challenger, dire la vérité et remettre en question le statu quo"
+    },
+    "dimensionQuestion": {
+      "belonging": "Puis-je être pleinement membre de cette équipe sans devoir me conformer ou craindre d'être marginalisé ?",
+      "learning": "Puis-je montrer que je ne sais pas sans perdre ma crédibilité ?",
+      "contributing": "Puis-je réellement apporter ce que je sais faire et prendre des initiatives ?",
+      "challenging": "Puis-je dire ce que je pense lorsque ce que je pense dérange ?"
+    },
+    "statements": [
+      "Je me sens respecté(e) et considéré(e) comme un membre à part entière de cette équipe, indépendamment de ma fonction, de mon ancienneté ou de mon statut.",
+      "Les différences de personnalité, de parcours, de culture, de style de travail ou de point de vue sont réellement acceptées au sein de cette équipe.",
+      "Je suis associé(e) aux échanges et décisions qui concernent mon périmètre, et je n'ai pas le sentiment d'être volontairement tenu(e) à l'écart.",
+      "Je peux poser une question, demander une clarification ou reconnaître que je ne maîtrise pas un sujet sans craindre d'être considéré(e) comme incompétent(e).",
+      "Je peux reconnaître ouvertement une erreur ou une mauvaise décision sans craindre qu'elle soit utilisée ultérieurement contre moi.",
+      "Lorsque quelque chose ne fonctionne pas, nous cherchons d'abord à comprendre et à apprendre avant de rechercher un responsable à blâmer.",
+      "Mes idées, propositions et contributions sont écoutées et considérées, même lorsqu'elles ne sont finalement pas retenues.",
+      "Je dispose d'une autonomie suffisante pour prendre des initiatives et résoudre les problèmes relevant de mon niveau de responsabilité.",
+      "Le leader crée volontairement des occasions pour que chacun puisse contribuer, y compris les personnes qui s'expriment moins spontanément.",
+      "Je peux exprimer ouvertement mon désaccord avec une décision, y compris lorsqu'elle est portée par mon supérieur ou par une personne plus influente que moi.",
+      "Je peux signaler un risque, une mauvaise nouvelle ou un problème important même lorsque le message est susceptible de déplaire.",
+      "Dans cette équipe, remettre en question une manière de faire ancienne ou proposer une approche radicalement différente est encouragé lorsque cela peut améliorer la performance."
+    ],
+    "dash": {
+      "title": "Psychological Safety Index",
+      "team": "Direction",
+      "score": "Score /5",
+      "reading": "Lecture",
+      "global": "PSI GLOBAL",
+      "respondents": "{{n}} répondant(s) sur {{total}}",
+      "notPublished": "Résultats masqués : au moins {{min}} répondants sont nécessaires pour protéger l'anonymat ({{n}} pour l'instant).",
+      "noData": "Aucune réponse pour cette campagne.",
+      "radar": "Radar des 4 dimensions",
+      "debriefTitle": "Question de débrief",
+      "debrief": "Qu'est-ce que nous ne nous disons pas aujourd'hui, alors que nous aurions intérêt à nous le dire pour réussir ?",
+      "insight": "Le chiffre global cache souvent un écart entre dimensions : {{high}} est la plus forte ({{highScore}}), {{low}} la plus faible ({{lowScore}}).",
+      "allDirections": "Toutes les directions",
+      "loadFailed": "Les résultats n'ont pas pu être chargés."
+    },
+    "readingDim": {
+      "strong": "Forte",
+      "consolidate": "À consolider",
+      "watch": "Vigilance",
+      "priority": "Priorité"
+    },
+    "readingGlobal": {
+      "solid": "Sécurité psychologique solide",
+      "improvable": "Sécurité psychologique perfectible",
+      "fragile": "Sécurité psychologique fragile"
+    }
+  },
+  "cohesion": {
+    "viewPsi": "PSYCHOLOGICAL SAFETY"
+  },
+  "nav": {
+    "psychologicalSafety": "Psychological Safety"
+  }
+}

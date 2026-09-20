@@ -522,3 +522,50 @@ export interface GuessSheet {
   created_at: string;
   updated_at: string;
 }
+
+export interface PsiResponse {
+  id: number;
+  campaign: number;
+  team: number;
+  scores: number[];
+  updated_at: string;
+}
+
+export interface PsiSummary {
+  respondents: number;
+  headcount: number;
+  published: boolean;
+  min_respondents: number;
+  dimensions?: { key: string; score: number }[];
+  global?: number;
+}
+
+export interface PsiResults {
+  teams: (PsiSummary & { team: number; team_name: string })[];
+  company?: PsiSummary;
+}
+
+export type FeedbackKind = "FEEDBACK" | "FORWARD";
+export type FeedbackRelation = "SELF" | "MANAGER" | "REPORT" | "PEER";
+
+export interface Feedback360 {
+  id: number;
+  campaign: number;
+  subject: number;
+  subject_name: string;
+  kind: FeedbackKind;
+  relation: FeedbackRelation;
+  scores: number[];
+  text_a: string;
+  text_b: string;
+  text_c: string;
+  updated_at: string;
+}
+
+export interface FeedbackGroup {
+  relation: FeedbackRelation;
+  count: number;
+  published: boolean;
+  averages?: number[];
+  comments?: { text_a: string; text_b: string; text_c: string }[];
+}

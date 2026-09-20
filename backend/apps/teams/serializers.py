@@ -8,6 +8,7 @@ from apps.core.validators import require_manages_team, require_same_company
 from .models import (
     CohesionCriterionScore,
     CohesionResponse,
+    PsychologicalSafetyResponse,
     TeamBoard,
     TeamCohesionAnalysis,
     TeamRelationship,
@@ -242,3 +243,46 @@ class CohesionResponseSerializer(serializers.ModelSerializer):
             if isinstance(score, bool) or not isinstance(score, int) or not (1 <= score <= 5):
                 raise serializers.ValidationError(f"La note du critère n°{position} doit être un entier de 1 à 5 (vous avez saisi {score!r}).")
         return value
+
+
+PSI_STATEMENTS = 12
+PSI_DIMENSIONS = ["belonging", "learning", "contributing", "challenging"]  # trois affirmations chacune
+
+
+class PsychologicalSafetyResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PsychologicalSafetyResponse
+        fields = ["id", "campaign", "team", "scores", "updated_at"]
+        read_only_fields = ["id", "team", "updated_at"]
+
+    def validate_scores(self, value):
+        if (
+            not isinstance(value, list)
+            or len(value) != PSI_STATEMENTS
+            or not all(isinstance(v, int) and not isinstance(v, bool) and 1 <= v <= 5 for v in value)
+        ):
+            raise serializers.ValidationError(
+                f"Répondez aux {PSI_STATEMENTS} affirmations, chacune avec une note entière de 1 à 5."
+            )
+        return value
+
+    def validate_campaign(self, campaign):
+        user = self.context["request"].user
+        if campaign.company_id != user.company_id:
+            raise serializers.ValidationError("Campagne introuvable.")
+        already = self.instance and self.instance.campaign_id == campaign.id
+        if campaign.is_closed and not already:
+            raise serializers.ValidationError("Cette campagne d'évaluation est clôturée.")
+        return campaign
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        if not user.department_id:
+            raise serializers.ValidationError(
+                "Vous n'êtes rattaché à aucune direction : le questionnaire porte sur votre équipe."
+            )
+        if self.instance is None and PsychologicalSafetyResponse.objects.filter(
+            respondent=user, campaign=attrs["campaign"]
+        ).exists():
+            raise serializers.ValidationError({"campaign": "Vous avez déjà répondu pour cette campagne : modifiez votre réponse."})
+        return attrs

@@ -579,3 +579,49 @@ def recompute_evaluation_scores(evaluation):
     if changed:
         evaluation.save(update_fields=changed + ["updated_at"])
     return bool(changed)
+
+
+class Feedback360(models.Model):
+    """Avis 360° donné par `author` sur `subject` pour une campagne.
+
+    - FEEDBACK (regard sur le passé) : 6 compétences notées de 1 à 5, plus
+      « points forts » (text_a) et « axes de progrès » (text_b).
+    - FORWARD (conseils pour l'avenir) : trois suggestions — à commencer
+      (text_a), à arrêter (text_b), à continuer (text_c).
+
+    La relation (soi, manager, collaborateur direct, pair) est déduite côté
+    serveur ; l'auteur n'est jamais exposé à la personne évaluée.
+    """
+
+    class Kind(models.TextChoices):
+        FEEDBACK = "FEEDBACK", "360° Feedback"
+        FORWARD = "FORWARD", "360° Forward"
+
+    class Relation(models.TextChoices):
+        SELF = "SELF", "Soi-même"
+        MANAGER = "MANAGER", "Manager"
+        REPORT = "REPORT", "Collaborateur direct"
+        PEER = "PEER", "Pair"
+
+    company = models.ForeignKey("core.Company", on_delete=models.CASCADE, related_name="feedbacks_360")
+    campaign = models.ForeignKey("evaluations.EvaluationCampaign", on_delete=models.CASCADE, related_name="feedbacks_360")
+    subject = models.ForeignKey("core.User", on_delete=models.CASCADE, related_name="feedbacks_received")
+    author = models.ForeignKey("core.User", on_delete=models.CASCADE, related_name="feedbacks_given")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    relation = models.CharField(max_length=10, choices=Relation.choices)
+    scores = models.JSONField(default=list, blank=True)
+    text_a = models.TextField(blank=True)
+    text_b = models.TextField(blank=True)
+    text_c = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Avis 360°"
+        verbose_name_plural = "Avis 360°"
+        constraints = [
+            models.UniqueConstraint(fields=["author", "subject", "campaign", "kind"], name="unique_feedback360_per_author_subject")
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} — {self.author} → {self.subject}"

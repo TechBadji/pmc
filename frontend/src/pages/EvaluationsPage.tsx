@@ -38,6 +38,7 @@ import type { Department, Evaluation, EvaluationCampaign, Paginated, SkillScore,
 import ValidationSummary from "@/components/feedback/ValidationSummary";
 import PageHeader from "@/components/layout/PageHeader";
 import ManagerialSelfAssessmentPanel from "@/components/ManagerialSelfAssessmentPanel";
+import Feedback360Panel from "@/components/Feedback360Panel";
 import MonkeyManagementPanel from "@/components/MonkeyManagementPanel";
 import ObjectivesSheetPanel from "@/components/objectives/ObjectivesSheetPanel";
 import StatCard from "@/components/StatCard";
@@ -103,7 +104,7 @@ export default function EvaluationsPage() {
   const { issues, check, clear } = useIssues();
   // Trois lectures d'une même campagne : l'évaluation ID-3A, la fiche
   // d'objectifs d'un employé, celle de son équipe.
-  const [view, setView] = useState<"id3a" | "employee" | "team" | "managerial" | "monkey">("id3a");
+  const [view, setView] = useState<"id3a" | "employee" | "team" | "managerial" | "monkey" | "feedback" | "forward">("id3a");
   const [departments, setDepartments] = useState<Department[]>([]);
 
   function load() {
@@ -314,7 +315,11 @@ export default function EvaluationsPage() {
                   ? "objectivesSheet.titleTeam"
                   : view === "managerial"
                     ? "managerialSelfAssessment.title"
-                    : "monkeyManagement.title"
+                    : view === "feedback"
+                      ? "feedback360.feedbackTitle"
+                      : view === "forward"
+                        ? "feedback360.forwardTitle"
+                        : "monkeyManagement.title"
           )}
           view={t(
             view === "id3a"
@@ -325,7 +330,11 @@ export default function EvaluationsPage() {
                   ? "objectivesSheet.viewTeam"
                   : view === "managerial"
                     ? "objectivesSheet.viewManagerial"
-                    : "objectivesSheet.viewMonkeyManagement"
+                    : view === "feedback"
+                      ? "feedback360.feedbackTitle"
+                      : view === "forward"
+                        ? "feedback360.forwardTitle"
+                        : "objectivesSheet.viewMonkeyManagement"
           )}
           subtitle={t(
             view === "id3a"
@@ -334,7 +343,9 @@ export default function EvaluationsPage() {
                 ? "managerialSelfAssessment.subtitle"
                 : view === "monkey"
                   ? "monkeyManagement.subtitle"
-                  : "objectivesSheet.sheetHint"
+                  : view === "feedback" || view === "forward"
+                    ? "feedback360.viewHint"
+                    : "objectivesSheet.sheetHint"
           )}
           parent={
             searchParams.get("campaign")
@@ -361,6 +372,8 @@ export default function EvaluationsPage() {
           <ToggleButton value="team">{t("objectivesSheet.viewTeam")}</ToggleButton>
           <ToggleButton value="managerial">{t("objectivesSheet.viewManagerial")}</ToggleButton>
           <ToggleButton value="monkey">{t("objectivesSheet.viewMonkeyManagement")}</ToggleButton>
+          <ToggleButton value="feedback">{t("feedback360.feedbackTitle")}</ToggleButton>
+          <ToggleButton value="forward">{t("feedback360.forwardTitle")}</ToggleButton>
         </ToggleButtonGroup>
       </Stack>
 
@@ -398,6 +411,8 @@ export default function EvaluationsPage() {
 
       {view === "managerial" && <ManagerialSelfAssessmentPanel />}
       {view === "monkey" && <MonkeyManagementPanel />}
+      {view === "feedback" && <Feedback360Panel kind="FEEDBACK" />}
+      {view === "forward" && <Feedback360Panel kind="FORWARD" />}
 
       {view === "id3a" && loadError && (
         <Alert

@@ -8,6 +8,7 @@ from apps.skills.models import SkillItem
 from apps.core.scoping import manages_user
 
 from .models import (
+    Feedback360,
     Evaluation,
     EvaluationCampaign,
     EvaluationSkillScore,
@@ -559,3 +560,64 @@ class PerformanceObjectiveSerializer(DecimalCommaMixin, serializers.ModelSeriali
         d'où l'Altitude est lue par tout le reste de l'application."""
         if line.evaluation_id:
             recompute_evaluation_scores(line.evaluation)
+
+
+FEEDBACK_COMPETENCIES = 6
+FEEDBACK_TEXT_MAX = 1000
+
+
+class Feedback360Serializer(serializers.ModelSerializer):
+    """Avis 360° : `author` et `relation` sont fixés par le serveur, jamais lus
+    dans le payload."""
+
+    subject_name = serializers.SerializerMethodField()
+
+    def get_subject_name(self, obj):
+        return obj.subject.get_full_name()
+
+    class Meta:
+        model = Feedback360
+        fields = ["id", "campaign", "subject", "subject_name", "kind", "relation", "scores", "text_a", "text_b", "text_c", "updated_at"]
+        read_only_fields = ["id", "relation", "subject_name", "updated_at"]
+
+    def validate_campaign(self, campaign):
+        user = self.context["request"].user
+        if campaign.company_id != user.company_id:
+            raise serializers.ValidationError("Campagne introuvable.")
+        already = self.instance and self.instance.campaign_id == campaign.id
+        if campaign.is_closed and not already:
+            raise serializers.ValidationError("Cette campagne d'évaluation est clôturée.")
+        return campaign
+
+    def validate_subject(self, subject):
+        user = self.context["request"].user
+        if subject.company_id != user.company_id:
+            raise serializers.ValidationError("Cette personne n'appartient pas à votre entreprise.")
+        return subject
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        kind = attrs.get("kind", getattr(self.instance, "kind", None))
+        scores = attrs.get("scores", getattr(self.instance, "scores", []))
+        texts = [attrs.get(k, getattr(self.instance, k, "")) or "" for k in ("text_a", "text_b", "text_c")]
+        errors = {}
+        if kind == Feedback360.Kind.FEEDBACK:
+            if (
+                not isinstance(scores, list)
+                or len(scores) != FEEDBACK_COMPETENCIES
+                or not all(isinstance(v, int) and not isinstance(v, bool) and 1 <= v <= 5 for v in scores)
+            ):
+                errors["scores"] = f"Notez les {FEEDBACK_COMPETENCIES} compétences, chacune avec une note entière de 1 à 5."
+        else:
+            attrs["scores"] = []
+            if not any(t.strip() for t in texts):
+                errors["text_a"] = "Renseignez au moins une suggestion : à commencer, à arrêter ou à continuer."
+        if any(len(t) > FEEDBACK_TEXT_MAX for t in texts):
+            errors["text_a"] = f"Chaque commentaire est limité à {FEEDBACK_TEXT_MAX} caractères."
+        if errors:
+            raise serializers.ValidationError(errors)
+        subject = attrs.get("subject", getattr(self.instance, "subject", None))
+        campaign = attrs.get("campaign", getattr(self.instance, "campaign", None))
+        if self.instance is None and Feedback360.objects.filter(author=user, subject=subject, campaign=campaign, kind=kind).exists():
+            raise serializers.ValidationError("Vous avez déjà donné cet avis pour cette campagne : ouvrez-le pour le modifier.")
+        return attrs

@@ -42,6 +42,7 @@ import { apiClient } from "@/api/client";
 import { DecimalField } from "@/components/inputs/DecimalField";
 import { BoardPeriodBar } from "@/components/teamBoard/BoardPieces";
 import TeamRelationshipBoard from "@/components/teamBoard/TeamRelationshipBoard";
+import PsychologicalSafetyBoard from "@/components/teamBoard/PsychologicalSafetyBoard";
 import CohesionOpinionBoard from "@/components/teamBoard/CohesionOpinionBoard";
 import TeamStrengthsBoard from "@/components/teamBoard/TeamStrengthsBoard";
 import { today as boardToday, useTeamBoard } from "@/features/teamBoard";
@@ -197,7 +198,7 @@ export default function CohesionFormPage() {
   // Trois lectures d'une même équipe, dans l'ordre où elles se travaillent :
   // la cohésion mesurée, la dynamique relationnelle qui l'explique, puis les
   // forces et faiblesses qui s'en déduisent.
-  const [view, setView] = useState<"cohesion" | "strengths" | "relationship" | "opinion">("cohesion");
+  const [view, setView] = useState<"cohesion" | "strengths" | "relationship" | "opinion" | "psi">("cohesion");
   const [aggregate, setAggregate] = useState<CohesionAggregate | null>(null);
   // La fiche se lit désormais par campagne : une campagne borne une période,
   // et tout avis déposé dans cette fenêtre lui appartient. Les collaborateurs
@@ -756,7 +757,9 @@ export default function CohesionFormPage() {
               ? "cohesion.viewStrengths"
               : view === "opinion"
                 ? "cohesion.viewOpinion"
-                : "cohesion.viewRelationship"
+                : view === "psi"
+                  ? "cohesion.viewPsi"
+                  : "cohesion.viewRelationship"
         )}
         subtitle={t("cohesion.subtitle")}
       />
@@ -777,6 +780,7 @@ export default function CohesionFormPage() {
           <ToggleButton value="relationship">{t("cohesion.viewRelationship")}</ToggleButton>
           <ToggleButton value="strengths">{t("cohesion.viewStrengths")}</ToggleButton>
           <ToggleButton value="opinion">{t("cohesion.viewOpinion")}</ToggleButton>
+          <ToggleButton value="psi">{t("cohesion.viewPsi")}</ToggleButton>
         </ToggleButtonGroup>
 
         {/* La campagne borne la vue des avis comme elle borne la fiche : les
@@ -837,8 +841,9 @@ export default function CohesionFormPage() {
       </Stack>
 
       {view === "opinion" && <CohesionOpinionBoard data={aggregate} />}
+      {view === "psi" && <PsychologicalSafetyBoard teamId={teamId} orgView={orgView} />}
 
-      {view !== "cohesion" && view !== "opinion" && !(directorsView && !ownTeam) && (
+      {view !== "cohesion" && view !== "opinion" && view !== "psi" && !(directorsView && !ownTeam) && (
         <Stack spacing={2}>
           <BoardPeriodBar
             dates={board.dates}

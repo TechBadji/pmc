@@ -2,10 +2,11 @@ from django.db.models import ProtectedError, Q
 from django.utils import timezone
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.core.audit import log_event
+from apps.core.models import User
 from apps.core.permissions import (
     CompanyScopedQuerySetMixin,
     IsCompanyAdminOrManager,
@@ -17,6 +18,7 @@ from apps.core.validators import require_same_company
 from apps.core.scoping import managed_department_ids
 
 from .models import (
+    Feedback360,
     Evaluation,
     EvaluationCampaign,
     ManagerialSelfAssessment,
@@ -27,6 +29,7 @@ from .models import (
     recompute_evaluation_scores,
 )
 from .serializers import (
+    Feedback360Serializer,
     EvaluationCampaignSerializer,
     EvaluationSerializer,
     EvaluationWriteSerializer,
@@ -472,3 +475,85 @@ class PerformanceObjectiveViewSet(CompanyScopedQuerySetMixin, viewsets.ModelView
         super().perform_destroy(instance)
         if evaluation is not None:
             recompute_evaluation_scores(evaluation)
+
+
+class Feedback360ViewSet(viewsets.ModelViewSet):
+    """Avis 360° : chacun ne lit, ne modifie et ne supprime que ceux qu'il a
+    donnés. Ce que l'on reçoit ne se lit que via `received`, agrégé par
+    relation et sans jamais nommer l'auteur."""
+
+    serializer_class = Feedback360Serializer
+    permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ["campaign", "kind", "subject"]
+    MIN_GROUP = 2  # pairs et collaborateurs directs : publiés à partir de deux avis
+
+    def get_queryset(self):
+        return Feedback360.objects.filter(author=self.request.user).select_related("subject").order_by("-updated_at")
+
+    @staticmethod
+    def _relation(author, subject):
+        if author.id == subject.id:
+            return Feedback360.Relation.SELF
+        if subject.manager_id == author.id or (
+            subject.department_id and subject.department.manager_id == author.id
+        ):
+            return Feedback360.Relation.MANAGER
+        if author.manager_id == subject.id:
+            return Feedback360.Relation.REPORT
+        return Feedback360.Relation.PEER
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        subject = serializer.validated_data["subject"]
+        serializer.save(author=user, company=user.company, relation=self._relation(user, subject))
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        subject = serializer.validated_data.get("subject", serializer.instance.subject)
+        serializer.save(relation=self._relation(user, subject))
+
+    @action(detail=False, methods=["get"], url_path="received")
+    def received(self, request):
+        """Avis reçus par une personne (soi par défaut) sur une campagne, par
+        relation. Les groupes de pairs et de collaborateurs directs ne sont
+        publiés qu'à partir de MIN_GROUP avis : en dessous, on ne dit que leur
+        effectif, pour que personne ne soit reconnaissable."""
+        user = request.user
+        campaign = EvaluationCampaign.objects.filter(
+            pk=request.query_params.get("campaign"), company_id=user.company_id
+        ).first()
+        if campaign is None:
+            raise ValidationError({"campaign": "Choisissez une campagne."})
+        kind = request.query_params.get("kind")
+        if kind not in Feedback360.Kind.values:
+            raise ValidationError({"kind": "Type d'avis inconnu."})
+        subject_id = request.query_params.get("subject") or user.id
+        subject = User.objects.filter(pk=subject_id, company_id=user.company_id).select_related("department").first()
+        if subject is None:
+            raise ValidationError({"subject": "Personne introuvable."})
+        if subject.id != user.id:
+            allowed = user.role == user.Role.COMPANY_ADMIN or (
+                user.role == user.Role.MANAGER
+                and (subject.manager_id == user.id or subject.department_id in managed_department_ids(user))
+            )
+            if not allowed:
+                raise PermissionDenied("Vous ne pouvez consulter que vos propres avis reçus.")
+        rows = list(Feedback360.objects.filter(subject=subject, campaign=campaign, kind=kind))
+        groups = []
+        for rel in Feedback360.Relation.values:
+            rs = [r for r in rows if r.relation == rel]
+            if not rs:
+                continue
+            published = rel in (Feedback360.Relation.SELF, Feedback360.Relation.MANAGER) or len(rs) >= self.MIN_GROUP
+            group = {"relation": rel, "count": len(rs), "published": published}
+            if published:
+                if kind == Feedback360.Kind.FEEDBACK:
+                    n = len(rs[0].scores) or 6
+                    group["averages"] = [round(sum(r.scores[i] for r in rs) / len(rs), 2) for i in range(n)]
+                group["comments"] = [
+                    {"text_a": r.text_a, "text_b": r.text_b, "text_c": r.text_c}
+                    for r in rs
+                    if r.text_a or r.text_b or r.text_c
+                ]
+            groups.append(group)
+        return Response({"subject": subject.id, "subject_name": subject.get_full_name(), "groups": groups})
