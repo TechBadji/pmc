@@ -37,7 +37,6 @@ export default function ManagerDashboard() {
   const [members, setMembers] = useState<UserRecord[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [leadership, setLeadership] = useState<UserRecord[]>([]);
 
   useEffect(() => {
     apiClient
@@ -48,11 +47,6 @@ export default function ManagerDashboard() {
       .get<Paginated<Evaluation>>("/evaluations/", { params: { page_size: 500 } })
       .then((r) => setEvaluations(r.data.results))
       .catch(() => undefined);
-    // L'équipe dirigeante : un directeur voit ses pairs.
-    apiClient
-      .get<Paginated<UserRecord>>("/users/", { params: { page_size: 1000, leadership: 1 } })
-      .then((r) => setLeadership(r.data.results.filter((u) => u.role === "MANAGER" || u.role === "COMPANY_ADMIN")))
-      .catch(() => setLeadership([]));
     // Départements encadrés : la direction et, le cas échéant, ses services.
     apiClient
       .get<Paginated<Department>>("/departments/", { params: { page_size: 500 } })
@@ -60,8 +54,6 @@ export default function ManagerDashboard() {
       .catch(() => setDepartments([]));
   }, []);
 
-  const leadershipCeo = leadership.find((u) => u.role === "COMPANY_ADMIN") ?? null;
-  const leadershipDirectors = leadership.filter((u) => u.role === "MANAGER");
   const managerRecord = members.find((m) => m.id === user?.id);
   const directReports = members.filter((m) => m.id !== user?.id);
   const departmentName = managerRecord?.department_name ?? "";
@@ -114,15 +106,6 @@ export default function ManagerDashboard() {
           headcountById={headcountByHead}
           titleKey="dashboard.manager.overviewTitle"
           lastEvaluationByUser={lastByUser}
-        />
-      )}
-
-      {leadershipCeo && leadershipDirectors.length > 0 && (
-        <LeadershipOverview
-          root={leadershipCeo}
-          people={leadershipDirectors}
-          lastEvaluationByUser={new Map()}
-          hidePerformance
         />
       )}
 
