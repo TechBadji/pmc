@@ -17,7 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   PolarAngleAxis,
@@ -26,7 +26,6 @@ import {
   Radar,
   RadarChart,
   ResponsiveContainer,
-  Tooltip as RechartsTooltip,
 } from "recharts";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
@@ -271,6 +270,8 @@ export default function ManagerialSelfAssessmentPanel() {
   // Radar de synthèse : l'IC de chacune des 5 fiches, sur la même campagne —
   // lu depuis `drafts` (déjà chargé pour les 5 catégories d'un coup), pas
   // besoin d'un nouvel appel serveur pour changer d'onglet.
+  const radarBox = useRef<HTMLDivElement | null>(null);
+  const [radarHover, setRadarHover] = useState<{ x: number; y: number; row: { category: string; ic: number; oc: number | null } } | null>(null);
   const synthesisData = useMemo(
     () =>
       categories.map((c) => {
@@ -493,7 +494,7 @@ export default function ManagerialSelfAssessmentPanel() {
               </Typography>
 
               <Stack direction={{ xs: "column", lg: "row" }} spacing={3} alignItems="stretch">
-                <Box sx={{ flex: "3 1 0", minWidth: 0 }}>
+                <Box ref={radarBox} sx={{ flex: "3 1 0", minWidth: 0, position: "relative" }}>
                   <ResponsiveContainer width="100%" height={560}>
                     <RadarChart data={synthesisData} outerRadius="85%">
                       <PolarGrid />
@@ -506,30 +507,72 @@ export default function ManagerialSelfAssessmentPanel() {
                         fill="#2E8FCB"
                         fillOpacity={0.45}
                         strokeWidth={2}
-                      />
-                      <RechartsTooltip
-                        content={({ active, payload }) => {
-                          const row = active && payload?.length ? (payload[0].payload as { category: string; ic: number; oc: number | null }) : null;
-                          if (!row) return null;
+                        dot={(props: any) => {
+                          const { cx, cy, payload, index } = props;
                           return (
-                            <Paper elevation={4} sx={{ px: 1.5, py: 1, minWidth: 150 }}>
-                              <Typography variant="caption" fontWeight={800} display="block" sx={{ mb: 0.5 }}>
-                                {row.category}
-                              </Typography>
-                              <Stack direction="row" justifyContent="space-between" spacing={2}>
-                                <Typography variant="caption" color="text.secondary">IC</Typography>
-                                <Typography variant="caption" fontWeight={700}>{row.ic.toFixed(1)} / 5</Typography>
-                              </Stack>
-                              <Stack direction="row" justifyContent="space-between" spacing={2}>
-                                <Typography variant="caption" color="text.secondary">OC</Typography>
-                                <Typography variant="caption" fontWeight={700}>{row.oc === null ? "—" : `${row.oc.toFixed(1)} / 5`}</Typography>
-                              </Stack>
-                            </Paper>
+                            <g key={index} style={{ cursor: "pointer" }} onMouseEnter={() => setRadarHover({ x: cx, y: cy, row: payload })} onMouseLeave={() => setRadarHover(null)}>
+                              <circle cx={cx} cy={cy} r={16} fill="transparent" />
+                              <circle cx={cx} cy={cy} r={radarHover?.row.category === payload.category ? 7 : 5} fill="#2E8FCB" stroke="#fff" strokeWidth={2} />
+                            </g>
                           );
                         }}
+                        activeDot={false}
                       />
                     </RadarChart>
                   </ResponsiveContainer>
+                  {radarHover && (() => {
+                    const width = radarBox.current?.clientWidth ?? 0;
+                    const right = radarHover.x < width / 2;
+                    const { row } = radarHover;
+                    const gap = (row.oc ?? 0) - row.ic;
+                    return (
+                      <Paper
+                        elevation={8}
+                        sx={{
+                          position: "absolute",
+                          zIndex: 5,
+                          pointerEvents: "none",
+                          top: radarHover.y,
+                          transform: "translateY(-50%)",
+                          ...(right ? { left: radarHover.x + 16 } : { right: width - radarHover.x + 16 }),
+                          width: 220,
+                          overflow: "hidden",
+                          borderRadius: 2,
+                        }}
+                      >
+                        <Box sx={{ bgcolor: "primary.main", color: "#fff", px: 1.5, py: 0.75 }}>
+                          <Typography variant="body2" fontWeight={800}>
+                            {row.category}
+                          </Typography>
+                        </Box>
+                        <Stack spacing={0.75} sx={{ p: 1.5 }}>
+                          <Stack direction="row" justifyContent="space-between" alignItems="baseline">
+                            <Typography variant="caption" color="text.secondary">
+                              IC · {t("managerialSelfAssessment.tipCurrent")}
+                            </Typography>
+                            <Typography variant="body2" fontWeight={800} sx={{ color: "#2E8FCB" }}>
+                              {row.ic.toFixed(1)} / 5
+                            </Typography>
+                          </Stack>
+                          <Stack direction="row" justifyContent="space-between" alignItems="baseline">
+                            <Typography variant="caption" color="text.secondary">
+                              OC · {t("managerialSelfAssessment.tipObjective")}
+                            </Typography>
+                            <Typography variant="body2" fontWeight={800}>
+                              {row.oc === null ? "—" : `${row.oc.toFixed(1)} / 5`}
+                            </Typography>
+                          </Stack>
+                          {row.oc !== null && (
+                            <Typography variant="caption" sx={{ pt: 0.5, borderTop: "1px solid", borderColor: "divider", color: gap > 0 ? "warning.main" : "success.main", fontWeight: 700 }}>
+                              {gap > 0
+                                ? t("managerialSelfAssessment.tipGap", { gap: gap.toFixed(1) })
+                                : t("managerialSelfAssessment.tipReached")}
+                            </Typography>
+                          )}
+                        </Stack>
+                      </Paper>
+                    );
+                  })()}
                 </Box>
 
                 <Stack sx={{ flex: "1 1 0", minWidth: { lg: 280 } }} spacing={2}>

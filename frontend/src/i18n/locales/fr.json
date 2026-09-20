@@ -947,6 +947,10 @@
     "secure": "Connexion chiffrée en TLS 256 bits"
   },
   "managerialSelfAssessment": {
+    "tipCurrent": "niveau actuel",
+    "tipObjective": "objectif",
+    "tipGap": "Écart à combler : {{gap}} point(s)",
+    "tipReached": "Objectif atteint",
     "title": "Auto-évaluation managériale",
     "subtitle": "Cinq fiches de compétences managériales, notées par vous-même pour la campagne sélectionnée.",
     "campaignLabel": "Campagne",

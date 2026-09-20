@@ -947,6 +947,10 @@
     "secure": "Connection encrypted with 256-bit TLS"
   },
   "managerialSelfAssessment": {
+    "tipCurrent": "current level",
+    "tipObjective": "target",
+    "tipGap": "Gap to close: {{gap}} point(s)",
+    "tipReached": "Target reached",
     "title": "Managerial self-assessment",
     "subtitle": "Five managerial competency sheets, self-rated for the selected campaign.",
     "campaignLabel": "Campaign",
