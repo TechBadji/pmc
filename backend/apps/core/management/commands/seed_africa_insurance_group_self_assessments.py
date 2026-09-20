@@ -110,7 +110,8 @@ class Command(BaseCommand):
         lo, hi = self.rng.choice(LEVEL_RANGES)
         scores = []
         for order in range(1, 11):
-            score = round(self.rng.uniform(lo, hi), 1)
+            # Entier : c'est ce que produit un clic sur une pilule de la fiche.
+            score = max(1, min(5, round(self.rng.uniform(lo, hi))))
             # Un objectif sur trois environ reste vide : une fiche où tout est
             # renseigné à 100% ne ressemble à aucun usage réel.
             objective = round(self.rng.uniform(lo, hi), 1) if self.rng.random() > 0.3 else None
