@@ -1,6 +1,7 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { Box, Button, IconButton, InputBase, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TeamRelationship, UserRecord } from "@/api/types";
 
@@ -177,10 +178,17 @@ export function BoardPeriodBar({
       </TextField>
       {canEdit && (
         <>
-          <Button size="small" startIcon={<AddOutlinedIcon />} onClick={onNew}>
+          <Button
+            size="small"
+            variant="contained"
+            color="secondary"
+            startIcon={<AddOutlinedIcon />}
+            onClick={onNew}
+            sx={{ fontWeight: 700, px: 2, boxShadow: 3, "&:hover": { boxShadow: 6 } }}
+          >
             {t("teamBoard.newEntry")}
           </Button>
-          <Button size="small" variant="contained" onClick={onSave} disabled={!dirty || saving}>
+          <Button size="small" variant="outlined" onClick={onSave} disabled={!dirty || saving}>
             {saving ? t("changePassword.saving") : t("common.save")}
           </Button>
         </>
@@ -217,6 +225,7 @@ export function TeamSpiderGraph({
   showLegend?: boolean;
 }) {
   const { t } = useTranslation();
+  const [hover, setHover] = useState<{ rel: TeamRelationship; x: number; y: number; w: number; h: number } | null>(null);
   if (members.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
@@ -248,6 +257,7 @@ export function TeamSpiderGraph({
 
   return (
     <Box sx={{ width: "100%", overflowX: "auto" }}>
+      <Box sx={{ position: "relative", maxWidth: size, mx: "auto" }}>
       <svg
         viewBox={`0 8 ${size} ${size - 8}`}
         width="100%"
@@ -258,17 +268,34 @@ export function TeamSpiderGraph({
           const to = positions.get(rel.to_user);
           if (!from || !to) return null;
           const strong = rel.quality !== "CORRECT";
+          const active = hover?.rel.id === rel.id;
           return (
-            <line
-              key={rel.id}
-              x1={from.x}
-              y1={from.y}
-              x2={to.x}
-              y2={to.y}
-              stroke={RELATION_COLORS[rel.quality]}
-              strokeWidth={2.6}
-              opacity={strong ? 0.95 : 0.85}
-            />
+            <g key={rel.id}>
+              <line
+                x1={from.x}
+                y1={from.y}
+                x2={to.x}
+                y2={to.y}
+                stroke={RELATION_COLORS[rel.quality]}
+                strokeWidth={active ? 4.5 : 2.6}
+                opacity={hover && !active ? 0.35 : strong ? 0.95 : 0.85}
+              />
+              {/* Zone de survol élargie : une ligne de 2,6 px est trop fine à viser. */}
+              <line
+                x1={from.x}
+                y1={from.y}
+                x2={to.x}
+                y2={to.y}
+                stroke="transparent"
+                strokeWidth={14}
+                style={{ cursor: "pointer" }}
+                onMouseMove={(e) => {
+                  const box = e.currentTarget.ownerSVGElement?.parentElement?.getBoundingClientRect();
+                  if (box) setHover({ rel, x: e.clientX - box.left, y: e.clientY - box.top, w: box.width, h: box.height });
+                }}
+                onMouseLeave={() => setHover(null)}
+              />
+            </g>
           );
         })}
         {members.map((m) => {
@@ -306,6 +333,42 @@ export function TeamSpiderGraph({
           );
         })}
       </svg>
+      {hover && (() => {
+        const a = members.find((m) => m.id === hover.rel.from_user);
+        const b = members.find((m) => m.id === hover.rel.to_user);
+        if (!a || !b) return null;
+        const q = hover.rel.quality;
+        // Le cadre s'ouvre du côté où il y a de la place : à gauche du curseur
+        // dans la moitié droite de la toile, au-dessus dans la moitié basse.
+        const left = hover.x > hover.w / 2;
+        const above = hover.y > hover.h / 2;
+        return (
+          <Paper
+            elevation={6}
+            sx={{
+              position: "absolute",
+              zIndex: 5,
+              pointerEvents: "none",
+              width: 250,
+              p: 1.25,
+              borderLeft: `4px solid ${RELATION_COLORS[q]}`,
+              ...(left ? { right: hover.w - hover.x + 14 } : { left: hover.x + 14 }),
+              ...(above ? { bottom: hover.h - hover.y + 10 } : { top: hover.y + 10 }),
+            }}
+          >
+            <Typography variant="body2" fontWeight={700}>
+              {a.full_name || a.email} ↔ {b.full_name || b.email}
+            </Typography>
+            <Typography variant="caption" sx={{ color: RELATION_COLORS[q], fontWeight: 700 }}>
+              {t(`cohesion.relationQuality.${q}`)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+              {t(`teamBoard.relationHint.${q}`, { a: (a.full_name || a.email).split(" ")[0], b: (b.full_name || b.email).split(" ")[0] })}
+            </Typography>
+          </Paper>
+        );
+      })()}
+      </Box>
       {showLegend && (
       <Stack direction="row" spacing={2} justifyContent="center" flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
         {(Object.keys(RELATION_COLORS) as TeamRelationship["quality"][]).map((q) => (

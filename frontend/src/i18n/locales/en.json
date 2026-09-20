@@ -12,6 +12,7 @@
     "myTeam": "My team",
     "cohesion": "Team cohesion",
     "evaluations": "Evaluations",
+    "teamCohesion": "Team cohesion",
     "myProfile": "My profile",
     "myPerformance": "My performance",
     "evaluationCampaigns": "Evaluation campaigns",
@@ -844,6 +845,12 @@
     "relationQuality": "Relationship type",
     "toQualify": "To qualify",
     "matrixProgress": "{{done}} / {{total}} pairs qualified in the team",
+    "relationHint": {
+      "EXCELLENT": "{{a}} and {{b}} rely on each other: trust, mutual help and smooth collaboration.",
+      "CORRECT": "{{a}} and {{b}} work together without particular difficulty, with no standout bond.",
+      "DIFFICULT": "Tension or misunderstandings between {{a}} and {{b}}: cooperating takes effort.",
+      "TOXIC": "Conflict between {{a}} and {{b}}: it harms the team and calls for quick action."
+    },
     "relationWith": "{{name}}'s relationships with",
     "noSeries": "No year recorded yet.",
     "stopEditing": "Finish editing",

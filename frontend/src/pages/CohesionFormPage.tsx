@@ -1038,7 +1038,7 @@ export default function CohesionFormPage() {
               pour qui la fiche est de toute façon en lecture seule et qui n'a
               pas de nouvelle saisie à ouvrir. */}
           {viewedAnalysisId !== "" && !isCompanyAdmin && (
-            <Alert severity="info" action={<Button size="small" color="inherit" onClick={() => showAnalysis("")}>{t("cohesion.newEntry")}</Button>}>
+            <Alert severity="info" action={<Button size="small" variant="contained" color="secondary" onClick={() => showAnalysis("")}>{t("cohesion.newEntry")}</Button>}>
               {t("cohesion.viewingArchive", { date: history.find((h) => h.id === viewedAnalysisId)?.date ?? "" })}
             </Alert>
           )}

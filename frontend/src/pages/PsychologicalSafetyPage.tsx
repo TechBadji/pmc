@@ -1,4 +1,4 @@
-import { Alert, Box, Button, FormControlLabel, MenuItem, Paper, Radio, RadioGroup, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, FormControlLabel, MenuItem, Paper, Radio, RadioGroup, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
@@ -22,6 +22,7 @@ export default function PsychologicalSafetyPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showMissing, setShowMissing] = useState(false);
+  const [tab, setTab] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -56,6 +57,9 @@ export default function PsychologicalSafetyPage() {
     if (campaignId === "") return;
     if (missing > 0) {
       setShowMissing(true);
+      // Ouvre la première rubrique incomplète : l'oubli est sous les yeux.
+      const firstGap = PSI_DIMENSIONS.findIndex((_, d) => scores.slice(d * 3, d * 3 + 3).some((x) => x === null));
+      if (firstGap >= 0) setTab(firstGap);
       return;
     }
     setSaving(true);
@@ -113,16 +117,28 @@ export default function PsychologicalSafetyPage() {
       </Typography>
       {readOnly && <Alert severity="info">{t("psi.closed")}</Alert>}
 
-      {PSI_DIMENSIONS.map((dim, d) => (
-        <Paper key={dim} variant="outlined" sx={{ overflow: "hidden" }}>
-          <Box sx={{ bgcolor: "primary.main", color: "#fff", px: 2, py: 1 }}>
-            <Typography fontWeight={800}>
-              {d + 1}). {t(`psi.dimension.${dim}`).toUpperCase()} — {t(`psi.dimensionTitle.${dim}`)}
-            </Typography>
-            <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              « {t(`psi.dimensionQuestion.${dim}`)} »
-            </Typography>
-          </Box>
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+        <Tabs
+          value={tab}
+          onChange={(_, v) => setTab(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ borderBottom: "1px solid", borderColor: "divider", px: 1 }}
+        >
+          {PSI_DIMENSIONS.map((dim, d) => {
+            const answered = scores.slice(d * 3, d * 3 + 3).filter((x) => x !== null).length;
+            return <Tab key={dim} label={`${t(`psi.dimension.${dim}`).toUpperCase()} (${answered}/3)`} />;
+          })}
+        </Tabs>
+        {PSI_DIMENSIONS.map((dim, d) =>
+          d !== tab ? null : (
+            <Box key={dim}>
+              <Box sx={{ bgcolor: "primary.main", color: "#fff", px: 2, py: 1 }}>
+                <Typography fontWeight={800}>{t(`psi.dimensionTitle.${dim}`)}</Typography>
+                <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                  « {t(`psi.dimensionQuestion.${dim}`)} »
+                </Typography>
+              </Box>
           <Stack divider={<Box sx={{ borderTop: "1px solid", borderColor: "divider" }} />}>
             {[0, 1, 2].map((k) => {
               const i = d * 3 + k;
@@ -157,8 +173,18 @@ export default function PsychologicalSafetyPage() {
               );
             })}
           </Stack>
-        </Paper>
-      ))}
+            </Box>
+          )
+        )}
+      </Paper>
+      <Stack direction="row" justifyContent="space-between">
+        <Button disabled={tab === 0} onClick={() => setTab(tab - 1)}>
+          {t("psi.previous")}
+        </Button>
+        <Button disabled={tab === PSI_DIMENSIONS.length - 1} onClick={() => setTab(tab + 1)}>
+          {t("psi.next")}
+        </Button>
+      </Stack>
 
       {showMissing && missing > 0 && <Alert severity="warning">{t("psi.incomplete", { count: missing })}</Alert>}
       {error && <Alert severity="error">{error}</Alert>}

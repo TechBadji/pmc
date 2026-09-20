@@ -33,9 +33,11 @@ import {
   DialogTitle,
   Menu,
   MenuItem,
+  Collapse,
   Toolbar,
   Typography,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -74,6 +76,7 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [pendingResetCount, setPendingResetCount] = useState(0);
   const canSeeResetRequests = user?.role === "COMPANY_ADMIN" || user?.role === "SUPER_ADMIN";
 
@@ -176,22 +179,8 @@ export default function AppLayout() {
     }
   }
 
-  return (
-    <Box sx={{ display: "flex" }}>
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: DRAWER_WIDTH,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box", borderRight: "1px solid", borderColor: "divider" },
-        }}
-      >
-        <Toolbar>
-          <Box component="img" src="/pmc-logo.png" alt="ID-PMC" sx={{ height: 40 }} />
-        </Toolbar>
-        <Divider />
-        <List sx={{ px: 1, pt: 1 }}>
-          {items.map((item) => (
+  function renderItem(item: NavItem) {
+    return (
             <ListItemButton
               key={item.path}
               component={Link}
@@ -229,7 +218,46 @@ export default function AppLayout() {
               </ListItemIcon>
               <ListItemText primary={t(item.labelKey)} />
             </ListItemButton>
-          ))}
+    );
+  }
+
+  return (
+    <Box sx={{ display: "flex" }}>
+      <Drawer
+        variant="permanent"
+        sx={{
+          width: DRAWER_WIDTH,
+          flexShrink: 0,
+          "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box", borderRight: "1px solid", borderColor: "divider" },
+        }}
+      >
+        <Toolbar>
+          <Box component="img" src="/pmc-logo.png" alt="ID-PMC" sx={{ height: 40 }} />
+        </Toolbar>
+        <Divider />
+        <List sx={{ px: 1, pt: 1 }}>
+          {items.map((item) => {
+            if (!item.children) return renderItem(item);
+            const childActive = item.children.some((c) => c.path === location.pathname);
+            const open = openGroups[item.path] ?? childActive;
+            return (
+              <Box key={item.path}>
+                <ListItemButton
+                  onClick={() => setOpenGroups((g) => ({ ...g, [item.path]: !open }))}
+                  sx={{ borderRadius: 2, mb: 0.5 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 40 }}>{ICONS[item.icon]}</ListItemIcon>
+                  <ListItemText primary={t(item.labelKey)} primaryTypographyProps={{ fontWeight: childActive ? 700 : undefined }} />
+                  <ExpandMoreIcon sx={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+                </ListItemButton>
+                <Collapse in={open} unmountOnExit>
+                  <List disablePadding sx={{ pl: 3 }}>
+                    {item.children.map((c) => renderItem(c))}
+                  </List>
+                </Collapse>
+              </Box>
+            );
+          })}
         </List>
       </Drawer>
 

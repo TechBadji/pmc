@@ -1,5 +1,7 @@
 {
   "psi": {
+    "previous": "Previous section",
+    "next": "Next section",
     "navLabel": "Psychological Safety",
     "title": "ID-PMC Psychological Safety Index — PSI",
     "objective": "Measure how far team members can speak up, learn, contribute and challenge without fear of being humiliated, marginalised or penalised.",

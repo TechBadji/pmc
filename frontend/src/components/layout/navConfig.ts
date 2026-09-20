@@ -3,6 +3,8 @@ import type { Role } from "@/api/types";
 export interface NavItem {
   labelKey: string;
   path: string;
+  /** Sous-menus : l'entrée n'est alors qu'un titre repliable, sans page propre. */
+  children?: NavItem[];
   icon:
     | "dashboard"
     | "business"
@@ -54,12 +56,18 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { labelKey: "nav.myPerformanceId", path: "/my-performance-id", icon: "person" },
   ],
   MEMBER: [
-    { labelKey: "nav.myProfile", path: "/", icon: "person" },
+    { labelKey: "nav.dashboard", path: "/", icon: "dashboard" },
     { labelKey: "nav.cohesionSurvey", path: "/cohesion-survey", icon: "hub" },
     { labelKey: "nav.cohesionSurveyOrg", path: "/cohesion-survey-org", icon: "business" },
-    { labelKey: "nav.myStrengths", path: "/my-strengths", icon: "insights" },
-    { labelKey: "nav.psychologicalSafety", path: "/psychological-safety", icon: "hub" },
-    { labelKey: "nav.myPerformance", path: "/my-performance", icon: "scatterPlot" },
+    {
+      labelKey: "nav.teamCohesion",
+      path: "/team-cohesion",
+      icon: "groups",
+      children: [
+        { labelKey: "nav.myStrengths", path: "/my-strengths", icon: "insights" },
+        { labelKey: "nav.psychologicalSafety", path: "/psychological-safety", icon: "hub" },
+      ],
+    },
     // Réservé aux collaborateurs de la direction SUNU (voir AppLayout).
     { labelKey: "nav.evaluations", path: "/evaluations", icon: "assignment" },
     { labelKey: "nav.myPerformanceId", path: "/my-performance-id", icon: "person" },

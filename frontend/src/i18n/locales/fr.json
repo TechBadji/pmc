@@ -12,6 +12,7 @@
     "myTeam": "Mon équipe",
     "cohesion": "Cohésion d'équipe",
     "evaluations": "Évaluations",
+    "teamCohesion": "Cohésion d'équipe",
     "myProfile": "Mon profil",
     "myPerformance": "Mes performances",
     "evaluationCampaigns": "Campagnes d'évaluation",
@@ -844,6 +845,12 @@
     "relationQuality": "Nature de la relation",
     "toQualify": "À qualifier",
     "matrixProgress": "{{done}} / {{total}} binômes qualifiés dans l'équipe",
+    "relationHint": {
+      "EXCELLENT": "{{a}} et {{b}} s'appuient l'un sur l'autre : confiance, entraide et collaboration fluide.",
+      "CORRECT": "{{a}} et {{b}} travaillent ensemble sans difficulté particulière, sans lien marquant.",
+      "DIFFICULT": "Tensions ou incompréhensions entre {{a}} et {{b}} : la coopération demande des efforts.",
+      "TOXIC": "Relation conflictuelle entre {{a}} et {{b}} : elle nuit à l'équipe et appelle une action rapide."
+    },
     "relationWith": "Relations de {{name}} avec",
     "noSeries": "Aucune année saisie.",
     "stopEditing": "Terminer la saisie",
