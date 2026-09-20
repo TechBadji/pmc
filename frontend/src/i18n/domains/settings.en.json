@@ -120,6 +120,18 @@
         "profiles": {
           "label": "360° Performance sheets",
           "help": "Personal sheets entered (background, achievements, development plan)."
+        },
+        "feedback360": {
+          "label": "360° Feedback and Forward",
+          "help": "360° feedback given and received (skill scores, strengths, improvement areas, advice for the future)."
+        },
+        "psi": {
+          "label": "Psychological Safety (PSI)",
+          "help": "Staff and managers' answers to the Psychological Safety questionnaire."
+        },
+        "guess_sheets": {
+          "label": "“My ID-PMC sheet” (game)",
+          "help": "Sheets staff filled in about colleagues in the demo game."
         }
       }
     },

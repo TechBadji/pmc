@@ -31,12 +31,15 @@ RUBRIQUES = [
     Rubrique("evaluations", True, "evaluations"),
     Rubrique("managerial", True, "evaluations"),
     Rubrique("monkey", True, "evaluations"),
+    Rubrique("feedback360", True, "evaluations"),
     Rubrique("cohesion_sheets", True, "cohesion"),
     Rubrique("cohesion_answers", True, "cohesion"),
+    Rubrique("psi", True, "cohesion"),
     Rubrique("team_boards", True, "teams"),
     Rubrique("action_plans", False, "teams"),
     Rubrique("relationships", False, "teams"),
     Rubrique("profiles", False, "people"),
+    Rubrique("guess_sheets", False, "people"),
 ]
 BY_KEY = {r.key: r for r in RUBRIQUES}
 
@@ -59,16 +62,23 @@ def querysets(company, key, campaigns, department):
     """Les ensembles de lignes qui composent une rubrique, dans le périmètre choisi.
     `campaigns` vaut None pour « toutes les campagnes »."""
     from apps.actionplans.models import ActionPlan
-    from apps.core.models import PerformanceProfile
+    from apps.core.models import GuessSheet, PerformanceProfile
     from apps.evaluations.models import (
         Evaluation,
         ManagerialSelfAssessment,
+        Feedback360,
         ManagerialSynthesis,
         MonkeyManagementAssessment,
         PerformanceObjective,
         SkillNote,
     )
-    from apps.teams.models import CohesionResponse, TeamBoard, TeamCohesionAnalysis, TeamRelationship
+    from apps.teams.models import (
+        CohesionResponse,
+        PsychologicalSafetyResponse,
+        TeamBoard,
+        TeamCohesionAnalysis,
+        TeamRelationship,
+    )
 
     def evaluations():
         qs = Evaluation.objects.filter(user__company=company)
@@ -109,6 +119,23 @@ def querysets(company, key, campaigns, department):
         return [by_user_campaign(ManagerialSelfAssessment), by_user_campaign(ManagerialSynthesis)]
     if key == "monkey":
         return [by_user_campaign(MonkeyManagementAssessment)]
+    if key == "feedback360":
+        qs = Feedback360.objects.filter(company=company)
+        if campaigns is not None:
+            qs = qs.filter(campaign__in=campaigns)
+        if department is not None:
+            qs = qs.filter(subject__department=department)
+        return [qs]
+    if key == "psi":
+        qs = PsychologicalSafetyResponse.objects.filter(company=company)
+        if campaigns is not None:
+            qs = qs.filter(campaign__in=campaigns)
+        if department is not None:
+            qs = qs.filter(team=department)
+        return [qs]
+    if key == "guess_sheets":
+        qs = GuessSheet.objects.filter(company=company)
+        return [qs.filter(author__department=department) if department is not None else qs]
     if key == "cohesion_sheets":
         return [dated(TeamCohesionAnalysis, "team")]
     if key == "cohesion_answers":

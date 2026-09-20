@@ -120,6 +120,18 @@
         "profiles": {
           "label": "Fiches Performance 360°",
           "help": "Les fiches personnelles saisies (parcours, réalisations, plan de développement)."
+        },
+        "feedback360": {
+          "label": "360° Feedback et Forward",
+          "help": "Les avis 360° donnés et reçus (notes de compétences, points forts, axes de progrès, conseils pour l'avenir)."
+        },
+        "psi": {
+          "label": "Psychological Safety (PSI)",
+          "help": "Les réponses des collaborateurs et des managers au questionnaire Psychological Safety."
+        },
+        "guess_sheets": {
+          "label": "Fiches « Ma fiche ID-PMC » (jeu)",
+          "help": "Les fiches que les collaborateurs ont remplies sur leurs collègues dans le jeu de démonstration."
         }
       }
     },

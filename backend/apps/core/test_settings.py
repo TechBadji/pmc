@@ -4,9 +4,9 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from apps.actionplans.models import ActionPlan
-from apps.core.models import Company, Department, PerformanceProfile, User
-from apps.evaluations.models import Evaluation, EvaluationCampaign, ManagerialSelfAssessment, SkillNote
-from apps.teams.models import CohesionResponse, TeamBoard, TeamCohesionAnalysis, TeamRelationship
+from apps.core.models import Company, Department, GuessSheet, PerformanceProfile, User
+from apps.evaluations.models import Evaluation, EvaluationCampaign, Feedback360, ManagerialSelfAssessment, SkillNote
+from apps.teams.models import CohesionResponse, PsychologicalSafetyResponse, TeamBoard, TeamCohesionAnalysis, TeamRelationship
 
 PATHS = {
     "settings": "/api/company-settings/",
@@ -145,3 +145,36 @@ class DataResetTests(Base):
         foreign = self.call("preview", {"rubriques": ["evaluations"], "campaigns": [self.foreign_campaign.pk]})
         self.assertEqual(foreign.status_code, 400)
         self.assertIn("n'appartient pas", str(foreign.data["campaigns"]))
+
+
+class NewRubriquesTests(Base):
+    """360°, Psychological Safety et fiches jeu sont remis à zéro comme le reste."""
+
+    def setUp(self):
+        super().setUp()
+        for campaign in (self.old, self.new):
+            Feedback360.objects.create(company=self.company, campaign=campaign, subject=self.a1, author=self.b1, kind="FEEDBACK", relation="PEER", scores=[3] * 6)
+            Feedback360.objects.create(company=self.company, campaign=campaign, subject=self.b1, author=self.a1, kind="FORWARD", relation="PEER")
+            PsychologicalSafetyResponse.objects.create(company=self.company, team=self.dept_a, campaign=campaign, respondent=self.a1, scores=[3] * 12)
+        GuessSheet.objects.create(company=self.company, author=self.a1, guessed_name="X", data={})
+        GuessSheet.objects.create(company=self.company, author=self.b1, guessed_name="Y", data={})
+
+    def test_catalogue_lists_the_new_rubriques(self):
+        keys = {r["key"] for r in self.call("catalogue", method="get").data["rubriques"]}
+        self.assertTrue({"feedback360", "psi", "guess_sheets"} <= keys)
+
+    def test_campaign_and_department_scope(self):
+        response = self.call("run", {"rubriques": ["feedback360", "psi"], "campaigns": [self.old.pk], "department": self.dept_a.pk, "confirm": "REMISE A ZERO"})
+        self.assertEqual(response.status_code, 200)
+        # Direction A, campagne « Old » seulement : 1 avis reçu par a1 (Feedback) et 1 réponse PSI.
+        self.assertEqual(Feedback360.objects.filter(campaign=self.old, subject=self.a1).count(), 0)
+        self.assertEqual(Feedback360.objects.filter(campaign=self.old, subject=self.b1).count(), 1)
+        self.assertEqual(Feedback360.objects.filter(campaign=self.new).count(), 2)
+        self.assertEqual(PsychologicalSafetyResponse.objects.filter(campaign=self.old).count(), 0)
+        self.assertEqual(PsychologicalSafetyResponse.objects.filter(campaign=self.new).count(), 1)
+
+    def test_guess_sheets_are_general(self):
+        refused = self.call("preview", {"rubriques": ["guess_sheets"], "campaigns": [self.old.pk]})
+        self.assertEqual(refused.status_code, 400)
+        self.call("run", {"rubriques": ["guess_sheets"], "campaigns": "all", "department": self.dept_a.pk, "confirm": "REMISE A ZERO"})
+        self.assertEqual(list(GuessSheet.objects.values_list("guessed_name", flat=True)), ["Y"])
