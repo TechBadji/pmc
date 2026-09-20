@@ -89,9 +89,6 @@ export default function PsychologicalSafetyPage() {
       <Typography variant="h5" fontWeight={700}>
         {t("psi.title")}
       </Typography>
-      <Typography variant="body2" color="text.secondary">
-        {t("psi.objective")}
-      </Typography>
       <Typography variant="body2" sx={{ fontStyle: "italic" }}>
         « {t("psi.quote")} »
       </Typography>
