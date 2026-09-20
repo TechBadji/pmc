@@ -7,7 +7,7 @@
     "campaign": "Campaign",
     "tabReceived": "Feedback received",
     "tabGive": "Give feedback",
-    "person": "Person",
+    "person": "Colleagues",
     "me": "Myself",
     "relation": {
       "SELF": "Self-assessment",
@@ -43,6 +43,10 @@
     "loadFailed": "Feedback could not be loaded: reload the page.",
     "saveFailed": "The feedback could not be saved. Try again shortly.",
     "existing": "You already gave feedback to this person: it is open for editing.",
-    "viewHint": "Anonymous input from your manager, direct reports and peers."
+    "viewHint": "Anonymous input from your manager, direct reports and peers.",
+    "progress": "{{done}}/6 rated",
+    "statusGiven": "Feedback already given",
+    "statusNew": "New feedback",
+    "scale": "1 = Insufficient · 3 = Satisfactory · 5 = Excellent"
   }
 }

@@ -1,12 +1,12 @@
 import {
   Alert,
+  Avatar,
   Box,
   Button,
-  FormControlLabel,
+  Chip,
   MenuItem,
   Paper,
   Radio,
-  RadioGroup,
   Stack,
   Tab,
   Table,
@@ -128,6 +128,7 @@ export default function Feedback360Panel({ kind }: { kind: FeedbackKind }) {
   }
 
   const textLabels = isFeedback ? ["strengths", "improvements"] : ["start", "stop", "continue"];
+  const subject = people.find((p) => p.id === subjectId) ?? (subjectId === user?.id ? (user as unknown as UserRecord) : null);
   const nameOf = (p: UserRecord) => p.full_name || p.email;
 
   return (
@@ -164,7 +165,7 @@ export default function Feedback360Panel({ kind }: { kind: FeedbackKind }) {
           {groups.length === 0 && !loadError && <Alert severity="info">{t("feedback360.noneReceived")}</Alert>}
 
           {isFeedback && groups.length > 0 && (
-            <Paper variant="outlined" sx={{ overflow: "auto" }}>
+            <Paper variant="outlined" sx={{ overflow: "auto", width: { xs: "100%", md: "70%" } }}>
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ bgcolor: "primary.main" }}>
@@ -245,37 +246,67 @@ export default function Feedback360Panel({ kind }: { kind: FeedbackKind }) {
 
           {subjectId !== "" && (
             <>
+              {subject && (
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 1.5, display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", borderLeft: "4px solid", borderLeftColor: "primary.main" }}
+                >
+                  <Avatar src={subject.avatar ?? undefined} sx={{ width: 44, height: 44 }}>
+                    {nameOf(subject).charAt(0).toUpperCase()}
+                  </Avatar>
+                  <Box sx={{ flex: 1, minWidth: 180 }}>
+                    <Typography fontWeight={800}>{subjectId === user?.id ? t("feedback360.me") : nameOf(subject)}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {subject.position}
+                    </Typography>
+                  </Box>
+                  {isFeedback && (
+                    <Chip size="small" color={missing === 0 ? "success" : "default"} label={t("feedback360.progress", { done: 6 - missing })} />
+                  )}
+                  <Chip size="small" variant="outlined" color={existing ? "info" : "default"} label={t(existing ? "feedback360.statusGiven" : "feedback360.statusNew")} />
+                </Paper>
+              )}
               {isFeedback && (
-                <Paper variant="outlined">
-                  <Typography fontWeight={700} sx={{ px: 2, pt: 1.5 }}>
-                    {t("feedback360.rate")}
-                  </Typography>
-                  <Stack>
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <Stack
-                        key={i}
-                        direction={{ xs: "column", sm: "row" }}
-                        justifyContent="space-between"
-                        alignItems={{ sm: "center" }}
-                        sx={{ px: 2, py: 0.5, bgcolor: showMissing && scores[i] === null ? "rgba(178,63,63,0.08)" : undefined }}
-                      >
-                        <Typography variant="body2">{t(`feedback360.competencies.${i}`)}</Typography>
-                        <RadioGroup
-                          row
-                          value={scores[i] ?? ""}
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            setScores((prev) => prev.map((x, j) => (j === i ? v : x)));
-                            setSaved(false);
-                          }}
+                <Paper variant="outlined" sx={{ overflow: "auto" }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: "primary.main" }}>
+                        <TableCell sx={{ color: "#fff", fontWeight: 700 }}>{t("feedback360.rate")}</TableCell>
+                        {[1, 2, 3, 4, 5].map((v) => (
+                          <TableCell key={v} align="center" sx={{ color: "#fff", fontWeight: 700, width: 56 }}>
+                            {v}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                        <TableRow
+                          key={i}
+                          hover
+                          sx={{ bgcolor: showMissing && scores[i] === null ? "rgba(178,63,63,0.08)" : i % 2 ? "action.hover" : undefined }}
                         >
+                          <TableCell sx={{ fontWeight: 600 }}>{t(`feedback360.competencies.${i}`)}</TableCell>
                           {[1, 2, 3, 4, 5].map((v) => (
-                            <FormControlLabel key={v} value={v} disabled={readOnly} control={<Radio size="small" />} label={v} labelPlacement="bottom" sx={{ mx: 0.25 }} />
+                            <TableCell key={v} align="center" padding="checkbox">
+                              <Radio
+                                size="small"
+                                checked={scores[i] === v}
+                                disabled={readOnly}
+                                onChange={() => {
+                                  setScores((prev) => prev.map((x, j) => (j === i ? v : x)));
+                                  setSaved(false);
+                                }}
+                              />
+                            </TableCell>
                           ))}
-                        </RadioGroup>
-                      </Stack>
-                    ))}
-                  </Stack>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <Typography variant="caption" color="text.secondary" sx={{ px: 2, py: 0.75, display: "block" }}>
+                    {t("feedback360.scale")}
+                  </Typography>
                 </Paper>
               )}
               {textLabels.map((label, i) => (

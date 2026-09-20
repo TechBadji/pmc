@@ -7,7 +7,7 @@
     "campaign": "Campagne",
     "tabReceived": "Avis reçus",
     "tabGive": "Donner un avis",
-    "person": "Personne",
+    "person": "Collaborateurs",
     "me": "Moi-même",
     "relation": {
       "SELF": "Auto-évaluation",
@@ -43,6 +43,10 @@
     "loadFailed": "Les avis n'ont pas pu être chargés : rechargez la page.",
     "saveFailed": "L'avis n'a pas pu être enregistré. Réessayez dans un instant.",
     "existing": "Vous avez déjà donné un avis à cette personne : il est ouvert pour modification.",
-    "viewHint": "Avis anonymes de votre manager, de vos collaborateurs et de vos pairs."
+    "viewHint": "Avis anonymes de votre manager, de vos collaborateurs et de vos pairs.",
+    "progress": "{{done}}/6 notées",
+    "statusGiven": "Avis déjà donné",
+    "statusNew": "Nouvel avis",
+    "scale": "1 = Insuffisant · 3 = Satisfaisant · 5 = Excellent"
   }
 }
