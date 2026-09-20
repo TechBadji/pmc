@@ -445,7 +445,14 @@ class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         if user.role == User.Role.MANAGER:
             # Un encadrant ne voit que les membres qu'il encadre : sa ou ses
             # équipes, services compris pour un directeur.
-            qs = qs.filter(department_id__in=managed_department_ids(user)) | qs.filter(id=user.id)
+            visible = qs.filter(department_id__in=managed_department_ids(user)) | qs.filter(id=user.id)
+            # Les directeurs se voient entre eux : sur demande explicite
+            # (?leadership=1), la liste s'étend à l'équipe dirigeante de
+            # l'entreprise. Le défaut reste borné à l'équipe — les écrans qui
+            # listent « mes collaborateurs » ne doivent pas y trouver un pair.
+            if self.request.query_params.get("leadership"):
+                visible = visible | qs.filter(role__in=[User.Role.MANAGER, User.Role.COMPANY_ADMIN])
+            qs = visible
         return qs.distinct()
 
     @staticmethod

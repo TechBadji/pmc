@@ -13,6 +13,7 @@ interface PersonNodeProps {
   avatar: string | null;
   evaluation?: Evaluation;
   root?: boolean;
+  hidePerformance?: boolean;
 }
 
 // sx forcé sur le tooltip MUI pour retirer son chrome gris foncé par défaut
@@ -22,7 +23,7 @@ const TOOLTIP_SLOT_SX = { bgcolor: "transparent", p: 0, m: 0, maxWidth: "none", 
 
 /** Contenu du hover — performance en cours (Altitude/HSI/SSI), même habillage
  * (Paper claire bordée) que CustomTooltip sur la Matrice ID-3A. */
-function PerformanceTooltip({ name, position, avatar, evaluation }: { name: string; position: string; avatar: string | null; evaluation?: Evaluation }) {
+function PerformanceTooltip({ name, position, avatar, evaluation, hidePerformance }: { name: string; position: string; avatar: string | null; evaluation?: Evaluation; hidePerformance?: boolean }) {
   const { t } = useTranslation();
   return (
     <Paper elevation={0} sx={{ p: 1.5, minWidth: 200, border: "1px solid", borderColor: "divider" }}>
@@ -39,7 +40,7 @@ function PerformanceTooltip({ name, position, avatar, evaluation }: { name: stri
           </Typography>
         </Box>
       </Stack>
-      {evaluation ? (
+      {hidePerformance ? null : evaluation ? (
         <>
           <Typography variant="body2" sx={{ mt: 0.75 }}>
             {t("evaluationForm.aptitudes")} (HSI): <strong>{Number(evaluation.hsi).toFixed(1)}</strong> ·{" "}
@@ -59,11 +60,11 @@ function PerformanceTooltip({ name, position, avatar, evaluation }: { name: stri
   );
 }
 
-function PersonNode({ name, position, avatar, evaluation, root }: PersonNodeProps) {
+function PersonNode({ name, position, avatar, evaluation, root, hidePerformance }: PersonNodeProps) {
   const size = root ? 70 : 61;
   return (
     <Tooltip
-      title={<PerformanceTooltip name={name} position={position} avatar={avatar} evaluation={evaluation} />}
+      title={<PerformanceTooltip name={name} position={position} avatar={avatar} evaluation={evaluation} hidePerformance={hidePerformance} />}
       slotProps={{ tooltip: { sx: TOOLTIP_SLOT_SX } }}
     >
       <Stack alignItems="center" spacing={0.5} sx={{ width: "100%", cursor: "default" }}>
@@ -142,12 +143,15 @@ export default function LeadershipOverview({
   headcountById,
   titleKey = "dashboard.companyAdmin.leadershipTitle",
   lastEvaluationByUser,
+  hidePerformance,
 }: {
   root: RootPerson;
   people: UserRecord[];
   headcountById?: Map<number, number>;
   titleKey?: string;
   lastEvaluationByUser: Map<number, Evaluation>;
+  /** Performances non lisibles par le lecteur (pair d'un autre périmètre) : l'infobulle ne les mentionne pas. */
+  hidePerformance?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -184,7 +188,7 @@ export default function LeadershipOverview({
               largeur, décalée par la colonne des intitulés à gauche). */}
           <Box />
           <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center", width: 128 }}>
-            <PersonNode name={root.full_name} position={root.position} avatar={root.avatar} evaluation={lastEvaluationByUser.get(root.id)} root />
+            <PersonNode name={root.full_name} position={root.position} avatar={root.avatar} evaluation={lastEvaluationByUser.get(root.id)} root hidePerformance={hidePerformance} />
           </Box>
 
           <Box />
@@ -204,6 +208,7 @@ export default function LeadershipOverview({
                 position={d.position}
                 avatar={d.avatar}
                 evaluation={lastEvaluationByUser.get(d.id)}
+                hidePerformance={hidePerformance}
               />
             </Stack>
           ))}
