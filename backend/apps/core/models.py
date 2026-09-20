@@ -417,3 +417,27 @@ class GuessSheet(models.Model):
 
     def __str__(self):
         return f"Fiche jeu — {self.guessed_name} (par {self.author})"
+
+
+class PeerAccess(models.Model):
+    """Autorisation, donnée par le CEO, pour un directeur (`viewer`) de consulter
+    en lecture seule une autre direction (`department`), rubrique par rubrique.
+
+    Sans ligne, un directeur ne voit que sa propre direction : l'accès aux autres
+    est toujours explicite."""
+
+    RUBRICS = ("COHESION", "ID3A", "EVALUATIONS")
+
+    company = models.ForeignKey("core.Company", verbose_name="Entreprise", on_delete=models.CASCADE, related_name="peer_accesses")
+    viewer = models.ForeignKey("core.User", verbose_name="Directeur lecteur", on_delete=models.CASCADE, related_name="peer_accesses")
+    department = models.ForeignKey("core.Department", verbose_name="Direction consultée", on_delete=models.CASCADE, related_name="peer_viewers")
+    rubrics = models.JSONField("Rubriques autorisées", default=list)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("viewer", "department")
+        verbose_name = "Accès entre directions"
+        verbose_name_plural = "Accès entre directions"
+
+    def __str__(self):
+        return f"{self.viewer} → {self.department} ({', '.join(self.rubrics)})"

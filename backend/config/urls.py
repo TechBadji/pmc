@@ -26,6 +26,7 @@ from apps.core.settings_views import (
     DataResetCatalogueView,
     DataResetPreviewView,
     DataResetView,
+    PeerAccessView,
 )
 from apps.evaluations.views import (
     EvaluationCampaignViewSet,
@@ -80,6 +81,7 @@ urlpatterns = [
     path("api/auth/change-password/", ChangePasswordView.as_view(), name="change_password"),
     path("api/auth/forgot-password/", ForgotPasswordView.as_view(), name="forgot_password"),
     path("api/company-settings/", CompanySettingsView.as_view(), name="company-settings"),
+    path("api/company-settings/peer-access/", PeerAccessView.as_view(), name="peer-access"),
     path("api/company-settings/data-reset/", DataResetCatalogueView.as_view(), name="data-reset-catalogue"),
     path("api/company-settings/data-reset/preview/", DataResetPreviewView.as_view(), name="data-reset-preview"),
     path("api/company-settings/data-reset/run/", DataResetView.as_view(), name="data-reset-run"),

@@ -39,7 +39,7 @@ class TeamCohesionAnalysisViewSet(CompanyScopedQuerySetMixin, viewsets.ModelView
         qs = super().get_queryset()
         user = self.request.user
         if user.role == user.Role.MANAGER:
-            qs = qs.filter(team_id__in=readable_department_ids(self.request))
+            qs = qs.filter(team_id__in=readable_department_ids(self.request, ("COHESION",)))
         return qs
 
     def perform_create(self, serializer):
@@ -82,7 +82,7 @@ class TeamRelationshipViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         qs = super().get_queryset()
         user = self.request.user
         if user.role == user.Role.MANAGER:
-            qs = qs.filter(team_id__in=readable_department_ids(self.request))
+            qs = qs.filter(team_id__in=readable_department_ids(self.request, ("COHESION",)))
         return qs
 
     def perform_create(self, serializer):
@@ -129,7 +129,7 @@ class TeamBoardViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         qs = super().get_queryset()
         user = self.request.user
         if user.role == user.Role.MANAGER:
-            qs = qs.filter(team_id__in=readable_department_ids(self.request))
+            qs = qs.filter(team_id__in=readable_department_ids(self.request, ("COHESION",)))
         return qs
 
     def perform_create(self, serializer):
@@ -235,7 +235,7 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
 
         departments = Department.objects.filter(company_id=user.company_id)
         if user.role == user.Role.MANAGER:
-            departments = departments.filter(id__in=readable_department_ids(request))
+            departments = departments.filter(id__in=readable_department_ids(request, ("COHESION",)))
 
         team = request.query_params.get("team")
         if team:
@@ -390,7 +390,7 @@ class PsychologicalSafetyResponseViewSet(viewsets.ModelViewSet):
             raise ValidationError({"campaign": "Choisissez une campagne."})
         departments = Department.objects.filter(company_id=user.company_id)
         if user.role == user.Role.MANAGER:
-            departments = departments.filter(id__in=readable_department_ids(request))
+            departments = departments.filter(id__in=readable_department_ids(request, ("COHESION",)))
         team = request.query_params.get("team")
         if team:
             departments = departments.filter(id=team)

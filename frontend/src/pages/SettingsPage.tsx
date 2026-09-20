@@ -25,6 +25,7 @@ import { apiClient } from "@/api/client";
 import type { Department, EvaluationCampaign, Paginated } from "@/api/types";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { useUnsavedChanges } from "@/app/unsavedChanges";
+import PeerAccessSection from "@/components/settings/PeerAccessSection";
 import ValidationSummary from "@/components/feedback/ValidationSummary";
 import { fetchMe } from "@/features/auth/authSlice";
 import { toNumber, useIssues } from "@/utils/validation";
@@ -497,6 +498,7 @@ export default function SettingsPage() {
         </Typography>
       </Box>
       <CompanySection />
+      <PeerAccessSection />
       <Box>
         <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
           {t("settings.shortcuts.title")}

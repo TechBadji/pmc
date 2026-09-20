@@ -10,6 +10,7 @@ interface Peer {
   name: string;
   manager_name: string;
   manager_position: string;
+  rubrics: string[];
 }
 
 const PeerContext = createContext<{ peerId: number | null; readOnly: boolean }>({ peerId: null, readOnly: false });
@@ -26,7 +27,7 @@ export const usePeerDirection = () => useContext(PeerContext);
  * de l'écran, qui est remonté d'un bloc (clé = direction) pour tout recharger.
  * Les autres rôles, ou un directeur sans pair, voient l'écran tel quel.
  */
-export function PeerDirectionScope({ children }: { children: React.ReactNode }) {
+export function PeerDirectionScope({ rubric, children }: { rubric: "COHESION" | "ID3A" | "EVALUATIONS"; children: React.ReactNode }) {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   const [peers, setPeers] = useState<Peer[]>([]);
@@ -37,9 +38,9 @@ export function PeerDirectionScope({ children }: { children: React.ReactNode }) 
     if (!isManager) return;
     apiClient
       .get<Peer[]>("/departments/peers/")
-      .then((r) => setPeers(r.data))
+      .then((r) => setPeers(r.data.filter((p) => p.rubrics.includes(rubric))))
       .catch(() => setPeers([]));
-  }, [isManager]);
+  }, [isManager, rubric]);
 
   // Posé pendant le rendu, avant les effets des enfants qui chargent leurs données.
   setPeerDirection(isManager ? peerId : null);

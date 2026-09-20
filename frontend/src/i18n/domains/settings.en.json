@@ -1,5 +1,7 @@
 {
-  "nav": { "settings": "Settings" },
+  "nav": {
+    "settings": "Settings"
+  },
   "settings": {
     "title": "Company settings",
     "intro": "CEO-only settings: company identity, cohesion rules and reset of demo data.",
@@ -75,18 +77,76 @@
         "people": "Personal sheets"
       },
       "items": {
-        "evaluations": { "label": "ID-3A evaluations", "help": "Each evaluation with its skill scores, Strengths & Weaknesses lines and annual objectives." },
-        "skill_notes": { "label": "Strengths & Weaknesses", "help": "Only the Strengths & Weaknesses lines: evaluations are kept." },
-        "objectives": { "label": "Annual objectives", "help": "Objective sheets of employees and teams; evaluations are kept with their current scores." },
-        "managerial": { "label": "Managerial self-assessment", "help": "The 5 sheets and the summary (key skills, improvement areas) of each manager." },
-        "monkey": { "label": "Monkey Management", "help": "Each manager's Monkey Management diagnostic." },
-        "cohesion_sheets": { "label": "Cohesion — manager sheets", "help": "ICE, OCE and Achieved entered by directors (or the CEO)." },
-        "cohesion_answers": { "label": "Cohesion — employee answers", "help": "Answers about one's division and about the organisation." },
-        "team_boards": { "label": "Team boards", "help": "Team Performance ID, Strengths & Weaknesses and Relationship Dynamic." },
-        "action_plans": { "label": "Action and development plans", "help": "Free action plans and development plan grids." },
-        "relationships": { "label": "Team relationships", "help": "Quality of relationships between team members." },
-        "profiles": { "label": "360° Performance sheets", "help": "Personal sheets entered (background, achievements, development plan)." }
+        "evaluations": {
+          "label": "ID-3A evaluations",
+          "help": "Each evaluation with its skill scores, Strengths & Weaknesses lines and annual objectives."
+        },
+        "skill_notes": {
+          "label": "Strengths & Weaknesses",
+          "help": "Only the Strengths & Weaknesses lines: evaluations are kept."
+        },
+        "objectives": {
+          "label": "Annual objectives",
+          "help": "Objective sheets of employees and teams; evaluations are kept with their current scores."
+        },
+        "managerial": {
+          "label": "Managerial self-assessment",
+          "help": "The 5 sheets and the summary (key skills, improvement areas) of each manager."
+        },
+        "monkey": {
+          "label": "Monkey Management",
+          "help": "Each manager's Monkey Management diagnostic."
+        },
+        "cohesion_sheets": {
+          "label": "Cohesion — manager sheets",
+          "help": "ICE, OCE and Achieved entered by directors (or the CEO)."
+        },
+        "cohesion_answers": {
+          "label": "Cohesion — employee answers",
+          "help": "Answers about one's division and about the organisation."
+        },
+        "team_boards": {
+          "label": "Team boards",
+          "help": "Team Performance ID, Strengths & Weaknesses and Relationship Dynamic."
+        },
+        "action_plans": {
+          "label": "Action and development plans",
+          "help": "Free action plans and development plan grids."
+        },
+        "relationships": {
+          "label": "Team relationships",
+          "help": "Quality of relationships between team members."
+        },
+        "profiles": {
+          "label": "360° Performance sheets",
+          "help": "Personal sheets entered (background, achievements, development plan)."
+        }
       }
+    },
+    "peerAccess": {
+      "title": "Access between directions",
+      "intro": "By default, a director only sees their own direction. Tick here the directions they may view read-only, section by section. Their own data is unchanged: they cannot edit anything in another direction.",
+      "rubric": {
+        "COHESION": "Team cohesion",
+        "ID3A": "ID-3A Matrix",
+        "EVALUATIONS": "Evaluations"
+      },
+      "help": {
+        "COHESION": "Cohesion sheet, opinions, relationships, strengths and weaknesses and Psychological Safety of the viewed direction.",
+        "ID3A": "Position of the viewed direction's staff in the ID-3A matrix.",
+        "EVALUATIONS": "Evaluations, objective sheets and strengths and weaknesses of the viewed direction's staff."
+      },
+      "viewer": "Director",
+      "viewed": "views direction",
+      "columnHint": "ticking the column opens it to all directors",
+      "all": "All",
+      "allowAll": "Allow all",
+      "removeAll": "Remove all",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Access saved: it applies from the next page opened.",
+      "saveFailed": "Access could not be saved. Try again in a moment.",
+      "loadFailed": "Access between directions could not be loaded."
     }
   }
 }

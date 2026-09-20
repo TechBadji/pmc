@@ -1,11 +1,14 @@
 """Paramètres de l'entreprise, réservés à son CEO."""
+from django.db import transaction
 from rest_framework import permissions, serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import data_reset
 from .audit import log_event
-from .models import Company
+from .models import Company, Department, PeerAccess, User
+from .scoping import managed_department_ids
 from .permissions import IsCompanyAdmin
 
 
@@ -97,3 +100,86 @@ class DataResetView(APIView):
             company=company,
         )
         return Response({"items": done, "total": sum(d["count"] for d in done)})
+
+
+class PeerAccessView(APIView):
+    """Qui peut consulter quelle direction, rubrique par rubrique (CEO).
+
+    GET livre la grille : les directeurs (lignes), les directions consultables
+    (colonnes) et les accès actuels. PUT remplace l'ensemble des accès."""
+
+    permission_classes = [permissions.IsAuthenticated, IsCompanyAdmin]
+
+    @staticmethod
+    def _directions(company):
+        return list(
+            Department.objects.filter(company=company, manager__role=User.Role.MANAGER)
+            .select_related("manager")
+            .order_by("name")
+        )
+
+    def get(self, request):
+        company = request.user.company
+        directors = User.objects.filter(company=company, role=User.Role.MANAGER).select_related("department").order_by("generated_login")
+        return Response(
+            {
+                "rubrics": list(PeerAccess.RUBRICS),
+                "directors": [
+                    {
+                        "id": u.id,
+                        "name": u.get_full_name() or u.email,
+                        "position": u.position,
+                        "avatar": u.avatar.url if u.avatar else None,
+                        "department_name": u.department.name if u.department else "",
+                        "own": managed_department_ids(u),
+                    }
+                    for u in directors
+                ],
+                "directions": [
+                    {"id": d.id, "name": d.name, "manager_name": d.manager.get_full_name() if d.manager else ""}
+                    for d in self._directions(company)
+                ],
+                "grants": [
+                    {"viewer": a.viewer_id, "department": a.department_id, "rubrics": a.rubrics}
+                    for a in PeerAccess.objects.filter(company=company)
+                ],
+            }
+        )
+
+    @transaction.atomic
+    def put(self, request):
+        company = request.user.company
+        grants = request.data.get("grants")
+        if not isinstance(grants, list):
+            raise ValidationError({"grants": "La liste des accès est attendue."})
+        viewers = {u.id: u for u in User.objects.filter(company=company, role=User.Role.MANAGER)}
+        directions = {d.id: d for d in self._directions(company)}
+        cleaned = {}
+        for entry in grants:
+            if not isinstance(entry, dict):
+                raise ValidationError({"grants": "Chaque accès doit indiquer un directeur, une direction et des rubriques."})
+            viewer = viewers.get(entry.get("viewer"))
+            department = directions.get(entry.get("department"))
+            rubrics = entry.get("rubrics")
+            if viewer is None:
+                raise ValidationError({"grants": "Un des directeurs indiqués n'existe pas dans votre entreprise."})
+            if department is None:
+                raise ValidationError({"grants": "Une des directions indiquées n'existe pas ou n'a pas de directeur."})
+            if department.id in managed_department_ids(viewer):
+                raise ValidationError({"grants": f"{viewer.get_full_name()} dirige déjà « {department.name} » : inutile de l'autoriser à la consulter."})
+            if not isinstance(rubrics, list) or any(r not in PeerAccess.RUBRICS for r in rubrics):
+                raise ValidationError({"grants": "Rubrique inconnue : choisissez parmi Cohésion, Matrice ID-3A et Évaluations."})
+            if rubrics:
+                cleaned[(viewer.id, department.id)] = sorted(set(rubrics))
+        before = PeerAccess.objects.filter(company=company).count()
+        PeerAccess.objects.filter(company=company).delete()
+        PeerAccess.objects.bulk_create(
+            [PeerAccess(company=company, viewer_id=v, department_id=d, rubrics=r) for (v, d), r in cleaned.items()]
+        )
+        log_event(
+            request.user,
+            "company.peer_access_updated",
+            f"a modifié les accès entre directions ({before} → {len(cleaned)} autorisation(s)).",
+            company=company,
+        )
+        return self.get(request)

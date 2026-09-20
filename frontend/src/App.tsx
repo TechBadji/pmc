@@ -79,13 +79,13 @@ export default function App() {
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/departments/:id" element={<DepartmentDetailPage />} />
           <Route path="/skills" element={<SkillsPage />} />
-          <Route path="/cohesion" element={<PeerDirectionScope><CohesionFormPage /></PeerDirectionScope>} />
+          <Route path="/cohesion" element={<PeerDirectionScope rubric="COHESION"><CohesionFormPage /></PeerDirectionScope>} />
           <Route path="/cohesion-survey" element={<CohesionSurveyPage />} />
           <Route path="/cohesion-survey-org" element={<CohesionSurveyPage scope="ORGANISATION" />} />
-          <Route path="/id3a-matrix" element={<PeerDirectionScope><ID3AMatrixPage /></PeerDirectionScope>} />
+          <Route path="/id3a-matrix" element={<PeerDirectionScope rubric="ID3A"><ID3AMatrixPage /></PeerDirectionScope>} />
           <Route path="/talents-dashboard" element={<TalentsDashboardPage />} />
           <Route path="/evaluation-campaigns" element={<EvaluationCampaignsPage />} />
-          <Route path="/evaluations" element={<PeerDirectionScope><EvaluationsPage /></PeerDirectionScope>} />
+          <Route path="/evaluations" element={<PeerDirectionScope rubric="EVALUATIONS"><EvaluationsPage /></PeerDirectionScope>} />
           <Route path="/evaluations/new" element={<EvaluationFormPage />} />
           <Route path="/evaluations/:id" element={<EvaluationFormPage />} />
           <Route path="/directors-performance-review" element={<DirectorsPerformanceReviewPage />} />

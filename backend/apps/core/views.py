@@ -16,7 +16,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from .audit import log_event
 from .constants import DEFAULT_PASSWORD
-from .models import AuditLog, Company, Department, GuessSheet, PasswordResetRequest, PerformanceProfile, User
+from .models import AuditLog, Company, Department, GuessSheet, PasswordResetRequest, PeerAccess, PerformanceProfile, User
 from .permissions import (
     CompanyScopedQuerySetMixin,
     IsCompanyAdminOrManager,
@@ -378,11 +378,13 @@ class DepartmentViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="peers")
     def peers(self, request):
-        """Autres directions consultables en lecture seule par un directeur
-        (sélecteur « Voir les autres directions »). Vide pour les autres rôles."""
+        """Autres directions que le CEO autorise ce directeur à consulter en
+        lecture seule, avec les rubriques accordées (sélecteur « Voir les autres
+        directions »). Vide pour les autres rôles."""
         user = request.user
         if user.role != User.Role.MANAGER:
             return Response([])
+        rubrics = {a.department_id: a.rubrics for a in PeerAccess.objects.filter(viewer=user)}
         return Response(
             [
                 {
@@ -390,6 +392,7 @@ class DepartmentViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
                     "name": d.name,
                     "manager_name": d.manager.get_full_name() if d.manager else "",
                     "manager_position": d.manager.position if d.manager else "",
+                    "rubrics": rubrics.get(d.id, []),
                 }
                 for d in peer_directions(user).order_by("name")
             ]

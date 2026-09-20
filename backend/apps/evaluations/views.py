@@ -159,8 +159,8 @@ class EvaluationViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         elif user.role == user.Role.MANAGER:
             # Un manager ne voit que les évaluations de son équipe (+ les siennes).
             own = qs.filter(user=user)
-            qs = qs.filter(user__department_id__in=readable_department_ids(self.request))
-            if not viewing_peer(self.request):
+            qs = qs.filter(user__department_id__in=readable_department_ids(self.request, ("ID3A", "EVALUATIONS")))
+            if not viewing_peer(self.request, ("ID3A", "EVALUATIONS")):
                 qs = qs | own
         return qs.distinct()
 
@@ -217,8 +217,8 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             qs = qs.filter(evaluation__user=user)
         elif user.role == user.Role.MANAGER:
             own = qs.filter(evaluation__user=user)
-            qs = qs.filter(evaluation__user__department_id__in=readable_department_ids(self.request))
-            if not viewing_peer(self.request):
+            qs = qs.filter(evaluation__user__department_id__in=readable_department_ids(self.request, ("ID3A", "EVALUATIONS")))
+            if not viewing_peer(self.request, ("ID3A", "EVALUATIONS")):
                 qs = qs | own
         return qs.distinct()
 
@@ -454,9 +454,9 @@ class PerformanceObjectiveViewSet(CompanyScopedQuerySetMixin, viewsets.ModelView
             Q(evaluation__user__company_id=user.company_id) | Q(team__company_id=user.company_id)
         )
         if user.role == user.Role.MANAGER:
-            scope = readable_department_ids(self.request)
+            scope = readable_department_ids(self.request, ("ID3A", "EVALUATIONS"))
             cond = Q(evaluation__user__department_id__in=scope) | Q(team_id__in=scope)
-            if not viewing_peer(self.request):
+            if not viewing_peer(self.request, ("ID3A", "EVALUATIONS")):
                 cond |= Q(evaluation__user=user)
             qs = qs.filter(cond)
         elif user.role == user.Role.MEMBER:

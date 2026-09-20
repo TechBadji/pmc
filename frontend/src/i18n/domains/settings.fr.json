@@ -1,5 +1,7 @@
 {
-  "nav": { "settings": "Paramètres" },
+  "nav": {
+    "settings": "Paramètres"
+  },
   "settings": {
     "title": "Paramètres de l'entreprise",
     "intro": "Réglages réservés au CEO : identité de l'entreprise, règles de la cohésion et remise à zéro des données de démonstration.",
@@ -75,18 +77,76 @@
         "people": "Fiches personnelles"
       },
       "items": {
-        "evaluations": { "label": "Évaluations ID-3A", "help": "Chaque évaluation avec ses notes de compétences, ses lignes Forces & Faiblesses et ses objectifs annuels." },
-        "skill_notes": { "label": "Forces & Faiblesses", "help": "Uniquement les lignes Forces & Faiblesses : les évaluations sont conservées." },
-        "objectives": { "label": "Objectifs annuels", "help": "Fiches d'objectifs des collaborateurs et des équipes ; les évaluations sont conservées avec leurs scores actuels." },
-        "managerial": { "label": "Auto-évaluation managériale", "help": "Les 5 fiches et la synthèse (compétences clés, axes d'amélioration) de chaque manager." },
-        "monkey": { "label": "Monkey Management", "help": "Le diagnostic Monkey Management de chaque manager." },
-        "cohesion_sheets": { "label": "Cohésion — fiches des encadrants", "help": "ICE, OCE et Réalisé saisis par les directeurs (ou le CEO)." },
-        "cohesion_answers": { "label": "Cohésion — avis des collaborateurs", "help": "Les avis sur sa direction et sur l'organisation." },
-        "team_boards": { "label": "Cartes d'équipe", "help": "Team Performance ID, Strengths & Weaknesses et Relationship Dynamic." },
-        "action_plans": { "label": "Plans d'action et de développement", "help": "Plans d'action libres et grilles de plan de développement." },
-        "relationships": { "label": "Relations d'équipe", "help": "Qualité des relations entre membres d'une équipe." },
-        "profiles": { "label": "Fiches Performance 360°", "help": "Les fiches personnelles saisies (parcours, réalisations, plan de développement)." }
+        "evaluations": {
+          "label": "Évaluations ID-3A",
+          "help": "Chaque évaluation avec ses notes de compétences, ses lignes Forces & Faiblesses et ses objectifs annuels."
+        },
+        "skill_notes": {
+          "label": "Forces & Faiblesses",
+          "help": "Uniquement les lignes Forces & Faiblesses : les évaluations sont conservées."
+        },
+        "objectives": {
+          "label": "Objectifs annuels",
+          "help": "Fiches d'objectifs des collaborateurs et des équipes ; les évaluations sont conservées avec leurs scores actuels."
+        },
+        "managerial": {
+          "label": "Auto-évaluation managériale",
+          "help": "Les 5 fiches et la synthèse (compétences clés, axes d'amélioration) de chaque manager."
+        },
+        "monkey": {
+          "label": "Monkey Management",
+          "help": "Le diagnostic Monkey Management de chaque manager."
+        },
+        "cohesion_sheets": {
+          "label": "Cohésion — fiches des encadrants",
+          "help": "ICE, OCE et Réalisé saisis par les directeurs (ou le CEO)."
+        },
+        "cohesion_answers": {
+          "label": "Cohésion — avis des collaborateurs",
+          "help": "Les avis sur sa direction et sur l'organisation."
+        },
+        "team_boards": {
+          "label": "Cartes d'équipe",
+          "help": "Team Performance ID, Strengths & Weaknesses et Relationship Dynamic."
+        },
+        "action_plans": {
+          "label": "Plans d'action et de développement",
+          "help": "Plans d'action libres et grilles de plan de développement."
+        },
+        "relationships": {
+          "label": "Relations d'équipe",
+          "help": "Qualité des relations entre membres d'une équipe."
+        },
+        "profiles": {
+          "label": "Fiches Performance 360°",
+          "help": "Les fiches personnelles saisies (parcours, réalisations, plan de développement)."
+        }
       }
+    },
+    "peerAccess": {
+      "title": "Accès entre directions",
+      "intro": "Par défaut, un directeur ne voit que sa propre direction. Cochez ici les directions qu'il pourra consulter en lecture seule, rubrique par rubrique. Ses données restent inchangées : il ne peut rien modifier chez un autre.",
+      "rubric": {
+        "COHESION": "Cohésion d'équipe",
+        "ID3A": "Matrice ID-3A",
+        "EVALUATIONS": "Évaluations"
+      },
+      "help": {
+        "COHESION": "Fiche de cohésion, avis, relations, forces et faiblesses et Psychological Safety de la direction consultée.",
+        "ID3A": "Positionnement des collaborateurs de la direction consultée dans la matrice ID-3A.",
+        "EVALUATIONS": "Évaluations, fiches d'objectifs et forces et faiblesses des collaborateurs de la direction consultée."
+      },
+      "viewer": "Directeur",
+      "viewed": "consulte la direction",
+      "columnHint": "cocher la colonne l'ouvre à tous les directeurs",
+      "all": "Tout",
+      "allowAll": "Tout autoriser",
+      "removeAll": "Tout retirer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "saved": "Les accès sont enregistrés : ils s'appliquent dès la prochaine page ouverte.",
+      "saveFailed": "Les accès n'ont pas pu être enregistrés. Réessayez dans un instant.",
+      "loadFailed": "Les accès entre directions n'ont pas pu être chargés."
     }
   }
 }
