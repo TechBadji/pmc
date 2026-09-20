@@ -781,7 +781,9 @@ export default function ManagerialSelfAssessmentPanel() {
                       {TIERS.map((tier) => (
                         <TableCell key={tier} align="center" sx={{ px: 0.5 }}>
                           <ScoreOval
-                            selected={row.score === tier}
+                            // Une note décimale tombe dans la case de sa partie entière : 2,4 et 2,8 allument le 2.
+                            // La valeur exacte reste lisible dans la colonne suivante.
+                            selected={row.score !== null && Math.min(5, Math.max(1, Math.floor(row.score))) === tier}
                             color={tierColor(tier)}
                             disabled={readOnly}
                             ariaLabel={`${statement} — ${tier}`}
