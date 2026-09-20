@@ -76,7 +76,11 @@ export function DecimalField({
   decimals?: number;
 }) {
   const [typing, setTyping] = useState<string | null>(null);
-  const shown = typing ?? (value === "" || value === null ? "" : String(value));
+  // Avec un nombre de décimales imposé, la valeur relâchée garde ses zéros :
+  // « 4.0 » ne doit pas redevenir « 4 » quand on quitte la cellule.
+  const formatted =
+    value === "" || value === null ? "" : decimals !== undefined ? value.toFixed(decimals) : String(value);
+  const shown = typing ?? formatted;
   return (
     <TextField
       size="small"

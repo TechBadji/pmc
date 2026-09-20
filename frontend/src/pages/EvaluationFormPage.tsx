@@ -67,6 +67,7 @@ function ScoreField({
       helperText={helperText}
       error={invalid || outOfRange(value, 1, 5)}
       width={54}
+      decimals={1}
       ariaLabel="note"
     />
   );
