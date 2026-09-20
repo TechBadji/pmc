@@ -325,7 +325,7 @@ export default function MonkeyManagementPanel() {
 
       {campaignId !== "" && (
         <>
-          <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
+          <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", width: { xs: "100%", md: "80%" } }}>
             <TableContainer>
               <Table size="small" sx={{ "& .MuiTableCell-root": { border: "1px solid", borderColor: "divider", py: 0.5 } }}>
                 <TableHead>
@@ -500,7 +500,7 @@ export default function MonkeyManagementPanel() {
             );
           })()}
 
-          <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}>
+          <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider", width: { xs: "100%", md: "80%" } }}>
             <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 0.5 }}>
               {t("monkeyManagement.debrief.title")}
             </Typography>
@@ -537,6 +537,7 @@ export default function MonkeyManagementPanel() {
                 </Stack>
               </Box>
 
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
               <TextField
                 size="small"
                 fullWidth
@@ -593,6 +594,7 @@ export default function MonkeyManagementPanel() {
                   clear();
                 }}
               />
+              </Box>
             </Stack>
 
             {!readOnly && (

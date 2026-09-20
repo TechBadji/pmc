@@ -165,7 +165,7 @@ export default function Feedback360Panel({ kind }: { kind: FeedbackKind }) {
           {groups.length === 0 && !loadError && <Alert severity="info">{t("feedback360.noneReceived")}</Alert>}
 
           {isFeedback && groups.length > 0 && (
-            <Paper variant="outlined" sx={{ overflow: "auto", width: { xs: "100%", md: "70%" } }}>
+            <Paper variant="outlined" sx={{ overflow: "auto", width: { xs: "100%", md: "56%" } }}>
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ bgcolor: "primary.main" }}>
@@ -203,30 +203,46 @@ export default function Feedback360Panel({ kind }: { kind: FeedbackKind }) {
             </Paper>
           )}
 
-          {groups.map((g) => (
-            <Paper key={g.relation} variant="outlined" sx={{ p: 2 }}>
-              <Typography fontWeight={800} sx={{ mb: 1 }}>
-                {t(`feedback360.relation.${g.relation}`)} — {t("feedback360.count", { n: g.count })}
-              </Typography>
-              {!g.published ? (
-                <Alert severity="info">{t("feedback360.hidden", { min: MIN_GROUP, n: g.count })}</Alert>
-              ) : (
-                <Stack spacing={1}>
-                  {(g.comments ?? []).map((c, i) => (
-                    <Box key={i} sx={{ pl: 1.5, borderLeft: "3px solid", borderColor: "divider" }}>
-                      {TEXT_KEYS.slice(0, textLabels.length).map((k, j) =>
-                        c[k] ? (
-                          <Typography key={k} variant="body2">
-                            <strong>{t(`feedback360.${textLabels[j]}`)} :</strong> {c[k]}
-                          </Typography>
-                        ) : null
-                      )}
-                    </Box>
-                  ))}
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" }, gap: 2, width: { xs: "100%", md: "80%" } }}>
+            {groups.map((g) => (
+              <Paper key={g.relation} variant="outlined" sx={{ overflow: "hidden" }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ bgcolor: "primary.main", color: "#fff", px: 2, py: 1 }}>
+                  <Typography fontWeight={800}>{t(`feedback360.relation.${g.relation}`)}</Typography>
+                  <Chip size="small" label={t("feedback360.count", { n: g.count })} sx={{ bgcolor: "rgba(255,255,255,.2)", color: "#fff", fontWeight: 700 }} />
                 </Stack>
-              )}
-            </Paper>
-          ))}
+                <Box sx={{ p: 1.5 }}>
+                  {!g.published ? (
+                    <Alert severity="info">{t("feedback360.hidden", { min: MIN_GROUP, n: g.count })}</Alert>
+                  ) : (g.comments ?? []).length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      —
+                    </Typography>
+                  ) : (
+                    <Stack spacing={1.25}>
+                      {(g.comments ?? []).map((c, i) => (
+                        <Box key={i} sx={{ p: 1.25, borderRadius: 1, bgcolor: "action.hover" }}>
+                          <Stack spacing={0.75}>
+                            {TEXT_KEYS.slice(0, textLabels.length).map((k, j) =>
+                              c[k] ? (
+                                <Box key={k}>
+                                  <Typography variant="caption" fontWeight={800} color="primary" sx={{ textTransform: "uppercase", letterSpacing: 0.4 }}>
+                                    {t(`feedback360.${textLabels[j]}`)}
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+                                    {c[k]}
+                                  </Typography>
+                                </Box>
+                              ) : null
+                            )}
+                          </Stack>
+                        </Box>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+              </Paper>
+            ))}
+          </Box>
         </Stack>
       )}
 
