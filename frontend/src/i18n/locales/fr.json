@@ -947,6 +947,17 @@
     "secure": "Connexion chiffrée en TLS 256 bits"
   },
   "managerialSelfAssessment": {
+    "overview": {
+      "optionAll": "Tout le personnel (agrégation)",
+      "optionDepts": "Par département",
+      "department": "Département",
+      "respondents": "Répondants",
+      "respondentsOf": "{{n}} répondant(s) sur {{total}}",
+      "allTitle": "Synthèse agrégée de tout le personnel",
+      "deptTitle": "Synthèse de la direction {{name}}",
+      "forms": "Fiches",
+      "loadFailed": "Les fiches n'ont pas pu être chargées : rechargez la page."
+    },
     "tipCurrent": "niveau actuel",
     "tipObjective": "objectif",
     "tipGap": "Écart à combler : {{gap}} point(s)",

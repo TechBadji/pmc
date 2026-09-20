@@ -29,6 +29,7 @@ import {
 } from "recharts";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
+import ManagerialCompanyOverview from "@/components/ManagerialCompanyOverview";
 import ValidationSummary from "@/components/feedback/ValidationSummary";
 import { DecimalField } from "@/components/inputs/DecimalField";
 import { fmtNum, hasExtraDecimals, outOfRange } from "@/utils/evaluationValidation";
@@ -184,11 +185,13 @@ export default function ManagerialSelfAssessmentPanel() {
   const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
   const [managers, setManagers] = useState<UserRecord[]>([]);
   const [viewedUserId, setViewedUserId] = useState<number | "">(user?.id ?? "");
+  // Lecture agrégée du CEO : tout le personnel, ou direction par direction.
+  const [overview, setOverview] = useState<"" | "ALL" | "DEPTS">("");
 
   useEffect(() => {
     if (!isCompanyAdmin || !user?.company) return;
     apiClient
-      .get<Paginated<UserRecord>>("/users/", { params: { company: user.company, role: "MANAGER", page_size: 500 } })
+      .get<Paginated<UserRecord>>("/users/", { params: { company: user.company, page_size: 1000 } })
       .then((r) => setManagers(r.data.results))
       .catch(() => setLoadError(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -429,18 +432,30 @@ export default function ManagerialSelfAssessmentPanel() {
               select
               size="small"
               label={t("managerialSelfAssessment.viewingLabel")}
-              value={viewedUserId}
-              onChange={(e) => setViewedUserId(e.target.value === "" ? "" : Number(e.target.value))}
-              sx={{ minWidth: 220 }}
+              value={overview || viewedUserId}
+              onChange={(e) => {
+                const v = e.target.value as unknown as string | number;
+                if (v === "ALL" || v === "DEPTS") {
+                  setOverview(v);
+                  return;
+                }
+                setOverview("");
+                setViewedUserId(v === "" ? "" : Number(v));
+              }}
+              sx={{ minWidth: 260 }}
             >
+              <MenuItem value="ALL">{t("managerialSelfAssessment.overview.optionAll")}</MenuItem>
+              <MenuItem value="DEPTS">{t("managerialSelfAssessment.overview.optionDepts")}</MenuItem>
               {user && (
                 <MenuItem value={user.id}>{t("managerialSelfAssessment.myself", { name: user.full_name })}</MenuItem>
               )}
-              {managers.map((m) => (
-                <MenuItem key={m.id} value={m.id}>
-                  {m.full_name} — {m.position}
-                </MenuItem>
-              ))}
+              {managers
+                .filter((m) => m.id !== user?.id)
+                .map((m) => (
+                  <MenuItem key={m.id} value={m.id}>
+                    {m.full_name} — {m.department_name ?? m.position}
+                  </MenuItem>
+                ))}
             </TextField>
           )}
           <TextField
@@ -466,7 +481,13 @@ export default function ManagerialSelfAssessmentPanel() {
         <Alert severity="info">{t("managerialSelfAssessment.viewingOther", { name: viewedPerson.full_name })}</Alert>
       )}
 
-      {campaignId !== "" && (
+      {campaignId !== "" && isCompanyAdmin && overview !== "" && (
+        <Paper elevation={0} sx={{ p: 3, border: "1px solid", borderColor: "divider" }}>
+          <ManagerialCompanyOverview campaignId={campaignId} people={managers} mode={overview} />
+        </Paper>
+      )}
+
+      {campaignId !== "" && overview === "" && (
         <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
           <Tabs
             value={tab}

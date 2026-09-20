@@ -947,6 +947,17 @@
     "secure": "Connection encrypted with 256-bit TLS"
   },
   "managerialSelfAssessment": {
+    "overview": {
+      "optionAll": "All staff (aggregated)",
+      "optionDepts": "By department",
+      "department": "Department",
+      "respondents": "Respondents",
+      "respondentsOf": "{{n}} respondent(s) out of {{total}}",
+      "allTitle": "Aggregated synthesis of all staff",
+      "deptTitle": "Synthesis of {{name}}",
+      "forms": "Forms",
+      "loadFailed": "The forms could not be loaded: reload the page."
+    },
     "tipCurrent": "current level",
     "tipObjective": "target",
     "tipGap": "Gap to close: {{gap}} point(s)",
