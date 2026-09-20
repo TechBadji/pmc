@@ -1162,5 +1162,14 @@
       "nextResponsibilityLabel": "Quelle responsabilité supplémentaire pouvez-vous confier à votre équipe dès cette semaine ?"
     }
   },
-  "myStrengths": {"title": "Mes forces et faiblesses", "intro": "Vos cinq meilleures et vos cinq plus faibles compétences, hard skills puis soft skills, relevées par votre évaluation sur la campagne choisie.", "noEvaluation": "Aucune évaluation pour cette campagne : vos forces et faiblesses apparaîtront dès qu'elle aura été saisie."}
+  "myStrengths": {
+    "title": "Mes forces et faiblesses",
+    "intro": "Vos cinq meilleures et vos cinq plus faibles compétences, hard skills puis soft skills, relevées par votre évaluation sur la campagne choisie.",
+    "noEvaluation": "Aucune évaluation pour cette campagne : vos forces et faiblesses apparaîtront dès qu'elle aura été saisie."
+  },
+  "peerDirection": {
+    "label": "Voir les autres directions",
+    "mine": "Ma direction",
+    "readOnly": "Consultation en lecture seule de « {{name}} » : aucune saisie n'est possible ici."
+  }
 }

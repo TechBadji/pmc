@@ -5,6 +5,7 @@ import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, Responsi
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
+import { usePeerDirection } from "@/app/peerDirection";
 import PsychologicalSafetyPage from "@/pages/PsychologicalSafetyPage";
 import type { EvaluationCampaign, Paginated, PsiResults, PsiSummary } from "@/api/types";
 import { dimensionReading, globalReading, PSI_DIMENSIONS, READING_COLORS } from "@/utils/psychologicalSafety";
@@ -20,6 +21,7 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
   const [data, setData] = useState<PsiResults | null>(null);
   const [error, setError] = useState(false);
   const { user } = useAppSelector((s) => s.auth);
+  const { readOnly: peerReadOnly } = usePeerDirection();
   const [entryOpen, setEntryOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -62,7 +64,7 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
             </MenuItem>
           ))}
         </TextField>
-        {user?.role === "MANAGER" && (
+        {user?.role === "MANAGER" && !peerReadOnly && (
           <Button
             size="small"
             variant="contained"

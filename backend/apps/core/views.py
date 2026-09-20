@@ -23,7 +23,7 @@ from .permissions import (
     IsSuperAdmin,
     IsSuperAdminOrCompanyAdminOrManager,
 )
-from apps.core.scoping import managed_department_ids, manages_user
+from apps.core.scoping import managed_department_ids, manages_user, peer_directions, readable_department_ids, viewing_peer
 
 from .serializers import (
     AuditLogSerializer,
@@ -373,8 +373,27 @@ class DepartmentViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         if user.role == User.Role.MANAGER:
             # Un manager voit son/ses département(s) — et, s'il dirige une
             # direction, les services qui en dépendent.
-            qs = qs.filter(id__in=managed_department_ids(user))
+            qs = qs.filter(id__in=readable_department_ids(self.request))
         return qs
+
+    @action(detail=False, methods=["get"], url_path="peers")
+    def peers(self, request):
+        """Autres directions consultables en lecture seule par un directeur
+        (sélecteur « Voir les autres directions »). Vide pour les autres rôles."""
+        user = request.user
+        if user.role != User.Role.MANAGER:
+            return Response([])
+        return Response(
+            [
+                {
+                    "id": d.id,
+                    "name": d.name,
+                    "manager_name": d.manager.get_full_name() if d.manager else "",
+                    "manager_position": d.manager.position if d.manager else "",
+                }
+                for d in peer_directions(user).order_by("name")
+            ]
+        )
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -445,7 +464,9 @@ class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         if user.role == User.Role.MANAGER:
             # Un encadrant ne voit que les membres qu'il encadre : sa ou ses
             # équipes, services compris pour un directeur.
-            visible = qs.filter(department_id__in=managed_department_ids(user)) | qs.filter(id=user.id)
+            visible = qs.filter(department_id__in=readable_department_ids(self.request))
+            if not viewing_peer(self.request):
+                visible = visible | qs.filter(id=user.id)
             # Les directeurs se voient entre eux : sur demande explicite
             # (?leadership=1), la liste s'étend à l'équipe dirigeante de
             # l'entreprise. Le défaut reste borné à l'équipe — les écrans qui
@@ -703,7 +724,10 @@ class PerformanceProfileViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSe
         qs = super().get_queryset()
         user = self.request.user
         if user.role == user.Role.MANAGER:
-            qs = qs.filter(user__department_id__in=managed_department_ids(user)) | qs.filter(user=user)
+            own = qs.filter(user=user)
+            qs = qs.filter(user__department_id__in=readable_department_ids(self.request))
+            if not viewing_peer(self.request):
+                qs = qs | own
         elif user.role == user.Role.MEMBER:
             qs = qs.filter(user=user)
         return qs.distinct()

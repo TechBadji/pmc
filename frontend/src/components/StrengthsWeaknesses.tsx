@@ -40,10 +40,12 @@ function Column({
   notes,
   rows,
   onAdd,
+  readOnly,
   onChangeText,
   onChangeScore,
 }: {
   category: SkillNoteCategory;
+  readOnly?: boolean;
   notes: NoteMap;
   rows: number;
   onAdd: (category: SkillNoteCategory) => void;
@@ -63,6 +65,7 @@ function Column({
               fullWidth
               placeholder={`${order}.`}
               value={row?.text ?? ""}
+              disabled={readOnly}
               onChange={(e) => onChangeText(category, order, e.target.value)}
               inputProps={{ maxLength: 255 }}
               sx={{ bgcolor: "background.paper" }}
@@ -80,6 +83,7 @@ function Column({
               min={1}
               max={5}
               decimals={1}
+              disabled={readOnly}
               width={64}
               ariaLabel={t("strengthsWeaknesses.indexShort")}
               sx={{ bgcolor: "background.paper" }}
@@ -87,6 +91,7 @@ function Column({
           </Stack>
         );
       })}
+      {!readOnly && (
       <Button
         size="small"
         startIcon={<AddOutlinedIcon />}
@@ -96,6 +101,7 @@ function Column({
       >
         {t("common.add")}
       </Button>
+      )}
     </Stack>
   );
 }
@@ -108,9 +114,11 @@ function Section({
   notes,
   rows,
   onAdd,
+  readOnly,
   onChangeText,
   onChangeScore,
 }: {
+  readOnly?: boolean;
   labelKey: string;
   labelColor: string;
   strengthCategory: SkillNoteCategory;
@@ -144,8 +152,8 @@ function Section({
           {t(labelKey)}
         </Typography>
       </Box>
-      <Column category={strengthCategory} notes={notes} rows={rows[strengthCategory]} onAdd={onAdd} onChangeText={onChangeText} onChangeScore={onChangeScore} />
-      <Column category={weaknessCategory} notes={notes} rows={rows[weaknessCategory]} onAdd={onAdd} onChangeText={onChangeText} onChangeScore={onChangeScore} />
+      <Column category={strengthCategory} notes={notes} rows={rows[strengthCategory]} onAdd={onAdd} readOnly={readOnly} onChangeText={onChangeText} onChangeScore={onChangeScore} />
+      <Column category={weaknessCategory} notes={notes} rows={rows[weaknessCategory]} onAdd={onAdd} readOnly={readOnly} onChangeText={onChangeText} onChangeScore={onChangeScore} />
     </Stack>
   );
 }
@@ -155,7 +163,9 @@ export default function StrengthsWeaknesses({
   userName,
   avatar,
   performanceRating,
+  readOnly,
 }: {
+  readOnly?: boolean;
   evaluationId: number;
   userName: string;
   avatar: string | null;
@@ -310,6 +320,7 @@ export default function StrengthsWeaknesses({
             notes={notes}
             rows={rows}
             onAdd={handleAdd}
+            readOnly={readOnly}
             onChangeText={handleChangeText}
             onChangeScore={handleChangeScore}
           />
@@ -321,6 +332,7 @@ export default function StrengthsWeaknesses({
             notes={notes}
             rows={rows}
             onAdd={handleAdd}
+            readOnly={readOnly}
             onChangeText={handleChangeText}
             onChangeScore={handleChangeScore}
           />
@@ -367,9 +379,11 @@ export default function StrengthsWeaknesses({
             {t("strengthsWeaknesses.saved")}
           </Alert>
         )}
-        <Button variant="contained" onClick={handleSave} disabled={saving}>
-          {t("common.save")}
-        </Button>
+        {!readOnly && (
+          <Button variant="contained" onClick={handleSave} disabled={saving}>
+            {t("common.save")}
+          </Button>
+        )}
       </Stack>
     </Paper>
   );

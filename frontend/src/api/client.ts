@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getPeerDirection } from "@/app/peerState";
 import { describeApiError } from "@/utils/apiError";
 import { feedbackBus } from "@/utils/feedbackBus";
 
@@ -54,6 +55,11 @@ export const apiClient = axios.create({ baseURL: "/api" });
 apiClient.interceptors.request.use((config) => {
   const token = tokenStorage.access;
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Un directeur qui consulte la direction d'un pair : lecture seule, côté serveur aussi.
+  const peer = getPeerDirection();
+  if (peer !== null && (config.method ?? "get").toLowerCase() === "get" && !config.url?.includes("/auth/")) {
+    config.params = { ...config.params, peer_direction: peer };
+  }
   return config;
 });
 

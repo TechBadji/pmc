@@ -1162,5 +1162,14 @@
       "nextResponsibilityLabel": "What extra responsibility can you hand to your team this week?"
     }
   },
-  "myStrengths": {"title": "My strengths and weaknesses", "intro": "Your five strongest and five weakest skills, hard then soft, as recorded by your evaluation for the selected campaign.", "noEvaluation": "No evaluation for this campaign: your strengths and weaknesses will appear once it has been entered."}
+  "myStrengths": {
+    "title": "My strengths and weaknesses",
+    "intro": "Your five strongest and five weakest skills, hard then soft, as recorded by your evaluation for the selected campaign.",
+    "noEvaluation": "No evaluation for this campaign: your strengths and weaknesses will appear once it has been entered."
+  },
+  "peerDirection": {
+    "label": "View other directions",
+    "mine": "My direction",
+    "readOnly": "Read-only view of “{{name}}”: nothing can be entered here."
+  }
 }

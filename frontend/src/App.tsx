@@ -2,6 +2,7 @@ import { CircularProgress, Stack } from "@mui/material";
 import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
+import { PeerDirectionScope } from "@/app/peerDirection";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import ChangePasswordPage from "@/features/auth/ChangePasswordPage";
 import LoginPage from "@/features/auth/LoginPage";
@@ -78,13 +79,13 @@ export default function App() {
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/departments/:id" element={<DepartmentDetailPage />} />
           <Route path="/skills" element={<SkillsPage />} />
-          <Route path="/cohesion" element={<CohesionFormPage />} />
+          <Route path="/cohesion" element={<PeerDirectionScope><CohesionFormPage /></PeerDirectionScope>} />
           <Route path="/cohesion-survey" element={<CohesionSurveyPage />} />
           <Route path="/cohesion-survey-org" element={<CohesionSurveyPage scope="ORGANISATION" />} />
-          <Route path="/id3a-matrix" element={<ID3AMatrixPage />} />
+          <Route path="/id3a-matrix" element={<PeerDirectionScope><ID3AMatrixPage /></PeerDirectionScope>} />
           <Route path="/talents-dashboard" element={<TalentsDashboardPage />} />
           <Route path="/evaluation-campaigns" element={<EvaluationCampaignsPage />} />
-          <Route path="/evaluations" element={<EvaluationsPage />} />
+          <Route path="/evaluations" element={<PeerDirectionScope><EvaluationsPage /></PeerDirectionScope>} />
           <Route path="/evaluations/new" element={<EvaluationFormPage />} />
           <Route path="/evaluations/:id" element={<EvaluationFormPage />} />
           <Route path="/directors-performance-review" element={<DirectorsPerformanceReviewPage />} />

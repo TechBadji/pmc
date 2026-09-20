@@ -36,6 +36,7 @@ import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Department, Evaluation, EvaluationCampaign, Paginated, SkillScore, UserRecord } from "@/api/types";
 import ValidationSummary from "@/components/feedback/ValidationSummary";
+import { usePeerDirection } from "@/app/peerDirection";
 import PageHeader from "@/components/layout/PageHeader";
 import ManagerialSelfAssessmentPanel from "@/components/ManagerialSelfAssessmentPanel";
 import Feedback360Panel from "@/components/Feedback360Panel";
@@ -86,6 +87,8 @@ export default function EvaluationsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAppSelector((s) => s.auth);
+  // Direction d'un pair consultée : lecture seule, sans saisie ni vues personnelles.
+  const { readOnly: peerReadOnly } = usePeerDirection();
   // Un manager évalue les membres de son équipe ; l'Admin Entreprise évalue
   // ses directeurs (rôle MANAGER) — même page, même parcours, scope différent.
   const evaluatedRole = user?.role === "COMPANY_ADMIN" ? "MANAGER" : "MEMBER";
@@ -370,10 +373,10 @@ export default function EvaluationsPage() {
           <ToggleButton value="id3a">{t("objectivesSheet.viewId3a")}</ToggleButton>
           <ToggleButton value="employee">{t("objectivesSheet.viewEmployee")}</ToggleButton>
           <ToggleButton value="team">{t("objectivesSheet.viewTeam")}</ToggleButton>
-          <ToggleButton value="managerial">{t("objectivesSheet.viewManagerial")}</ToggleButton>
-          <ToggleButton value="monkey">{t("objectivesSheet.viewMonkeyManagement")}</ToggleButton>
-          <ToggleButton value="feedback">{t("feedback360.feedbackTitle")}</ToggleButton>
-          <ToggleButton value="forward">{t("feedback360.forwardTitle")}</ToggleButton>
+          {!peerReadOnly && <ToggleButton value="managerial">{t("objectivesSheet.viewManagerial")}</ToggleButton>}
+          {!peerReadOnly && <ToggleButton value="monkey">{t("objectivesSheet.viewMonkeyManagement")}</ToggleButton>}
+          {!peerReadOnly && <ToggleButton value="feedback">{t("feedback360.feedbackTitle")}</ToggleButton>}
+          {!peerReadOnly && <ToggleButton value="forward">{t("feedback360.forwardTitle")}</ToggleButton>}
         </ToggleButtonGroup>
       </Stack>
 
@@ -404,7 +407,7 @@ export default function EvaluationsPage() {
           departments={departments}
           campaigns={campaigns}
           evaluations={evaluations}
-          canEdit={user?.role === "COMPANY_ADMIN" || user?.role === "MANAGER"}
+          canEdit={(user?.role === "COMPANY_ADMIN" || user?.role === "MANAGER") && !peerReadOnly}
           companyName={user?.company_name ?? ""}
         />
       )}
@@ -437,7 +440,7 @@ export default function EvaluationsPage() {
             color={completionPct === 100 ? "#0ca30c" : "#B23FA0"}
             icon={<GroupsOutlinedIcon />}
           />
-          {nextUnevaluated && (
+          {nextUnevaluated && !peerReadOnly && (
             <Stack justifyContent="center">
               <Button
                 variant="contained"
@@ -585,7 +588,7 @@ export default function EvaluationsPage() {
                 )}
               </Box>
             </Stack>
-            {!selfMode && (
+            {!selfMode && !peerReadOnly && (
               <Button
                 variant="contained"
                 startIcon={<AddOutlinedIcon />}
@@ -771,6 +774,7 @@ export default function EvaluationsPage() {
           userName={selectedMember.full_name || selectedMember.email}
           avatar={selectedMember.avatar}
           performanceRating={selectedEvaluation.performance_rating}
+          readOnly={peerReadOnly}
         />
       )}
 

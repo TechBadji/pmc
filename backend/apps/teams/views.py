@@ -8,7 +8,7 @@ from apps.core.audit import log_event
 from apps.core.models import Department, User
 from apps.evaluations.models import EvaluationCampaign
 from apps.core.permissions import CompanyScopedQuerySetMixin, IsCompanyAdminOrManager
-from apps.core.scoping import managed_department_ids
+from apps.core.scoping import managed_department_ids, readable_department_ids
 
 from .aggregation import aggregate_organisation, aggregate_responses, company_score
 from .models import CohesionResponse, PsychologicalSafetyResponse, TeamBoard, TeamCohesionAnalysis, TeamRelationship
@@ -39,7 +39,7 @@ class TeamCohesionAnalysisViewSet(CompanyScopedQuerySetMixin, viewsets.ModelView
         qs = super().get_queryset()
         user = self.request.user
         if user.role == user.Role.MANAGER:
-            qs = qs.filter(team_id__in=managed_department_ids(user))
+            qs = qs.filter(team_id__in=readable_department_ids(self.request))
         return qs
 
     def perform_create(self, serializer):
@@ -82,7 +82,7 @@ class TeamRelationshipViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         qs = super().get_queryset()
         user = self.request.user
         if user.role == user.Role.MANAGER:
-            qs = qs.filter(team_id__in=managed_department_ids(user))
+            qs = qs.filter(team_id__in=readable_department_ids(self.request))
         return qs
 
     def perform_create(self, serializer):
@@ -129,7 +129,7 @@ class TeamBoardViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         qs = super().get_queryset()
         user = self.request.user
         if user.role == user.Role.MANAGER:
-            qs = qs.filter(team_id__in=managed_department_ids(user))
+            qs = qs.filter(team_id__in=readable_department_ids(self.request))
         return qs
 
     def perform_create(self, serializer):
@@ -235,7 +235,7 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
 
         departments = Department.objects.filter(company_id=user.company_id)
         if user.role == user.Role.MANAGER:
-            departments = departments.filter(id__in=managed_department_ids(user))
+            departments = departments.filter(id__in=readable_department_ids(request))
 
         team = request.query_params.get("team")
         if team:
@@ -390,7 +390,7 @@ class PsychologicalSafetyResponseViewSet(viewsets.ModelViewSet):
             raise ValidationError({"campaign": "Choisissez une campagne."})
         departments = Department.objects.filter(company_id=user.company_id)
         if user.role == user.Role.MANAGER:
-            departments = departments.filter(id__in=managed_department_ids(user))
+            departments = departments.filter(id__in=readable_department_ids(request))
         team = request.query_params.get("team")
         if team:
             departments = departments.filter(id=team)

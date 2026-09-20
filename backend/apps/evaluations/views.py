@@ -15,7 +15,7 @@ from apps.core.permissions import (
 from apps.core.serializer_fields import normalize_decimal
 from apps.core.validators import require_same_company
 
-from apps.core.scoping import managed_department_ids
+from apps.core.scoping import managed_department_ids, readable_department_ids, viewing_peer
 
 from .models import (
     Feedback360,
@@ -158,7 +158,10 @@ class EvaluationViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             qs = qs.filter(user=user)
         elif user.role == user.Role.MANAGER:
             # Un manager ne voit que les évaluations de son équipe (+ les siennes).
-            qs = qs.filter(user__department_id__in=managed_department_ids(user)) | qs.filter(user=user)
+            own = qs.filter(user=user)
+            qs = qs.filter(user__department_id__in=readable_department_ids(self.request))
+            if not viewing_peer(self.request):
+                qs = qs | own
         return qs.distinct()
 
     def perform_create(self, serializer):
@@ -213,9 +216,10 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         if user.role == user.Role.MEMBER:
             qs = qs.filter(evaluation__user=user)
         elif user.role == user.Role.MANAGER:
-            qs = qs.filter(
-                evaluation__user__department_id__in=managed_department_ids(user)
-            ) | qs.filter(evaluation__user=user)
+            own = qs.filter(evaluation__user=user)
+            qs = qs.filter(evaluation__user__department_id__in=readable_department_ids(self.request))
+            if not viewing_peer(self.request):
+                qs = qs | own
         return qs.distinct()
 
     @action(detail=False, methods=["post"], url_path="bulk-save")
@@ -450,12 +454,11 @@ class PerformanceObjectiveViewSet(CompanyScopedQuerySetMixin, viewsets.ModelView
             Q(evaluation__user__company_id=user.company_id) | Q(team__company_id=user.company_id)
         )
         if user.role == user.Role.MANAGER:
-            scope = managed_department_ids(user)
-            qs = qs.filter(
-                Q(evaluation__user__department_id__in=scope)
-                | Q(evaluation__user=user)
-                | Q(team_id__in=scope)
-            )
+            scope = readable_department_ids(self.request)
+            cond = Q(evaluation__user__department_id__in=scope) | Q(team_id__in=scope)
+            if not viewing_peer(self.request):
+                cond |= Q(evaluation__user=user)
+            qs = qs.filter(cond)
         elif user.role == user.Role.MEMBER:
             # Sa fiche, plus celle de sa direction (lecture seule) : la vue
             # « Objectifs équipe » a un sens pour lui aussi.

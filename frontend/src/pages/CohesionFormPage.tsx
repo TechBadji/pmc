@@ -39,6 +39,7 @@ import {
   YAxis,
 } from "recharts";
 import { apiClient } from "@/api/client";
+import { usePeerDirection } from "@/app/peerDirection";
 import { DecimalField } from "@/components/inputs/DecimalField";
 import { BoardPeriodBar } from "@/components/teamBoard/BoardPieces";
 import TeamRelationshipBoard from "@/components/teamBoard/TeamRelationshipBoard";
@@ -192,6 +193,7 @@ export default function CohesionFormPage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
+  const { readOnly: peerReadOnly } = usePeerDirection();
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [teamId, setTeamId] = useState<number | "">("");
@@ -422,10 +424,10 @@ export default function CohesionFormPage() {
   // leurs réponses — il n'y a rien que le CEO ait à y saisir. La grille est
   // donc figée pour lui, faute de quoi il cliquerait des pastilles sans avoir
   // de quoi les enregistrer.
-  const readOnly = viewedAnalysisId !== "" || isCompanyAdmin;
+  const readOnly = viewedAnalysisId !== "" || isCompanyAdmin || peerReadOnly;
   // Une planche archivée se relit ; seule la saisie courante s'édite, et
   // seulement par le CEO ou l'encadrant de l'équipe.
-  const canEditBoard = (isCompanyAdmin || user?.role === "MANAGER") && board.draft !== null;
+  const canEditBoard = (isCompanyAdmin || user?.role === "MANAGER") && board.draft !== null && !peerReadOnly;
 
   // Le comité de direction : le département dont le CEO est le manager. Il
   // porte la planche « Tous les directeurs ».
