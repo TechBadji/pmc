@@ -37,6 +37,7 @@ const MyPerformancePage = lazy(() => import("@/pages/MyPerformancePage"));
 const MyPerformanceIdPage = lazy(() => import("@/pages/MyPerformanceIdPage"));
 const MyStrengthsPage = lazy(() => import("@/pages/MyStrengthsPage"));
 const PsychologicalSafetyPage = lazy(() => import("@/pages/PsychologicalSafetyPage"));
+const TeamCohesionPage = lazy(() => import("@/pages/TeamCohesionPage"));
 const PasswordResetRequestsPage = lazy(() => import("@/pages/PasswordResetRequestsPage"));
 const PerformancePage = lazy(() => import("@/pages/PerformancePage"));
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
@@ -91,6 +92,7 @@ export default function App() {
           <Route path="/performances" element={<PerformancePage />} />
           <Route path="/my-performance" element={<MyPerformancePage />} />
           <Route path="/my-performance-id" element={<MyPerformanceIdPage />} />
+          <Route path="/team-cohesion" element={<TeamCohesionPage />} />
           <Route path="/my-strengths" element={<MyStrengthsPage />} />
           <Route path="/psychological-safety" element={<PsychologicalSafetyPage />} />
           <Route path="/password-requests" element={<PasswordResetRequestsPage />} />

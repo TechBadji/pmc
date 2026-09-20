@@ -59,15 +59,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { labelKey: "nav.dashboard", path: "/", icon: "dashboard" },
     { labelKey: "nav.cohesionSurvey", path: "/cohesion-survey", icon: "hub" },
     { labelKey: "nav.cohesionSurveyOrg", path: "/cohesion-survey-org", icon: "business" },
-    {
-      labelKey: "nav.teamCohesion",
-      path: "/team-cohesion",
-      icon: "groups",
-      children: [
-        { labelKey: "nav.myStrengths", path: "/my-strengths", icon: "insights" },
-        { labelKey: "nav.psychologicalSafety", path: "/psychological-safety", icon: "hub" },
-      ],
-    },
+    { labelKey: "nav.teamCohesion", path: "/team-cohesion", icon: "groups" },
     // Réservé aux collaborateurs de la direction SUNU (voir AppLayout).
     { labelKey: "nav.evaluations", path: "/evaluations", icon: "assignment" },
     { labelKey: "nav.myPerformanceId", path: "/my-performance-id", icon: "person" },
