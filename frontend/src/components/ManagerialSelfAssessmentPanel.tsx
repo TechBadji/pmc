@@ -509,14 +509,35 @@ export default function ManagerialSelfAssessmentPanel() {
                         strokeWidth={2}
                         dot={(props: any) => {
                           const { cx, cy, index } = props;
+                          // Centre du radar porté par l'enveloppe du point : sert à
+                          // écarter le chiffre du centre, hors du polygone.
+                          const mx = typeof props.payload?.cx === "number" ? props.payload.cx : cx;
+                          const my = typeof props.payload?.cy === "number" ? props.payload.cy : cy;
                           // La ligne est relue dans les données par son rang : `payload`
                           // est ici l'enveloppe du point Recharts, pas notre ligne.
                           const row = synthesisData[index];
                           if (!row || typeof cx !== "number" || typeof cy !== "number") return <g key={index} />;
+                          const dx = cx - mx;
+                          const dy = cy - my;
+                          const norm = Math.hypot(dx, dy) || 1;
                           return (
                             <g key={index} style={{ cursor: "pointer" }} onMouseEnter={() => setRadarHover({ x: cx, y: cy, row })} onMouseLeave={() => setRadarHover(null)}>
                               <circle cx={cx} cy={cy} r={16} fill="transparent" />
                               <circle cx={cx} cy={cy} r={radarHover?.row.category === row.category ? 7 : 5} fill="#2E8FCB" stroke="#fff" strokeWidth={2} />
+                              <text
+                                x={cx + (dx / norm) * 20}
+                                y={cy + (dy / norm) * 20 + 4}
+                                textAnchor="middle"
+                                fontSize={13}
+                                fontWeight={800}
+                                fill="#1c5f8c"
+                                stroke="#fff"
+                                strokeWidth={3}
+                                paintOrder="stroke"
+                                pointerEvents="none"
+                              >
+                                {row.ic.toFixed(1)}
+                              </text>
                             </g>
                           );
                         }}

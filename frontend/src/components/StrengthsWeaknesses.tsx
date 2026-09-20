@@ -1,5 +1,6 @@
 import FitnessCenterOutlinedIcon from "@mui/icons-material/FitnessCenterOutlined";
 import LinkOffOutlinedIcon from "@mui/icons-material/LinkOffOutlined";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import { Alert, Avatar, Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,7 +12,11 @@ import { useIssues } from "@/utils/validation";
 import type { Paginated, PerformanceRating, SkillNote, SkillNoteCategory } from "@/api/types";
 import { performanceColors } from "@/theme";
 
-const ORDERS = [1, 2, 3, 4, 5];
+const BASE_ROWS = 5;
+const MAX_ROWS = 10;
+const CATEGORIES: SkillNoteCategory[] = ["SOFT_STRENGTH", "SOFT_WEAKNESS", "HARD_STRENGTH", "HARD_WEAKNESS"];
+type RowCounts = Record<SkillNoteCategory, number>;
+const INITIAL_ROWS: RowCounts = { SOFT_STRENGTH: BASE_ROWS, SOFT_WEAKNESS: BASE_ROWS, HARD_STRENGTH: BASE_ROWS, HARD_WEAKNESS: BASE_ROWS };
 const CATEGORY_BG: Record<SkillNoteCategory, string> = {
   SOFT_STRENGTH: "#3F914215", // vert clair — même teinte que le bandeau "Strengths"
   SOFT_WEAKNESS: "#8B2E2E15", // rouge clair — même teinte que le bandeau "Weaknesses"
@@ -33,11 +38,15 @@ function key(category: SkillNoteCategory, order: number) {
 function Column({
   category,
   notes,
+  rows,
+  onAdd,
   onChangeText,
   onChangeScore,
 }: {
   category: SkillNoteCategory;
   notes: NoteMap;
+  rows: number;
+  onAdd: (category: SkillNoteCategory) => void;
   onChangeText: (category: SkillNoteCategory, order: number, text: string) => void;
   onChangeScore: (category: SkillNoteCategory, order: number, score: number | null) => void;
 }) {
@@ -45,7 +54,7 @@ function Column({
   const bg = CATEGORY_BG[category];
   return (
     <Stack spacing={0.75} sx={{ flex: 1, bgcolor: bg, borderRadius: 1, p: 0.75 }}>
-      {ORDERS.map((order) => {
+      {Array.from({ length: rows }, (_, i) => i + 1).map((order) => {
         const row = notes[key(category, order)];
         return (
           <Stack key={order} direction="row" spacing={0.5}>
@@ -78,6 +87,15 @@ function Column({
           </Stack>
         );
       })}
+      <Button
+        size="small"
+        startIcon={<AddOutlinedIcon />}
+        disabled={rows >= MAX_ROWS}
+        onClick={() => onAdd(category)}
+        sx={{ alignSelf: "flex-start" }}
+      >
+        {t("common.add")}
+      </Button>
     </Stack>
   );
 }
@@ -88,6 +106,8 @@ function Section({
   strengthCategory,
   weaknessCategory,
   notes,
+  rows,
+  onAdd,
   onChangeText,
   onChangeScore,
 }: {
@@ -96,6 +116,8 @@ function Section({
   strengthCategory: SkillNoteCategory;
   weaknessCategory: SkillNoteCategory;
   notes: NoteMap;
+  rows: RowCounts;
+  onAdd: (category: SkillNoteCategory) => void;
   onChangeText: (category: SkillNoteCategory, order: number, text: string) => void;
   onChangeScore: (category: SkillNoteCategory, order: number, score: number | null) => void;
 }) {
@@ -122,8 +144,8 @@ function Section({
           {t(labelKey)}
         </Typography>
       </Box>
-      <Column category={strengthCategory} notes={notes} onChangeText={onChangeText} onChangeScore={onChangeScore} />
-      <Column category={weaknessCategory} notes={notes} onChangeText={onChangeText} onChangeScore={onChangeScore} />
+      <Column category={strengthCategory} notes={notes} rows={rows[strengthCategory]} onAdd={onAdd} onChangeText={onChangeText} onChangeScore={onChangeScore} />
+      <Column category={weaknessCategory} notes={notes} rows={rows[weaknessCategory]} onAdd={onAdd} onChangeText={onChangeText} onChangeScore={onChangeScore} />
     </Stack>
   );
 }
@@ -141,6 +163,7 @@ export default function StrengthsWeaknesses({
 }) {
   const { t } = useTranslation();
   const [notes, setNotes] = useState<NoteMap>({});
+  const [rows, setRows] = useState<RowCounts>(INITIAL_ROWS);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   // L'enregistrement remplace toute la fiche : sans chargement réussi, il l'effacerait.
@@ -159,10 +182,20 @@ export default function StrengthsWeaknesses({
           map[key(n.category, n.order)] = { text: n.text, score: n.score };
         });
         setNotes(map);
+        // Une fiche déjà enregistrée avec plus de cinq lignes les rouvre toutes.
+        const counts = { ...INITIAL_ROWS };
+        r.data.results.forEach((n) => {
+          if (n.order > counts[n.category]) counts[n.category] = Math.min(n.order, MAX_ROWS);
+        });
+        setRows(counts);
         setLoaded(true);
       })
       .catch(() => setLoaded(false));
   }, [evaluationId, clear]);
+
+  function handleAdd(category: SkillNoteCategory) {
+    setRows((prev) => ({ ...prev, [category]: Math.min(prev[category] + 1, MAX_ROWS) }));
+  }
 
   function handleChangeText(category: SkillNoteCategory, order: number, text: string) {
     setNotes((prev) => ({ ...prev, [key(category, order)]: { text, score: prev[key(category, order)]?.score ?? null } }));
@@ -177,16 +210,15 @@ export default function StrengthsWeaknesses({
   }
 
   const payload = useMemo(() => {
-    const categories: SkillNoteCategory[] = ["SOFT_STRENGTH", "SOFT_WEAKNESS", "HARD_STRENGTH", "HARD_WEAKNESS"];
     const list: { category: SkillNoteCategory; order: number; text: string; score: number | null }[] = [];
-    categories.forEach((category) => {
-      ORDERS.forEach((order) => {
+    CATEGORIES.forEach((category) => {
+      Array.from({ length: rows[category] }, (_, i) => i + 1).forEach((order) => {
         const row = notes[key(category, order)];
         list.push({ category, order, text: row?.text ?? "", score: row?.score ?? null });
       });
     });
     return list;
-  }, [notes]);
+  }, [notes, rows]);
 
   const sectionLabel: Record<SkillNoteCategory, string> = {
     SOFT_STRENGTH: t("validation.strengths.sectionSoftStrength"),
@@ -276,6 +308,8 @@ export default function StrengthsWeaknesses({
             strengthCategory="SOFT_STRENGTH"
             weaknessCategory="SOFT_WEAKNESS"
             notes={notes}
+            rows={rows}
+            onAdd={handleAdd}
             onChangeText={handleChangeText}
             onChangeScore={handleChangeScore}
           />
@@ -285,6 +319,8 @@ export default function StrengthsWeaknesses({
             strengthCategory="HARD_STRENGTH"
             weaknessCategory="HARD_WEAKNESS"
             notes={notes}
+            rows={rows}
+            onAdd={handleAdd}
             onChangeText={handleChangeText}
             onChangeScore={handleChangeScore}
           />

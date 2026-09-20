@@ -248,7 +248,7 @@ class SkillNoteViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             if not isinstance(n, dict) or n.get("category") not in valid_categories:
                 continue
             order = n.get("order")
-            if not isinstance(order, int) or not (1 <= order <= 5):
+            if not isinstance(order, int) or not (1 <= order <= 10):
                 continue
             where = f"{section[n['category']]}, ligne {order}"
             if len(n.get("text") or "") > 255:
