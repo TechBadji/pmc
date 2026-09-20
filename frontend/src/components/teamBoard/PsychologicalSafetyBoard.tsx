@@ -1,8 +1,11 @@
-import { Alert, Box, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
+import { useAppSelector } from "@/app/hooks";
+import PsychologicalSafetyPage from "@/pages/PsychologicalSafetyPage";
 import type { EvaluationCampaign, Paginated, PsiResults, PsiSummary } from "@/api/types";
 import { dimensionReading, globalReading, PSI_DIMENSIONS, READING_COLORS } from "@/utils/psychologicalSafety";
 
@@ -16,6 +19,9 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
   const [campaignId, setCampaignId] = useState<number | "">("");
   const [data, setData] = useState<PsiResults | null>(null);
   const [error, setError] = useState(false);
+  const { user } = useAppSelector((s) => s.auth);
+  const [entryOpen, setEntryOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     apiClient
@@ -37,7 +43,7 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
       })
       .then((r) => setData(r.data))
       .catch(() => setError(true));
-  }, [campaignId, teamId, orgView]);
+  }, [campaignId, teamId, orgView, reloadKey]);
 
   const summary: PsiSummary | undefined = orgView ? data?.company : data?.teams[0];
 
@@ -56,6 +62,18 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
             </MenuItem>
           ))}
         </TextField>
+        {user?.role === "MANAGER" && (
+          <Button
+            size="small"
+            variant="contained"
+            color="secondary"
+            startIcon={<AddOutlinedIcon />}
+            onClick={() => setEntryOpen(true)}
+            sx={{ fontWeight: 700, px: 2, boxShadow: 3, "&:hover": { boxShadow: 6 } }}
+          >
+            {t("teamBoard.newEntry")}
+          </Button>
+        )}
         {summary && (
           <Typography variant="body2" color="text.secondary">
             {t("psi.dash.respondents", { n: summary.respondents, total: summary.headcount })}
@@ -126,16 +144,32 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
               })}
             </Alert>
           )}
-          <Box sx={{ p: 2, border: "1px dashed", borderColor: "divider", borderRadius: 1 }}>
-            <Typography variant="subtitle2" fontWeight={800}>
-              {t("psi.dash.debriefTitle")}
-            </Typography>
-            <Typography variant="body1" sx={{ fontStyle: "italic" }}>
-              « {t("psi.dash.debrief")} »
-            </Typography>
-          </Box>
         </>
       )}
+      <Dialog
+        open={entryOpen}
+        onClose={() => {
+          setEntryOpen(false);
+          setReloadKey((k) => k + 1);
+        }}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>{t("psi.navLabel")}</DialogTitle>
+        <DialogContent>
+          <PsychologicalSafetyPage />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setEntryOpen(false);
+              setReloadKey((k) => k + 1);
+            }}
+          >
+            {t("common.close")}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

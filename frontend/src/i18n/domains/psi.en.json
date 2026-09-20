@@ -59,8 +59,6 @@
       "notPublished": "Results hidden: at least {{min}} respondents are needed to protect anonymity ({{n}} so far).",
       "noData": "No answers for this campaign.",
       "radar": "Radar of the 4 dimensions",
-      "debriefTitle": "Debrief question",
-      "debrief": "What are we not telling each other today that we would benefit from saying to succeed?",
       "insight": "The overall figure often hides a gap between dimensions: {{high}} is the strongest ({{highScore}}), {{low}} the weakest ({{lowScore}}).",
       "allDirections": "All departments",
       "loadFailed": "The results could not be loaded."

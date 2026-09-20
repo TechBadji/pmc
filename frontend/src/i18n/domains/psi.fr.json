@@ -59,8 +59,6 @@
       "notPublished": "Résultats masqués : au moins {{min}} répondants sont nécessaires pour protéger l'anonymat ({{n}} pour l'instant).",
       "noData": "Aucune réponse pour cette campagne.",
       "radar": "Radar des 4 dimensions",
-      "debriefTitle": "Question de débrief",
-      "debrief": "Qu'est-ce que nous ne nous disons pas aujourd'hui, alors que nous aurions intérêt à nous le dire pour réussir ?",
       "insight": "Le chiffre global cache souvent un écart entre dimensions : {{high}} est la plus forte ({{highScore}}), {{low}} la plus faible ({{lowScore}}).",
       "allDirections": "Toutes les directions",
       "loadFailed": "Les résultats n'ont pas pu être chargés."
