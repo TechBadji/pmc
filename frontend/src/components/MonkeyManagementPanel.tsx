@@ -18,6 +18,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
+import MonkeyProfileSummary from "@/components/MonkeyProfileSummary";
 import ValidationSummary from "@/components/feedback/ValidationSummary";
 import { cohesionColor, performanceColors } from "@/theme";
 import { useIssues } from "@/utils/validation";
@@ -140,11 +141,13 @@ export default function MonkeyManagementPanel() {
   const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
   const [managers, setManagers] = useState<UserRecord[]>([]);
   const [viewedUserId, setViewedUserId] = useState<number | "">(user?.id ?? "");
+  // Lecture agrégée du CEO : répartition des profils, en pourcentage.
+  const [summaryMode, setSummaryMode] = useState(false);
 
   useEffect(() => {
     if (!isCompanyAdmin || !user?.company) return;
     apiClient
-      .get<Paginated<UserRecord>>("/users/", { params: { company: user.company, role: "MANAGER", page_size: 500 } })
+      .get<Paginated<UserRecord>>("/users/", { params: { company: user.company, page_size: 1000 } })
       .then((r) => setManagers(r.data.results))
       .catch(() => setLoadError(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -285,16 +288,27 @@ export default function MonkeyManagementPanel() {
                 select
                 size="small"
                 label={t("monkeyManagement.viewingLabel")}
-                value={viewedUserId}
-                onChange={(e) => setViewedUserId(e.target.value === "" ? "" : Number(e.target.value))}
-                sx={{ minWidth: 220 }}
+                value={summaryMode ? "SUMMARY" : viewedUserId}
+                onChange={(e) => {
+                  const v = e.target.value as unknown as string | number;
+                  if (v === "SUMMARY") {
+                    setSummaryMode(true);
+                    return;
+                  }
+                  setSummaryMode(false);
+                  setViewedUserId(v === "" ? "" : Number(v));
+                }}
+                sx={{ minWidth: 260 }}
               >
+                <MenuItem value="SUMMARY">{t("monkeyManagement.summary.option")}</MenuItem>
                 {user && (
                   <MenuItem value={user.id}>{t("monkeyManagement.myself", { name: user.full_name })}</MenuItem>
                 )}
-                {managers.map((m) => (
+                {managers
+                  .filter((m) => m.id !== user?.id)
+                  .map((m) => (
                   <MenuItem key={m.id} value={m.id}>
-                    {m.full_name} — {m.position}
+                    {m.full_name} — {m.department_name ?? m.position}
                   </MenuItem>
                 ))}
               </TextField>
@@ -319,11 +333,13 @@ export default function MonkeyManagementPanel() {
       </Paper>
 
       {campaigns.length === 0 && <Alert severity="info">{t("monkeyManagement.noCampaign")}</Alert>}
-      {!viewingSelf && viewedPerson && (
+      {!summaryMode && !viewingSelf && viewedPerson && (
         <Alert severity="info">{t("monkeyManagement.viewingOther", { name: viewedPerson.full_name })}</Alert>
       )}
 
-      {campaignId !== "" && (
+      {campaignId !== "" && isCompanyAdmin && summaryMode && <MonkeyProfileSummary campaignId={campaignId} people={managers} />}
+
+      {campaignId !== "" && !summaryMode && (
         <>
           <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", width: { xs: "100%", md: "80%" } }}>
             <TableContainer>

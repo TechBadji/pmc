@@ -1085,6 +1085,18 @@
     }
   },
   "monkeyManagement": {
+    "summary": {
+      "option": "Profile summary (percentages)",
+      "title": "Monkey Management profiles — {{name}}",
+      "hint": "{{n}} assessment(s) on the chosen campaign, split across the four profiles.",
+      "scope": "Scope",
+      "allCompany": "Whole company",
+      "profile": "Profile",
+      "count": "Count",
+      "total": "Total",
+      "empty": "No Monkey Management assessment for this scope on this campaign.",
+      "loadFailed": "The summary could not be loaded: reload the page."
+    },
     "title": "ID-PMC — Monkey Management",
     "subtitle": "Diagnostic of your ability to delegate, empower and grow your team's autonomy.",
     "objectiveLabel": "Objective",

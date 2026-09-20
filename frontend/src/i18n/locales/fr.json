@@ -1085,6 +1085,18 @@
     }
   },
   "monkeyManagement": {
+    "summary": {
+      "option": "Synthèse des profils (pourcentages)",
+      "title": "Profils Monkey Management — {{name}}",
+      "hint": "{{n}} diagnostic(s) sur la campagne choisie, répartis entre les quatre profils.",
+      "scope": "Périmètre",
+      "allCompany": "Toute l'entreprise",
+      "profile": "Profil",
+      "count": "Nombre",
+      "total": "Total",
+      "empty": "Aucun diagnostic Monkey Management pour ce périmètre sur cette campagne.",
+      "loadFailed": "La synthèse n'a pas pu être chargée : rechargez la page."
+    },
     "title": "ID-PMC — Monkey Management",
     "subtitle": "Diagnostic de la capacité à déléguer, responsabiliser et développer l'autonomie de l'équipe.",
     "objectiveLabel": "Objectif",
