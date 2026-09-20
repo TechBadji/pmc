@@ -1,6 +1,7 @@
-import { Box, Paper, Tab, Tabs, Typography } from "@mui/material";
+import { Box, Paper, Tab, Tabs } from "@mui/material";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/layout/PageHeader";
 import MyStrengthsPage from "./MyStrengthsPage";
 import PsychologicalSafetyPage from "./PsychologicalSafetyPage";
 
@@ -12,9 +13,12 @@ export default function TeamCohesionPage() {
   const [tab, setTab] = useState(0);
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>
-        {t("nav.teamCohesion")}
-      </Typography>
+      <Box sx={{ mb: 2 }}>
+        <PageHeader
+          title={t("nav.teamCohesion")}
+          view={t(tab === 0 ? "nav.myStrengths" : "nav.psychologicalSafety")}
+        />
+      </Box>
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", mb: 2.5 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 1 }}>
           <Tab label={t("nav.myStrengths").toUpperCase()} />
