@@ -16,6 +16,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -144,6 +145,14 @@ function emptyState(): CategoryState {
  * que fiche par fiche : changer d'onglet ne redemande rien au serveur, un
  * changement de campagne recharge les cinq d'un coup.
  */
+/** Trois lignes au minimum ; le bouton « Ajouter » en ouvre d'autres, jusqu'à MAX_SYNTHESIS_ROWS. */
+const MAX_SYNTHESIS_ROWS = 10;
+function padRows(values: string[]): string[] {
+  const out = [...values];
+  while (out.length < 3) out.push("");
+  return out;
+}
+
 export default function ManagerialSelfAssessmentPanel() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
@@ -245,8 +254,8 @@ export default function ManagerialSelfAssessmentPanel() {
         setSynthesis(existing);
         const skills = existing?.key_skills ?? [];
         const areas = existing?.improvement_areas ?? [];
-        setKeySkills([skills[0] ?? "", skills[1] ?? "", skills[2] ?? ""]);
-        setImprovementAreas([areas[0] ?? "", areas[1] ?? "", areas[2] ?? ""]);
+        setKeySkills(padRows(skills));
+        setImprovementAreas(padRows(areas));
         setSynthesisSaved(false);
       })
       .catch(() => setLoadError(true));
@@ -268,7 +277,9 @@ export default function ManagerialSelfAssessmentPanel() {
         const catDraft = drafts[c.key] ?? emptyState();
         const values = Object.values(catDraft).map((r) => r.score).filter((v): v is number => v !== null);
         const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-        return { category: c.label, ic: Math.round(avg * 10) / 10 };
+        const objectives = Object.values(catDraft).map((r) => r.objective_score).filter((v): v is number => v !== null);
+        const oc = objectives.length ? objectives.reduce((a, b) => a + b, 0) / objectives.length : null;
+        return { category: c.label, ic: Math.round(avg * 10) / 10, oc: oc === null ? null : Math.round(oc * 10) / 10 };
       }),
     [categories, drafts]
   );
@@ -496,7 +507,27 @@ export default function ManagerialSelfAssessmentPanel() {
                         fillOpacity={0.45}
                         strokeWidth={2}
                       />
-                      <RechartsTooltip formatter={(value: number) => value.toFixed(1)} />
+                      <RechartsTooltip
+                        content={({ active, payload }) => {
+                          const row = active && payload?.length ? (payload[0].payload as { category: string; ic: number; oc: number | null }) : null;
+                          if (!row) return null;
+                          return (
+                            <Paper elevation={4} sx={{ px: 1.5, py: 1, minWidth: 150 }}>
+                              <Typography variant="caption" fontWeight={800} display="block" sx={{ mb: 0.5 }}>
+                                {row.category}
+                              </Typography>
+                              <Stack direction="row" justifyContent="space-between" spacing={2}>
+                                <Typography variant="caption" color="text.secondary">IC</Typography>
+                                <Typography variant="caption" fontWeight={700}>{row.ic.toFixed(1)} / 5</Typography>
+                              </Stack>
+                              <Stack direction="row" justifyContent="space-between" spacing={2}>
+                                <Typography variant="caption" color="text.secondary">OC</Typography>
+                                <Typography variant="caption" fontWeight={700}>{row.oc === null ? "—" : `${row.oc.toFixed(1)} / 5`}</Typography>
+                              </Stack>
+                            </Paper>
+                          );
+                        }}
+                      />
                     </RadarChart>
                   </ResponsiveContainer>
                 </Box>
@@ -509,7 +540,7 @@ export default function ManagerialSelfAssessmentPanel() {
                       </Typography>
                     </Box>
                     <Stack spacing={1} sx={{ p: 1.5 }}>
-                      {[0, 1, 2].map((i) => (
+                      {keySkills.map((_, i) => (
                         <TextField
                           key={i}
                           size="small"
@@ -529,6 +560,20 @@ export default function ManagerialSelfAssessmentPanel() {
                           inputProps={{ maxLength: 255 }}
                         />
                       ))}
+                      {!readOnly && (
+                        <Button
+                          size="small"
+                          startIcon={<AddOutlinedIcon />}
+                          disabled={keySkills.length >= MAX_SYNTHESIS_ROWS}
+                          onClick={() => {
+                            setKeySkills((current) => [...current, ""]);
+                            setSynthesisSaved(false);
+                          }}
+                          sx={{ alignSelf: "flex-start" }}
+                        >
+                          {t("managerialSelfAssessment.add")}
+                        </Button>
+                      )}
                     </Stack>
                   </Paper>
 
@@ -539,7 +584,7 @@ export default function ManagerialSelfAssessmentPanel() {
                       </Typography>
                     </Box>
                     <Stack spacing={1} sx={{ p: 1.5 }}>
-                      {[0, 1, 2].map((i) => (
+                      {improvementAreas.map((_, i) => (
                         <TextField
                           key={i}
                           size="small"
@@ -559,6 +604,20 @@ export default function ManagerialSelfAssessmentPanel() {
                           inputProps={{ maxLength: 255 }}
                         />
                       ))}
+                      {!readOnly && (
+                        <Button
+                          size="small"
+                          startIcon={<AddOutlinedIcon />}
+                          disabled={improvementAreas.length >= MAX_SYNTHESIS_ROWS}
+                          onClick={() => {
+                            setImprovementAreas((current) => [...current, ""]);
+                            setSynthesisSaved(false);
+                          }}
+                          sx={{ alignSelf: "flex-start" }}
+                        >
+                          {t("managerialSelfAssessment.add")}
+                        </Button>
+                      )}
                     </Stack>
                   </Paper>
 

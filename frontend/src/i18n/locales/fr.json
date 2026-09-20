@@ -19,7 +19,8 @@
     "directorsReview": "Revue des performances (Directeurs)",
     "performances": "Performance ID",
     "cohesionSurvey": "Mon avis sur ma direction",
-    "cohesionSurveyOrg": "Mon avis sur mon organisation"
+    "cohesionSurveyOrg": "Mon avis sur mon organisation",
+    "myStrengths": "Forces et faiblesses"
   },
   "common": {
     "logout": "Déconnexion",
@@ -426,7 +427,7 @@
     "noEvaluationForPeriod": "Aucune évaluation pour {{name}} sur cette période.",
     "noSkillHistory": "Aucun historique pour cette compétence.",
     "tppr": "TPPR — Équipe ≥ 90 %",
-    "tospr": "TOSPR — Équipe > 100 %",
+    "tospr": "TOPR — Équipe > 100 %",
     "completionLabel": "Évalués sur la période",
     "rateNext": "Noter le suivant : {{name}}",
     "notEvaluated": "Non évalué",
@@ -956,6 +957,7 @@
     "synthesisHint": "Indice de compétence (IC) moyen de chaque fiche, pour la campagne sélectionnée.",
     "keySkillsTitle": "Compétences Clés",
     "keySkillPlaceholder": "Compétence {{n}}",
+    "add": "Ajouter",
     "improvementAreasTitle": "Axes d'Amélioration",
     "improvementAreaPlaceholder": "Axe {{n}}",
     "unset": "—",
@@ -1137,5 +1139,6 @@
       "behaviorToChangeLabel": "Quel comportement devez-vous changer pour éviter de les récupérer à nouveau ?",
       "nextResponsibilityLabel": "Quelle responsabilité supplémentaire pouvez-vous confier à votre équipe dès cette semaine ?"
     }
-  }
+  },
+  "myStrengths": {"title": "Mes forces et faiblesses", "intro": "Vos cinq meilleures et vos cinq plus faibles compétences, hard skills puis soft skills, relevées par votre évaluation sur la campagne choisie.", "noEvaluation": "Aucune évaluation pour cette campagne : vos forces et faiblesses apparaîtront dès qu'elle aura été saisie."}
 }

@@ -822,9 +822,11 @@ export default function CohesionFormPage() {
             sx={{ minWidth: 260 }}
           >
             {isCompanyAdmin && <MenuItem value={DIRECTORS_TEAM}>{t("cohesion.allDirectors")}</MenuItem>}
-            <MenuItem value={ORGANISATION}>
-              {t("cohesion.organisationOption", { company: user?.company_name ?? "" })}
-            </MenuItem>
+            {isCompanyAdmin && (
+              <MenuItem value={ORGANISATION}>
+                {t("cohesion.organisationOption", { company: user?.company_name ?? "" })}
+              </MenuItem>
+            )}
             {departments.map((d) => (
               <MenuItem key={d.id} value={d.id}>
                 {d.name}
@@ -919,9 +921,11 @@ export default function CohesionFormPage() {
               sx={{ minWidth: 260 }}
             >
               {isCompanyAdmin && <MenuItem value={DIRECTORS_TEAM}>{t("cohesion.allDirectors")}</MenuItem>}
-              <MenuItem value={ORGANISATION}>
-                {t("cohesion.organisationOption", { company: user?.company_name ?? "" })}
-              </MenuItem>
+              {isCompanyAdmin && (
+                <MenuItem value={ORGANISATION}>
+                  {t("cohesion.organisationOption", { company: user?.company_name ?? "" })}
+                </MenuItem>
+              )}
               {departments.map((d) => (
                 <MenuItem key={d.id} value={d.id}>
                   {d.name}

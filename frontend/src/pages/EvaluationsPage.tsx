@@ -182,8 +182,8 @@ export default function EvaluationsPage() {
     return map;
   }, [evaluations, selectedCampaignId]);
 
-  // Moyennes d'équipe sur la période sélectionnée — THSI/TSI (indices moyens)
-  // et TPPR/TOSPR (taux d'équipe >= 90 % / > 100 %), même définition que
+  // Moyennes d'équipe sur la période sélectionnée — THSI/TSSI (indices moyens)
+  // et TPPR/TOPR (taux d'équipe >= 90 % / > 100 %), même définition que
   // TAP/TPR/TOPR côté CEO mais restreinte à l'équipe du manager.
   const teamAverages = useMemo(() => {
     const evals = Array.from(evaluationForSelectedCampaign.values());
@@ -436,7 +436,7 @@ export default function EvaluationsPage() {
           {teamAverages && (
             <>
               <StatCard label="THSI" value={teamAverages.thsi ?? "—"} color="#2E5AAC" />
-              <StatCard label="TSI" value={teamAverages.tsi ?? "—"} color="#3F9142" />
+              <StatCard label="TSSI" value={teamAverages.tsi ?? "—"} color="#3F9142" />
               <StatCard label={t("evaluations.tppr")} value={`${teamAverages.tppr.toFixed(0)}%`} color="#4caf50" />
               <StatCard label={t("evaluations.tospr")} value={`${teamAverages.tospr.toFixed(0)}%`} color="#0ca30c" />
             </>

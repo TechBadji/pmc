@@ -19,7 +19,8 @@
     "performances": "Performance ID",
     "logs": "Logs",
     "cohesionSurvey": "My view on my division",
-    "cohesionSurveyOrg": "My view on my organisation"
+    "cohesionSurveyOrg": "My view on my organisation",
+    "myStrengths": "Strengths and weaknesses"
   },
   "common": {
     "logout": "Log out",
@@ -426,7 +427,7 @@
     "noEvaluationForPeriod": "No evaluation for {{name}} in this period.",
     "noSkillHistory": "No history for this skill yet.",
     "tppr": "TPPR — Team ≥ 90%",
-    "tospr": "TOSPR — Team > 100%",
+    "tospr": "TOPR — Team > 100%",
     "completionLabel": "Evaluated this period",
     "rateNext": "Rate next: {{name}}",
     "notEvaluated": "Not evaluated",
@@ -956,6 +957,7 @@
     "synthesisHint": "Average competency index (IC) for each sheet, for the selected campaign.",
     "keySkillsTitle": "Key Skills",
     "keySkillPlaceholder": "Skill {{n}}",
+    "add": "Add",
     "improvementAreasTitle": "Areas for Improvement",
     "improvementAreaPlaceholder": "Area {{n}}",
     "unset": "—",
@@ -1137,5 +1139,6 @@
       "behaviorToChangeLabel": "What behaviour do you need to change to avoid taking them back again?",
       "nextResponsibilityLabel": "What extra responsibility can you hand to your team this week?"
     }
-  }
+  },
+  "myStrengths": {"title": "My strengths and weaknesses", "intro": "Your five strongest and five weakest skills, hard then soft, as recorded by your evaluation for the selected campaign.", "noEvaluation": "No evaluation for this campaign: your strengths and weaknesses will appear once it has been entered."}
 }

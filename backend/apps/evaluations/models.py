@@ -462,8 +462,8 @@ class ManagerialSynthesis(models.Model):
         on_delete=models.PROTECT,
         related_name="managerial_syntheses",
     )
-    key_skills = models.JSONField("Compétences clés", default=list, blank=True, help_text="Jusqu'à 3 réponses courtes.")
-    improvement_areas = models.JSONField("Axes d'amélioration", default=list, blank=True, help_text="Jusqu'à 3 réponses courtes.")
+    key_skills = models.JSONField("Compétences clés", default=list, blank=True, help_text="Jusqu'à 10 réponses courtes.")
+    improvement_areas = models.JSONField("Axes d'amélioration", default=list, blank=True, help_text="Jusqu'à 10 réponses courtes.")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

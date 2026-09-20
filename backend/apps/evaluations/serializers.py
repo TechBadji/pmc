@@ -367,8 +367,8 @@ class ManagerialSynthesisSerializer(serializers.ModelSerializer):
         return campaign
 
     def _validate_list(self, value, field_name):
-        if not isinstance(value, list) or len(value) > 3 or not all(isinstance(v, str) for v in value):
-            raise serializers.ValidationError(f"{field_name} : trois réponses courtes au plus.")
+        if not isinstance(value, list) or len(value) > 10 or not all(isinstance(v, str) for v in value):
+            raise serializers.ValidationError(f"{field_name} : dix réponses courtes au plus.")
         return [v[:255] for v in value]
 
     def validate_key_skills(self, value):

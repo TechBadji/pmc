@@ -348,8 +348,9 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
             "oce_source_count": len(cibles),
         })
 
-        return Response({
-            "directions": directions,
-            "company_score": company_score(directions),
-            "organisation": organisation,
-        })
+        payload = {"directions": directions, "company_score": company_score(directions)}
+        # L'organisation se lit au niveau du CEO : le directeur de département
+        # n'y a pas accès, ni à l'écran ni dans la réponse de l'API.
+        if user.role in (user.Role.COMPANY_ADMIN, user.Role.SUPER_ADMIN):
+            payload["organisation"] = organisation
+        return Response(payload)
