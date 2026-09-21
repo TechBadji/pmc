@@ -304,7 +304,7 @@ export default function ManagerialSelfAssessmentPanel() {
       ...current,
       [activeCategory.key]: {
         ...(current[activeCategory.key] ?? emptyState()),
-        [order]: { ...(current[activeCategory.key]?.[order] ?? { score: null, objective_score: null }), ...patch },
+        [order]: { ...(current[activeCategory.key]?.[order] ?? { score: null, objective_score: null, comment: "" }), ...patch },
       },
     }));
     setSaved(false);
@@ -317,7 +317,7 @@ export default function ManagerialSelfAssessmentPanel() {
         order: Number(order),
         score: row.score,
         objective_score: row.objective_score,
-        comment: row.comment,
+        comment: row.comment ?? "",
       }))
       .filter((entry) => entry.score !== null || entry.objective_score !== null || entry.comment);
     const rules: Parameters<typeof check>[0] = [
