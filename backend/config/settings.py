@@ -134,7 +134,7 @@ REST_FRAMEWORK = {
     # pas casser l'usage normal (rafales de requêtes légitimes) du reste de
     # l'app.
     "DEFAULT_THROTTLE_RATES": {
-        "login": "60/min",
+        "login": "10/min",
         "forgot_password": "5/min",
     },
 }
