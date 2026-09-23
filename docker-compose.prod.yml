@@ -24,6 +24,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        # Clé MaxMind (variable de build Coolify) : sert uniquement à
+        # télécharger la base GeoLite2 pendant la construction de l'image,
+        # pour le pays affiché dans le journal d'activité. Absente, l'image
+        # se construit quand même.
+        MAXMIND_LICENSE_KEY: ${MAXMIND_LICENSE_KEY:-}
     restart: unless-stopped
     command: >
       sh -c "python manage.py migrate --noinput &&

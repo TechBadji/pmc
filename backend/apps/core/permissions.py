@@ -9,35 +9,36 @@ from rest_framework import permissions
 from .models import User
 
 
+def _role(request):
+    """Rôle de l'appelant, ou None s'il n'est pas authentifié.
+    `request.user` est alors un AnonymousUser, qui n'a pas d'attribut `role` :
+    y accéder directement transformait un simple 401 en erreur 500."""
+    return getattr(request.user, "role", None)
+
+
 class IsSuperAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return bool(request.user and request.user.role == User.Role.SUPER_ADMIN)
+        return _role(request) == User.Role.SUPER_ADMIN
 
 
 class IsCompanyAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return bool(request.user and request.user.role == User.Role.COMPANY_ADMIN)
+        return _role(request) == User.Role.COMPANY_ADMIN
 
 
 class IsManager(permissions.BasePermission):
     def has_permission(self, request, view):
-        return bool(request.user and request.user.role == User.Role.MANAGER)
+        return _role(request) == User.Role.MANAGER
 
 
 class IsSuperAdminOrCompanyAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return bool(
-            request.user
-            and request.user.role in (User.Role.SUPER_ADMIN, User.Role.COMPANY_ADMIN)
-        )
+        return _role(request) in (User.Role.SUPER_ADMIN, User.Role.COMPANY_ADMIN)
 
 
 class IsCompanyAdminOrManager(permissions.BasePermission):
     def has_permission(self, request, view):
-        return bool(
-            request.user
-            and request.user.role in (User.Role.COMPANY_ADMIN, User.Role.MANAGER)
-        )
+        return _role(request) in (User.Role.COMPANY_ADMIN, User.Role.MANAGER)
 
 
 class IsSuperAdminOrCompanyAdminOrManager(permissions.BasePermission):
@@ -46,10 +47,10 @@ class IsSuperAdminOrCompanyAdminOrManager(permissions.BasePermission):
     additionnel assuré par `CompanyScopedQuerySetMixin`)."""
 
     def has_permission(self, request, view):
-        return bool(
-            request.user
-            and request.user.role
-            in (User.Role.SUPER_ADMIN, User.Role.COMPANY_ADMIN, User.Role.MANAGER)
+        return _role(request) in (
+            User.Role.SUPER_ADMIN,
+            User.Role.COMPANY_ADMIN,
+            User.Role.MANAGER,
         )
 
 
