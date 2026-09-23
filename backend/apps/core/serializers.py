@@ -1,10 +1,12 @@
 from django.contrib.auth.password_validation import validate_password
+from django.db.models import Q
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .audit import log_event
 from .constants import DEFAULT_DEPARTMENTS, PLAN_FEATURES, DEFAULT_PASSWORD
+from .exceptions import AccountBlocked
 from .models import AuditLog, Company, Department, GuessSheet, PasswordResetRequest, PerformanceProfile, User
 from .text_utils import make_login, slugify_company
 
@@ -369,6 +371,7 @@ class PMCTokenObtainPairSerializer(TokenObtainPairSerializer):
     Admin."""
 
     def validate(self, attrs):
+        self._reject_blocked_account(attrs)
         data = super().validate(attrs)
         company = self.user.company
         if company is not None and not company.is_active:
@@ -384,6 +387,33 @@ class PMCTokenObtainPairSerializer(TokenObtainPairSerializer):
             f"s'est connecté(e) ({self.user.get_role_display()}).",
         )
         return data
+
+    @staticmethod
+    def _reject_blocked_account(attrs):
+        """Un compte bloqué échouait avec « identifiant ou mot de passe
+        incorrect » : l'utilisateur retapait son mot de passe puis demandait une
+        réinitialisation, qui n'y changeait rien. On lui dit donc que son compte
+        est bloqué — seulement après avoir vérifié le mot de passe, pour ne pas
+        révéler à un inconnu quels identifiants existent."""
+        identifier = str(attrs.get(User.USERNAME_FIELD) or "").strip()
+        password = attrs.get("password") or ""
+        if not identifier or not password:
+            return
+        user = User.objects.filter(
+            Q(email__iexact=identifier) | Q(generated_login__iexact=identifier)
+        ).first()
+        if user is None or user.is_active or not user.check_password(password):
+            return
+        raise AccountBlocked(
+            {
+                "code": "account_blocked",
+                "detail": (
+                    "Votre compte a été temporairement bloqué par votre administrateur. "
+                    "Votre mot de passe est correct : contactez votre administrateur pour "
+                    "rétablir l'accès."
+                ),
+            }
+        )
 
     @classmethod
     def get_token(cls, user):

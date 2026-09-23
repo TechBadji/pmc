@@ -23,6 +23,8 @@ export function describeLoginFailure(t: TFunction, failure: LoginFailure): { tit
   switch (failure.code) {
     case "invalid_credentials":
       return { title: t("validation.login.invalidTitle"), advice: t("validation.login.invalidAdvice") };
+    case "account_blocked":
+      return { title: t("validation.login.blockedTitle"), advice: t("validation.login.blockedAdvice") };
     case "rejected":
       return { title: failure.detail ?? t("validation.login.rejectedTitle"), advice: t("validation.login.rejectedAdvice") };
     case "throttled":

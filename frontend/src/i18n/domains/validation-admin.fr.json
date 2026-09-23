@@ -20,7 +20,9 @@
       "unavailableTitle": "Le service est momentanément indisponible.",
       "unavailableAdvice": "Une mise à jour ou un redémarrage est probablement en cours. Patientez une minute, puis réessayez.",
       "serverTitle": "Une erreur est survenue de notre côté pendant la connexion.",
-      "serverAdvice": "Votre identifiant et votre mot de passe ne sont pas en cause. Réessayez dans un instant ; si cela persiste, contactez le support."
+      "serverAdvice": "Votre identifiant et votre mot de passe ne sont pas en cause. Réessayez dans un instant ; si cela persiste, contactez le support.",
+      "blockedTitle": "Votre compte est temporairement bloqué.",
+      "blockedAdvice": "Votre identifiant et votre mot de passe sont corrects : c'est l'accès qui a été suspendu par votre administrateur. Contactez-le pour le rétablir — inutile de réinitialiser votre mot de passe."
     },
     "departments": {
       "nameRequired": "Saisissez le nom de la direction ou du service.",

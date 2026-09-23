@@ -26,6 +26,7 @@ const initialState: AuthState = {
  */
 export type LoginErrorCode =
   | "invalid_credentials"
+  | "account_blocked"
   | "rejected"
   | "throttled"
   | "network"
@@ -48,6 +49,9 @@ function readLoginFailure(err: unknown): LoginFailure {
   }
   const { status, data } = err.response;
   const body = (data ?? {}) as Record<string, unknown>;
+  // Compte bloqué par un administrateur : surtout pas « identifiants
+  // incorrects », qui pousserait l'utilisateur à réinitialiser son mot de passe.
+  if (body.code === "account_blocked" || status === 403) return { code: "account_blocked" };
   if (status === 429) {
     return { code: "throttled", retryAfter: typeof body.retry_after === "number" ? body.retry_after : undefined };
   }

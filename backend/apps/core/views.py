@@ -16,6 +16,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from .audit import log_event
 from .constants import DEFAULT_PASSWORD
+from .exceptions import AccountBlocked
 from .models import AuditLog, Company, Department, GuessSheet, PasswordResetRequest, PeerAccess, PerformanceProfile, User
 from .permissions import (
     CompanyScopedQuerySetMixin,
@@ -52,16 +53,18 @@ class PMCTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         try:
             return super().post(request, *args, **kwargs)
-        except APIException:
-            # Identifiants invalides, compte inactif, entreprise suspendue…
+        except APIException as exc:
+            # Identifiants invalides, compte bloqué, entreprise suspendue…
             # tout échec d'authentification est visible ici — utile pour
             # repérer un bourrage de tentatives malgré le throttling.
             identifier = str(request.data.get("email") or "")[:255]
-            log_event(
-                None,
-                "auth.login_failed",
-                f"Échec de connexion pour « {identifier} »." if identifier else "Échec de connexion (identifiant manquant).",
-            )
+            if isinstance(exc, AccountBlocked):
+                message = f"Connexion refusée : le compte « {identifier} » est bloqué."
+            elif identifier:
+                message = f"Échec de connexion pour « {identifier} »."
+            else:
+                message = "Échec de connexion (identifiant manquant)."
+            log_event(None, "auth.login_failed", message)
             raise
 
 

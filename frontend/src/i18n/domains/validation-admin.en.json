@@ -20,7 +20,9 @@
       "unavailableTitle": "The service is temporarily unavailable.",
       "unavailableAdvice": "An update or restart is probably in progress. Wait a minute, then try again.",
       "serverTitle": "An error occurred on our side while signing in.",
-      "serverAdvice": "Your username and password are not the problem. Try again in a moment; if it persists, contact support."
+      "serverAdvice": "Your username and password are not the problem. Try again in a moment; if it persists, contact support.",
+      "blockedTitle": "Your account is temporarily blocked.",
+      "blockedAdvice": "Your username and password are correct: it is access that your administrator has suspended. Contact them to restore it — there is no need to reset your password."
     },
     "departments": {
       "nameRequired": "Enter the name of the department or service.",
