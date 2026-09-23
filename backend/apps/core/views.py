@@ -706,7 +706,7 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     # Une seule zone de recherche libre côté écran, qui couvre à la fois
     # "qui" (auteur) et "quoi" (description) — le filtre entreprise reste
     # séparé puisqu'il a son propre champ dédié dans l'UI.
-    search_fields = ["description", "actor_name"]
+    search_fields = ["description", "actor_name", "ip_address", "country_name"]
 
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request):
@@ -717,7 +717,9 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="journal-activite.csv"'
         writer = csv.writer(response)
-        writer.writerow(["Date", "Auteur", "Rôle", "Entreprise", "Type d'événement", "Description"])
+        writer.writerow(
+            ["Date", "Auteur", "Rôle", "Entreprise", "Type d'événement", "Description", "Adresse IP", "Pays"]
+        )
         for log in queryset.iterator():
             writer.writerow([
                 timezone.localtime(log.created_at).strftime("%Y-%m-%d %H:%M:%S"),
@@ -726,6 +728,8 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
                 log.company_name,
                 log.action,
                 log.description,
+                log.ip_address or "",
+                log.country_name or log.country_code,
             ])
         return response
 

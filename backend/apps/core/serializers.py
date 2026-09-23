@@ -430,6 +430,7 @@ class AuditLogSerializer(serializers.ModelSerializer):
         fields = [
             "id", "created_at", "actor", "actor_name", "actor_role",
             "company_name", "action", "description",
+            "ip_address", "country_code", "country_name",
         ]
 
 

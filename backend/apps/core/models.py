@@ -315,6 +315,13 @@ class AuditLog(models.Model):
     company_name = models.CharField("Entreprise concernée", max_length=255, blank=True)
     action = models.CharField("Type d'événement", max_length=50)
     description = models.TextField("Description")
+    # Origine de la requête, figée à l'écriture comme le reste : elle répond
+    # à « d'où » un événement a été déclenché, ce que ni l'auteur ni la date
+    # ne disent. Vide pour un événement sans requête HTTP (commande de
+    # management, tâche planifiée).
+    ip_address = models.GenericIPAddressField("Adresse IP", null=True, blank=True)
+    country_code = models.CharField("Code pays", max_length=2, blank=True)
+    country_name = models.CharField("Pays", max_length=80, blank=True)
 
     class Meta:
         verbose_name = "Événement du journal"

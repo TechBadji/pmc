@@ -695,7 +695,9 @@
       "skillitem": "Skill",
       "performanceprofile": "Performance profile",
       "auth": "Authentication"
-    }
+    },
+    "origin": "Origin",
+    "unknownCountry": "Unknown country"
   },
   "directorsReview": {
     "title": "Individual performance review of directors {{range}}",

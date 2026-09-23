@@ -695,7 +695,9 @@
       "skillitem": "Compétence",
       "performanceprofile": "Fiche Performances",
       "auth": "Authentification"
-    }
+    },
+    "origin": "Origine",
+    "unknownCountry": "Pays inconnu"
   },
   "directorsReview": {
     "title": "Revue des performances individuelles des directeurs {{range}}",

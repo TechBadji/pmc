@@ -45,7 +45,12 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.core.middleware.CurrentRequestMiddleware",
 ]
+
+# Base MaxMind GeoLite2 (facultative) utilisée pour situer l'IP d'un
+# événement du journal — voir apps/core/geoip.py.
+GEOIP_COUNTRY_DB = os.environ.get("GEOIP_COUNTRY_DB", "/app/geoip/GeoLite2-Country.mmdb")
 
 ROOT_URLCONF = "config.urls"
 

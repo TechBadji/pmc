@@ -28,6 +28,13 @@ const POLL_MS = 8000;
 // requête par frappe sur les champs Entreprise/Recherche.
 const DEBOUNCE_MS = 400;
 
+/** Drapeau du pays : les deux lettres ISO traduites en indicateurs régionaux
+ * Unicode — aucune image à embarquer ni à charger. */
+function flagEmoji(code: string): string {
+  if (code.length !== 2) return "";
+  return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+}
+
 export default function LogsPage() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "en" ? "en-US" : "fr-FR";
@@ -269,6 +276,7 @@ export default function LogsPage() {
                 <TableCell>{t("logs.timestamp")}</TableCell>
                 <TableCell>{t("logs.event")}</TableCell>
                 <TableCell>{t("logs.company")}</TableCell>
+                <TableCell>{t("logs.origin")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -298,12 +306,31 @@ export default function LogsPage() {
                         {log.company_name || "—"}
                       </Typography>
                     </TableCell>
+                    {/* D'où l'action a été déclenchée : le pays répond d'un
+                        coup d'œil, l'IP sert à l'enquête. */}
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>
+                      {log.ip_address ? (
+                        <Stack spacing={0.25}>
+                          <Typography variant="body2">
+                            {log.country_code ? `${flagEmoji(log.country_code)} ` : ""}
+                            {log.country_name || t("logs.unknownCountry")}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {log.ip_address}
+                          </Typography>
+                        </Stack>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          —
+                        </Typography>
+                      )}
+                    </TableCell>
                   </TableRow>
                 );
               })}
               {logs.length === 0 && !loadError && (
                 <TableRow>
-                  <TableCell colSpan={3}>
+                  <TableCell colSpan={4}>
                     <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
                       {t("logs.noEvents")}
                     </Typography>

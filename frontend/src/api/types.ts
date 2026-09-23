@@ -404,6 +404,10 @@ export interface AuditLog {
   company_name: string;
   action: string;
   description: string;
+  /** Origine de la requête, figée à l'écriture ; vide pour un événement sans requête HTTP. */
+  ip_address: string | null;
+  country_code: string;
+  country_name: string;
 }
 
 export interface Paginated<T> {
