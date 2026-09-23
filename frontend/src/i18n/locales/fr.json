@@ -330,7 +330,15 @@
     "unassignedTitle": "Membres sans équipe",
     "unassignedHint": "Ces personnes ont été retirées d'une équipe. Choisissez une équipe pour les réaffecter.",
     "assignToTeam": "Affecter à une équipe",
-    "assignedMessage": "{{name}} a été affecté(e) à l'équipe {{team}}."
+    "assignedMessage": "{{name}} a été affecté(e) à l'équipe {{team}}.",
+    "blockAll": "Bloquer tous les comptes",
+    "unblockAll": "Débloquer tous les comptes",
+    "bulkBlockTitle": "Bloquer tous les comptes de l'entreprise ?",
+    "bulkBlockBody": "{{count}} compte(s) (managers et membres) ne pourront plus se connecter. Votre propre compte reste actif : vous pourrez les débloquer à tout moment.",
+    "bulkUnblockTitle": "Débloquer tous les comptes de l'entreprise ?",
+    "bulkUnblockBody": "{{count}} compte(s) bloqué(s) retrouveront l'accès à l'application.",
+    "bulkBlockedMessage": "{{count}} compte(s) ont été bloqués.",
+    "bulkUnblockedMessage": "{{count}} compte(s) ont été débloqués."
   },
   "skills": {
     "competency": "Compétence",

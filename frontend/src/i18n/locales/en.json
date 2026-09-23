@@ -330,7 +330,15 @@
     "unassignedTitle": "Members without a team",
     "unassignedHint": "These people were removed from a team. Pick a team to reassign them.",
     "assignToTeam": "Assign to a team",
-    "assignedMessage": "{{name}} was assigned to the {{team}} team."
+    "assignedMessage": "{{name}} was assigned to the {{team}} team.",
+    "blockAll": "Block all accounts",
+    "unblockAll": "Unblock all accounts",
+    "bulkBlockTitle": "Block every account in the company?",
+    "bulkBlockBody": "{{count}} account(s) (managers and members) will no longer be able to sign in. Your own account stays active: you can unblock them at any time.",
+    "bulkUnblockTitle": "Unblock every account in the company?",
+    "bulkUnblockBody": "{{count}} blocked account(s) will regain access to the application.",
+    "bulkBlockedMessage": "{{count}} account(s) have been blocked.",
+    "bulkUnblockedMessage": "{{count}} account(s) have been unblocked."
   },
   "skills": {
     "competency": "Competency",

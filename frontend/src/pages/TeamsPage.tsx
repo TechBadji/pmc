@@ -70,6 +70,10 @@ export default function TeamsPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<ApiErrorInfo | null>(null);
   const [memberToRemove, setMemberToRemove] = useState<{ member: UserRecord; dept: Department } | null>(null);
+  // true = tout débloquer, false = tout bloquer, null = pas de confirmation en cours.
+  const [bulkTarget, setBulkTarget] = useState<boolean | null>(null);
+  const [bulkError, setBulkError] = useState<ApiErrorInfo | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   function load() {
     setLoadError(false);
@@ -188,6 +192,14 @@ export default function TeamsPage() {
   }
 
   const canCreateDepartment = user?.role === "COMPANY_ADMIN";
+  // Comptes concernés par une action de masse : Managers et Membres, jamais
+  // le CEO lui-même (il se couperait l'accès à l'application).
+  const bulkScope = useMemo(
+    () => members.filter((m) => m.id !== user?.id && (m.role === "MANAGER" || m.role === "MEMBER")),
+    [members, user],
+  );
+  const blockableCount = bulkScope.filter((m) => m.is_active).length;
+  const unblockableCount = bulkScope.length - blockableCount;
   const directions = useMemo(() => departments.filter((d) => d.parent === null), [departments]);
   /** Directions dans l'ordre, chacune immédiatement suivie de ses services :
    * la hiérarchie se lit dans la liste elle-même, sans imbriquer un accordéon
@@ -242,6 +254,28 @@ export default function TeamsPage() {
     load();
   }
 
+  async function handleBulkToggleActive() {
+    if (bulkTarget === null) return;
+    setBulkBusy(true);
+    setBulkError(null);
+    try {
+      const res = await apiClient.post<{ updated: number }>("/users/bulk-toggle-active/", {
+        is_active: bulkTarget,
+      });
+      setActionMessage(
+        t(bulkTarget ? "teams.bulkUnblockedMessage" : "teams.bulkBlockedMessage", {
+          count: res.data.updated,
+        }),
+      );
+      setBulkTarget(null);
+      load();
+    } catch (err) {
+      setBulkError(describeApiError(err));
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   async function handleToggleActive(member: UserRecord) {
     await apiClient.post(`/users/${member.id}/toggle-active/`);
     load();
@@ -252,9 +286,36 @@ export default function TeamsPage() {
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <PageHeader title={user?.role === "MANAGER" ? t("nav.myTeam") : t("nav.teams")} />
         {canCreateDepartment && (
-          <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={openDeptDialog}>
-            {t("departments.newDepartment")}
-          </Button>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap justifyContent="flex-end">
+            {/* Geste d'entreprise : couper (ou rouvrir) l'accès de tous les
+              * collaborateurs en une fois, sans passer ligne par ligne. */}
+            <Button
+              color="error"
+              variant="outlined"
+              startIcon={<BlockOutlinedIcon />}
+              disabled={blockableCount === 0}
+              onClick={() => {
+                setBulkError(null);
+                setBulkTarget(false);
+              }}
+            >
+              {t("teams.blockAll")}
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<CheckCircleOutlineIcon />}
+              disabled={unblockableCount === 0}
+              onClick={() => {
+                setBulkError(null);
+                setBulkTarget(true);
+              }}
+            >
+              {t("teams.unblockAll")}
+            </Button>
+            <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={openDeptDialog}>
+              {t("departments.newDepartment")}
+            </Button>
+          </Stack>
         )}
       </Stack>
 
@@ -496,6 +557,31 @@ export default function TeamsPage() {
           </Table>
         </Paper>
       )}
+
+      <Dialog open={bulkTarget !== null} onClose={() => setBulkTarget(null)} fullWidth maxWidth="xs">
+        <DialogTitle>{t(bulkTarget ? "teams.bulkUnblockTitle" : "teams.bulkBlockTitle")}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Typography variant="body2">
+              {t(bulkTarget ? "teams.bulkUnblockBody" : "teams.bulkBlockBody", {
+                count: bulkTarget ? unblockableCount : blockableCount,
+              })}
+            </Typography>
+            <InlineApiError info={bulkError} onClose={() => setBulkError(null)} />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBulkTarget(null)}>{t("common.cancel")}</Button>
+          <Button
+            color={bulkTarget ? "primary" : "error"}
+            variant="contained"
+            disabled={bulkBusy}
+            onClick={handleBulkToggleActive}
+          >
+            {t(bulkTarget ? "teams.unblockAll" : "teams.blockAll")}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={memberToRemove !== null} onClose={() => setMemberToRemove(null)} fullWidth maxWidth="xs">
         <DialogTitle>{t("teams.removeConfirmTitle")}</DialogTitle>

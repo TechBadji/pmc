@@ -596,6 +596,34 @@ class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
         )
         return Response(UserSerializer(target).data)
 
+    @action(detail=False, methods=["post"], url_path="bulk-toggle-active")
+    def bulk_toggle_active(self, request):
+        """Bloque (ou débloque) d'un seul geste tous les comptes de l'entreprise.
+        Réservé à l'Admin Entreprise (le « CEO ») : il agit sur ses Managers et
+        Membres, jamais sur son propre compte ni sur une autre entreprise."""
+        user = request.user
+        if user.role != User.Role.COMPANY_ADMIN or user.company_id is None:
+            raise PermissionDenied("Seul l'Admin Entreprise peut bloquer tous les comptes.")
+        active = request.data.get("is_active")
+        if not isinstance(active, bool):
+            raise ValidationError(
+                {"is_active": "Indiquez true pour débloquer ou false pour bloquer."}
+            )
+        targets = User.objects.filter(
+            company_id=user.company_id,
+            role__in=(User.Role.MANAGER, User.Role.MEMBER),
+        ).exclude(id=user.id).exclude(is_active=active)
+        count = targets.count()
+        if count:
+            targets.update(is_active=active)
+            log_event(
+                user,
+                "user.unblocked" if active else "user.blocked",
+                f"a {'débloqué' if active else 'bloqué'} {count} compte(s) de l'entreprise.",
+                company=user.company,
+            )
+        return Response({"updated": count, "is_active": active})
+
 
 class PasswordResetRequestViewSet(viewsets.ReadOnlyModelViewSet):
     """Demandes 'mot de passe oublié' à traiter. Un Admin Entreprise voit les
