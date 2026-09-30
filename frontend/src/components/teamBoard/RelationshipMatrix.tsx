@@ -119,6 +119,23 @@ export default function RelationshipMatrix({
     }
   }
 
+  /** Remet un binôme « à qualifier » : la relation est supprimée, puis peut être redéfinie. */
+  async function resetQuality(a: UserRecord, b: UserRecord) {
+    const existing = byPair.get(pairKey(a.id, b.id));
+    if (!existing) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await apiClient.delete(`/team-relationships/${existing.id}/`);
+      onChanged();
+    } catch {
+      setError("save");
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   /** Pose en une fois les binômes non encore qualifiés, en « correcte ». */
   async function fillMissing() {
     const proceed = check([[missing.some((p) => p.a.id === p.b.id), t("validation.relationship.samePerson")]]);
@@ -239,7 +256,12 @@ export default function RelationshipMatrix({
                       displayEmpty
                       value={quality}
                       disabled={readOnly || busy || !focus}
-                      onChange={(e) => focus && setQuality(focus, other, e.target.value as TeamRelationship["quality"])}
+                      onChange={(e) => {
+                        if (!focus) return;
+                        const value = e.target.value as TeamRelationship["quality"] | "";
+                        if (value === "") resetQuality(focus, other);
+                        else setQuality(focus, other, value);
+                      }}
                       renderValue={(value) =>
                         !value ? (
                           <Typography variant="body2" color="warning.main">
@@ -260,6 +282,11 @@ export default function RelationshipMatrix({
                         )
                       }
                     >
+                      <MenuItem value="">
+                        <Typography variant="body2" color="warning.main">
+                          {t("teamBoard.toQualify")}
+                        </Typography>
+                      </MenuItem>
                       {QUALITIES.map((q) => (
                         <MenuItem key={q} value={q}>
                           <Stack direction="row" spacing={1} alignItems="center">
