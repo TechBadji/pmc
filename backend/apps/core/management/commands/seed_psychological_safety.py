@@ -65,6 +65,7 @@ TEAM_SETTINGS = {
     "FIL3": ("appartenance sans challenge", "degradation"),
     "FIL4": ("apprenante", "progres"),
     "SUNU": ("appartenance sans challenge", "progres"),
+    "DJG": ("a consolider", "progres"),
 }
 PARTICIPATION = 0.9  # part des collaborateurs qui répondent à une campagne donnée
 MIN_RESPONDENTS = 4  # plancher par direction et par campagne, au-dessus du seuil d'anonymat
