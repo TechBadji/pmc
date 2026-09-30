@@ -286,3 +286,63 @@ class PsychologicalSafetyResponseSerializer(serializers.ModelSerializer):
         ).exists():
             raise serializers.ValidationError({"campaign": "Vous avez déjà répondu pour cette campagne : modifiez votre réponse."})
         return attrs
+
+
+def psi_dimension_scores(scores):
+    """Moyenne /5 de chaque dimension (trois affirmations chacune), dans l'ordre de PSI_DIMENSIONS."""
+    return [
+        {"key": key, "score": round(sum(scores[d * 3 : d * 3 + 3]) / 3, 2)}
+        for d, key in enumerate(PSI_DIMENSIONS)
+    ]
+
+
+class PsychologicalSafetyReviewSerializer(serializers.ModelSerializer):
+    """Réponse individuelle au PSI, lue par le super administrateur, qui y porte
+    son appréciation (safe / à surveiller / non safe). Seuls `verdict` et
+    `verdict_comment` s'écrivent : les notes restent celles du répondant."""
+
+    campaign_name = serializers.CharField(source="campaign.name", read_only=True)
+    team_name = serializers.CharField(source="team.name", read_only=True)
+    respondent_name = serializers.CharField(source="respondent.get_full_name", read_only=True)
+    respondent_login = serializers.CharField(source="respondent.generated_login", read_only=True)
+    respondent_role = serializers.CharField(source="respondent.role", read_only=True)
+    respondent_position = serializers.CharField(source="respondent.position", read_only=True)
+    respondent_avatar = serializers.SerializerMethodField()
+    dimensions = serializers.SerializerMethodField()
+    global_score = serializers.SerializerMethodField()
+    verdict_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PsychologicalSafetyResponse
+        fields = [
+            "id", "company", "campaign", "campaign_name", "team", "team_name",
+            "respondent", "respondent_name", "respondent_login", "respondent_role", "respondent_position",
+            "respondent_avatar", "scores", "dimensions", "global_score",
+            "verdict", "verdict_comment", "verdict_by_name", "verdict_at", "updated_at",
+        ]
+        read_only_fields = [f for f in fields if f not in ("verdict", "verdict_comment")]
+
+    def get_respondent_avatar(self, obj):
+        return obj.respondent.avatar.url if obj.respondent.avatar else None
+
+    def get_dimensions(self, obj):
+        return psi_dimension_scores(obj.scores)
+
+    def get_global_score(self, obj):
+        dims = psi_dimension_scores(obj.scores)
+        return round(sum(d["score"] for d in dims) / len(dims), 2)
+
+    def get_verdict_by_name(self, obj):
+        return obj.verdict_by.get_full_name() if obj.verdict_by else ""
+
+    def validate_verdict(self, value):
+        if value not in ("", *PsychologicalSafetyResponse.Verdict.values):
+            raise serializers.ValidationError(
+                "Appréciation inconnue : choisissez Safe, À surveiller ou Non safe (ou aucune)."
+            )
+        return value
+
+    def validate_verdict_comment(self, value):
+        if len(value) > 2000:
+            raise serializers.ValidationError("Le commentaire est trop long : 2 000 caractères au plus.")
+        return value.strip()

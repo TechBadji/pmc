@@ -549,6 +549,32 @@ export interface PsiResults {
   company?: PsiSummary;
 }
 
+export type PsiVerdict = "SAFE" | "WATCH" | "UNSAFE";
+
+/** Réponse individuelle au PSI, lue par le super administrateur seul. */
+export interface PsiReview {
+  id: number;
+  company: number;
+  campaign: number;
+  campaign_name: string;
+  team: number;
+  team_name: string;
+  respondent: number;
+  respondent_name: string;
+  respondent_login: string;
+  respondent_role: Role;
+  respondent_position: string;
+  respondent_avatar: string | null;
+  scores: number[];
+  dimensions: { key: string; score: number }[];
+  global_score: number;
+  verdict: PsiVerdict | "";
+  verdict_comment: string;
+  verdict_by_name: string;
+  verdict_at: string | null;
+  updated_at: string;
+}
+
 export type FeedbackKind = "FEEDBACK" | "FORWARD";
 export type FeedbackRelation = "SELF" | "MANAGER" | "REPORT" | "PEER";
 

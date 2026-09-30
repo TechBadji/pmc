@@ -46,6 +46,7 @@ import type {
 } from "@/api/types";
 import { performanceColors } from "@/theme";
 import { BOARD_CREAM, BOARD_TEXT, BandTitle, BoardPanel, EditableList, TeamSpiderGraph } from "./BoardPieces";
+import PsiTeamSynthesis from "./PsiTeamSynthesis";
 
 /** Performance de référence : au-delà, les objectifs sont tenus. */
 const TPD_TARGET = 90;
@@ -969,7 +970,11 @@ export default function TeamPerformanceIdBoard({
           pb: 0.5,
         }}
       >
-        <BoardPanel title={t("teamBoard.id3aTeam").toUpperCase()}>
+        {/* L'ID-3A et, juste en dessous, la synthèse Psychological Safety :
+          * la performance de l'équipe et le climat dans lequel elle s'obtient
+          * se lisent ensemble, dans la même colonne. */}
+        <Stack spacing={1}>
+        <BoardPanel title={t("teamBoard.id3aTeam").toUpperCase()} sx={{ height: "auto" }}>
           <Stack direction="row" spacing={1}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Id3aTeamChart
@@ -989,6 +994,11 @@ export default function TeamPerformanceIdBoard({
             </Box>
           </Stack>
         </BoardPanel>
+
+        <BoardPanel title={t("cohesion.viewPsi")} sx={{ height: "auto", flex: 1 }}>
+          <PsiTeamSynthesis teamId={teamId} />
+        </BoardPanel>
+        </Stack>
 
         {/* ID-TPD : quatre quadrants, l'objectif en abscisse et la progression
             en ordonnée, un feu par quadrant — la planche de référence. */}

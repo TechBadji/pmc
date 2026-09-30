@@ -42,6 +42,7 @@ from apps.skills.views import SkillItemViewSet, SkillMatrixViewSet
 from apps.teams.views import (
     CohesionResponseViewSet,
     PsychologicalSafetyResponseViewSet,
+    PsychologicalSafetyReviewViewSet,
     TeamBoardViewSet,
     TeamCohesionAnalysisViewSet,
     TeamRelationshipViewSet,
@@ -63,6 +64,7 @@ router.register("monkey-management-assessments", MonkeyManagementAssessmentViewS
 router.register("performance-objectives", PerformanceObjectiveViewSet, basename="performance-objective")
 router.register("cohesion-analyses", TeamCohesionAnalysisViewSet, basename="cohesion-analysis")
 router.register("psychological-safety-responses", PsychologicalSafetyResponseViewSet, basename="psi-response")
+router.register("psychological-safety-review", PsychologicalSafetyReviewViewSet, basename="psi-review")
 router.register("cohesion-responses", CohesionResponseViewSet, basename="cohesion-response")
 router.register("team-relationships", TeamRelationshipViewSet, basename="team-relationship")
 router.register("team-boards", TeamBoardViewSet, basename="team-board")

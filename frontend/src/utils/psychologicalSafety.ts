@@ -1,3 +1,5 @@
+import type { PsiVerdict } from "@/api/types";
+
 export const PSI_DIMENSIONS = ["belonging", "learning", "contributing", "challenging"] as const;
 export type PsiDimension = (typeof PSI_DIMENSIONS)[number];
 
@@ -24,3 +26,25 @@ export const READING_COLORS: Record<PsiReading, string> = {
   watch: "#E08A34",
   priority: "#B23F3F",
 };
+
+/** Couleur de la lecture globale : mêmes teintes que celles des dimensions. */
+export const GLOBAL_READING_COLORS: Record<ReturnType<typeof globalReading>, string> = {
+  solid: READING_COLORS.strong,
+  improvable: READING_COLORS.watch,
+  fragile: READING_COLORS.priority,
+};
+
+export const VERDICT_COLORS: Record<PsiVerdict, string> = {
+  SAFE: READING_COLORS.strong,
+  WATCH: READING_COLORS.watch,
+  UNSAFE: READING_COLORS.priority,
+};
+
+/** Appréciation que suggèrent les notes : le consultant la confirme ou la corrige. */
+export function suggestedVerdict(globalScore: number): PsiVerdict {
+  const reading = globalReading(globalScore);
+  return reading === "solid" ? "SAFE" : reading === "improvable" ? "WATCH" : "UNSAFE";
+}
+
+/** Note /5 à la française (deux décimales, virgule). */
+export const fmtPsi = (n: number) => n.toFixed(2).replace(".", ",");

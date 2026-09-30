@@ -11,7 +11,7 @@
     "campaign": "Campagne",
     "save": "Enregistrer ma réponse",
     "update": "Mettre à jour ma réponse",
-    "saved": "Votre réponse est enregistrée. Elle reste anonyme : seule la moyenne de l'équipe est lue.",
+    "saved": "Votre réponse est enregistrée. Votre entreprise n'en lit que la moyenne de l'équipe : ni votre manager ni votre direction ne voient vos réponses individuelles. Seul le consultant ID-PMC (administrateur de la plateforme) peut les consulter pour l'analyse de la sécurité psychologique.",
     "incomplete": "Il reste {{count}} affirmation(s) sans note : notez les 12 affirmations avant d'enregistrer.",
     "noDepartment": "Vous n'êtes rattaché à aucune direction : le questionnaire porte sur votre équipe et ne peut pas être rempli.",
     "closed": "Cette campagne est clôturée : votre réponse est en lecture seule.",
@@ -73,6 +73,14 @@
       "solid": "Sécurité psychologique solide",
       "improvable": "Sécurité psychologique perfectible",
       "fragile": "Sécurité psychologique fragile"
+    },
+    "board": {
+      "latest": "PSI {{campaign}}",
+      "evolution": "Évolution du PSI global",
+      "respondents": "{{n}} / {{total}} répondants",
+      "notPublished": "Résultats masqués : {{n}} répondant(s), il en faut {{min}} pour protéger l'anonymat.",
+      "noData": "Aucune réponse au questionnaire PSI pour cette équipe.",
+      "loadFailed": "La synthèse Psychological Safety n'a pas pu être chargée."
     }
   },
   "cohesion": {

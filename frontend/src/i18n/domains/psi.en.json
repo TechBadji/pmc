@@ -11,7 +11,7 @@
     "campaign": "Campaign",
     "save": "Save my answers",
     "update": "Update my answers",
-    "saved": "Your answers are saved. They stay anonymous: only the team average is read.",
+    "saved": "Your answers are saved. Your company only reads the team average: neither your manager nor your department sees your individual answers. Only the ID-PMC consultant (platform administrator) can read them to analyse psychological safety.",
     "incomplete": "{{count}} statement(s) still have no rating: rate all 12 before saving.",
     "noDepartment": "You are not attached to any department: the questionnaire is about your team and cannot be filled in.",
     "closed": "This campaign is closed: your answers are read-only.",
@@ -73,6 +73,14 @@
       "solid": "Solid psychological safety",
       "improvable": "Improvable psychological safety",
       "fragile": "Fragile psychological safety"
+    },
+    "board": {
+      "latest": "PSI {{campaign}}",
+      "evolution": "Overall PSI over time",
+      "respondents": "{{n}} / {{total}} respondents",
+      "notPublished": "Results hidden: {{n}} respondent(s), {{min}} are needed to protect anonymity.",
+      "noData": "No answers to the PSI questionnaire for this team.",
+      "loadFailed": "The Psychological Safety summary could not be loaded."
     }
   },
   "cohesion": {

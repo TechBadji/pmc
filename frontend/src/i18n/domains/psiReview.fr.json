@@ -1,0 +1,52 @@
+{
+  "psiReview": {
+    "title": "Psychological Safety — réponses individuelles",
+    "subtitle": "Les douze notes de chaque collaborateur, et votre appréciation : qui est en sécurité psychologique, qui ne l'est pas.",
+    "confidential": "Confidentiel : ces réponses individuelles et vos appréciations ne sont visibles que par le super administrateur. L'entreprise (CEO, directeurs) n'en voit que les moyennes d'équipe.",
+    "company": "Entreprise",
+    "campaign": "Campagne",
+    "direction": "Direction",
+    "allDirections": "Toutes les directions",
+    "reading": "Lecture calculée",
+    "allReadings": "Toutes les lectures",
+    "verdict": "Appréciation",
+    "allVerdicts": "Toutes les appréciations",
+    "noVerdict": "Non appréciée",
+    "search": "Rechercher un collaborateur",
+    "person": "Collaborateur",
+    "global": "PSI /5",
+    "verdicts": {
+      "SAFE": "Safe",
+      "WATCH": "À surveiller",
+      "UNSAFE": "Non safe"
+    },
+    "readings": {
+      "solid": "Solide",
+      "improvable": "Perfectible",
+      "fragile": "Fragile"
+    },
+    "dimShort": {
+      "belonging": "Belonging",
+      "learning": "Learning",
+      "contributing": "Contributing",
+      "challenging": "Challenging"
+    },
+    "respondents": "{{n}} réponse(s)",
+    "toReview": "{{n}} à apprécier",
+    "detail": "Voir ses réponses",
+    "detailTitle": "{{name}} — {{campaign}}",
+    "comment": "Commentaire du consultant",
+    "commentHint": "Visible uniquement par le super administrateur.",
+    "suggestion": "Suggestion d'après ses notes : {{verdict}}",
+    "applySuggestion": "Appliquer la suggestion",
+    "save": "Enregistrer l'appréciation",
+    "saved": "Appréciation enregistrée pour {{name}}.",
+    "assessedBy": "Appréciée par {{name}} le {{date}}",
+    "noData": "Aucune réponse au questionnaire pour cette campagne.",
+    "noMatch": "Aucun collaborateur ne correspond aux filtres.",
+    "loadFailed": "Les réponses n'ont pas pu être chargées. Réessayez dans un instant.",
+    "noCompany": "Aucune entreprise sur la plateforme.",
+    "noCampaign": "Cette entreprise n'a aucune campagne.",
+    "commentTooLong": "Le commentaire dépasse 2 000 caractères ({{n}}) : raccourcissez-le avant d'enregistrer."
+  }
+}

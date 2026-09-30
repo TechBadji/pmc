@@ -1,5 +1,6 @@
 from django.db.models import Count
-from rest_framework import permissions, viewsets
+from django.utils import timezone
+from rest_framework import mixins, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
@@ -7,7 +8,7 @@ from rest_framework.response import Response
 from apps.core.audit import log_event
 from apps.core.models import Department, User
 from apps.evaluations.models import EvaluationCampaign
-from apps.core.permissions import CompanyScopedQuerySetMixin, IsCompanyAdminOrManager
+from apps.core.permissions import CompanyScopedQuerySetMixin, IsCompanyAdminOrManager, IsSuperAdmin
 from apps.core.scoping import managed_department_ids, readable_department_ids
 
 from .aggregation import aggregate_organisation, aggregate_responses, company_score
@@ -16,6 +17,7 @@ from .serializers import (
     CohesionResponseSerializer,
     PSI_DIMENSIONS,
     PsychologicalSafetyResponseSerializer,
+    PsychologicalSafetyReviewSerializer,
     TeamBoardSerializer,
     TeamCohesionAnalysisSerializer,
     TeamRelationshipSerializer,
@@ -419,3 +421,29 @@ class PsychologicalSafetyResponseViewSet(viewsets.ModelViewSet):
         if user.role in (user.Role.COMPANY_ADMIN, user.Role.SUPER_ADMIN) and not team:
             payload["company"] = summarise(everything, User.objects.filter(company_id=user.company_id, is_active=True).count())
         return Response(payload)
+
+
+class PsychologicalSafetyReviewViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet
+):
+    """Réponses individuelles au PSI, pour le seul super administrateur : il
+    lit les douze notes de chaque collaborateur d'une entreprise et apprécie
+    qui est en sécurité psychologique. Ni le CEO ni l'encadrement n'y ont
+    accès — pour eux, le questionnaire reste anonyme (moyennes d'équipe)."""
+
+    serializer_class = PsychologicalSafetyReviewSerializer
+    permission_classes = [IsSuperAdmin]
+    filterset_fields = ["company", "campaign", "team"]
+    http_method_names = ["get", "patch", "head", "options"]
+    queryset = PsychologicalSafetyResponse.objects.select_related(
+        "campaign", "team", "respondent", "verdict_by"
+    ).order_by("team__name", "respondent__last_name", "respondent__first_name")
+
+    def perform_update(self, serializer):
+        response = serializer.save(verdict_by=self.request.user, verdict_at=timezone.now())
+        log_event(
+            self.request.user,
+            "psi.verdict",
+            f"a apprécié la sécurité psychologique de {response.respondent.get_full_name()} ({response.campaign.name}).",
+            company=response.company,
+        )

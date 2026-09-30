@@ -276,13 +276,27 @@ class PsychologicalSafetyResponse(models.Model):
     Index (PSI) pour une campagne : 12 affirmations notées de 1 à 5, rangées par
     dimension de trois — Belonging (1-3), Learning (4-6), Contributing (7-9),
     Challenging (10-12). Une réponse par personne et par campagne, portant sur
-    sa propre direction ; seules les moyennes de l'équipe sont jamais lues."""
+    sa propre direction. L'entreprise n'en lit que les moyennes d'équipe ; seul
+    le super administrateur (le consultant ID-PMC) consulte les réponses
+    individuelles et porte son appréciation — jamais montrée à l'entreprise ni
+    au répondant."""
+
+    class Verdict(models.TextChoices):
+        SAFE = "SAFE", "Safe"
+        WATCH = "WATCH", "À surveiller"
+        UNSAFE = "UNSAFE", "Non safe"
 
     company = models.ForeignKey("core.Company", on_delete=models.CASCADE, related_name="psi_responses")
     team = models.ForeignKey("core.Department", on_delete=models.CASCADE, related_name="psi_responses")
     campaign = models.ForeignKey("evaluations.EvaluationCampaign", on_delete=models.CASCADE, related_name="psi_responses")
     respondent = models.ForeignKey("core.User", on_delete=models.CASCADE, related_name="psi_responses")
     scores = models.JSONField("Notes (12 affirmations)", default=list)
+    verdict = models.CharField("Appréciation du consultant", max_length=10, choices=Verdict.choices, blank=True, default="")
+    verdict_comment = models.TextField("Commentaire du consultant", blank=True, default="")
+    verdict_by = models.ForeignKey(
+        "core.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="psi_verdicts_given"
+    )
+    verdict_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -1,0 +1,52 @@
+{
+  "psiReview": {
+    "title": "Psychological Safety — individual answers",
+    "subtitle": "Each employee's twelve scores, and your assessment: who is psychologically safe, who is not.",
+    "confidential": "Confidential: these individual answers and your assessments are only visible to the super administrator. The company (CEO, directors) only sees team averages.",
+    "company": "Company",
+    "campaign": "Campaign",
+    "direction": "Department",
+    "allDirections": "All departments",
+    "reading": "Computed reading",
+    "allReadings": "All readings",
+    "verdict": "Assessment",
+    "allVerdicts": "All assessments",
+    "noVerdict": "Not assessed",
+    "search": "Search an employee",
+    "person": "Employee",
+    "global": "PSI /5",
+    "verdicts": {
+      "SAFE": "Safe",
+      "WATCH": "To watch",
+      "UNSAFE": "Not safe"
+    },
+    "readings": {
+      "solid": "Solid",
+      "improvable": "Improvable",
+      "fragile": "Fragile"
+    },
+    "dimShort": {
+      "belonging": "Belonging",
+      "learning": "Learning",
+      "contributing": "Contributing",
+      "challenging": "Challenging"
+    },
+    "respondents": "{{n}} answer(s)",
+    "toReview": "{{n}} to assess",
+    "detail": "See the answers",
+    "detailTitle": "{{name}} — {{campaign}}",
+    "comment": "Consultant's comment",
+    "commentHint": "Only visible to the super administrator.",
+    "suggestion": "Suggested from the scores: {{verdict}}",
+    "applySuggestion": "Apply the suggestion",
+    "save": "Save the assessment",
+    "saved": "Assessment saved for {{name}}.",
+    "assessedBy": "Assessed by {{name}} on {{date}}",
+    "noData": "No answers to the questionnaire for this campaign.",
+    "noMatch": "No employee matches the filters.",
+    "loadFailed": "The answers could not be loaded. Try again in a moment.",
+    "noCompany": "No company on the platform.",
+    "noCampaign": "This company has no campaign.",
+    "commentTooLong": "The comment exceeds 2,000 characters ({{n}}): shorten it before saving."
+  }
+}
