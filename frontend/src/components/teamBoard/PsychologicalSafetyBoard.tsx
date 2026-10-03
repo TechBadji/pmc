@@ -1,5 +1,6 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { useEffect, useState } from "react";
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { useTranslation } from "react-i18next";
@@ -16,6 +17,7 @@ const fmt = (n: number) => n.toFixed(2).replace(".", ",");
  * score par dimension, lecture, indice global et radar des 4 dimensions. */
 export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: number | ""; orgView: boolean }) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [campaigns, setCampaigns] = useState<EvaluationCampaign[]>([]);
   const [campaignId, setCampaignId] = useState<number | "">("");
   const [data, setData] = useState<PsiResults | null>(null);
@@ -53,6 +55,52 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
     ? PSI_DIMENSIONS.map((k) => ({ dimension: t(`psi.dimension.${k}`), score: summary.dimensions?.find((d) => d.key === k)?.score ?? 0 }))
     : [];
   const sorted = summary?.dimensions ? [...summary.dimensions].sort((a, b) => b.score - a.score) : [];
+
+  /**
+   * Sommet du polygone : un point et, à côté, le score exact — celui du
+   * tableau, au centième — pour lire le radar sans survoler ni compter les
+   * graduations.
+   *
+   * Le chiffre se range de côté plutôt que dans le prolongement de l'axe : là,
+   * il tomberait sur les graduations de l'axe du haut, et sur le nom de la
+   * dimension dès que le score est élevé. À gauche du sommet du haut, à droite
+   * de celui du bas, au-dessus de ceux des côtés — toujours hors du polygone.
+   *
+   * Sous le sommet du bas, le chiffre remonte quand le score approche de 5 :
+   * il buterait sinon sur le nom de la dimension. L'arête voisine est alors
+   * assez raide pour lui laisser la place.
+   */
+  const scoreDot = (props: any) => {
+    const { cx, cy, index } = props;
+    // La ligne est relue par son rang : `payload` est l'enveloppe du point
+    // Recharts, qui porte en revanche le centre du radar.
+    const row = chart[index];
+    if (!row || typeof cx !== "number" || typeof cy !== "number") return <g key={index} />;
+    const dx = cx - (typeof props.payload?.cx === "number" ? props.payload.cx : cx);
+    const dy = cy - (typeof props.payload?.cy === "number" ? props.payload.cy : cy);
+    const vertical = Math.abs(dy) > Math.abs(dx);
+    const up = dy < 0;
+    const right = dx > 0;
+    const paper = theme.palette.background.paper;
+    return (
+      <g key={index} pointerEvents="none">
+        <circle cx={cx} cy={cy} r={4} fill="#2E8FCB" stroke={paper} strokeWidth={2} />
+        <text
+          x={vertical ? cx + (up ? -9 : 9) : cx + (right ? 3 : -3)}
+          y={vertical ? cy + (up ? 1 : row.score >= 4.5 ? 3 : 9) : cy - 12}
+          textAnchor={(vertical ? up : !right) ? "end" : "start"}
+          fontSize={13}
+          fontWeight={800}
+          fill={theme.palette.mode === "dark" ? "#7cc4ef" : "#1c5f8c"}
+          stroke={paper}
+          strokeWidth={3}
+          paintOrder="stroke"
+        >
+          {fmt(row.score)}
+        </text>
+      </g>
+    );
+  };
 
   return (
     <Stack spacing={2.5}>
@@ -126,11 +174,14 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
                 {t("psi.dash.radar")}
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
-                <RadarChart data={chart} outerRadius="75%">
+                {/* Noms des dimensions écartés du polygone (tickSize), et rayon
+                    réduit d'autant : un score proche de 5 garde la place de son
+                    chiffre sans que les noms débordent davantage du cadre. */}
+                <RadarChart data={chart} outerRadius="70%">
                   <PolarGrid />
-                  <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 12, fontWeight: 600 }} />
+                  <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 12, fontWeight: 600 }} tickSize={18} tickLine={false} />
                   <PolarRadiusAxis domain={[0, 5]} tickCount={6} angle={90} />
-                  <Radar dataKey="score" stroke="#2E8FCB" fill="#2E8FCB" fillOpacity={0.45} strokeWidth={2} />
+                  <Radar dataKey="score" stroke="#2E8FCB" fill="#2E8FCB" fillOpacity={0.45} strokeWidth={2} dot={scoreDot} />
                   <RechartsTooltip formatter={(v: number) => fmt(v)} />
                 </RadarChart>
               </ResponsiveContainer>
