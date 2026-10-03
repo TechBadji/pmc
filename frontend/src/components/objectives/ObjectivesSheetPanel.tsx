@@ -2,9 +2,11 @@ import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import CloudDoneOutlinedIcon from "@mui/icons-material/CloudDoneOutlined";
 import { Alert, Button, Chip, CircularProgress, MenuItem, Snackbar, Stack, TextField } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import ValidationSummary from "@/components/feedback/ValidationSummary";
+import PrintStyles from "@/components/layout/PrintStyles";
 import { fmtDate } from "@/utils/evaluationValidation";
 import { isRealDate } from "@/utils/validation";
 import type {
@@ -126,6 +128,21 @@ export default function ObjectivesSheetPanel({
   const headerSaved = useRef<Record<string, string>>({});
   const headerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const headerPending = useRef<Evaluation | null>(null);
+
+  // Le temps d'une impression, la fiche se rend en lecture : des valeurs en
+  // clair plutôt que des champs, sans ligne d'ajout ni croix de suppression.
+  // flushSync, car le navigateur fige la page dès la sortie de `beforeprint`.
+  const [printing, setPrinting] = useState(false);
+  useEffect(() => {
+    const before = () => flushSync(() => setPrinting(true));
+    const after = () => setPrinting(false);
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, []);
 
   // Période la plus récente par défaut : c'est celle qu'on ouvre en arrivant.
   useEffect(() => {
@@ -397,6 +414,7 @@ export default function ObjectivesSheetPanel({
 
   return (
     <Stack spacing={2}>
+      <PrintStyles />
       <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap className="pmc-no-print">
         {mode === "employee" ? (
           <TextField
@@ -516,7 +534,7 @@ export default function ObjectivesSheetPanel({
         <AnnualObjectivesSheet
           identity={identity}
           rows={rows}
-          readOnly={!canEdit}
+          readOnly={!canEdit || printing}
           teamSheet={mode === "team"}
           problems={problemMap}
           dates={{

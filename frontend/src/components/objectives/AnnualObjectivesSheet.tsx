@@ -64,6 +64,8 @@ const tableSx = {
   "& .MuiOutlinedInput-input": { minWidth: 0, px: 1, py: "7px" },
   "& .MuiInputBase-multiline": { px: 1, py: "7px" },
   "& .MuiInputBase-inputMultiline": { p: 0 },
+  // À l'impression, la page fixe la largeur, et une ligne ne se coupe pas.
+  "@media print": { minWidth: 0, "& tr": { breakInside: "avoid" } },
 } as const;
 
 const headSx = { bgcolor: HEADER_ORANGE, color: "#fff", fontWeight: 700, textAlign: "center" } as const;
@@ -391,9 +393,10 @@ export default function AnnualObjectivesSheet({
         p: 2,
         border: "1px solid",
         borderColor: "divider",
-        // Les navigateurs suppriment les aplats à l'impression : sans eux,
-        // l'entête orange et les bandes n'auraient plus que leur texte blanc.
-        "@media print": { "&, & *": { WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" } },
+        // Imprimée, la fiche est la page : ni marge intérieure ni cadre. Un
+        // pixel de côté reste, sans quoi le bord de page rogne le trait
+        // extérieur des tableaux.
+        "@media print": { p: 0, px: "1px", border: "none" },
       }}
     >
       <Paper elevation={0} sx={{ py: 1, px: 1, mb: 2, textAlign: "center", bgcolor: CREAM, border: "1px solid", borderColor: "divider" }}>
@@ -402,7 +405,7 @@ export default function AnnualObjectivesSheet({
         </Typography>
       </Paper>
 
-      <TableContainer>
+      <TableContainer sx={{ "@media print": { overflow: "visible" } }}>
         {/* Entête, disposée comme la feuille : la photo tient les trois lignes,
             puis quatre couples intitulé/valeur par ligne — identité à gauche,
             dates au centre, taux et visa à droite. */}

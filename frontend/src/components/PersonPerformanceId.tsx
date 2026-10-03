@@ -6,7 +6,6 @@ import {
   CircularProgress,
   Box,
   Button,
-  GlobalStyles,
   IconButton,
   InputBase,
   MenuItem,
@@ -22,6 +21,7 @@ import { useTranslation } from "react-i18next";
 import { Area, AreaChart, CartesianGrid, LabelList, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { apiClient } from "@/api/client";
 import { useUnsavedChanges } from "@/app/unsavedChanges";
+import PrintStyles from "@/components/layout/PrintStyles";
 import { CHART_NEUTRALS, HARD_SKILLS_COLOR, SOFT_SKILLS_COLOR, performanceColors } from "@/theme";
 import type {
   Evaluation,
@@ -779,19 +779,7 @@ export default function PersonPerformanceId({
 
   return (
     <Stack spacing={2}>
-      {/* Impression : la fiche est faite pour être remise au client, on masque
-        * donc le cadre de l'application et on force les aplats de couleur, que
-        * les navigateurs suppriment par défaut à l'impression. */}
-      <GlobalStyles
-        styles={{
-          "@media print": {
-            "@page": { size: "A4 landscape", margin: "8mm" },
-            ".MuiDrawer-root, .MuiAppBar-root, .pmc-no-print": { display: "none !important" },
-            "main.MuiBox-root": { padding: "0 !important" },
-            "*": { WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" },
-          },
-        }}
-      />
+      <PrintStyles />
       <Stack direction="row" spacing={1.5} alignItems="center" className="pmc-no-print">
         {guess && (
           <>

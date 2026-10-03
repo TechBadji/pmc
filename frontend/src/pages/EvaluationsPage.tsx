@@ -307,7 +307,7 @@ export default function EvaluationsPage() {
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2} className="pmc-no-print">
         <PageHeader
           title={t(
             view === "id3a"
