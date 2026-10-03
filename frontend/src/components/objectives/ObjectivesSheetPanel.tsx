@@ -1,6 +1,6 @@
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import CloudDoneOutlinedIcon from "@mui/icons-material/CloudDoneOutlined";
-import { Alert, Box, Button, Chip, CircularProgress, MenuItem, Snackbar, Stack, TextField } from "@mui/material";
+import { Alert, Button, Chip, CircularProgress, MenuItem, Snackbar, Stack, TextField } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
@@ -513,27 +513,25 @@ export default function ObjectivesSheetPanel({
       {ready && canEdit && <ValidationSummary issues={issues} />}
 
       {ready && (
-        <Box sx={{ overflowX: "auto" }}>
-          <AnnualObjectivesSheet
-            identity={identity}
-            rows={rows}
-            readOnly={!canEdit}
-            teamSheet={mode === "team"}
-            problems={problemMap}
-            dates={{
-              objectives_set_on: evaluation ? headerValue(evaluation, "objectives_set_on", headerEdits) : "",
-              evaluated_on: evaluation ? headerValue(evaluation, "evaluated_on", headerEdits) : "",
-              next_evaluation_on: evaluation ? headerValue(evaluation, "next_evaluation_on", headerEdits) : "",
-              manager_visa: evaluation ? headerValue(evaluation, "manager_visa", headerEdits) : "",
-              previous_evaluated_on: previous?.evaluated_on ?? previous?.campaign_end_date ?? "",
-            }}
-            previousPercent={previous ? Number(previous.altitude_percentage) : null}
-            onPatch={patchRow}
-            onAdd={addRow}
-            onRemove={removeRow}
-            onDateChange={patchHeader}
-          />
-        </Box>
+        <AnnualObjectivesSheet
+          identity={identity}
+          rows={rows}
+          readOnly={!canEdit}
+          teamSheet={mode === "team"}
+          problems={problemMap}
+          dates={{
+            objectives_set_on: evaluation ? headerValue(evaluation, "objectives_set_on", headerEdits) : "",
+            evaluated_on: evaluation ? headerValue(evaluation, "evaluated_on", headerEdits) : "",
+            next_evaluation_on: evaluation ? headerValue(evaluation, "next_evaluation_on", headerEdits) : "",
+            manager_visa: evaluation ? headerValue(evaluation, "manager_visa", headerEdits) : "",
+            previous_evaluated_on: previous?.evaluated_on ?? previous?.campaign_end_date ?? "",
+          }}
+          previousPercent={previous ? Number(previous.altitude_percentage) : null}
+          onPatch={patchRow}
+          onAdd={addRow}
+          onRemove={removeRow}
+          onDateChange={patchHeader}
+        />
       )}
 
       <Snackbar open={error} autoHideDuration={4000} onClose={() => setError(false)} message={t("teamBoard.saveFailed")} />
