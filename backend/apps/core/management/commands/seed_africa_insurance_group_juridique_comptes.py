@@ -5,7 +5,8 @@ comptes génériques, pour une démo où chacun saisit en direct :
   - comptes JUR10…JUR30, juristes rattachés à la directrice de la direction,
     au mot de passe 123456 ; le prénom et le nom reprennent le login
     (« JUR11 JUR11 »). Un login déjà présent est laissé tel quel — JUR10
-    (Jean-Marc Gnahoré) vient de `seed_africa_insurance_group_juridique` ;
+    vient de `seed_africa_insurance_group_juridique`, et c'est
+    `rename_juridique_accounts` qui nomme JUR1…JUR10 d'après leur login ;
   - avec `--clear-current-evaluations`, supprime les évaluations ID-3A de la
     direction sur la campagne en cours (la campagne ouverte la plus récente),
     avec leurs notes de compétences, forces & faiblesses et fiches d'objectifs.
