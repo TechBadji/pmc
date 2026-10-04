@@ -24,6 +24,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
+import { ThemeProvider } from "@mui/material/styles";
 import { memo, useCallback, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -31,6 +32,7 @@ import { apiClient, LAST_EMAIL_KEY } from "@/api/client";
 import { forgotErrorText, loginProblems, LoginErrorText } from "@/features/auth/loginFeedback";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { setAppLanguage } from "@/i18n";
+import { createAppTheme } from "@/theme";
 import { login } from "./authSlice";
 import CanvasMotif from "./CanvasMotif";
 import { PHASE_COLORS, moduleByNumber } from "./pmcModules";
@@ -61,6 +63,15 @@ const BRAND = {
 } as const;
 
 const DISPLAY_FONT = `"Baloo 2", system-ui, -apple-system, "Segoe UI", sans-serif`;
+
+/**
+ * L'écran est dessiné sur ces couleurs fixes (panneau clair, champs blancs) :
+ * il garde le thème clair quel que soit l'appareil. Avant la connexion, le
+ * thème suit le système ; sur un appareil en apparence sombre, les textes
+ * clairs du thème sombre se posaient sur ce panneau clair et le sous-titre,
+ * les libellés et les mentions devenaient illisibles.
+ */
+const LIGHT_THEME = createAppTheme("light");
 
 const focusable = {
   "&:focus-visible": {
@@ -258,6 +269,14 @@ const BrandPanel = memo(function BrandPanel() {
 });
 
 export default function LoginPage() {
+  return (
+    <ThemeProvider theme={LIGHT_THEME}>
+      <LoginScreen />
+    </ThemeProvider>
+  );
+}
+
+function LoginScreen() {
   const { t, i18n } = useTranslation();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -316,7 +335,9 @@ export default function LoginPage() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", bgcolor: BRAND.canvas }}>
+    // `color` : sans lui, les textes sans couleur propre héritent de celle que
+    // le thème de l'application pose sur `body`.
+    <Box sx={{ minHeight: "100vh", display: "flex", bgcolor: BRAND.canvas, color: "text.primary" }}>
       <BrandPanel />
 
       <Box
