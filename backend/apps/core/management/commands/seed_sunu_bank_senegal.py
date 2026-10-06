@@ -1,19 +1,20 @@
 """
-Jeu de démonstration « SUNU Bank Sénégal » : un CEO (login CEOSBS) et
-quarante collaborateurs génériques EMP1…EMP40, répartis à parts égales dans
-cinq directions.
+Jeu de démonstration « SUNU Bank Sénégal » : un CEO (login CEOSBS), cinq
+directions conduites chacune par un directeur (DIR1…DIR5) et quarante
+collaborateurs génériques EMP1…EMP40, répartis à parts égales.
 
 Les comptes sont nommés d'après leur login et ne portent aucune donnée
 pré-remplie : la démo se fait en direct, chacun saisit sous son identifiant.
-Les directions n'ont pas de directeur — seuls le CEO et les quarante
-collaborateurs existent ; chaque collaborateur a le CEO pour responsable.
+Les directeurs ont le CEO pour responsable, les collaborateurs le directeur
+de leur direction.
 
-Les logins EMP1…EMP40 doivent être libres : `generated_login` est unique sur
-toute la plateforme. S'ils appartiennent encore à Africa Insurance Group,
-lancer d'abord `rename_aig_emp_accounts`.
+Les logins DIR1…DIR5 et EMP1…EMP40 doivent être libres : `generated_login`
+est unique sur toute la plateforme. S'ils appartiennent encore à Africa
+Insurance Group, lancer d'abord `rename_aig_emp_accounts` (voir ses options).
 
-Idempotent : relancée, la commande crée les comptes manquants et laisse les
-existants tels quels (mot de passe compris).
+Idempotent : relancée, la commande crée les comptes manquants, remet le
+rattachement hiérarchique en état et ne touche pas au reste des comptes
+existants (mot de passe compris).
 
 Usage:
     python manage.py seed_sunu_bank_senegal
@@ -37,7 +38,8 @@ CAMPAIGN_START = date(2026, 1, 1)
 CAMPAIGN_END = date(2026, 12, 31)
 
 # Les collaborateurs sont répartis dans l'ordre : EMP1…EMP8 dans la première
-# direction, EMP9…EMP16 dans la deuxième, et ainsi de suite.
+# direction, EMP9…EMP16 dans la deuxième, et ainsi de suite. Le directeur
+# porte le rang de sa direction : DIR1 pour la première, DIR5 pour la dernière.
 DEPARTMENTS = [
     ("DCO", "Direction Commerciale"),
     ("DRC", "Direction des Risques et de la Conformité"),
@@ -48,7 +50,7 @@ DEPARTMENTS = [
 
 
 class Command(BaseCommand):
-    help = "Crée l'entreprise de démonstration SUNU Bank Sénégal (CEO CEOSBS, 5 directions, EMP1…EMP40)."
+    help = "Crée l'entreprise de démonstration SUNU Bank Sénégal (CEO CEOSBS, 5 directions, DIR1…DIR5, EMP1…EMP40)."
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -81,12 +83,23 @@ class Command(BaseCommand):
             Department.objects.get_or_create(company=company, code=code, defaults={"name": name})[0]
             for code, name in DEPARTMENTS
         ]
+        directors = []
+        for rank, department in enumerate(departments, start=1):
+            director = self._account(
+                company, f"DIR{rank}", role=User.Role.MANAGER, position="Directeur",
+                initials=f"D{rank}", department=department, manager=ceo,
+            )
+            if department.manager_id != director.id:
+                department.manager = director
+                department.save(update_fields=["manager"])
+            directors.append(director)
+
         per_department = EMPLOYEE_COUNT // len(departments)
         for n in range(1, EMPLOYEE_COUNT + 1):
-            department = departments[(n - 1) // per_department]
+            index = (n - 1) // per_department
             self._account(
                 company, f"EMP{n}", role=User.Role.MEMBER, position="Collaborateur",
-                initials=str(n), department=department, manager=ceo,
+                initials=str(n), department=departments[index], manager=directors[index],
             )
 
         company.employee_count = company.users.count()
@@ -95,12 +108,15 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"\nTerminé — {company.name} (slug {company.slug}), {company.employee_count} comptes\n"
             f"  CEO            : {CEO_LOGIN} / {PASSWORD}\n"
+            f"  Directeurs     : DIR1 … DIR{len(directors)} / {PASSWORD}\n"
             f"  Collaborateurs : EMP1 … EMP{EMPLOYEE_COUNT} / {PASSWORD}\n"
             f"  Campagne       : {campaign.name} ({campaign.start_date} → {campaign.end_date})"
         ))
         for index, department in enumerate(departments):
             first = index * per_department + 1
-            self.stdout.write(f"  {department.code} {department.name} : EMP{first} … EMP{first + per_department - 1}")
+            self.stdout.write(
+                f"  {department.code} {department.name} : DIR{index + 1}, EMP{first} … EMP{first + per_department - 1}"
+            )
 
     def _account(self, company, login, *, role, position, initials, department=None, manager=None):
         user = User.objects.filter(generated_login__iexact=login).select_related("company").first()
@@ -112,6 +128,11 @@ class Command(BaseCommand):
                 f"({user.company.name if user.company else 'sans entreprise'})."
             )
         if user is not None:
+            # Un compte créé avant l'arrivée des directeurs avait le CEO pour
+            # responsable : seul ce rattachement est remis en état.
+            if user.manager_id != (manager.id if manager else None):
+                user.manager = manager
+                user.save(update_fields=["manager"])
             return user
         user = User(
             email=f"{login.lower()}@{company.slug}.pmc.local",

@@ -8,11 +8,15 @@ technique (`aig<n>@africa-insurance-group.pmc.local`). Rien d'autre ne
 change : nom, poste, mot de passe, rattachement, évaluations et état
 actif/bloqué sont conservés.
 
+Même besoin pour les directeurs : `--old-prefix DIR --new-prefix AIGDIR
+--up-to 5` libère DIR1…DIR5 (AIGDIR1…AIGDIR5) sans toucher à DIR6 et suivants.
+
 Idempotent : un compte déjà renommé n'est plus trouvé, donc plus touché.
 
 Usage:
     python manage.py rename_aig_emp_accounts
     python manage.py rename_aig_emp_accounts --dry-run
+    python manage.py rename_aig_emp_accounts --old-prefix DIR --new-prefix AIGDIR --up-to 5
 """
 import re
 
@@ -23,30 +27,38 @@ from apps.core.models import Company, User
 
 COMPANY_NAME = "Africa Insurance Group"
 OLD_PREFIX, NEW_PREFIX = "EMP", "AIG"
-LOGIN = re.compile(rf"^{OLD_PREFIX}(\d+)$", re.IGNORECASE)
 
 
 class Command(BaseCommand):
-    help = "Renomme les logins EMP1…EMPX d'Africa Insurance Group en AIG1…AIGX."
+    help = "Renomme les logins EMP1…EMPX d'Africa Insurance Group en AIG1…AIGX (préfixes réglables)."
 
     def add_arguments(self, parser):
+        parser.add_argument("--old-prefix", default=OLD_PREFIX, help="Préfixe des logins à libérer (défaut : EMP).")
+        parser.add_argument("--new-prefix", default=NEW_PREFIX, help="Préfixe de remplacement (défaut : AIG).")
+        parser.add_argument("--up-to", type=int, help="Ne renomme que les numéros 1 à N ; tous par défaut.")
         parser.add_argument("--dry-run", action="store_true", help="Annonce ce qui serait fait, sans rien écrire.")
 
     @transaction.atomic
     def handle(self, *args, **options):
         dry = options["dry_run"]
+        old_prefix, new_prefix, up_to = options["old_prefix"], options["new_prefix"], options["up_to"]
+        if not old_prefix.isalpha() or not new_prefix.isalpha():
+            raise CommandError("Les préfixes ne doivent contenir que des lettres.")
+        if up_to is not None and up_to < 1:
+            raise CommandError("--up-to attend un nombre supérieur ou égal à 1.")
+        pattern = re.compile(rf"^{old_prefix}(\d+)$", re.IGNORECASE)
         try:
             company = Company.objects.get(name=COMPANY_NAME)
         except Company.DoesNotExist:
             raise CommandError(f"Entreprise « {COMPANY_NAME} » introuvable.")
 
         changed = 0
-        users = User.objects.filter(company=company, generated_login__istartswith=OLD_PREFIX).order_by("id")
+        users = User.objects.filter(company=company, generated_login__istartswith=old_prefix).order_by("id")
         for user in users:
-            match = LOGIN.match(user.generated_login)
-            if not match:
+            match = pattern.match(user.generated_login)
+            if not match or (up_to is not None and int(match.group(1)) > up_to):
                 continue
-            login = f"{NEW_PREFIX}{match.group(1)}"
+            login = f"{new_prefix}{match.group(1)}"
             email = f"{login.lower()}@{company.slug}.pmc.local"
             # Contrôle avant d'écrire : la contrainte d'unicité répondrait par
             # une erreur d'intégrité qui ne dit pas quel compte gêne.
