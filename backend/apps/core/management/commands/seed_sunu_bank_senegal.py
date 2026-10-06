@@ -8,11 +8,11 @@ pré-remplie : la démo se fait en direct, chacun saisit sous son identifiant.
 Les directeurs ont le CEO pour responsable, les collaborateurs le directeur
 de leur direction.
 
-Les directeurs reçoivent en plus leurs dates de naissance, de début de
-carrière, d'entrée dans l'entreprise et de prise de poste : ce sont elles qui
-alimentent l'« Aperçu de l'Équipe Dirigeante » du tableau de bord du CEO
-(âge, ancienneté dans le poste, dans l'entreprise, expérience totale). Une
-date déjà renseignée n'est pas écrasée.
+Chaque compte reçoit ses dates de naissance, de début de carrière, d'entrée
+dans l'entreprise et de prise de poste : ce sont elles qui alimentent l'âge
+et les anciennetés des tableaux de bord (« Aperçu de l'Équipe Dirigeante »
+du CEO, aperçu de l'équipe de chaque directeur). Une date déjà renseignée
+n'est pas écrasée.
 
 Les logins DIR1…DIR5 et EMP1…EMP40 doivent être libres : `generated_login`
 est unique sur toute la plateforme. S'ils appartiennent encore à Africa
@@ -25,7 +25,8 @@ existants (mot de passe compris).
 Usage:
     python manage.py seed_sunu_bank_senegal
 """
-from datetime import date
+import random
+from datetime import date, timedelta
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -77,7 +78,24 @@ DIRECTOR_POSITIONS = {
     "DSI": "Dir. Systèmes d'Information",
 }
 GENERIC_DIRECTOR_POSITION = "Directeur"
+CEO_DATES = (date(1968, 9, 14), date(1992, 10, 1), date(2008, 3, 1), date(2017, 7, 1))
 DATE_FIELDS = ("birth_date", "career_start_date", "hire_date", "role_start_date")
+# Jour de référence des tirages des collaborateurs : figé, pour qu'une relance
+# un autre jour redonne les mêmes dates.
+REFERENCE_DAY = date(2026, 10, 1)
+
+
+def employee_dates(number):
+    """Dates d'un collaborateur, tirées à graine fixe sur son numéro : entre
+    26 et 50 ans, début de carrière entre 22 et 26 ans, puis entrée dans
+    l'entreprise et prise de poste dans l'ordre chronologique."""
+    rng = random.Random(f"sunu-bank-senegal-{number}")
+    birth = REFERENCE_DAY - timedelta(days=rng.randint(26 * 365, 50 * 365 + 300))
+    career = birth + timedelta(days=rng.randint(22 * 365, 26 * 365))
+    span = (REFERENCE_DAY - career).days
+    hire = career + timedelta(days=rng.randint(0, max(0, span - 365)))
+    role_start = hire + timedelta(days=rng.randint(0, max(0, (REFERENCE_DAY - hire).days - 180)))
+    return birth, career, hire, role_start
 
 
 class Command(BaseCommand):
@@ -99,6 +117,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Entreprise {'créée' if created else 'réutilisée'} : {company.name}"))
 
         ceo = self._account(company, CEO_LOGIN, role=User.Role.COMPANY_ADMIN, position="CEO", initials="CEO")
+        self._dates(ceo, CEO_DATES)
         if company.admin_user_id != ceo.id:
             company.admin_user = ceo
             company.save(update_fields=["admin_user"])
@@ -123,14 +142,7 @@ class Command(BaseCommand):
             if department.manager_id != director.id:
                 department.manager = director
                 department.save(update_fields=["manager"])
-            missing = [
-                (field, value) for field, value in zip(DATE_FIELDS, DIRECTOR_DATES[director.generated_login.upper()])
-                if getattr(director, field) is None
-            ]
-            if missing:
-                for field, value in missing:
-                    setattr(director, field, value)
-                director.save(update_fields=[field for field, _ in missing])
+            self._dates(director, DIRECTOR_DATES[director.generated_login.upper()])
             # Seul l'intitulé générique d'origine est remplacé : un poste
             # ressaisi depuis l'application est conservé.
             if director.position in ("", GENERIC_DIRECTOR_POSITION):
@@ -141,10 +153,11 @@ class Command(BaseCommand):
         per_department = EMPLOYEE_COUNT // len(departments)
         for n in range(1, EMPLOYEE_COUNT + 1):
             index = (n - 1) // per_department
-            self._account(
+            employee = self._account(
                 company, f"EMP{n}", role=User.Role.MEMBER, position="Collaborateur",
                 initials=str(n), department=departments[index], manager=directors[index],
             )
+            self._dates(employee, employee_dates(n))
 
         company.employee_count = company.users.count()
         company.save(update_fields=["employee_count"])
@@ -161,6 +174,14 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"  {department.code} {department.name} : DIR{index + 1}, EMP{first} … EMP{first + per_department - 1}"
             )
+
+    def _dates(self, user, dates):
+        """Renseigne les dates de carrière encore vides, sans écraser une saisie."""
+        missing = [(field, value) for field, value in zip(DATE_FIELDS, dates) if getattr(user, field) is None]
+        if missing:
+            for field, value in missing:
+                setattr(user, field, value)
+            user.save(update_fields=[field for field, _ in missing])
 
     def _account(self, company, login, *, role, position, initials, department=None, manager=None):
         user = User.objects.filter(generated_login__iexact=login).select_related("company").first()
