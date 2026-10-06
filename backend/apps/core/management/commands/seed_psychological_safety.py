@@ -66,6 +66,12 @@ TEAM_SETTINGS = {
     "FIL4": ("apprenante", "progres"),
     "SUNU": ("appartenance sans challenge", "progres"),
     "DJG": ("a consolider", "progres"),
+    # SUNU Bank Sénégal
+    "DCO": ("contributive peu inclusive", "progres"),
+    "DRC": ("solide", "stable"),
+    "DFC": ("a consolider", "progres"),
+    "DOP": ("fragile", "degradation"),
+    "DSI": ("apprenante", "progres"),
 }
 PARTICIPATION = 0.9  # part des collaborateurs qui répondent à une campagne donnée
 MIN_RESPONDENTS = 4  # plancher par direction et par campagne, au-dessus du seuil d'anonymat

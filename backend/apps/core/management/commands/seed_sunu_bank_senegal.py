@@ -4,7 +4,9 @@ directions conduites chacune par un directeur (DIR1…DIR5) et quarante
 collaborateurs génériques EMP1…EMP40, répartis à parts égales.
 
 Les comptes sont nommés d'après leur login et ne portent aucune donnée
-pré-remplie : la démo se fait en direct, chacun saisit sous son identifiant.
+pré-remplie par cette commande : les rubriques (évaluations, objectifs,
+cohésion…) sont peuplées par `seed_sunu_bank_senegal_rubriques`, sur les
+quatre campagnes créées ici (Année 2023, 2024, 2025 et Semestre 1 2026).
 Les directeurs ont le CEO pour responsable, les collaborateurs le directeur
 de leur direction.
 
@@ -40,9 +42,16 @@ COMPANY_NAME = "SUNU Bank Sénégal"
 CEO_LOGIN = "CEOSBS"
 PASSWORD = "123456"
 EMPLOYEE_COUNT = 40
-CAMPAIGN_NAME = "Année 2026"
-CAMPAIGN_START = date(2026, 1, 1)
-CAMPAIGN_END = date(2026, 12, 31)
+# nom, début, fin, clôturée — mêmes exercices qu'Africa Insurance Group.
+CAMPAIGNS = [
+    ("Année 2023", date(2023, 1, 1), date(2023, 12, 31), True),
+    ("Année 2024", date(2024, 1, 1), date(2024, 12, 31), True),
+    ("Année 2025", date(2025, 1, 1), date(2025, 12, 31), True),
+    ("Semestre 1 2026", date(2026, 1, 1), date(2026, 6, 30), False),
+]
+# Première version de la démo : une seule campagne, sur l'année entière. Elle
+# devient « Semestre 1 2026 » plutôt que de rester en doublon du même exercice.
+LEGACY_CAMPAIGN = "Année 2026"
 
 # Les collaborateurs sont répartis dans l'ordre : EMP1…EMP8 dans la première
 # direction, EMP9…EMP16 dans la deuxième, et ainsi de suite. Le directeur
@@ -123,11 +132,7 @@ class Command(BaseCommand):
             company.save(update_fields=["admin_user"])
 
         # Sans campagne sélectionnable, plusieurs rubriques ne chargent rien.
-        campaign, _ = EvaluationCampaign.objects.get_or_create(
-            company=company,
-            name=CAMPAIGN_NAME,
-            defaults={"start_date": CAMPAIGN_START, "end_date": CAMPAIGN_END, "created_by": ceo},
-        )
+        campaigns = self._campaigns(company, ceo)
 
         departments = [
             Department.objects.get_or_create(company=company, code=code, defaults={"name": name})[0]
@@ -167,13 +172,28 @@ class Command(BaseCommand):
             f"  CEO            : {CEO_LOGIN} / {PASSWORD}\n"
             f"  Directeurs     : DIR1 … DIR{len(directors)} / {PASSWORD}\n"
             f"  Collaborateurs : EMP1 … EMP{EMPLOYEE_COUNT} / {PASSWORD}\n"
-            f"  Campagne       : {campaign.name} ({campaign.start_date} → {campaign.end_date})"
+            f"  Campagnes      : {', '.join(c.name for c in campaigns)}"
         ))
         for index, department in enumerate(departments):
             first = index * per_department + 1
             self.stdout.write(
                 f"  {department.code} {department.name} : DIR{index + 1}, EMP{first} … EMP{first + per_department - 1}"
             )
+
+    def _campaigns(self, company, ceo):
+        current_name = CAMPAIGNS[-1][0]
+        legacy = EvaluationCampaign.objects.filter(company=company, name=LEGACY_CAMPAIGN).first()
+        if legacy is not None and not EvaluationCampaign.objects.filter(company=company, name=current_name).exists():
+            legacy.name, legacy.start_date, legacy.end_date = CAMPAIGNS[-1][:3]
+            legacy.save(update_fields=["name", "start_date", "end_date"])
+        campaigns = []
+        for name, start, end, closed in CAMPAIGNS:
+            campaign, _ = EvaluationCampaign.objects.get_or_create(
+                company=company, name=name,
+                defaults={"start_date": start, "end_date": end, "created_by": ceo, "is_closed": closed},
+            )
+            campaigns.append(campaign)
+        return campaigns
 
     def _dates(self, user, dates):
         """Renseigne les dates de carrière encore vides, sans écraser une saisie."""
