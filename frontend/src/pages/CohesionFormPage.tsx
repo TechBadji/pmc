@@ -843,7 +843,10 @@ export default function CohesionFormPage() {
       </Stack>
 
       {view === "opinion" && <CohesionOpinionBoard data={aggregate} />}
-      {view === "psi" && <PsychologicalSafetyBoard teamId={teamId} orgView={orgView} />}
+      {/* « Tous les directeurs » se lit, pour le PSI, comme l'entreprise entière :
+        * les directeurs répondent chacun dans leur direction, et c'est la
+        * comparaison des directions entre elles que cette vue donne à voir. */}
+      {view === "psi" && <PsychologicalSafetyBoard teamId={teamId} orgView={orgView || directorsView} />}
 
       {view !== "cohesion" && view !== "opinion" && view !== "psi" && !(directorsView && !ownTeam) && (
         <Stack spacing={2}>

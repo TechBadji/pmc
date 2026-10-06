@@ -8,6 +8,7 @@ import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import { usePeerDirection } from "@/app/peerDirection";
 import PsychologicalSafetyPage from "@/pages/PsychologicalSafetyPage";
+import PsiDirectionsRadar3D from "./PsiDirectionsRadar3D";
 import type { EvaluationCampaign, Paginated, PsiResults, PsiSummary } from "@/api/types";
 import { dimensionReading, globalReading, PSI_DIMENSIONS, READING_COLORS } from "@/utils/psychologicalSafety";
 
@@ -54,6 +55,10 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
   const chart = summary?.published
     ? PSI_DIMENSIONS.map((k) => ({ dimension: t(`psi.dimension.${k}`), score: summary.dimensions?.find((d) => d.key === k)?.score ?? 0 }))
     : [];
+  // Vue « toutes les directions » : dès que deux directions au moins sont
+  // publiées, leurs radars remplacent le radar unique de l'entreprise.
+  const allTeams = orgView ? data?.teams ?? [] : [];
+  const stacked = allTeams.filter((team) => team.published && team.dimensions).length > 1;
   const sorted = summary?.dimensions ? [...summary.dimensions].sort((a, b) => b.score - a.score) : [];
 
   /**
@@ -171,8 +176,11 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
             </Paper>
             <Paper variant="outlined" sx={{ flex: 1, p: 1 }}>
               <Typography variant="subtitle2" fontWeight={800} align="center">
-                {t("psi.dash.radar")}
+                {t(stacked ? "psi.dash.radarAll" : "psi.dash.radar")}
               </Typography>
+              {stacked ? (
+                <PsiDirectionsRadar3D teams={allTeams} />
+              ) : (
               <ResponsiveContainer width="100%" height={300}>
                 {/* Noms des dimensions écartés du polygone (tickSize), et rayon
                     réduit d'autant : un score proche de 5 garde la place de son
@@ -185,6 +193,7 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
                   <RechartsTooltip formatter={(v: number) => fmt(v)} />
                 </RadarChart>
               </ResponsiveContainer>
+              )}
             </Paper>
           </Stack>
           {sorted.length > 1 && (
