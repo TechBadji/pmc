@@ -76,7 +76,9 @@ export default function PsiTeamSynthesis({ teamId }: { teamId: number }) {
   const published = points.filter((p) => p.summary.published && p.summary.global != null);
   const shown = latest.summary.published ? latest : published[published.length - 1];
   const history = published.map((p) => ({
-    name: p.campaign.name,
+    // L'année seule sous chaque barre : les noms de campagne entiers
+    // (« Semestre 1 2026 ») se chevauchent dans cette colonne étroite.
+    name: p.campaign.start_date.slice(0, 4),
     global: p.summary.global as number,
     color: GLOBAL_READING_COLORS[globalReading(p.summary.global as number)],
   }));
