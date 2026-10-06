@@ -8,6 +8,12 @@ pré-remplie : la démo se fait en direct, chacun saisit sous son identifiant.
 Les directeurs ont le CEO pour responsable, les collaborateurs le directeur
 de leur direction.
 
+Les directeurs reçoivent en plus leurs dates de naissance, de début de
+carrière, d'entrée dans l'entreprise et de prise de poste : ce sont elles qui
+alimentent l'« Aperçu de l'Équipe Dirigeante » du tableau de bord du CEO
+(âge, ancienneté dans le poste, dans l'entreprise, expérience totale). Une
+date déjà renseignée n'est pas écrasée.
+
 Les logins DIR1…DIR5 et EMP1…EMP40 doivent être libres : `generated_login`
 est unique sur toute la plateforme. S'ils appartiennent encore à Africa
 Insurance Group, lancer d'abord `rename_aig_emp_accounts` (voir ses options).
@@ -47,6 +53,19 @@ DEPARTMENTS = [
     ("DOP", "Direction des Opérations"),
     ("DSI", "Direction des Systèmes d'Information"),
 ]
+
+# Par directeur : naissance, début de carrière, entrée dans l'entreprise, prise
+# de poste. L'ordre chronologique est celui que contrôle la saisie du profil
+# (`UserSerializer.validate`). Profils volontairement variés, de 43 à
+# 54 ans, pour que le tableau comparatif ait quelque chose à montrer.
+DIRECTOR_DATES = {
+    "DIR1": (date(1974, 3, 12), date(1998, 9, 1), date(2010, 2, 1), date(2019, 1, 1)),
+    "DIR2": (date(1979, 7, 25), date(2003, 10, 1), date(2015, 4, 1), date(2021, 9, 1)),
+    "DIR3": (date(1971, 11, 5), date(1996, 1, 15), date(2006, 6, 1), date(2014, 3, 1)),
+    "DIR4": (date(1983, 5, 18), date(2007, 9, 1), date(2018, 1, 8), date(2023, 2, 1)),
+    "DIR5": (date(1981, 1, 30), date(2005, 3, 1), date(2012, 9, 3), date(2020, 6, 1)),
+}
+DATE_FIELDS = ("birth_date", "career_start_date", "hire_date", "role_start_date")
 
 
 class Command(BaseCommand):
@@ -92,6 +111,14 @@ class Command(BaseCommand):
             if department.manager_id != director.id:
                 department.manager = director
                 department.save(update_fields=["manager"])
+            missing = [
+                (field, value) for field, value in zip(DATE_FIELDS, DIRECTOR_DATES[director.generated_login.upper()])
+                if getattr(director, field) is None
+            ]
+            if missing:
+                for field, value in missing:
+                    setattr(director, field, value)
+                director.save(update_fields=[field for field, _ in missing])
             directors.append(director)
 
         per_department = EMPLOYEE_COUNT // len(departments)
