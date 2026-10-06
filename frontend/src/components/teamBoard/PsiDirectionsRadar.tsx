@@ -18,11 +18,19 @@ const SERIES_DARK = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#00
 
 // Géométrie du radar : les quatre axes en croix, le premier vers le haut,
 // comme sur le radar d'une seule direction.
-const WIDTH = 560;
-const HEIGHT = 366;
+const WIDTH = 640;
+const HEIGHT = 500;
 const CX = WIDTH / 2;
 const CY = HEIGHT / 2;
-const RADIUS = 140;
+const RADIUS = 195;
+// Étiquettes des sommets : taille de la pastille d'un score (« 4,25 »), pas
+// entre deux pastilles, et écart de la première à l'axe.
+const PILL_WIDTH = 34;
+const PILL_HEIGHT = 16;
+const LABEL_WIDTH = PILL_WIDTH + 3;
+const LABEL_HEIGHT = PILL_HEIGHT + 2;
+const LABEL_GAP = 10;
+const MAX_LABELLED = 8;
 
 /**
  * Radars PSI de toutes les directions, superposés sur les mêmes quatre axes
@@ -57,6 +65,36 @@ export default function PsiDirectionsRadar({ teams }: { teams: Team[] }) {
   const outline = (scores: number[]) =>
     scores.map((s, axis) => point(s, axis)).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
 
+  // Score exact à côté de chaque sommet, dans une pastille cerclée de la
+  // couleur de la direction. Sur un même axe les sommets sont souvent
+  // voisins : les pastilles partent alternativement d'un côté et de l'autre
+  // de l'axe, et s'en écartent d'un cran de plus tant qu'elles buteraient sur
+  // une pastille déjà posée. Un trait fin relie chacune à son point.
+  // Au-delà de huit directions il n'y a plus la place : le score ne s'affiche
+  // alors que pour la direction survolée.
+  const labelsAlways = layers.length <= MAX_LABELLED;
+  // Centre de chaque pastille.
+  const scoreLabels = new Map<number, { x: number; y: number }[]>();
+  layers.forEach((row) => scoreLabels.set(row.team.team, []));
+  [0, 1, 2, 3].forEach((axis) => {
+    const vertical = axis % 2 === 0;
+    const reach = vertical ? LABEL_HEIGHT : LABEL_WIDTH; // encombrement le long de l'axe
+    const stride = vertical ? LABEL_WIDTH : LABEL_HEIGHT; // pas d'écartement de l'axe
+    const placed: { side: number; rank: number; r: number }[] = [];
+    [...layers]
+      .sort((a, b) => a.scores![axis] - b.scores![axis])
+      .forEach((row, i) => {
+        const [x, y] = point(row.scores![axis], axis);
+        const r = vertical ? y : x;
+        const side = i % 2 === 0 ? 1 : -1;
+        let rank = 0;
+        while (placed.some((p) => p.side === side && p.rank === rank && Math.abs(p.r - r) < reach)) rank += 1;
+        placed.push({ side, rank, r });
+        const offset = side * (LABEL_GAP + (vertical ? PILL_WIDTH : PILL_HEIGHT) / 2 + rank * stride);
+        scoreLabels.get(row.team.team)![axis] = vertical ? { x: x + offset, y } : { x, y: y + offset };
+      });
+  });
+
   // Nom de chaque axe, au bout de celui-ci, hors de la grille.
   const axisLabels = PSI_DIMENSIONS.map((key, axis) => {
     const [x, y] = point(5, axis);
@@ -71,7 +109,7 @@ export default function PsiDirectionsRadar({ teams }: { teams: Team[] }) {
 
   return (
     <Stack spacing={1}>
-      <Box sx={{ width: "100%", maxWidth: 620, mx: "auto" }}>
+      <Box sx={{ width: "100%", maxWidth: 640, mx: "auto" }}>
         <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} width="100%" role="img" aria-label={t("psi.dash.radarAll")} style={{ display: "block" }}>
           {/* Grille : graduations 1 à 5 et les quatre axes. */}
           {[1, 2, 3, 4, 5].map((s) => (
@@ -109,9 +147,43 @@ export default function PsiDirectionsRadar({ teams }: { teams: Team[] }) {
                   strokeLinejoin="round"
                   strokeDasharray={row.dashed ? "5 3" : undefined}
                 />
+              </g>
+            );
+          })}
+
+          {/* Sommets et scores, tracés après tous les polygones pour qu'aucun
+              tracé ne passe par-dessus un chiffre. */}
+          {layers.map((row) => {
+            const faded = active !== null && active !== row.team.team;
+            const focused = active === row.team.team;
+            return (
+              <g key={row.team.team} opacity={faded ? 0.12 : 1} style={{ transition: "opacity 120ms" }} pointerEvents="none">
                 {row.scores!.map((s, axis) => {
                   const [x, y] = point(s, axis);
-                  return <circle key={axis} cx={x} cy={y} r={4} fill={row.color} stroke={paper} strokeWidth={2} />;
+                  const label = scoreLabels.get(row.team.team)![axis];
+                  return (
+                    <g key={axis}>
+                      {(labelsAlways || focused) && (
+                        <>
+                          <line x1={x} y1={y} x2={label.x} y2={label.y} stroke={row.color} strokeWidth={1.25} />
+                          <rect
+                            x={label.x - PILL_WIDTH / 2}
+                            y={label.y - PILL_HEIGHT / 2}
+                            width={PILL_WIDTH}
+                            height={PILL_HEIGHT}
+                            rx={PILL_HEIGHT / 2}
+                            fill={paper}
+                            stroke={row.color}
+                            strokeWidth={1.5}
+                          />
+                          <text x={label.x} y={label.y + 3.8} textAnchor="middle" fontSize={10.5} fontWeight={700} fill={ink}>
+                            {fmt(s)}
+                          </text>
+                        </>
+                      )}
+                      <circle cx={x} cy={y} r={4} fill={row.color} stroke={paper} strokeWidth={2} />
+                    </g>
+                  );
                 })}
               </g>
             );
