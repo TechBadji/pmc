@@ -65,6 +65,18 @@ DIRECTOR_DATES = {
     "DIR4": (date(1983, 5, 18), date(2007, 9, 1), date(2018, 1, 8), date(2023, 2, 1)),
     "DIR5": (date(1981, 1, 30), date(2005, 3, 1), date(2012, 9, 3), date(2020, 6, 1)),
 }
+# Intitulé de poste du directeur : c'est lui que l'« Aperçu de l'Équipe
+# Dirigeante » affiche sous chaque photo, dans une pastille étroite qui coupe
+# les libellés longs. D'où la forme abrégée « Dir. … » (comme PMC-DEMO), qui
+# place le nom de la direction en tête.
+DIRECTOR_POSITIONS = {
+    "DCO": "Dir. Commerciale",
+    "DRC": "Dir. Risques & Conformité",
+    "DFC": "Dir. Financière & Comptable",
+    "DOP": "Dir. Opérations",
+    "DSI": "Dir. Systèmes d'Information",
+}
+GENERIC_DIRECTOR_POSITION = "Directeur"
 DATE_FIELDS = ("birth_date", "career_start_date", "hire_date", "role_start_date")
 
 
@@ -105,7 +117,7 @@ class Command(BaseCommand):
         directors = []
         for rank, department in enumerate(departments, start=1):
             director = self._account(
-                company, f"DIR{rank}", role=User.Role.MANAGER, position="Directeur",
+                company, f"DIR{rank}", role=User.Role.MANAGER, position=DIRECTOR_POSITIONS[department.code],
                 initials=f"D{rank}", department=department, manager=ceo,
             )
             if department.manager_id != director.id:
@@ -119,6 +131,11 @@ class Command(BaseCommand):
                 for field, value in missing:
                     setattr(director, field, value)
                 director.save(update_fields=[field for field, _ in missing])
+            # Seul l'intitulé générique d'origine est remplacé : un poste
+            # ressaisi depuis l'application est conservé.
+            if director.position in ("", GENERIC_DIRECTOR_POSITION):
+                director.position = DIRECTOR_POSITIONS[department.code]
+                director.save(update_fields=["position"])
             directors.append(director)
 
         per_department = EMPLOYEE_COUNT // len(departments)
