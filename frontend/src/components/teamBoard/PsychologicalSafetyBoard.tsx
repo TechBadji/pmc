@@ -8,7 +8,7 @@ import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import { usePeerDirection } from "@/app/peerDirection";
 import PsychologicalSafetyPage from "@/pages/PsychologicalSafetyPage";
-import PsiDirectionsRadar3D from "./PsiDirectionsRadar3D";
+import PsiDirectionsRadar from "./PsiDirectionsRadar";
 import type { EvaluationCampaign, Paginated, PsiResults, PsiSummary } from "@/api/types";
 import { dimensionReading, globalReading, PSI_DIMENSIONS, READING_COLORS } from "@/utils/psychologicalSafety";
 
@@ -179,7 +179,7 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
                 {t(stacked ? "psi.dash.radarAll" : "psi.dash.radar")}
               </Typography>
               {stacked ? (
-                <PsiDirectionsRadar3D teams={allTeams} />
+                <PsiDirectionsRadar teams={allTeams} />
               ) : (
               <ResponsiveContainer width="100%" height={300}>
                 {/* Noms des dimensions écartés du polygone (tickSize), et rayon

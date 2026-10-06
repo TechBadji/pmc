@@ -11,30 +11,25 @@ const fmt = (n: number) => n.toFixed(2).replace(".", ",");
 
 // Une teinte par direction, dans un ordre fixe : la couleur suit la direction
 // (son rang dans la liste), pas son score. Au-delà de huit directions les
-// teintes reprennent en trait pointillé ; le numéro de la pastille, lui, reste
-// unique et c'est lui qui identifie la couche.
+// teintes reprennent en trait pointillé ; le numéro de la ligne du tableau,
+// lui, reste unique.
 const SERIES_LIGHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 const SERIES_DARK = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
 
-// Géométrie de la vue en perspective : le plan du radar est couché (TILT),
-// tourné d'un quart de tour incomplet (YAW) pour que les quatre axes se
-// détachent, et chaque direction occupe un étage de la pile.
+// Géométrie du radar : les quatre axes en croix, le premier vers le haut,
+// comme sur le radar d'une seule direction.
 const WIDTH = 560;
+const HEIGHT = 366;
 const CX = WIDTH / 2;
-const RADIUS = 150;
-const TILT = 0.5;
-const YAW = (28 * Math.PI) / 180;
-const SLAB = 5;
-const TOP_MARGIN = 34;
-const BOTTOM_MARGIN = 40;
+const CY = HEIGHT / 2;
+const RADIUS = 140;
 
 /**
- * Radars PSI de toutes les directions, superposés en perspective : un étage
- * par direction, sur les mêmes quatre axes, pour comparer les profils d'un
- * coup d'œil. Le tableau placé dessous donne les scores exacts ; survoler une
- * ligne ou une couche isole la direction.
+ * Radars PSI de toutes les directions, superposés sur les mêmes quatre axes
+ * pour comparer les profils d'un coup d'œil. Le tableau placé dessous donne
+ * les scores exacts ; survoler une ligne ou un tracé isole la direction.
  */
-export default function PsiDirectionsRadar3D({ teams }: { teams: Team[] }) {
+export default function PsiDirectionsRadar({ teams }: { teams: Team[] }) {
   const { t } = useTranslation();
   const theme = useTheme();
   const [active, setActive] = useState<number | null>(null);
@@ -53,30 +48,22 @@ export default function PsiDirectionsRadar3D({ teams }: { teams: Team[] }) {
     scores: team.published && team.dimensions ? PSI_DIMENSIONS.map((k) => team.dimensions!.find((d) => d.key === k)?.score ?? 0) : null,
   }));
   const layers = rows.filter((r) => r.scores !== null);
-  const step = layers.length > 1 ? Math.min(30, 150 / (layers.length - 1)) : 0;
-  const baseY = TOP_MARGIN + (layers.length - 1) * step + RADIUS * TILT;
-  const height = baseY + RADIUS * TILT + BOTTOM_MARGIN;
 
-  const point = (score: number, axis: number, level: number) => {
-    const angle = -Math.PI / 2 + (axis * Math.PI) / 2 + YAW;
+  const point = (score: number, axis: number) => {
+    const angle = -Math.PI / 2 + (axis * Math.PI) / 2;
     const r = (RADIUS * score) / 5;
-    return [CX + r * Math.cos(angle), baseY - level * step + TILT * r * Math.sin(angle)] as const;
+    return [CX + r * Math.cos(angle), CY + r * Math.sin(angle)] as const;
   };
-  const ring = (score: number, level: number, dy = 0) =>
-    [0, 1, 2, 3].map((axis) => point(score, axis, level)).map(([x, y]) => `${x.toFixed(1)},${(y + dy).toFixed(1)}`).join(" ");
-  const shape = (scores: number[], level: number, dy = 0) =>
-    scores.map((s, axis) => point(s, axis, level)).map(([x, y]) => `${x.toFixed(1)},${(y + dy).toFixed(1)}`).join(" ");
+  const outline = (scores: number[]) =>
+    scores.map((s, axis) => point(s, axis)).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
 
-  const top = layers.length - 1;
-  // Nom de chaque axe, posé hors de la pile : celui du fond au-dessus du
-  // dernier étage, les trois autres autour du socle.
+  // Nom de chaque axe, au bout de celui-ci, hors de la grille.
   const axisLabels = PSI_DIMENSIONS.map((key, axis) => {
-    const [x, y] = point(5, axis, axis === 0 ? top : 0);
+    const [x, y] = point(5, axis);
     const place = [
-      { dx: 0, dy: -10, anchor: "middle" },
-      // Après la pastille numérotée du socle, posée sur ce même coin.
-      { dx: 28, dy: 4, anchor: "start" },
-      { dx: 0, dy: 20, anchor: "middle" },
+      { dx: 0, dy: -12, anchor: "middle" },
+      { dx: 10, dy: 4, anchor: "start" },
+      { dx: 0, dy: 22, anchor: "middle" },
       { dx: -10, dy: 4, anchor: "end" },
     ][axis];
     return { key, x: x + place.dx, y: y + place.dy, anchor: place.anchor as "start" | "middle" | "end" };
@@ -85,52 +72,47 @@ export default function PsiDirectionsRadar3D({ teams }: { teams: Team[] }) {
   return (
     <Stack spacing={1}>
       <Box sx={{ width: "100%", maxWidth: 620, mx: "auto" }}>
-        <svg viewBox={`0 0 ${WIDTH} ${height}`} width="100%" role="img" aria-label={t("psi.dash.radarAll")} style={{ display: "block" }}>
-          {/* Socle : graduations 1 à 5 et les quatre axes. */}
+        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} width="100%" role="img" aria-label={t("psi.dash.radarAll")} style={{ display: "block" }}>
+          {/* Grille : graduations 1 à 5 et les quatre axes. */}
           {[1, 2, 3, 4, 5].map((s) => (
-            <polygon key={s} points={ring(s, 0)} fill="none" stroke={grid} strokeWidth={s === 5 ? 1.25 : 0.75} />
+            <polygon key={s} points={outline([s, s, s, s])} fill="none" stroke={grid} strokeWidth={s === 5 ? 1.25 : 0.75} />
           ))}
           {[0, 1, 2, 3].map((axis) => {
-            const [x, y] = point(5, axis, 0);
-            return <line key={axis} x1={CX} y1={baseY} x2={x} y2={y} stroke={grid} strokeWidth={0.75} />;
+            const [x, y] = point(5, axis);
+            return <line key={axis} x1={CX} y1={CY} x2={x} y2={y} stroke={grid} strokeWidth={0.75} />;
           })}
-          {/* Montants : ils relient les coins du socle à ceux du dernier étage. */}
-          {top > 0 &&
-            [0, 1, 2, 3].map((axis) => {
-              const [x1, y1] = point(5, axis, 0);
-              const [x2, y2] = point(5, axis, top);
-              return <line key={axis} x1={x1} y1={y1} x2={x2} y2={y2} stroke={grid} strokeWidth={0.75} strokeDasharray="2 3" />;
-            })}
+          {[1, 2, 3, 4, 5].map((s) => (
+            <text key={s} x={CX + 4} y={point(s, 0)[1] + 11} fontSize={9.5} fill={muted}>
+              {s}
+            </text>
+          ))}
 
-          {layers.map((row, level) => {
+          {layers.map((row) => {
             const faded = active !== null && active !== row.team.team;
-            const [bx, by] = point(5, 1, level);
+            const focused = active === row.team.team;
             return (
               <g
                 key={row.team.team}
-                opacity={faded ? 0.15 : 1}
+                opacity={faded ? 0.12 : 1}
                 style={{ transition: "opacity 120ms", cursor: "default" }}
                 onMouseEnter={() => setActive(row.team.team)}
                 onMouseLeave={() => setActive(null)}
               >
                 <title>{`${row.team.team_name} — ${PSI_DIMENSIONS.map((k, i) => `${t(`psi.dimension.${k}`)} ${fmt(row.scores![i])}`).join(" · ")}`}</title>
-                {level > 0 && <polygon points={ring(5, level)} fill="none" stroke={grid} strokeWidth={0.75} />}
-                {/* Tranche puis face du dessus : l'épaisseur donne le relief. */}
-                <polygon points={shape(row.scores!, level, SLAB)} fill={row.color} fillOpacity={0.5} stroke={row.color} strokeOpacity={0.6} strokeWidth={1} strokeLinejoin="round" />
+                {/* Remplissage léger : cinq aplats pleins superposés ne laisseraient plus rien lire. */}
                 <polygon
-                  points={shape(row.scores!, level)}
+                  points={outline(row.scores!)}
                   fill={row.color}
-                  fillOpacity={0.42}
+                  fillOpacity={focused ? 0.3 : 0.1}
                   stroke={row.color}
-                  strokeWidth={2}
+                  strokeWidth={focused ? 3 : 2}
                   strokeLinejoin="round"
                   strokeDasharray={row.dashed ? "5 3" : undefined}
                 />
-                {/* Pastille numérotée : la direction se lit sans la couleur seule. */}
-                <circle cx={bx + 12} cy={by} r={9} fill={row.color} stroke={paper} strokeWidth={2} />
-                <text x={bx + 12} y={by + 3.5} textAnchor="middle" fontSize={10} fontWeight={800} fill="#fff">
-                  {row.index + 1}
-                </text>
+                {row.scores!.map((s, axis) => {
+                  const [x, y] = point(s, axis);
+                  return <circle key={axis} cx={x} cy={y} r={4} fill={row.color} stroke={paper} strokeWidth={2} />;
+                })}
               </g>
             );
           })}
@@ -140,9 +122,6 @@ export default function PsiDirectionsRadar3D({ teams }: { teams: Team[] }) {
               {t(`psi.dimension.${label.key}`)}
             </text>
           ))}
-          <text x={WIDTH - 4} y={height - 6} textAnchor="end" fontSize={10} fill={muted}>
-            {t("psi.dash.scale")}
-          </text>
         </svg>
       </Box>
 

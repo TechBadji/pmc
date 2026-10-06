@@ -62,7 +62,6 @@
       "insight": "The overall figure often hides a gap between dimensions: {{high}} is the strongest ({{highScore}}), {{low}} the weakest ({{lowScore}}).",
       "allDirections": "All departments",
       "radarAll": "4-dimension radar — all departments",
-      "scale": "Scale 0 to 5 · one layer per department",
       "hidden": "Results hidden ({{n}} respondent(s), {{min}} required)",
       "loadFailed": "The results could not be loaded."
     },
