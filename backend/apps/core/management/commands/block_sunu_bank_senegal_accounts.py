@@ -1,6 +1,6 @@
 """
-Fin de démo « SUNU Bank Sénégal » : bloque les 41 comptes de l'entreprise
-(CEO CEOSBS et EMP1…EMP40), dont les identifiants et le mot de passe sont
+Fin de démo « SUNU Bank Sénégal » : bloque tous les comptes de l'entreprise
+(CEO CEOSBS, DIR1…DIR5 et EMP1…EMP40), dont les identifiants et le mot de passe sont
 devinables. Un compte bloqué (`is_active=False`) ne peut plus se connecter ;
 ses données sont conservées.
 
