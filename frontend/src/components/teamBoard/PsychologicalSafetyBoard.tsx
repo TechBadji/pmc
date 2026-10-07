@@ -1,5 +1,5 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useEffect, useState } from "react";
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
@@ -10,10 +10,24 @@ import { usePeerDirection } from "@/app/peerDirection";
 import PsychologicalSafetyPage from "@/pages/PsychologicalSafetyPage";
 import PsiDirectionsRadar from "./PsiDirectionsRadar";
 import PsiOrganisationBars from "./PsiOrganisationBars";
+import PsiOrganisationScorecard from "./PsiOrganisationScorecard";
 import type { EvaluationCampaign, Paginated, PsiResults, PsiSummary } from "@/api/types";
 import { dimensionReading, globalReading, PSI_DIMENSIONS, READING_COLORS } from "@/utils/psychologicalSafety";
 
 const fmt = (n: number) => n.toFixed(2).replace(".", ",");
+
+// Le graphique d'ensemble de l'entreprise existe en deux versions ; le choix
+// se garde sur l'appareil. La version 2 est proposée d'office.
+const ORG_VERSION_KEY = "pmc.psi.orgChartVersion";
+type OrgVersion = 1 | 2;
+
+function storedOrgVersion(): OrgVersion {
+  try {
+    return localStorage.getItem(ORG_VERSION_KEY) === "1" ? 1 : 2;
+  } catch {
+    return 2;
+  }
+}
 
 /** Tableau de bord PSI d'une direction (ou de toute l'entreprise pour le CEO) :
  * score par dimension, lecture, indice global et graphique des 4 dimensions.
@@ -38,6 +52,8 @@ export default function PsychologicalSafetyBoard({
   const { readOnly: peerReadOnly } = usePeerDirection();
   const [entryOpen, setEntryOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [orgVersion, setOrgVersion] = useState<OrgVersion>(storedOrgVersion);
+  const [previous, setPrevious] = useState<{ summary: PsiSummary; name: string } | null>(null);
 
   useEffect(() => {
     apiClient
@@ -60,6 +76,37 @@ export default function PsychologicalSafetyBoard({
       .then((r) => setData(r.data))
       .catch(() => setError(true));
   }, [campaignId, teamId, orgView, reloadKey]);
+
+  // Résultats de l'entreprise sur la campagne précédente, pour les évolutions
+  // de la fiche de synthèse. `campaigns` va de la plus récente à la plus
+  // ancienne : la précédente est la suivante dans la liste.
+  useEffect(() => {
+    setPrevious(null);
+    if (!orgView || byDirection || campaignId === "") return;
+    const index = campaigns.findIndex((c) => c.id === campaignId);
+    const before = index >= 0 ? campaigns[index + 1] : undefined;
+    if (!before) return;
+    let cancelled = false;
+    apiClient
+      .get<PsiResults>("/psychological-safety-responses/results/", { params: { campaign: before.id }, silent: true })
+      .then((r) => {
+        const company = r.data.company;
+        if (!cancelled && company?.published && company.global != null) setPrevious({ summary: company, name: before.name });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [orgView, byDirection, campaignId, campaigns, reloadKey]);
+
+  const chooseOrgVersion = (version: OrgVersion) => {
+    setOrgVersion(version);
+    try {
+      localStorage.setItem(ORG_VERSION_KEY, String(version));
+    } catch {
+      // Stockage indisponible (navigation privée) : le choix vaut pour la page ouverte.
+    }
+  };
 
   const summary: PsiSummary | undefined = orgView ? data?.company : data?.teams[0];
 
@@ -120,6 +167,30 @@ export default function PsychologicalSafetyBoard({
     );
   };
 
+  // La fiche de synthèse (version 2) occupe toute la largeur et reprend le
+  // contenu du tableau des scores : elle s'affiche seule, sans le tableau.
+  const scorecard = organisation && orgVersion === 2;
+  // Titre à gauche, sélecteur de version à droite : les deux dessins du
+  // graphique d'ensemble restent à portée de clic.
+  const orgHeader = (
+    <Stack direction="row" alignItems="center" justifyContent="space-between" columnGap={1} rowGap={0.5} flexWrap="wrap" sx={{ px: 0.5 }}>
+      <Typography variant="subtitle2" fontWeight={800}>
+        {t("psi.dash.orgChart")}
+      </Typography>
+      <ToggleButtonGroup
+        size="small"
+        exclusive
+        value={orgVersion}
+        onChange={(_, v) => v && chooseOrgVersion(v)}
+        className="pmc-no-print"
+        sx={{ "& .MuiToggleButton-root": { py: 0.1, px: 1, fontSize: 11, fontWeight: 700, textTransform: "none" } }}
+      >
+        <ToggleButton value={1}>{t("psi.dash.v2.version", { n: 1 })}</ToggleButton>
+        <ToggleButton value={2}>{t("psi.dash.v2.version", { n: 2 })}</ToggleButton>
+      </ToggleButtonGroup>
+    </Stack>
+  );
+
   return (
     <Stack spacing={2.5}>
       <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
@@ -157,6 +228,14 @@ export default function PsychologicalSafetyBoard({
 
       {summary?.published && summary.dimensions && summary.global != null && (
         <>
+          {scorecard ? (
+            <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2.5 } }}>
+              <Stack spacing={2}>
+                {orgHeader}
+                <PsiOrganisationScorecard summary={summary} previous={previous?.summary ?? null} previousName={previous?.name ?? ""} />
+              </Stack>
+            </Paper>
+          ) : (
           <Stack direction={{ xs: "column", lg: "row" }} spacing={3} alignItems="stretch">
             <Paper variant="outlined" sx={{ flex: 1, overflow: "hidden" }}>
               <Table size="small">
@@ -188,9 +267,13 @@ export default function PsychologicalSafetyBoard({
               </Table>
             </Paper>
             <Paper variant="outlined" sx={{ flex: 1, p: 1 }}>
-              <Typography variant="subtitle2" fontWeight={800} align="center">
-                {t(stacked ? "psi.dash.radarAll" : organisation ? "psi.dash.orgChart" : "psi.dash.radar")}
-              </Typography>
+              {organisation ? (
+                orgHeader
+              ) : (
+                <Typography variant="subtitle2" fontWeight={800} align="center">
+                  {t(stacked ? "psi.dash.radarAll" : "psi.dash.radar")}
+                </Typography>
+              )}
               {stacked ? (
                 <PsiDirectionsRadar teams={allTeams} />
               ) : organisation ? (
@@ -211,7 +294,9 @@ export default function PsychologicalSafetyBoard({
               )}
             </Paper>
           </Stack>
-          {sorted.length > 1 && (
+          )}
+          {/* La fiche de synthèse (version 2) porte déjà sa phrase « À retenir ». */}
+          {sorted.length > 1 && !scorecard && (
             <Alert severity="info">
               {t("psi.dash.insight", {
                 high: t(`psi.dimension.${sorted[0].key}`),

@@ -65,7 +65,29 @@
       "orgChart": "Overall PSI and the 4 dimensions",
       "total": "Total PSI",
       "hidden": "Results hidden ({{n}} respondent(s), {{min}} required)",
-      "loadFailed": "The results could not be loaded."
+      "loadFailed": "The results could not be loaded.",
+      "v2": {
+        "version": "Version {{n}}",
+        "globalScale": "Where the overall index stands",
+        "zone": {
+          "fragile": "Fragile",
+          "improvable": "Improvable",
+          "solid": "Solid"
+        },
+        "vsCampaign": "vs {{campaign}}",
+        "takeaway": "Key takeaway",
+        "strength": "Strength to build on",
+        "priority": "Priority for action",
+        "belowGlobal": "{{gap}} pt below the overall index",
+        "level": "The four dimensions are at the same level.",
+        "readingKey": "Reading a dimension",
+        "dimensions": "The 4 dimensions",
+        "globalMarker": "Dashed line: overall index",
+        "trendUp": "Overall index up {{delta}} pt compared with {{campaign}}.",
+        "trendDown": "Overall index down {{delta}} pt compared with {{campaign}}.",
+        "trendFlat": "Overall index unchanged compared with {{campaign}}.",
+        "participation": "Participation"
+      }
     },
     "readingDim": {
       "strong": "Strong",

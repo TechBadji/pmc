@@ -65,7 +65,29 @@
       "orgChart": "PSI global et les 4 dimensions",
       "total": "Total PSI",
       "hidden": "Résultats masqués ({{n}} répondant(s), {{min}} requis)",
-      "loadFailed": "Les résultats n'ont pas pu être chargés."
+      "loadFailed": "Les résultats n'ont pas pu être chargés.",
+      "v2": {
+        "version": "Version {{n}}",
+        "globalScale": "Position de l'indice global",
+        "zone": {
+          "fragile": "Fragile",
+          "improvable": "Perfectible",
+          "solid": "Solide"
+        },
+        "vsCampaign": "vs {{campaign}}",
+        "takeaway": "À retenir",
+        "strength": "Point d'appui",
+        "priority": "Priorité d'action",
+        "belowGlobal": "à {{gap}} pt sous l'indice global",
+        "level": "Les quatre dimensions sont au même niveau.",
+        "readingKey": "Lecture d'une dimension",
+        "dimensions": "Les 4 dimensions",
+        "globalMarker": "Trait pointillé : indice global",
+        "trendUp": "Indice global en hausse de {{delta}} pt par rapport à {{campaign}}.",
+        "trendDown": "Indice global en baisse de {{delta}} pt par rapport à {{campaign}}.",
+        "trendFlat": "Indice global stable par rapport à {{campaign}}.",
+        "participation": "Participation"
+      }
     },
     "readingDim": {
       "strong": "Forte",

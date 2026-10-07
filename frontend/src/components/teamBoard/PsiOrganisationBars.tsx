@@ -25,6 +25,10 @@ const CHAR_WIDTH = 8.8;
 const VALUE_WIDTH = 36;
 
 /**
+ * Version 1 du graphique d'ensemble (conservée à la demande : on y revient par
+ * le sélecteur de version de la carte ; la version 2 est
+ * `PsiOrganisationScorecard`).
+ *
  * Lecture d'ensemble du PSI de l'entreprise en barres horizontales arrondies :
  * l'indice global en tête (« Total PSI »), puis les quatre dimensions de la
  * plus forte à la plus faible. La longueur d'une barre est son score sur 5,
