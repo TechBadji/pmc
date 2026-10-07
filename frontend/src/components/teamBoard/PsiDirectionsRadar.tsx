@@ -50,7 +50,12 @@ export default function PsiDirectionsRadar({ teams }: { teams: Team[] }) {
   const grid = theme.palette.divider;
   const paper = theme.palette.background.paper;
 
-  const rows = teams.map((team, index) => ({
+  // Une équipe sans aucun membre — le comité de direction du CEO, dont les
+  // directeurs répondent chacun dans leur direction — n'aura jamais de
+  // réponse : elle ne prend ni ligne ni couleur. Le critère tient à la
+  // structure, pas à la campagne, pour que les couleurs ne bougent pas de
+  // l'une à l'autre.
+  const rows = teams.filter((team) => team.headcount > 0 || team.respondents > 0).map((team, index) => ({
     team,
     index,
     color: palette[index % palette.length],
