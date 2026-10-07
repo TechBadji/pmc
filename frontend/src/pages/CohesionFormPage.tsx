@@ -843,10 +843,11 @@ export default function CohesionFormPage() {
       </Stack>
 
       {view === "opinion" && <CohesionOpinionBoard data={aggregate} />}
-      {/* « Tous les directeurs » se lit, pour le PSI, comme l'entreprise entière :
-        * les directeurs répondent chacun dans leur direction, et c'est la
-        * comparaison des directions entre elles que cette vue donne à voir. */}
-      {view === "psi" && <PsychologicalSafetyBoard teamId={teamId} orgView={orgView || directorsView} />}
+      {/* Pour le PSI, l'entreprise se lit de deux façons : sous son nom, la
+        * lecture d'ensemble (indice global et quatre dimensions) ; sous « Tous
+        * les directeurs », la comparaison des directions entre elles — les
+        * directeurs répondent chacun dans leur direction. */}
+      {view === "psi" && <PsychologicalSafetyBoard teamId={teamId} orgView={orgView || directorsView} byDirection={directorsView} />}
 
       {view !== "cohesion" && view !== "opinion" && view !== "psi" && !(directorsView && !ownTeam) && (
         <Stack spacing={2}>

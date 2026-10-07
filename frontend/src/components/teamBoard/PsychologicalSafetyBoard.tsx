@@ -9,14 +9,25 @@ import { useAppSelector } from "@/app/hooks";
 import { usePeerDirection } from "@/app/peerDirection";
 import PsychologicalSafetyPage from "@/pages/PsychologicalSafetyPage";
 import PsiDirectionsRadar from "./PsiDirectionsRadar";
+import PsiOrganisationRings from "./PsiOrganisationRings";
 import type { EvaluationCampaign, Paginated, PsiResults, PsiSummary } from "@/api/types";
 import { dimensionReading, globalReading, PSI_DIMENSIONS, READING_COLORS } from "@/utils/psychologicalSafety";
 
 const fmt = (n: number) => n.toFixed(2).replace(".", ",");
 
 /** Tableau de bord PSI d'une direction (ou de toute l'entreprise pour le CEO) :
- * score par dimension, lecture, indice global et radar des 4 dimensions. */
-export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: number | ""; orgView: boolean }) {
+ * score par dimension, lecture, indice global et graphique des 4 dimensions.
+ * À l'échelle de l'entreprise (`orgView`), `byDirection` choisit entre la
+ * lecture d'ensemble et la comparaison des directions entre elles. */
+export default function PsychologicalSafetyBoard({
+  teamId,
+  orgView,
+  byDirection = false,
+}: {
+  teamId: number | "";
+  orgView: boolean;
+  byDirection?: boolean;
+}) {
   const { t } = useTranslation();
   const theme = useTheme();
   const [campaigns, setCampaigns] = useState<EvaluationCampaign[]>([]);
@@ -55,10 +66,12 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
   const chart = summary?.published
     ? PSI_DIMENSIONS.map((k) => ({ dimension: t(`psi.dimension.${k}`), score: summary.dimensions?.find((d) => d.key === k)?.score ?? 0 }))
     : [];
-  // Vue « toutes les directions » : dès que deux directions au moins sont
-  // publiées, leurs radars remplacent le radar unique de l'entreprise.
-  const allTeams = orgView ? data?.teams ?? [] : [];
+  // Comparaison des directions (« Tous les directeurs ») : leurs radars se
+  // superposent dès que deux directions au moins sont publiées. Sinon, à
+  // l'échelle de l'entreprise, c'est la lecture d'ensemble qui s'affiche.
+  const allTeams = orgView && byDirection ? data?.teams ?? [] : [];
   const stacked = allTeams.filter((team) => team.published && team.dimensions).length > 1;
+  const organisation = orgView && !stacked;
   const sorted = summary?.dimensions ? [...summary.dimensions].sort((a, b) => b.score - a.score) : [];
 
   /**
@@ -176,10 +189,12 @@ export default function PsychologicalSafetyBoard({ teamId, orgView }: { teamId: 
             </Paper>
             <Paper variant="outlined" sx={{ flex: 1, p: 1 }}>
               <Typography variant="subtitle2" fontWeight={800} align="center">
-                {t(stacked ? "psi.dash.radarAll" : "psi.dash.radar")}
+                {t(stacked ? "psi.dash.radarAll" : organisation ? "psi.dash.orgChart" : "psi.dash.radar")}
               </Typography>
               {stacked ? (
                 <PsiDirectionsRadar teams={allTeams} />
+              ) : organisation ? (
+                <PsiOrganisationRings summary={summary} />
               ) : (
               <ResponsiveContainer width="100%" height={300}>
                 {/* Noms des dimensions écartés du polygone (tickSize), et rayon

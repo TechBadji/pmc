@@ -62,6 +62,8 @@
       "insight": "Le chiffre global cache souvent un écart entre dimensions : {{high}} est la plus forte ({{highScore}}), {{low}} la plus faible ({{lowScore}}).",
       "allDirections": "Toutes les directions",
       "radarAll": "Radar des 4 dimensions — toutes les directions",
+      "orgChart": "PSI global et les 4 dimensions",
+      "mean": "PSI global {{score}}",
       "hidden": "Résultats masqués ({{n}} répondant(s), {{min}} requis)",
       "loadFailed": "Les résultats n'ont pas pu être chargés."
     },
