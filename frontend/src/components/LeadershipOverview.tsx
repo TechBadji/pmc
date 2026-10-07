@@ -182,8 +182,14 @@ export default function LeadershipOverview({
         {t(titleKey)}
       </Typography>
 
-      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", overflowX: "auto" }}>
-        <Box sx={{ display: "grid", gridTemplateColumns, width: `${gridMinWidth}px`, flexShrink: 0, fontSize: 14.5 }}>
+      {/* Au-delà de sept ou huit colonnes les grilles sont plus larges que la
+          carte : elles défilent alors à l'intérieur de celle-ci. `width: 0`
+          avec `minWidth: 100%` empêche leur largeur fixe de remonter jusqu'à
+          la page (qui s'élargissait d'autant) ; et le centrage se fait par
+          marges automatiques, qui s'annulent quand la grille déborde — un
+          `alignItems: center` rognerait son bord gauche sans pouvoir y revenir. */}
+      <Box sx={{ display: "flex", flexDirection: "column", overflowX: "auto", width: 0, minWidth: "100%" }}>
+        <Box sx={{ display: "grid", gridTemplateColumns, width: `${gridMinWidth}px`, flexShrink: 0, mx: "auto", fontSize: 14.5 }}>
           {/* CEO centré sur les colonnes des directeurs (pas sur toute la
               largeur, décalée par la colonne des intitulés à gauche). */}
           <Box />
@@ -223,6 +229,7 @@ export default function LeadershipOverview({
             gridTemplateColumns,
             width: `${gridMinWidth}px`,
             flexShrink: 0,
+            mx: "auto",
             fontSize: 11.5,
             mt: 1.5,
             border: "1px solid",

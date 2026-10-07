@@ -11,8 +11,10 @@ const fmt = (n: number) => n.toFixed(2).replace(".", ",");
 
 // Une teinte par direction, dans un ordre fixe : la couleur suit la direction
 // (son rang dans la liste), pas son score. Au-delà de huit directions les
-// teintes reprennent en trait pointillé ; le numéro de la ligne du tableau,
-// lui, reste unique.
+// teintes reprennent, et tout ce qui porte la couleur passe en pointillé ou en
+// creux — tracé, sommets, pastilles des scores, pastille du tableau — pour ne
+// pas confondre la neuvième direction avec la première. Le numéro de la ligne
+// du tableau, lui, reste unique.
 const SERIES_LIGHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 const SERIES_DARK = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
 
@@ -30,7 +32,7 @@ const PILL_HEIGHT = 16;
 const LABEL_WIDTH = PILL_WIDTH + 3;
 const LABEL_HEIGHT = PILL_HEIGHT + 2;
 const LABEL_GAP = 10;
-const MAX_LABELLED = 8;
+const MAX_LABELLED = 12;
 
 /**
  * Radars PSI de toutes les directions, superposés sur les mêmes quatre axes
@@ -70,8 +72,8 @@ export default function PsiDirectionsRadar({ teams }: { teams: Team[] }) {
   // voisins : les pastilles partent alternativement d'un côté et de l'autre
   // de l'axe, et s'en écartent d'un cran de plus tant qu'elles buteraient sur
   // une pastille déjà posée. Un trait fin relie chacune à son point.
-  // Au-delà de huit directions il n'y a plus la place : le score ne s'affiche
-  // alors que pour la direction survolée.
+  // Au-delà de douze directions il n'y a plus la place : le score ne
+  // s'affiche alors que pour la direction survolée.
   const labelsAlways = layers.length <= MAX_LABELLED;
   // Centre de chaque pastille.
   const scoreLabels = new Map<number, { x: number; y: number }[]>();
@@ -175,13 +177,14 @@ export default function PsiDirectionsRadar({ teams }: { teams: Team[] }) {
                             fill={paper}
                             stroke={row.color}
                             strokeWidth={1.5}
+                            strokeDasharray={row.dashed ? "3 2" : undefined}
                           />
                           <text x={label.x} y={label.y + 3.8} textAnchor="middle" fontSize={10.5} fontWeight={700} fill={ink}>
                             {fmt(s)}
                           </text>
                         </>
                       )}
-                      <circle cx={x} cy={y} r={4} fill={row.color} stroke={paper} strokeWidth={2} />
+                      <circle cx={x} cy={y} r={4} fill={row.dashed ? paper : row.color} stroke={row.dashed ? row.color : paper} strokeWidth={2} />
                     </g>
                   );
                 })}
@@ -222,8 +225,11 @@ export default function PsiDirectionsRadar({ teams }: { teams: Team[] }) {
                 <Stack direction="row" spacing={0.75} alignItems="center">
                   <Box
                     sx={{
-                      flex: "0 0 auto", width: 18, height: 18, borderRadius: "50%", fontSize: 10, fontWeight: 800, lineHeight: "18px",
-                      textAlign: "center", color: "#fff", bgcolor: row.scores ? row.color : "action.disabled",
+                      flex: "0 0 auto", width: 18, height: 18, borderRadius: "50%", fontSize: 10, fontWeight: 800,
+                      textAlign: "center", boxSizing: "border-box",
+                      ...(row.dashed && row.scores
+                        ? { color: "text.primary", bgcolor: "transparent", border: `1.5px dashed ${row.color}`, lineHeight: "15px" }
+                        : { color: "#fff", bgcolor: row.scores ? row.color : "action.disabled", lineHeight: "18px" }),
                     }}
                   >
                     {row.index + 1}
