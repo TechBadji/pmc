@@ -63,8 +63,7 @@
       "allDirections": "All departments",
       "radarAll": "4-dimension radar — all departments",
       "orgChart": "Overall PSI and the 4 dimensions",
-      "mean": "Overall PSI {{score}}",
-      "vsPrevious": "pt vs previous campaign",
+      "total": "Total PSI",
       "hidden": "Results hidden ({{n}} respondent(s), {{min}} required)",
       "loadFailed": "The results could not be loaded."
     },
