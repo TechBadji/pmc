@@ -64,6 +64,7 @@
       "radarAll": "Radar des 4 dimensions — toutes les directions",
       "orgChart": "PSI global et les 4 dimensions",
       "mean": "PSI global {{score}}",
+      "vsPrevious": "pt vs campagne précédente",
       "hidden": "Résultats masqués ({{n}} répondant(s), {{min}} requis)",
       "loadFailed": "Les résultats n'ont pas pu être chargés."
     },

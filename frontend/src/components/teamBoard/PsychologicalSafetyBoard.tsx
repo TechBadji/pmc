@@ -9,7 +9,7 @@ import { useAppSelector } from "@/app/hooks";
 import { usePeerDirection } from "@/app/peerDirection";
 import PsychologicalSafetyPage from "@/pages/PsychologicalSafetyPage";
 import PsiDirectionsRadar from "./PsiDirectionsRadar";
-import PsiOrganisationRings from "./PsiOrganisationRings";
+import PsiOrganisationProfile from "./PsiOrganisationProfile";
 import type { EvaluationCampaign, Paginated, PsiResults, PsiSummary } from "@/api/types";
 import { dimensionReading, globalReading, PSI_DIMENSIONS, READING_COLORS } from "@/utils/psychologicalSafety";
 
@@ -38,6 +38,7 @@ export default function PsychologicalSafetyBoard({
   const { readOnly: peerReadOnly } = usePeerDirection();
   const [entryOpen, setEntryOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [previousGlobal, setPreviousGlobal] = useState<number | null>(null);
 
   useEffect(() => {
     apiClient
@@ -60,6 +61,28 @@ export default function PsychologicalSafetyBoard({
       .then((r) => setData(r.data))
       .catch(() => setError(true));
   }, [campaignId, teamId, orgView, reloadKey]);
+
+  // Indice global de l'entreprise sur la campagne précédente, pour l'écart
+  // affiché sous le graphique d'ensemble. `campaigns` va de la plus récente
+  // à la plus ancienne : la précédente est la suivante dans la liste.
+  useEffect(() => {
+    setPreviousGlobal(null);
+    if (!orgView || byDirection || campaignId === "") return;
+    const index = campaigns.findIndex((c) => c.id === campaignId);
+    const previous = index >= 0 ? campaigns[index + 1] : undefined;
+    if (!previous) return;
+    let cancelled = false;
+    apiClient
+      .get<PsiResults>("/psychological-safety-responses/results/", { params: { campaign: previous.id }, silent: true })
+      .then((r) => {
+        const company = r.data.company;
+        if (!cancelled && company?.published && company.global != null) setPreviousGlobal(company.global);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [orgView, byDirection, campaignId, campaigns, reloadKey]);
 
   const summary: PsiSummary | undefined = orgView ? data?.company : data?.teams[0];
 
@@ -194,7 +217,7 @@ export default function PsychologicalSafetyBoard({
               {stacked ? (
                 <PsiDirectionsRadar teams={allTeams} />
               ) : organisation ? (
-                <PsiOrganisationRings summary={summary} />
+                <PsiOrganisationProfile summary={summary} previousGlobal={previousGlobal} />
               ) : (
               <ResponsiveContainer width="100%" height={300}>
                 {/* Noms des dimensions écartés du polygone (tickSize), et rayon
