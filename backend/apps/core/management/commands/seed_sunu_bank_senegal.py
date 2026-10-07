@@ -1,7 +1,8 @@
 """
-Jeu de démonstration « SUNU Bank Sénégal » : un CEO (login CEOSBS), cinq
-directions conduites chacune par un directeur (DIR1…DIR5) et quarante
-collaborateurs génériques EMP1…EMP40, répartis à parts égales.
+Jeu de démonstration « SUNU Bank Sénégal » : un CEO (login CEOSBS), dix
+directions conduites chacune par un directeur (DIR1…DIR10) et soixante-dix
+collaborateurs génériques EMP1…EMP70 — huit dans chacune des cinq premières
+directions, six dans chacune des cinq suivantes.
 
 Les comptes sont nommés d'après leur login et ne portent aucune donnée
 pré-remplie par cette commande : les rubriques (évaluations, objectifs,
@@ -16,7 +17,7 @@ et les anciennetés des tableaux de bord (« Aperçu de l'Équipe Dirigeante »
 du CEO, aperçu de l'équipe de chaque directeur). Une date déjà renseignée
 n'est pas écrasée.
 
-Les logins DIR1…DIR5 et EMP1…EMP40 doivent être libres : `generated_login`
+Les logins DIR1…DIR10 et EMP1…EMP70 doivent être libres : `generated_login`
 est unique sur toute la plateforme. S'ils appartiennent encore à Africa
 Insurance Group, lancer d'abord `rename_aig_emp_accounts` (voir ses options).
 
@@ -41,7 +42,6 @@ from apps.evaluations.models import EvaluationCampaign
 COMPANY_NAME = "SUNU Bank Sénégal"
 CEO_LOGIN = "CEOSBS"
 PASSWORD = "123456"
-EMPLOYEE_COUNT = 40
 # nom, début, fin, clôturée — mêmes exercices qu'Africa Insurance Group.
 CAMPAIGNS = [
     ("Année 2023", date(2023, 1, 1), date(2023, 12, 31), True),
@@ -53,16 +53,24 @@ CAMPAIGNS = [
 # devient « Semestre 1 2026 » plutôt que de rester en doublon du même exercice.
 LEGACY_CAMPAIGN = "Année 2026"
 
-# Les collaborateurs sont répartis dans l'ordre : EMP1…EMP8 dans la première
-# direction, EMP9…EMP16 dans la deuxième, et ainsi de suite. Le directeur
-# porte le rang de sa direction : DIR1 pour la première, DIR5 pour la dernière.
+# code, nom, effectif hors directeur. Les collaborateurs sont numérotés à la
+# suite : EMP1…EMP8 dans la première direction, EMP9…EMP16 dans la deuxième,
+# et ainsi de suite. Le directeur porte le rang de sa direction : DIR1 pour la
+# première, DIR10 pour la dernière. Toute nouvelle direction s'ajoute EN FIN de
+# liste, sans quoi les logins existants changeraient de direction.
 DEPARTMENTS = [
-    ("DCO", "Direction Commerciale"),
-    ("DRC", "Direction des Risques et de la Conformité"),
-    ("DFC", "Direction Financière et Comptable"),
-    ("DOP", "Direction des Opérations"),
-    ("DSI", "Direction des Systèmes d'Information"),
+    ("DCO", "Direction Commerciale", 8),
+    ("DRC", "Direction des Risques et de la Conformité", 8),
+    ("DFC", "Direction Financière et Comptable", 8),
+    ("DOP", "Direction des Opérations", 8),
+    ("DSI", "Direction des Systèmes d'Information", 8),
+    ("RH", "Direction RH", 6),
+    ("DJC", "Direction Juridique & Contentieux", 6),
+    ("MEC", "Direction Marketing & Expérience Client", 6),
+    ("AUD", "Direction Audit", 6),
+    ("DSP", "Direction Stratégie & Planification", 6),
 ]
+EMPLOYEE_COUNT = sum(size for _code, _name, size in DEPARTMENTS)
 
 # Par directeur : naissance, début de carrière, entrée dans l'entreprise, prise
 # de poste. L'ordre chronologique est celui que contrôle la saisie du profil
@@ -74,6 +82,11 @@ DIRECTOR_DATES = {
     "DIR3": (date(1971, 11, 5), date(1996, 1, 15), date(2006, 6, 1), date(2014, 3, 1)),
     "DIR4": (date(1983, 5, 18), date(2007, 9, 1), date(2018, 1, 8), date(2023, 2, 1)),
     "DIR5": (date(1981, 1, 30), date(2005, 3, 1), date(2012, 9, 3), date(2020, 6, 1)),
+    "DIR6": (date(1977, 6, 8), date(2001, 10, 1), date(2013, 5, 2), date(2018, 4, 1)),
+    "DIR7": (date(1980, 12, 19), date(2005, 1, 10), date(2011, 3, 1), date(2022, 1, 3)),
+    "DIR8": (date(1985, 4, 2), date(2009, 9, 1), date(2016, 10, 3), date(2021, 5, 3)),
+    "DIR9": (date(1973, 8, 27), date(1997, 11, 3), date(2009, 1, 5), date(2015, 9, 1)),
+    "DIR10": (date(1982, 2, 14), date(2006, 7, 3), date(2019, 2, 4), date(2024, 1, 2)),
 }
 # Intitulé de poste du directeur : c'est lui que l'« Aperçu de l'Équipe
 # Dirigeante » affiche sous chaque photo, dans une pastille étroite qui coupe
@@ -85,6 +98,11 @@ DIRECTOR_POSITIONS = {
     "DFC": "Dir. Financière & Comptable",
     "DOP": "Dir. Opérations",
     "DSI": "Dir. Systèmes d'Information",
+    "RH": "Dir. RH",
+    "DJC": "Dir. Juridique & Contentieux",
+    "MEC": "Dir. Marketing & Expérience Client",
+    "AUD": "Dir. Audit",
+    "DSP": "Dir. Stratégie & Planification",
 }
 GENERIC_DIRECTOR_POSITION = "Directeur"
 CEO_DATES = (date(1968, 9, 14), date(1992, 10, 1), date(2008, 3, 1), date(2017, 7, 1))
@@ -108,7 +126,7 @@ def employee_dates(number):
 
 
 class Command(BaseCommand):
-    help = "Crée l'entreprise de démonstration SUNU Bank Sénégal (CEO CEOSBS, 5 directions, DIR1…DIR5, EMP1…EMP40)."
+    help = "Crée l'entreprise de démonstration SUNU Bank Sénégal (CEO CEOSBS, 10 directions, DIR1…DIR10, EMP1…EMP70)."
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -117,7 +135,7 @@ class Command(BaseCommand):
             defaults={
                 "slug": slugify_company(COMPANY_NAME),
                 "sector": "Banque",
-                # Quarante-et-un comptes : la formule Démo s'arrête à dix.
+                # Plusieurs dizaines de comptes : la formule Démo s'arrête à dix.
                 "plan": "STANDARD",
                 "admin_first_name": CEO_LOGIN,
                 "admin_last_name": "",
@@ -136,7 +154,7 @@ class Command(BaseCommand):
 
         departments = [
             Department.objects.get_or_create(company=company, code=code, defaults={"name": name})[0]
-            for code, name in DEPARTMENTS
+            for code, name, _size in DEPARTMENTS
         ]
         directors = []
         for rank, department in enumerate(departments, start=1):
@@ -155,14 +173,16 @@ class Command(BaseCommand):
                 director.save(update_fields=["position"])
             directors.append(director)
 
-        per_department = EMPLOYEE_COUNT // len(departments)
-        for n in range(1, EMPLOYEE_COUNT + 1):
-            index = (n - 1) // per_department
-            employee = self._account(
-                company, f"EMP{n}", role=User.Role.MEMBER, position="Collaborateur",
-                initials=str(n), department=departments[index], manager=directors[index],
-            )
-            self._dates(employee, employee_dates(n))
+        ranges, n = [], 0
+        for index, (_code, _name, size) in enumerate(DEPARTMENTS):
+            ranges.append((n + 1, n + size))
+            for _ in range(size):
+                n += 1
+                employee = self._account(
+                    company, f"EMP{n}", role=User.Role.MEMBER, position="Collaborateur",
+                    initials=str(n), department=departments[index], manager=directors[index],
+                )
+                self._dates(employee, employee_dates(n))
 
         company.employee_count = company.users.count()
         company.save(update_fields=["employee_count"])
@@ -175,10 +195,8 @@ class Command(BaseCommand):
             f"  Campagnes      : {', '.join(c.name for c in campaigns)}"
         ))
         for index, department in enumerate(departments):
-            first = index * per_department + 1
-            self.stdout.write(
-                f"  {department.code} {department.name} : DIR{index + 1}, EMP{first} … EMP{first + per_department - 1}"
-            )
+            first, last = ranges[index]
+            self.stdout.write(f"  {department.code} {department.name} : DIR{index + 1}, EMP{first} … EMP{last}")
 
     def _campaigns(self, company, ceo):
         current_name = CAMPAIGNS[-1][0]

@@ -1,6 +1,6 @@
 """
-Donne une vraie photo de portrait aux 46 comptes de SUNU Bank Sénégal
-(CEOSBS, DIR1…DIR5, EMP1…EMP40), à la place de la pastille à initiales.
+Donne une vraie photo de portrait aux 81 comptes de SUNU Bank Sénégal
+(CEOSBS, DIR1…DIR10, EMP1…EMP70), à la place de la pastille à initiales.
 
 Les portraits sont ceux déjà versionnés dans `management/portraits/`
 (personnes noires africaines, Unsplash, licence libre) : aucun téléchargement.
@@ -9,7 +9,9 @@ n'est donc pas garanti photo par photo. Ces portraits servent aussi à Africa
 Insurance Group ; aucun n'est attribué deux fois au sein de SUNU Bank Sénégal.
 
 Les comptes portent leur login pour nom, sans genre : femmes et hommes
-alternent dans l'ordre CEOSBS, DIR1…DIR5, EMP1…EMP40.
+alternent dans l'ordre CEOSBS, DIR1…DIR5, EMP1…EMP40, puis DIR6…DIR10 et
+EMP41…EMP70, arrivés ensuite : les nouveaux comptes s'ajoutent en fin de
+liste, pour que les portraits déjà attribués ne changent pas de visage.
 
 Idempotent : relançable, chaque login reçoit toujours le même portrait.
 
@@ -26,7 +28,10 @@ from apps.core.models import Company, User
 
 COMPANY_NAME = "SUNU Bank Sénégal"
 PORTRAITS = Path(__file__).resolve().parent.parent / "portraits"
-LOGINS = ["CEOSBS"] + [f"DIR{n}" for n in range(1, 6)] + [f"EMP{n}" for n in range(1, 41)]
+LOGINS = (
+    ["CEOSBS"] + [f"DIR{n}" for n in range(1, 6)] + [f"EMP{n}" for n in range(1, 41)]
+    + [f"DIR{n}" for n in range(6, 11)] + [f"EMP{n}" for n in range(41, 71)]
+)
 # S3GrMiUhpNU (dossier employees) est écarté : même visage que kXmKqYOGA4Y.
 # Les deux derniers portraits féminins viennent du dossier sunu.
 FEMALE_POOL = [
@@ -36,6 +41,11 @@ FEMALE_POOL = [
     "employees/3dqSZidOkvs", "employees/32sUMIS0Afc", "employees/20e5uGmm2Es", "employees/Jw9PJ0B3Xqg",
     "employees/dYgyzxlHJ58", "employees/i2hoD-C2RUA", "employees/NYiYc13lKAY", "employees/n1yI8oExVns",
     "employees/B4NW2Fk3Bkk", "sunu/vp9mRauo68c", "sunu/DpfkkL1FD20",
+    # DIR7, DIR9, puis les collaboratrices des cinq directions ajoutées.
+    "sunu/dQyfiYNJoHw", "sunu/bxpiMBp0FtU", "sunu/Q1QRTSeZIxI", "sunu/2JS_KD4vi7o", "sunu/I49bIyEHaIs",
+    "sunu/nzR24yJ8Cvo", "sunu/RJVQ_wnwXIM", "sunu/hgVe54j2rt8", "sunu/Ty2WpsNiVtQ", "sunu/nvvvAy3nhX8",
+    "sunu/_cvwXhGqG-o", "sunu/yRpe13BHdKw", "sunu/HyoTmwZQwWU", "sunu/J1jYLLlRpA4", "sunu/o-f9IhaLB5k",
+    "sunu/ws4fXSuVlkY", "sunu/30DeKCpDLD0",
 ]
 MALE_POOL = [
     "employees/AGlO2jlVE4c", "employees/10fvuGtnoEM", "employees/P_jBxTIYGKg", "employees/2EGNqazbAMk",
@@ -44,11 +54,16 @@ MALE_POOL = [
     "employees/x0A7wgQmmdk", "employees/oXzyPakqsA0", "employees/olasY6OD8pw", "employees/uVduOMRIHHg",
     "employees/O1lbOY0H5rc", "employees/bo7CsaJEuMk", "employees/IJrIeCs3D4g", "employees/QIMjYJSFoXM",
     "employees/Ba1eGcAFj5w", "employees/Ve7xjKImd28", "employees/jC0IQzIm_9Y",
+    # DIR6, DIR8, DIR10, puis les collaborateurs des cinq directions ajoutées.
+    "sunu/8PidEL3NJLM", "sunu/7TI-3jUObYg", "sunu/5tqiaBDE3pg", "sunu/gisFZKWpKQ4", "sunu/ST_4Rw_8rxA",
+    "sunu/gPT2JJdMnag", "sunu/gsw3AP6I-EY", "sunu/7PxveE1Kh5M", "sunu/kUGwR0S8qXo", "sunu/jCeVRUQslTs",
+    "sunu/ZsObS42_i_0", "sunu/M7i6iMgzPwc", "sunu/wQwns_wVjYY", "sunu/95UF6LXe-Lo", "sunu/0jLaMXX3wBU",
+    "sunu/s6tVlDVKz38", "sunu/UHtIqPrSR_M", "sunu/hWZP_MRoT6I",
 ]
 
 
 class Command(BaseCommand):
-    help = "Photos de portrait réelles pour les 46 comptes de SUNU Bank Sénégal."
+    help = "Photos de portrait réelles pour les 81 comptes de SUNU Bank Sénégal."
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -70,6 +85,10 @@ class Command(BaseCommand):
             female = index % 2 == 1
             photo = (FEMALE_POOL if female else MALE_POOL)[index // 2]
             user = users[login]
+            # Un portrait déjà posé est laissé tel quel : relancer la commande
+            # pour de nouveaux comptes ne réécrit pas les fichiers des autres.
+            if "_portrait" in (user.avatar.name or ""):
+                continue
             if user.avatar:
                 # Sans cela, chaque relance laisserait un fichier orphelin.
                 user.avatar.delete(save=False)

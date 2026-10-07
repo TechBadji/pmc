@@ -72,6 +72,11 @@ TEAM_SETTINGS = {
     "DFC": ("a consolider", "progres"),
     "DOP": ("fragile", "degradation"),
     "DSI": ("apprenante", "progres"),
+    "RH": ("fragile", "progres"),
+    "DJC": ("a consolider", "stable"),
+    "MEC": ("solide", "progres"),
+    "AUD": ("appartenance sans challenge", "stable"),
+    "DSP": ("contributive peu inclusive", "degradation"),
 }
 PARTICIPATION = 0.9  # part des collaborateurs qui répondent à une campagne donnée
 MIN_RESPONDENTS = 4  # plancher par direction et par campagne, au-dessus du seuil d'anonymat

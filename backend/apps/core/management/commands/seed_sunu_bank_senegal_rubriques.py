@@ -1,7 +1,7 @@
 """
 Peuple toutes les rubriques de SUNU Bank Sénégal sur ses quatre campagnes
-(Année 2023, 2024, 2025 et Semestre 1 2026), pour les 5 directeurs et les
-40 collaborateurs créés par `seed_sunu_bank_senegal` :
+(Année 2023, 2024, 2025 et Semestre 1 2026), pour les directeurs et les
+collaborateurs créés par `seed_sunu_bank_senegal` :
 
   - référentiels de compétences : dix savoir-faire bancaires par direction
     (hard) et les soft skills communs à toutes les démos ;
@@ -21,15 +21,21 @@ redonne le score stocké) ; seul le contenu métier est propre à la banque.
 
 Le CEO n'est évalué par personne : il n'a ni évaluation ID-3A ni fiche
 d'objectifs. L'entreprise n'a pas de direction « comité de direction » : les
-rubriques d'équipe portent sur les cinq directions.
+rubriques d'équipe portent sur les directions.
 
 Relançable sans doublon, mais la relance RECONSTRUIT ces rubriques pour
 l'entreprise : ce qui aurait été saisi entre-temps dans l'application est
 écrasé. Seules les réponses PSI existantes sont conservées. Ne touche à
 aucune autre entreprise.
 
+Avec `--only CODE …`, seules les directions citées sont peuplées : leurs
+membres, leurs fiches, leurs avis. Rien de ce qui appartient aux autres
+directions ni au CEO n'est relu ou réécrit — c'est la voie pour ajouter une
+direction à une entreprise où la saisie a commencé.
+
 Usage:
     python manage.py seed_sunu_bank_senegal_rubriques
+    python manage.py seed_sunu_bank_senegal_rubriques --only RH DJC MEC AUD DSP
 """
 import random
 from datetime import date, timedelta
@@ -65,7 +71,7 @@ from apps.teams.models import (
 )
 
 COMPANY_NAME = "SUNU Bank Sénégal"
-CODES = ["DCO", "DRC", "DFC", "DOP", "DSI"]
+CODES = ["DCO", "DRC", "DFC", "DOP", "DSI", "RH", "DJC", "MEC", "AUD", "DSP"]
 
 # Dix savoir-faire par direction : le référentiel « hard » porte le nom du
 # poste du directeur et sert de repli à tous les collaborateurs de sa direction.
@@ -104,6 +110,41 @@ HARD_SKILLS = {
         "Intégration des canaux digitaux", "Bases de données et reporting décisionnel",
         "Réseaux et télécommunications des agences", "Gestion des incidents et support (ITIL)",
         "Plan de reprise d'activité informatique", "Conformité et sécurité monétique (PCI DSS)",
+    ],
+    "RH": [
+        "Recrutement et intégration", "Gestion de la paie et administration du personnel",
+        "Droit du travail sénégalais et convention collective des banques", "Gestion prévisionnelle des emplois et compétences",
+        "Ingénierie de formation", "Politique de rémunération et avantages sociaux",
+        "Dialogue social et relations avec les délégués", "Gestion des carrières et de la mobilité",
+        "Système d'information RH et tableaux de bord sociaux", "Santé, sécurité et qualité de vie au travail",
+    ],
+    "DJC": [
+        "Droit bancaire et réglementation UMOA", "Droit des sûretés (OHADA)",
+        "Rédaction et validation des contrats", "Recouvrement amiable et judiciaire",
+        "Gestion des procédures collectives", "Suivi des contentieux et des provisions",
+        "Secrétariat juridique des organes sociaux", "Réalisation des garanties",
+        "Veille juridique et réglementaire", "Pilotage des avocats et huissiers",
+    ],
+    "MEC": [
+        "Étude de marché et segmentation clientèle", "Conception des offres et tarification",
+        "Marketing digital et réseaux sociaux", "Mesure de la satisfaction client (NPS)",
+        "Conception des parcours client", "Communication de marque et événementiel",
+        "Gestion des réclamations et de la voix du client", "Animation commerciale et campagnes",
+        "Analyse de données clients (CRM)", "Veille concurrentielle bancaire",
+    ],
+    "AUD": [
+        "Conduite de missions d'audit interne", "Normes professionnelles de l'audit (IIA)",
+        "Évaluation du contrôle interne", "Audit des agences et des caisses",
+        "Audit des systèmes d'information", "Cartographie des risques et plan d'audit",
+        "Rédaction des rapports et recommandations", "Suivi de la mise en œuvre des recommandations",
+        "Détection de la fraude et investigations", "Relations avec la Commission Bancaire et les commissaires aux comptes",
+    ],
+    "DSP": [
+        "Élaboration du plan stratégique", "Processus budgétaire et plan à moyen terme",
+        "Pilotage de la performance et tableaux de bord", "Modélisation financière et simulations",
+        "Analyse de la rentabilité par métier", "Études de marché et de développement du réseau",
+        "Conduite des projets de transformation", "Reporting à la direction générale et au groupe",
+        "Benchmark sectoriel bancaire", "Animation des comités de pilotage",
     ],
 }
 
@@ -176,11 +217,78 @@ R.DEPT.update({
              ("Incidents résolus dans les délais (%)", "Respect des engagements de service", 95, 80)],
         qual=["Ingénieur Informatique — École Supérieure Polytechnique de Dakar", "Master Systèmes d'information — UGB Saint-Louis",
               "Certification ITIL v4", "Certification CISSP", "Certification PMP"]),
+    "RH": dict(
+        vision="Attirer, développer et fidéliser les talents dont la banque a besoin pour sa croissance.",
+        values=["Équité", "Écoute", "Développement", "Confidentialité"],
+        counter=["Favoritisme", "Absence de feedback", "Opacité des promotions"],
+        wins=["Cartographie des compétences achevée", "Académie interne lancée", "Turnover réduit de 4 points",
+              "Paie fiabilisée sans réclamation majeure", "Baromètre social annuel mis en place"],
+        fails=["Recrutements longs sur les profils informatiques", "Entretiens annuels tenus en retard",
+               "Plan de formation réalisé aux deux tiers", "Relève des postes clés peu préparée"],
+        biz=[("Réalisation du plan de formation (%)", "Formations réalisées / prévues", 100, 68),
+             ("Rétention des talents (score /100)", "Indice de rétention", 92, 81),
+             ("Délai moyen de recrutement (score /100)", "Indice de célérité", 85, 62)],
+        qual=["Master Gestion des Ressources Humaines — CESAG Dakar", "Master Droit social — UCAD",
+              "Certification en droit du travail OHADA", "Coach professionnel certifié", "Licence Psychologie du travail"]),
+    "DJC": dict(
+        vision="Sécuriser juridiquement l'activité de la banque et recouvrer ses créances dans le respect du droit.",
+        values=["Rigueur", "Intégrité", "Sens du conseil", "Fermeté"],
+        counter=["Avis rendus hors délai", "Juridisme bloquant", "Dossiers laissés sans suite"],
+        wins=["Taux de recouvrement contentieux en hausse", "Modèles de contrats de crédit refondus",
+              "Garanties inscrites dans les délais légaux", "Panel d'avocats renégocié", "Stock de dossiers anciens réduit d'un tiers"],
+        fails=["Délais de validation de certaines conventions", "Garanties incomplètes sur d'anciens dossiers",
+               "Procédures longues devant les tribunaux", "Archivage des actes encore papier"],
+        biz=[("Créances contentieuses recouvrées (M FCFA)", "Encaissements sur dossiers contentieux", 4200, 2900),
+             ("Avis juridiques rendus dans les délais (%)", "Avis sous 5 jours ouvrés", 95, 76),
+             ("Garanties régulièrement inscrites (%)", "Sûretés conformes / sûretés prises", 100, 87)],
+        qual=["Master Droit des affaires — UCAD", "Master Droit bancaire et financier", "Master Droit OHADA — Université Gaston Berger",
+              "Certificat d'aptitude à la profession d'avocat (CAPA)", "Diplôme de l'ITB (Institut Technique de Banque)"]),
+    "MEC": dict(
+        vision="Placer l'expérience client au centre de chaque produit, canal et parcours de la banque.",
+        values=["Écoute client", "Créativité", "Simplicité", "Engagement"],
+        counter=["Discours sans action", "Complexité inutile", "Indifférence aux réclamations"],
+        wins=["Refonte de l'identité de marque", "Parcours d'ouverture de compte simplifié", "Indice de recommandation en hausse de 9 points",
+              "Campagne épargne jeunes réussie", "Programme de fidélité lancé"],
+        fails=["Campagne digitale sous-performante", "Enquête de satisfaction mal ciblée",
+               "Réponses tardives sur les réseaux sociaux", "Budget média inégalement réparti"],
+        biz=[("Indice de recommandation client (NPS)", "NPS annuel", 50, 36),
+             ("Clients actifs sur les canaux digitaux", "Nombre de clients actifs sur mobile et web", 45000, 31000),
+             ("Réclamations traitées dans les délais (%)", "Réclamations closes sous 5 jours", 95, 79)],
+        qual=["Master Marketing — ISM Dakar", "Master Communication — CESTI", "Certification Google Analytics",
+              "MBA — BEM Dakar", "Licence Gestion commerciale — UCAD"]),
+    "AUD": dict(
+        vision="Donner au conseil d'administration une assurance indépendante sur la maîtrise des risques de la banque.",
+        values=["Indépendance", "Objectivité", "Rigueur", "Confidentialité"],
+        counter=["Complaisance", "Constats sans preuve", "Recommandations sans suivi"],
+        wins=["Plan d'audit annuel réalisé à 95 %", "Toutes les agences auditées en deux ans", "Suivi des recommandations outillé",
+              "Mission informatique menée en interne", "Charte d'audit révisée et approuvée"],
+        fails=["Rapports diffusés avec retard", "Recommandations anciennes non clôturées",
+               "Compétences limitées en audit informatique", "Couverture insuffisante des filiales de services"],
+        biz=[("Réalisation du plan d'audit (%)", "Missions réalisées / planifiées", 100, 82),
+             ("Recommandations mises en œuvre (%)", "Recommandations closes dans les délais", 90, 64),
+             ("Rapports émis dans les délais (%)", "Rapport définitif sous 30 jours", 95, 71)],
+        qual=["Master Audit et Contrôle de gestion — CESAG Dakar", "Certified Internal Auditor (CIA)", "Diplôme d'Expertise Comptable (DECOFI)",
+              "Certification CISA", "Diplôme de l'ITB (Institut Technique de Banque)"]),
+    "DSP": dict(
+        vision="Éclairer les choix de la direction générale par un plan stratégique clair et un pilotage fiable de la performance.",
+        values=["Anticipation", "Objectivité", "Clarté", "Fiabilité"],
+        counter=["Chiffres non réconciliés", "Réunions sans décision", "Tableaux illisibles"],
+        wins=["Plan stratégique 2026-2030 adopté", "Budget bouclé en six semaines", "Tableau de bord mensuel de la direction générale",
+              "Prévision glissante sur douze mois", "Étude d'implantation de quatre agences"],
+        fails=["Écarts budgétaires expliqués tardivement", "Hypothèses de croissance trop optimistes",
+               "Outil de pilotage peu adopté par les métiers", "Projets de transformation en retard"],
+        biz=[("Précision du budget (%)", "Écart budget / réalisé", 97, 88),
+             ("Tableaux de bord livrés à l'heure (%)", "Respect du calendrier de reporting", 100, 79),
+             ("Projets stratégiques tenus dans les délais (%)", "Respect des jalons", 90, 61)],
+        qual=["Master Contrôle de gestion — CESAG Dakar", "MBA — BEM Dakar", "Master Finance d'entreprise — UCAD",
+              "Certification PMP", "Certification Power BI"]),
 })
 # Climat de cohésion ressenti par l'équipe, et écart de la note que la
 # direction se donne sur sa propre fiche (voir le module d'origine).
-R.CLIMATE.update({"DCO": 3.8, "DRC": 4.1, "DFC": 3.5, "DOP": 2.9, "DSI": 3.4})
-R.SELF_GAP.update({"DCO": 0.3, "DRC": -0.2, "DFC": 0.5, "DOP": 1.0, "DSI": 0.2})
+R.CLIMATE.update({"DCO": 3.8, "DRC": 4.1, "DFC": 3.5, "DOP": 2.9, "DSI": 3.4,
+                  "RH": 3.2, "DJC": 3.7, "MEC": 4.0, "AUD": 3.6, "DSP": 3.1})
+R.SELF_GAP.update({"DCO": 0.3, "DRC": -0.2, "DFC": 0.5, "DOP": 1.0, "DSI": 0.2,
+                   "RH": 0.8, "DJC": 0.1, "MEC": 0.4, "AUD": -0.3, "DSP": 0.6})
 
 PREV_POSITIONS = [
     "Chargé de clientèle — banque de détail", "Analyste crédit — établissement de microfinance",
@@ -207,8 +315,22 @@ PERSONAL_PROJECTS = [
 class Command(BaseCommand):
     help = "Peuple toutes les rubriques de SUNU Bank Sénégal sur ses quatre campagnes."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--only", nargs="+", metavar="CODE",
+            help="Ne peuple que ces directions (codes), sans toucher aux autres ni au CEO.",
+        )
+
     @transaction.atomic
     def handle(self, *args, **options):
+        only = [code.upper() for code in options["only"] or []]
+        unknown = [code for code in only if code not in CODES]
+        if unknown:
+            raise CommandError(f"Directions inconnues : {', '.join(unknown)}. Codes possibles : {', '.join(CODES)}.")
+        self.partial = bool(only)
+        # `self.codes` : les directions à peupler. L'ensemble des directions
+        # reste lu (`CODES`) : les pairs d'un directeur sont tous les autres.
+        self.codes = [code for code in CODES if code in only] if only else list(CODES)
         try:
             company = Company.objects.get(name=COMPANY_NAME)
         except Company.DoesNotExist:
@@ -236,8 +358,10 @@ class Command(BaseCommand):
         short = [code for code in CODES if len(self.staff[code]) < 4]
         if short:
             raise CommandError(f"Directions sans collaborateurs en nombre suffisant : {', '.join(short)}.")
-        self.evaluated = [person for code in CODES for person in [self.directors[code]] + self.staff[code]]
-        self.everyone = [self.ceo] + self.evaluated
+        self.evaluated = [person for code in self.codes for person in [self.directors[code]] + self.staff[code]]
+        # Le CEO n'entre dans le périmètre que lorsque toute l'entreprise est peuplée.
+        self.everyone = ([] if self.partial else [self.ceo]) + self.evaluated
+        self.teams = [self.depts[code] for code in self.codes]
         self.today = date.today()
         # Jour de dépôt des fiches et avis datés : dans la fenêtre de la campagne.
         self.deposit = {c.pk: max(min(self.today, c.end_date), c.start_date) for c in self.campaigns}
@@ -253,6 +377,7 @@ class Command(BaseCommand):
         self._team_boards()
         self._profiles()
         self._action_plans()
+        # Ne crée que les réponses manquantes : sans effet sur les directions déjà peuplées.
         PSI.Command(stdout=self.stdout, stderr=self.stderr).seed(company)
         self.stdout.write(self.style.SUCCESS(
             f"\nTerminé — {company.name} : {len(self.evaluated)} personnes évaluées sur {len(self.campaigns)} campagnes."
@@ -269,7 +394,7 @@ class Command(BaseCommand):
     # -- évaluations -----------------------------------------------------
     def _evaluations(self):
         gen = MAIN.Command()
-        for code in CODES:
+        for code in self.codes:
             dept, director = self.depts[code], self.directors[code]
             hard_items, soft_items = gen._matrices(self.company, dept, director.position, HARD_SKILLS[code])
             gen.rng = random.Random(f"sbs-evaluations-{code}")
@@ -303,7 +428,7 @@ class Command(BaseCommand):
         rub = R.Command()
         director_ids = {d.pk for d in self.directors.values()}
         PerformanceObjective.objects.filter(evaluation__in=evaluations).delete()
-        PerformanceObjective.objects.filter(team__company=self.company).delete()
+        PerformanceObjective.objects.filter(team__in=self.teams).delete()
         lines = []
         for ev in evaluations:
             rng = random.Random(f"sbs-obj-{ev.user.generated_login}-{ev.campaign.name}")
@@ -321,7 +446,7 @@ class Command(BaseCommand):
         for ev in evaluations:
             recompute_evaluation_scores(ev)  # l'Altitude suit les objectifs saisis
         team_lines = []
-        for code in CODES:
+        for code in self.codes:
             for campaign in self.campaigns:
                 group = list(Evaluation.objects.filter(user__in=self.staff[code], campaign=campaign))
                 business = sum(float(e.business_objectives_score) for e in group) / len(group)
@@ -356,12 +481,14 @@ class Command(BaseCommand):
         trois autres directeurs, trois de ses collaborateurs. Collaborateur :
         lui-même, son directeur, trois collègues de sa direction."""
         directors = list(self.directors.values())
-        Feedback360.objects.filter(company=self.company).delete()
+        Feedback360.objects.filter(subject__in=self.everyone).delete()
         rows = []
         for campaign in self.campaigns[-2:]:
-            r = random.Random(f"sbs-360-{campaign.name}")
-            circles = [(self.ceo, [(self.ceo, "SELF")] + [(d, "REPORT") for d in directors])]
-            for code in CODES:
+            # Tirage propre à la campagne et, en peuplement partiel, aux
+            # directions visées : il ne rejoue pas celui des autres.
+            r = random.Random(f"sbs-360-{campaign.name}" + (f"-{'-'.join(self.codes)}" if self.partial else ""))
+            circles = [] if self.partial else [(self.ceo, [(self.ceo, "SELF")] + [(d, "REPORT") for d in directors])]
+            for code in self.codes:
                 director, staff = self.directors[code], self.staff[code]
                 circles.append((director, [(director, "SELF"), (self.ceo, "MANAGER")]
                                 + [(p, "PEER") for p in r.sample([d for d in directors if d.pk != director.pk], 3)]
@@ -384,10 +511,10 @@ class Command(BaseCommand):
     # -- équipes ---------------------------------------------------------
     def _cohesion(self):
         rub = R.Command()
-        CohesionResponse.objects.filter(company=self.company).delete()
-        TeamCohesionAnalysis.objects.filter(team__company=self.company).delete()
+        CohesionResponse.objects.filter(company=self.company, respondent__in=self.everyone).delete()
+        TeamCohesionAnalysis.objects.filter(team__in=self.teams).delete()
         sheets = team_count = org_count = 0
-        for code in CODES:
+        for code in self.codes:
             dept = self.depts[code]
             labels = rub._labels(dept.name)
             members = [self.directors[code]] + self.staff[code]
@@ -425,7 +552,7 @@ class Command(BaseCommand):
                     team_count += 1
         labels = rub._labels(self.company.name)
         for i, camp in enumerate(self.campaigns):
-            rng = random.Random(f"sbs-org-{camp.name}")
+            rng = random.Random(f"sbs-org-{camp.name}" + (f"-{'-'.join(self.codes)}" if self.partial else ""))
             users = list(self.everyone)
             rng.shuffle(users)
             for respondent in users[: round(len(users) * R.ORG_PARTICIPATION[i])]:
@@ -440,9 +567,9 @@ class Command(BaseCommand):
         self.stdout.write(f"Cohésion : {sheets} fiches de direction, {team_count} avis sur sa direction, {org_count} avis sur l'organisation")
 
     def _relationships(self):
-        TeamRelationship.objects.filter(team__company=self.company).delete()
+        TeamRelationship.objects.filter(team__in=self.teams).delete()
         rows = []
-        for code in CODES:
+        for code in self.codes:
             people = sorted([self.directors[code]] + self.staff[code], key=lambda u: u.id)
             rng = random.Random(f"sbs-rel-{code}")
             good = min(0.85, max(0.25, (R.CLIMATE[code] - 2.0) / 2.5))
@@ -463,7 +590,7 @@ class Command(BaseCommand):
 
     def _team_boards(self):
         count = 0
-        for code in CODES:
+        for code in self.codes:
             dept, spec = self.depts[code], R.DEPT[code]
             rng = random.Random(f"sbs-board-{code}")
             base = rng.choice([180, 260, 340, 420, 520])
@@ -537,7 +664,7 @@ class Command(BaseCommand):
 
     def _action_plans(self):
         rub = R.Command()
-        ActionPlan.objects.filter(team__company=self.company).delete()
+        ActionPlan.objects.filter(team__in=self.teams).delete()
         latest = self.campaigns[-1]
         evals = {e.user_id: e for e in Evaluation.objects.filter(campaign=latest, user__in=self.evaluated)}
         weaknesses = {}
@@ -550,7 +677,7 @@ class Command(BaseCommand):
         rows = []
         start = date(2026, 10, 1)
         statuses = ["DONE", "IN_PROGRESS", "TODO", "IN_PROGRESS"]
-        for code in CODES:
+        for code in self.codes:
             dept, director = self.depts[code], self.directors[code]
             # Plan de développement du directeur, posé par le CEO.
             rows += rub._dev_rows(self.ceo, dept, director, weaknesses.get(director.pk, {}), 2, 3, start, self.ceo.get_full_name())
