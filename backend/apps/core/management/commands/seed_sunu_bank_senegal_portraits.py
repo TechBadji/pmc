@@ -1,6 +1,6 @@
 """
 Donne une vraie photo de portrait aux 81 comptes de SUNU Bank Sénégal
-(CEOSBS, DIR1…DIR10, EMP1…EMP70), à la place de la pastille à initiales.
+(CEOSBS, DIR1…DIR10, SBS1…SBS70), à la place de la pastille à initiales.
 
 Les portraits sont ceux déjà versionnés dans `management/portraits/`
 (personnes noires africaines, Unsplash, licence libre) : aucun téléchargement.
@@ -9,8 +9,8 @@ n'est donc pas garanti photo par photo. Ces portraits servent aussi à Africa
 Insurance Group ; aucun n'est attribué deux fois au sein de SUNU Bank Sénégal.
 
 Les comptes portent leur login pour nom, sans genre : femmes et hommes
-alternent dans l'ordre CEOSBS, DIR1…DIR5, EMP1…EMP40, puis DIR6…DIR10 et
-EMP41…EMP70, arrivés ensuite : les nouveaux comptes s'ajoutent en fin de
+alternent dans l'ordre CEOSBS, DIR1…DIR5, SBS1…SBS40, puis DIR6…DIR10 et
+SBS41…SBS70, arrivés ensuite : les nouveaux comptes s'ajoutent en fin de
 liste, pour que les portraits déjà attribués ne changent pas de visage.
 
 Idempotent : relançable, chaque login reçoit toujours le même portrait.
@@ -29,8 +29,8 @@ from apps.core.models import Company, User
 COMPANY_NAME = "SUNU Bank Sénégal"
 PORTRAITS = Path(__file__).resolve().parent.parent / "portraits"
 LOGINS = (
-    ["CEOSBS"] + [f"DIR{n}" for n in range(1, 6)] + [f"EMP{n}" for n in range(1, 41)]
-    + [f"DIR{n}" for n in range(6, 11)] + [f"EMP{n}" for n in range(41, 71)]
+    ["CEOSBS"] + [f"DIR{n}" for n in range(1, 6)] + [f"SBS{n}" for n in range(1, 41)]
+    + [f"DIR{n}" for n in range(6, 11)] + [f"SBS{n}" for n in range(41, 71)]
 )
 # S3GrMiUhpNU (dossier employees) est écarté : même visage que kXmKqYOGA4Y.
 # Les deux derniers portraits féminins viennent du dossier sunu.

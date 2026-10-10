@@ -1,7 +1,7 @@
 """
 Jeu de démonstration « SUNU Bank Sénégal » : un CEO (login CEOSBS), dix
 directions conduites chacune par un directeur (DIR1…DIR10) et soixante-dix
-collaborateurs génériques EMP1…EMP70 — huit dans chacune des cinq premières
+collaborateurs génériques SBS1…SBS70 — huit dans chacune des cinq premières
 directions, six dans chacune des cinq suivantes.
 
 Les comptes sont nommés d'après leur login et ne portent aucune donnée
@@ -17,9 +17,10 @@ et les anciennetés des tableaux de bord (« Aperçu de l'Équipe Dirigeante »
 du CEO, aperçu de l'équipe de chaque directeur). Une date déjà renseignée
 n'est pas écrasée.
 
-Les logins DIR1…DIR10 et EMP1…EMP70 doivent être libres : `generated_login`
-est unique sur toute la plateforme. S'ils appartiennent encore à Africa
-Insurance Group, lancer d'abord `rename_aig_emp_accounts` (voir ses options).
+Les logins DIR1…DIR10 et SBS1…SBS70 doivent être libres : `generated_login`
+est unique sur toute la plateforme. Les collaborateurs s'appelaient EMP1…EMP70
+jusqu'au 2026-10-10 : la plage EMP a été cédée à SOCIUM (`seed_socium`) par
+`rename_aig_emp_accounts --company "SUNU Bank Sénégal" --new-prefix SBS`.
 
 Idempotent : relancée, la commande crée les comptes manquants, remet le
 rattachement hiérarchique en état et ne touche pas au reste des comptes
@@ -41,6 +42,7 @@ from apps.evaluations.models import EvaluationCampaign
 
 COMPANY_NAME = "SUNU Bank Sénégal"
 CEO_LOGIN = "CEOSBS"
+EMPLOYEE_PREFIX = "SBS"
 PASSWORD = "123456"
 # nom, début, fin, clôturée — mêmes exercices qu'Africa Insurance Group.
 CAMPAIGNS = [
@@ -54,7 +56,7 @@ CAMPAIGNS = [
 LEGACY_CAMPAIGN = "Année 2026"
 
 # code, nom, effectif hors directeur. Les collaborateurs sont numérotés à la
-# suite : EMP1…EMP8 dans la première direction, EMP9…EMP16 dans la deuxième,
+# suite : SBS1…SBS8 dans la première direction, SBS9…SBS16 dans la deuxième,
 # et ainsi de suite. Le directeur porte le rang de sa direction : DIR1 pour la
 # première, DIR10 pour la dernière. Toute nouvelle direction s'ajoute EN FIN de
 # liste, sans quoi les logins existants changeraient de direction.
@@ -126,7 +128,7 @@ def employee_dates(number):
 
 
 class Command(BaseCommand):
-    help = "Crée l'entreprise de démonstration SUNU Bank Sénégal (CEO CEOSBS, 10 directions, DIR1…DIR10, EMP1…EMP70)."
+    help = "Crée l'entreprise de démonstration SUNU Bank Sénégal (CEO CEOSBS, 10 directions, DIR1…DIR10, SBS1…SBS70)."
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -179,7 +181,7 @@ class Command(BaseCommand):
             for _ in range(size):
                 n += 1
                 employee = self._account(
-                    company, f"EMP{n}", role=User.Role.MEMBER, position="Collaborateur",
+                    company, f"{EMPLOYEE_PREFIX}{n}", role=User.Role.MEMBER, position="Collaborateur",
                     initials=str(n), department=departments[index], manager=directors[index],
                 )
                 self._dates(employee, employee_dates(n))
@@ -191,12 +193,12 @@ class Command(BaseCommand):
             f"\nTerminé — {company.name} (slug {company.slug}), {company.employee_count} comptes\n"
             f"  CEO            : {CEO_LOGIN} / {PASSWORD}\n"
             f"  Directeurs     : DIR1 … DIR{len(directors)} / {PASSWORD}\n"
-            f"  Collaborateurs : EMP1 … EMP{EMPLOYEE_COUNT} / {PASSWORD}\n"
+            f"  Collaborateurs : {EMPLOYEE_PREFIX}1 … {EMPLOYEE_PREFIX}{EMPLOYEE_COUNT} / {PASSWORD}\n"
             f"  Campagnes      : {', '.join(c.name for c in campaigns)}"
         ))
         for index, department in enumerate(departments):
             first, last = ranges[index]
-            self.stdout.write(f"  {department.code} {department.name} : DIR{index + 1}, EMP{first} … EMP{last}")
+            self.stdout.write(f"  {department.code} {department.name} : DIR{index + 1}, {EMPLOYEE_PREFIX}{first} … {EMPLOYEE_PREFIX}{last}")
 
     def _campaigns(self, company, ceo):
         current_name = CAMPAIGNS[-1][0]

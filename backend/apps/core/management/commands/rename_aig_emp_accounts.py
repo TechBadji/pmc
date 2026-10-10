@@ -11,12 +11,16 @@ actif/bloqué sont conservés.
 Même besoin pour les directeurs : `--old-prefix DIR --new-prefix AIGDIR
 --up-to 5` libère DIR1…DIR5 (AIGDIR1…AIGDIR5) sans toucher à DIR6 et suivants.
 
+`--company` vise une autre entreprise de démo : `--company "SUNU Bank Sénégal"
+--new-prefix SBS` libère EMP1…EMP70 (SBS1…SBS70) au profit de `seed_socium`.
+
 Idempotent : un compte déjà renommé n'est plus trouvé, donc plus touché.
 
 Usage:
     python manage.py rename_aig_emp_accounts
     python manage.py rename_aig_emp_accounts --dry-run
     python manage.py rename_aig_emp_accounts --old-prefix DIR --new-prefix AIGDIR --up-to 5
+    python manage.py rename_aig_emp_accounts --company "SUNU Bank Sénégal" --new-prefix SBS
 """
 import re
 
@@ -33,6 +37,7 @@ class Command(BaseCommand):
     help = "Renomme les logins EMP1…EMPX d'Africa Insurance Group en AIG1…AIGX (préfixes réglables)."
 
     def add_arguments(self, parser):
+        parser.add_argument("--company", default=COMPANY_NAME, help=f"Entreprise dont les logins sont renommés (défaut : {COMPANY_NAME}).")
         parser.add_argument("--old-prefix", default=OLD_PREFIX, help="Préfixe des logins à libérer (défaut : EMP).")
         parser.add_argument("--new-prefix", default=NEW_PREFIX, help="Préfixe de remplacement (défaut : AIG).")
         parser.add_argument("--up-to", type=int, help="Ne renomme que les numéros 1 à N ; tous par défaut.")
@@ -48,9 +53,9 @@ class Command(BaseCommand):
             raise CommandError("--up-to attend un nombre supérieur ou égal à 1.")
         pattern = re.compile(rf"^{old_prefix}(\d+)$", re.IGNORECASE)
         try:
-            company = Company.objects.get(name=COMPANY_NAME)
+            company = Company.objects.get(name=options["company"])
         except Company.DoesNotExist:
-            raise CommandError(f"Entreprise « {COMPANY_NAME} » introuvable.")
+            raise CommandError(f"Entreprise « {options['company']} » introuvable.")
 
         changed = 0
         users = User.objects.filter(company=company, generated_login__istartswith=old_prefix).order_by("id")
