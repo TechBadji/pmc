@@ -122,7 +122,7 @@
           "help": "Les fiches personnelles saisies (parcours, réalisations, plan de développement)."
         },
         "feedback360": {
-          "label": "360° Feedback et Forward",
+          "label": "360° Feedback et Feedforward",
           "help": "Les avis 360° donnés et reçus (notes de compétences, points forts, axes de progrès, conseils pour l'avenir)."
         },
         "psi": {

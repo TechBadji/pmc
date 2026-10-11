@@ -28,7 +28,7 @@ const RELATIONS = ["SELF", "MANAGER", "REPORT", "PEER"] as const;
 const MIN_GROUP = 2;
 const TEXT_KEYS = ["text_a", "text_b", "text_c"] as const;
 
-/** 360° Feedback (regard sur le passé, compétences notées) et 360° Forward
+/** 360° Feedback (regard sur le passé, compétences notées) et 360° Feedforward
  * (conseils pour l'avenir : commencer / arrêter / continuer). Les avis reçus
  * sont agrégés par relation et anonymes ; on peut aussi en donner un. */
 export default function Feedback360Panel({ kind }: { kind: FeedbackKind }) {
