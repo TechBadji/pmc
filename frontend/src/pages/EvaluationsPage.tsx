@@ -40,6 +40,7 @@ import { usePeerDirection } from "@/app/peerDirection";
 import PageHeader from "@/components/layout/PageHeader";
 import ManagerialSelfAssessmentPanel from "@/components/ManagerialSelfAssessmentPanel";
 import Feedback360Panel from "@/components/Feedback360Panel";
+import FeedforwardPanel from "@/components/FeedforwardPanel";
 import MonkeyManagementPanel from "@/components/MonkeyManagementPanel";
 import ObjectivesSheetPanel from "@/components/objectives/ObjectivesSheetPanel";
 import StatCard from "@/components/StatCard";
@@ -346,8 +347,10 @@ export default function EvaluationsPage() {
                 ? "managerialSelfAssessment.subtitle"
                 : view === "monkey"
                   ? "monkeyManagement.subtitle"
-                  : view === "feedback" || view === "forward"
+                  : view === "feedback"
                     ? "feedback360.viewHint"
+                    : view === "forward"
+                      ? "feedforward.viewHint"
                     : "objectivesSheet.sheetHint"
           )}
           parent={
@@ -415,7 +418,7 @@ export default function EvaluationsPage() {
       {view === "managerial" && <ManagerialSelfAssessmentPanel />}
       {view === "monkey" && <MonkeyManagementPanel />}
       {view === "feedback" && <Feedback360Panel kind="FEEDBACK" />}
-      {view === "forward" && <Feedback360Panel kind="FORWARD" />}
+      {view === "forward" && <FeedforwardPanel />}
 
       {view === "id3a" && loadError && (
         <Alert

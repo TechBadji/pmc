@@ -482,8 +482,9 @@ class PerformanceObjectiveViewSet(CompanyScopedQuerySetMixin, viewsets.ModelView
 
 class Feedback360ViewSet(viewsets.ModelViewSet):
     """Avis 360° : chacun ne lit, ne modifie et ne supprime que ceux qu'il a
-    donnés. Ce que l'on reçoit ne se lit que via `received`, agrégé par
-    relation et sans jamais nommer l'auteur."""
+    donnés. Ce que l'on reçoit ne se lit que via `received` : un Feedback y
+    est agrégé par relation, sans jamais nommer l'auteur ; un Feedforward y est
+    signé, puisqu'il s'adresse à la personne et l'engage à ses côtés."""
 
     serializer_class = Feedback360Serializer
     permission_classes = [permissions.IsAuthenticated]
@@ -541,7 +542,29 @@ class Feedback360ViewSet(viewsets.ModelViewSet):
             )
             if not allowed:
                 raise PermissionDenied("Vous ne pouvez consulter que vos propres avis reçus.")
-        rows = list(Feedback360.objects.filter(subject=subject, campaign=campaign, kind=kind))
+        rows = list(Feedback360.objects.filter(subject=subject, campaign=campaign, kind=kind).select_related("author"))
+        if kind == Feedback360.Kind.FORWARD:
+            # Seuls les avis saisis d'après le guide sont rendus : ceux d'avant
+            # (commencer / arrêter / continuer) avaient été donnés sous anonymat.
+            own = next((r for r in rows if r.author_id == subject.id and r.answers), None)
+            return Response({
+                "subject": subject.id,
+                "subject_name": subject.get_full_name(),
+                "round1": [
+                    {
+                        "author": r.author_id,
+                        "author_name": r.author.get_full_name(),
+                        "author_position": r.author.position,
+                        "author_avatar": r.author.avatar.url if r.author.avatar else None,
+                        "relation": r.relation,
+                        "answers": r.answers,
+                        "updated_at": r.updated_at,
+                    }
+                    for r in sorted(rows, key=lambda r: r.author.get_full_name())
+                    if r.author_id != subject.id and r.answers
+                ],
+                "round2": own.answers if own else None,
+            })
         groups = []
         for rel in Feedback360.Relation.values:
             rs = [r for r in rows if r.relation == rel]

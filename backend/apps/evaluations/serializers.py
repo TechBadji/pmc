@@ -564,6 +564,14 @@ class PerformanceObjectiveSerializer(DecimalCommaMixin, serializers.ModelSeriali
 
 FEEDBACK_COMPETENCIES = 6
 FEEDBACK_TEXT_MAX = 1000
+# Guide ID-PMC Feedforward. Round 1 : ce qu'un collègue dit à la personne ;
+# Round 2 : ce que la personne retient et décide (elle en est l'auteur).
+FEEDFORWARD_ROUND1 = [
+    "human_qualities", "professional_contribution", "achievements", "impact_leadership", "impact_skills",
+    "potential", "commitment", "commitment_first_action", "commitment_from", "commitment_how",
+]
+FEEDFORWARD_ROUND2 = ["touched", "strengths", "priorities", "commitment_90_days", "support"]
+FEEDFORWARD_TEXT_MAX = 2000
 
 
 class Feedback360Serializer(serializers.ModelSerializer):
@@ -577,7 +585,7 @@ class Feedback360Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = Feedback360
-        fields = ["id", "campaign", "subject", "subject_name", "kind", "relation", "scores", "text_a", "text_b", "text_c", "updated_at"]
+        fields = ["id", "campaign", "subject", "subject_name", "kind", "relation", "scores", "text_a", "text_b", "text_c", "answers", "updated_at"]
         read_only_fields = ["id", "relation", "subject_name", "updated_at"]
 
     def validate_campaign(self, campaign):
@@ -608,10 +616,23 @@ class Feedback360Serializer(serializers.ModelSerializer):
                 or not all(isinstance(v, int) and not isinstance(v, bool) and 1 <= v <= 5 for v in scores)
             ):
                 errors["scores"] = f"Notez les {FEEDBACK_COMPETENCIES} compétences, chacune avec une note entière de 1 à 5."
+            attrs["answers"] = {}
         else:
             attrs["scores"] = []
-            if not any(t.strip() for t in texts):
-                errors["text_a"] = "Renseignez au moins une suggestion : à commencer, à arrêter ou à continuer."
+            subject = attrs.get("subject", getattr(self.instance, "subject", None))
+            allowed = FEEDFORWARD_ROUND2 if subject is not None and subject.id == user.id else FEEDFORWARD_ROUND1
+            answers = attrs.get("answers", getattr(self.instance, "answers", {}))
+            if not isinstance(answers, dict) or any(not isinstance(v, str) for v in answers.values()):
+                errors["answers"] = "Les réponses du guide n'ont pas pu être lues : rechargez la page puis réessayez."
+            elif set(answers) - set(allowed):
+                errors["answers"] = "Ces réponses ne correspondent pas à cette partie du guide : rechargez la page puis réessayez."
+            elif any(len(v) > FEEDFORWARD_TEXT_MAX for v in answers.values()):
+                errors["answers"] = f"Chaque réponse est limitée à {FEEDFORWARD_TEXT_MAX} caractères."
+            else:
+                answers = {key: answers[key].strip() for key in allowed if answers.get(key, "").strip()}
+                if not answers:
+                    errors["answers"] = "Renseignez au moins une rubrique du guide avant d'enregistrer."
+                attrs["answers"] = answers
         if any(len(t) > FEEDBACK_TEXT_MAX for t in texts):
             errors["text_a"] = f"Chaque commentaire est limité à {FEEDBACK_TEXT_MAX} caractères."
         if errors:

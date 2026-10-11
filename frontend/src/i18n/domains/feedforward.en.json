@@ -1,0 +1,110 @@
+{
+  "feedforward": {
+    "guideTitle": "ID-PMC Feedforward Guide",
+    "team": "{{company}} management team",
+    "tagline": "Recognition • Development • Commitment • Cohesion",
+    "campaign": "Campaign",
+    "tabGive": "Round 1 · To a colleague",
+    "tabReceived": "Round 1 · From my colleagues",
+    "tabRound2": "Round 2 · What I take away and decide",
+    "round1Title": "ROUND 1 – What my colleagues see in me and for me",
+    "round2Title": "ROUND 2 – What I take away and what I decide",
+    "round2Intro": "After listening to their colleagues' contributions, the beneficiary speaks again. They do not answer each perception point by point. They choose what to keep for their development and turn it into concrete decisions.",
+    "colleague": "Colleague",
+    "person": "Person",
+    "me": "Myself",
+    "pickColleague": "Choose the colleague you are addressing.",
+    "signed": "Your contribution is signed: your colleague reads it under your name.",
+    "existing": "You have already filled in this guide for this colleague: it is open for editing.",
+    "statusGiven": "Guide already filled in",
+    "statusNew": "New guide",
+    "closed": "This campaign is closed: the guide is read-only.",
+    "readOnlyOther": "You are viewing a team member's guide: only they can fill it in.",
+    "noneReceived": "No contribution received for this campaign.",
+    "noRound2": "Round 2 has not been filled in yet for this campaign.",
+    "from": "From",
+    "count_one": "{{count}} contribution",
+    "count_other": "{{count}} contributions",
+    "save": "Save",
+    "update": "Update",
+    "savedRound1": "Your contribution is saved.",
+    "savedRound2": "Your decisions are saved.",
+    "empty": "Fill in at least one section of the guide before saving.",
+    "loadFailed": "The guide could not be loaded: reload the page.",
+    "saveFailed": "Saving failed. Try again in a moment.",
+    "r1": {
+      "human_qualities": {
+        "title": "1. What I appreciate in you as a person",
+        "question": "The 2 or 3 human qualities I recognise in you and sincerely appreciate?",
+        "hint": "If possible, illustrate at least one quality with an example or a concrete situation."
+      },
+      "professional_contribution": {
+        "title": "2. What I appreciate in your professional contribution",
+        "question": "The professional qualities, technical skills or ways of working that are, in my view, your main strengths?",
+        "hint": "I may think of: expertise, reliability, analytical ability, team spirit, results orientation, decision-making, leadership, client relations, ability to mobilise others."
+      },
+      "achievements": {
+        "title": "3. Your great achievements at {{company}} that we are all proud of",
+        "question": "The results or performance you achieved in your work over the last 2 years that we are proud of?"
+      },
+      "impact": {
+        "title": "4. What could further increase your impact",
+        "question": "If I were to give you a few suggestions to help you become even more effective and influential, I would suggest you strengthen, adjust or experiment with?",
+        "hint": "I favour 1 or 2 truly important recommendations, worded as levers for the future and not as a judgement."
+      },
+      "impact_leadership": {
+        "title": "4.1 – Leadership, attitudes and behaviours",
+        "question": "Which behaviours could you develop further, adjust or experiment with to strengthen your impact in your relationships and leadership?"
+      },
+      "impact_skills": {
+        "title": "4.2 – Skills and professional practices",
+        "question": "Which skills, methods or ways of working could you strengthen further to be more efficient and effective?"
+      },
+      "potential": {
+        "title": "5. The potential I see in you",
+        "question": "If you keep building on your strengths and developing your priorities for progress, what additional contribution do I see you making in the next 3 to 5 years?",
+        "hint": "Which role, level of responsibility or type of contribution could, in my view, let you have even more impact?"
+      },
+      "commitmentBlock": {
+        "title": "6. My personal commitment by your side",
+        "question": "To help you succeed and grow professionally within {{company}}, what do I personally commit to?",
+        "hint": "My commitment must be concrete, realistic and observable: availability, information sharing, feedback, support, collaboration, introductions, delegation, etc."
+      },
+      "commitment": {
+        "title": "I commit to…"
+      },
+      "commitment_first_action": {
+        "title": "First concrete action"
+      },
+      "commitment_from": {
+        "title": "Starting when?"
+      },
+      "commitment_how": {
+        "title": "How you can count on me"
+      }
+    },
+    "r2": {
+      "touched": {
+        "title": "1. What particularly touched or positively surprised me",
+        "question": "What did I hear that made me aware of a strength, a quality or a contribution I did not fully measure?"
+      },
+      "strengths": {
+        "title": "2. The strengths I want to build on more",
+        "question": "Which strengths will I deliberately use more in my role and in my contribution to the {{company}} team?"
+      },
+      "priorities": {
+        "title": "3. My 1 to 2 development priorities",
+        "question": "Among the suggestions received, which areas do I personally choose to work on first?"
+      },
+      "commitment_90_days": {
+        "title": "4. My 90-day commitment",
+        "question": "Which concrete and observable change will I implement in the next 90 days?"
+      },
+      "support": {
+        "title": "5. The support I expect from my colleagues",
+        "question": "What kind of support, feedback, cooperation or reminder do I need to succeed in this commitment?"
+      }
+    },
+    "viewHint": "What your colleagues see in you, what they commit to by your side, and what you decide to do with it. Contributions are signed."
+  }
+}

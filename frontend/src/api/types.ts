@@ -594,7 +594,26 @@ export interface Feedback360 {
   text_a: string;
   text_b: string;
   text_c: string;
+  /** Réponses au guide ID-PMC Feedforward (kind FORWARD), par rubrique. */
+  answers: Record<string, string>;
   updated_at: string;
+}
+
+export interface FeedforwardContribution {
+  author: number;
+  author_name: string;
+  author_position: string;
+  author_avatar: string | null;
+  relation: FeedbackRelation;
+  answers: Record<string, string>;
+  updated_at: string;
+}
+
+export interface FeedforwardReceived {
+  subject: number;
+  subject_name: string;
+  round1: FeedforwardContribution[];
+  round2: Record<string, string> | null;
 }
 
 export interface FeedbackGroup {

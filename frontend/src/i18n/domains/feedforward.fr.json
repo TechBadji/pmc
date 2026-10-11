@@ -1,0 +1,110 @@
+{
+  "feedforward": {
+    "guideTitle": "Guide ID-PMC Feedforward",
+    "team": "Équipe managériale {{company}}",
+    "tagline": "Reconnaissance • Développement • Engagement • Cohésion",
+    "campaign": "Campagne",
+    "tabGive": "Round 1 · À un collègue",
+    "tabReceived": "Round 1 · Reçu de mes collègues",
+    "tabRound2": "Round 2 · Ce que je retiens et décide",
+    "round1Title": "ROUND 1 – Ce que mes collègues voient en moi et pour moi",
+    "round2Title": "ROUND 2 – Ce que je retiens et ce que je décide",
+    "round2Intro": "Après avoir écouté les contributions de ses collègues, le bénéficiaire reprend la parole. Il ne répond pas point par point aux perceptions reçues. Il choisit ce qu'il veut en retenir pour son développement et le transforme en décisions concrètes.",
+    "colleague": "Collègue",
+    "person": "Personne",
+    "me": "Moi-même",
+    "pickColleague": "Choisissez le collègue à qui vous vous adressez.",
+    "signed": "Votre contribution est signée : votre collègue la lit sous votre nom.",
+    "existing": "Vous avez déjà rempli ce guide pour ce collègue : il est ouvert pour modification.",
+    "statusGiven": "Guide déjà rempli",
+    "statusNew": "Nouveau guide",
+    "closed": "Cette campagne est clôturée : le guide est en lecture seule.",
+    "readOnlyOther": "Vous consultez le guide d'un collaborateur : seul l'intéressé peut le remplir.",
+    "noneReceived": "Aucune contribution reçue pour cette campagne.",
+    "noRound2": "Le Round 2 n'a pas encore été rempli pour cette campagne.",
+    "from": "De la part de",
+    "count_one": "{{count}} contribution",
+    "count_other": "{{count}} contributions",
+    "save": "Enregistrer",
+    "update": "Mettre à jour",
+    "savedRound1": "Votre contribution est enregistrée.",
+    "savedRound2": "Vos décisions sont enregistrées.",
+    "empty": "Renseignez au moins une rubrique du guide avant d'enregistrer.",
+    "loadFailed": "Le guide n'a pas pu être chargé : rechargez la page.",
+    "saveFailed": "L'enregistrement n'a pas abouti. Réessayez dans un instant.",
+    "r1": {
+      "human_qualities": {
+        "title": "1. Ce que j'apprécie chez toi en tant que personne",
+        "question": "Les 2 ou 3 qualités humaines que je reconnais chez toi et que j'apprécie sincèrement ?",
+        "hint": "Si possible, illustre au moins une qualité par un exemple ou une situation concrète."
+      },
+      "professional_contribution": {
+        "title": "2. Ce que j'apprécie dans ta contribution professionnelle",
+        "question": "Les qualités professionnelles, compétences techniques ou façons de travailler qui constituent, selon moi, tes principales forces ?",
+        "hint": "Je peux notamment penser à : expertise, fiabilité, capacité d'analyse, esprit d'équipe, orientation résultats, décision, leadership, relation client, capacité à mobiliser les autres."
+      },
+      "achievements": {
+        "title": "3. Tes grandes réalisations à {{company}} dont nous sommes tous fiers",
+        "question": "Les résultats atteints ou performances que tu as réalisées dans ton travail ces 2 dernières années dont nous sommes fiers ?"
+      },
+      "impact": {
+        "title": "4. Ce qui pourrait encore augmenter ton impact",
+        "question": "Si je devais te donner quelques suggestions pour t'aider à devenir encore plus performant(e) et influent(e), je te suggérerais de renforcer, d'ajuster ou d'expérimenter ?",
+        "hint": "Je privilégie 1 ou 2 recommandations réellement importantes, formulées comme des leviers d'avenir et non comme un jugement."
+      },
+      "impact_leadership": {
+        "title": "4.1 – Leadership, attitudes et comportements",
+        "question": "Quels comportements pourrais-tu développer davantage, ajuster ou expérimenter pour renforcer ton impact dans tes relations et ton leadership ?"
+      },
+      "impact_skills": {
+        "title": "4.2 – Compétences et pratiques professionnelles",
+        "question": "Quelles compétences, méthodes ou manières de travailler pourrais-tu encore renforcer pour être plus efficace et performant(e) ?"
+      },
+      "potential": {
+        "title": "5. Le potentiel que je vois en toi",
+        "question": "Si tu continues à capitaliser sur tes forces et à développer tes priorités de progrès, quelle contribution supplémentaire est-ce que je te vois apporter dans les 3 à 5 prochaines années ?",
+        "hint": "Quel rôle, niveau de responsabilité ou type de contribution pourrait, selon moi, te permettre d'avoir encore davantage d'impact ?"
+      },
+      "commitmentBlock": {
+        "title": "6. Mon engagement personnel à tes côtés",
+        "question": "Pour t'aider à réussir et à progresser professionnellement au sein de {{company}}, à quoi est-ce que je m'engage personnellement ?",
+        "hint": "Mon engagement doit être concret, réaliste et observable : disponibilité, partage d'information, feedback, soutien, collaboration, mise en relation, délégation, etc."
+      },
+      "commitment": {
+        "title": "Je m'engage à…"
+      },
+      "commitment_first_action": {
+        "title": "Première action concrète"
+      },
+      "commitment_from": {
+        "title": "À partir de quand ?"
+      },
+      "commitment_how": {
+        "title": "Comment tu pourras compter sur moi"
+      }
+    },
+    "r2": {
+      "touched": {
+        "title": "1. Ce qui m'a particulièrement touché ou surpris positivement",
+        "question": "Qu'est-ce que j'ai entendu qui m'a fait prendre conscience d'une force, d'une qualité ou d'une contribution que je ne mesurais pas pleinement ?"
+      },
+      "strengths": {
+        "title": "2. Les forces sur lesquelles je veux davantage capitaliser",
+        "question": "Quelles forces vais-je volontairement utiliser davantage dans mon rôle et dans ma contribution au collectif {{company}} ?"
+      },
+      "priorities": {
+        "title": "3. Mes 1 à 2 priorités de développement",
+        "question": "Parmi les suggestions reçues, quels sont les axes que je choisis personnellement de travailler en priorité ?"
+      },
+      "commitment_90_days": {
+        "title": "4. Mon engagement à 90 jours",
+        "question": "Quel changement concret et observable vais-je mettre en œuvre dans les 90 prochains jours ?"
+      },
+      "support": {
+        "title": "5. Le soutien que j'attends de mes collègues",
+        "question": "De quel type de soutien, feedback, coopération ou rappel ai-je besoin pour réussir cet engagement ?"
+      }
+    },
+    "viewHint": "Ce que vos collègues voient en vous, ce qu'ils s'engagent à faire à vos côtés, et ce que vous décidez d'en faire. Les contributions sont signées."
+  }
+}

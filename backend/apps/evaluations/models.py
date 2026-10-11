@@ -586,16 +586,23 @@ class Feedback360(models.Model):
 
     - FEEDBACK (regard sur le passé) : 6 compétences notées de 1 à 5, plus
       « points forts » (text_a) et « axes de progrès » (text_b).
-    - FORWARD (conseils pour l'avenir) : trois suggestions — à commencer
-      (text_a), à arrêter (text_b), à continuer (text_c).
+    - FORWARD (ID-PMC Feedforward) : les réponses au guide, dans `answers`.
+      Round 1 — ce qu'un collègue dit à la personne (qualités, contribution,
+      réalisations, leviers d'impact, potentiel, engagement à ses côtés) ;
+      Round 2 — ce que la personne en retient et décide : c'est l'avis dont
+      elle est elle-même l'auteur. Les clés admises sont dans le serializer.
+      Les avis d'avant le guide (text_a/b/c : commencer, arrêter, continuer)
+      restent en base mais ne sont plus affichés.
 
     La relation (soi, manager, collaborateur direct, pair) est déduite côté
-    serveur ; l'auteur n'est jamais exposé à la personne évaluée.
+    serveur. L'auteur d'un Feedback n'est jamais exposé à la personne
+    évaluée ; celui d'un Feedforward l'est : il s'adresse à elle et s'engage
+    en son nom.
     """
 
     class Kind(models.TextChoices):
         FEEDBACK = "FEEDBACK", "360° Feedback"
-        FORWARD = "FORWARD", "360° Forward"
+        FORWARD = "FORWARD", "360° Feedforward"
 
     class Relation(models.TextChoices):
         SELF = "SELF", "Soi-même"
@@ -613,6 +620,7 @@ class Feedback360(models.Model):
     text_a = models.TextField(blank=True)
     text_b = models.TextField(blank=True)
     text_c = models.TextField(blank=True)
+    answers = models.JSONField("Réponses au guide Feedforward", default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
