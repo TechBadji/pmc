@@ -129,7 +129,8 @@ class Command(BaseCommand):
         for person in people:
             by_team.setdefault(person.department, []).append(person)
         existing = set(
-            PsychologicalSafetyResponse.objects.filter(company=company).values_list("respondent_id", "campaign_id")
+            PsychologicalSafetyResponse.objects.filter(company=company, scope=PsychologicalSafetyResponse.Scope.TEAM)
+            .values_list("respondent_id", "campaign_id")
         )
 
         rows = []

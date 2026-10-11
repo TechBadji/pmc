@@ -527,10 +527,13 @@ export interface GuessSheet {
   updated_at: string;
 }
 
+export type PsiScope = "TEAM" | "ORGANISATION";
+
 export interface PsiResponse {
   id: number;
   campaign: number;
-  team: number;
+  scope: PsiScope;
+  team: number | null;
   scores: number[];
   updated_at: string;
 }
@@ -547,6 +550,8 @@ export interface PsiSummary {
 export interface PsiResults {
   teams: (PsiSummary & { team: number; team_name: string })[];
   company?: PsiSummary;
+  /** Avis donnés sur l'organisation elle-même (portée ORGANISATION). */
+  organisation?: PsiSummary;
 }
 
 export type PsiVerdict = "SAFE" | "WATCH" | "UNSAFE";

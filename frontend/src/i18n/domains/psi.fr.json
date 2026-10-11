@@ -87,6 +87,10 @@
         "trendDown": "Indice global en baisse de {{delta}} pt par rapport à {{campaign}}.",
         "trendFlat": "Indice global stable par rapport à {{campaign}}.",
         "participation": "Participation"
+      },
+      "source": {
+        "teams": "Réponses sur les équipes",
+        "organisation": "Avis sur l'organisation"
       }
     },
     "readingDim": {
@@ -107,6 +111,33 @@
       "notPublished": "Résultats masqués : {{n}} répondant(s), il en faut {{min}} pour protéger l'anonymat.",
       "noData": "Aucune réponse au questionnaire PSI pour cette équipe.",
       "loadFailed": "La synthèse Psychological Safety n'a pas pu être chargée."
+    },
+    "scope": {
+      "label": "Mon avis porte sur",
+      "team": "Mon équipe",
+      "organisation": "Mon organisation"
+    },
+    "questionOrg": "Dans quelle mesure les affirmations suivantes correspondent-elles à ce que vous vivez réellement au sein de votre organisation ?",
+    "savedOrg": "Votre réponse est enregistrée. Elle reste anonyme : seule la moyenne de l'organisation est lue.",
+    "statementsOrg": [
+      "Je me sens respecté(e) et considéré(e) comme un membre à part entière de cette organisation, indépendamment de ma fonction, de mon ancienneté ou de mon statut.",
+      "Les différences de personnalité, de parcours, de culture, de style de travail ou de point de vue sont réellement acceptées au sein de cette organisation.",
+      "Je suis associé(e) aux échanges et décisions qui concernent mon périmètre, et je n'ai pas le sentiment d'être volontairement tenu(e) à l'écart.",
+      "Je peux poser une question, demander une clarification ou reconnaître que je ne maîtrise pas un sujet sans craindre d'être considéré(e) comme incompétent(e).",
+      "Je peux reconnaître ouvertement une erreur ou une mauvaise décision sans craindre qu'elle soit utilisée ultérieurement contre moi.",
+      "Lorsque quelque chose ne fonctionne pas, nous cherchons d'abord à comprendre et à apprendre avant de rechercher un responsable à blâmer.",
+      "Mes idées, propositions et contributions sont écoutées et considérées, même lorsqu'elles ne sont finalement pas retenues.",
+      "Je dispose d'une autonomie suffisante pour prendre des initiatives et résoudre les problèmes relevant de mon niveau de responsabilité.",
+      "La direction crée volontairement des occasions pour que chacun puisse contribuer, y compris les personnes qui s'expriment moins spontanément.",
+      "Je peux exprimer ouvertement mon désaccord avec une décision, y compris lorsqu'elle est portée par mon supérieur ou par une personne plus influente que moi.",
+      "Je peux signaler un risque, une mauvaise nouvelle ou un problème important même lorsque le message est susceptible de déplaire.",
+      "Dans cette organisation, remettre en question une manière de faire ancienne ou proposer une approche radicalement différente est encouragé lorsque cela peut améliorer la performance."
+    ],
+    "dimensionQuestionOrg": {
+      "belonging": "Puis-je être pleinement membre de cette organisation sans devoir me conformer ou craindre d'être marginalisé ?",
+      "learning": "Puis-je montrer que je ne sais pas sans perdre ma crédibilité ?",
+      "contributing": "Puis-je réellement apporter ce que je sais faire et prendre des initiatives ?",
+      "challenging": "Puis-je dire ce que je pense lorsque ce que je pense dérange ?"
     }
   },
   "cohesion": {

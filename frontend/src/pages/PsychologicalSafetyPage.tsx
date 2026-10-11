@@ -1,15 +1,16 @@
-import { Alert, Box, Button, FormControlLabel, MenuItem, Paper, Radio, RadioGroup, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, FormControlLabel, MenuItem, Paper, Radio, RadioGroup, Stack, Tab, Tabs, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import { useUnsavedChanges } from "@/app/unsavedChanges";
-import type { EvaluationCampaign, Paginated, PsiResponse } from "@/api/types";
+import type { EvaluationCampaign, Paginated, PsiResponse, PsiScope } from "@/api/types";
 import { PSI_DIMENSIONS } from "@/utils/psychologicalSafety";
 
-/** Questionnaire PSI d'un collaborateur : 12 affirmations sur sa propre équipe,
- * notées de 1 à 5, une réponse par campagne. Anonyme : seule la moyenne de
- * l'équipe est lue par l'encadrement. */
+/** Questionnaire PSI d'un collaborateur : 12 affirmations notées de 1 à 5, sur
+ * sa propre équipe et, séparément, sur son organisation — une réponse par
+ * campagne et par portée. Qui n'est rattaché à aucune direction ne répond que
+ * sur l'organisation. Anonyme : seule la moyenne est lue par l'encadrement. */
 export default function PsychologicalSafetyPage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
@@ -23,6 +24,9 @@ export default function PsychologicalSafetyPage() {
   const [error, setError] = useState<string | null>(null);
   const [showMissing, setShowMissing] = useState(false);
   const [tab, setTab] = useState(0);
+  const hasTeam = !!user?.department;
+  const [scope, setScope] = useState<PsiScope>(hasTeam ? "TEAM" : "ORGANISATION");
+  const org = scope === "ORGANISATION";
 
   useEffect(() => {
     Promise.all([
@@ -39,7 +43,7 @@ export default function PsychologicalSafetyPage() {
       .catch(() => setError(t("psi.loadFailed")));
   }, [t]);
 
-  const existing = useMemo(() => responses.find((r) => r.campaign === campaignId) ?? null, [responses, campaignId]);
+  const existing = useMemo(() => responses.find((r) => r.campaign === campaignId && r.scope === scope) ?? null, [responses, campaignId, scope]);
   const campaign = campaigns.find((c) => c.id === campaignId) ?? null;
   const readOnly = !!campaign?.is_closed;
 
@@ -48,7 +52,7 @@ export default function PsychologicalSafetyPage() {
     setDirty(false);
     setSaved(false);
     setShowMissing(false);
-  }, [existing, campaignId]);
+  }, [existing, campaignId, scope]);
 
   const missing = scores.filter((s) => s === null).length;
 
@@ -64,7 +68,7 @@ export default function PsychologicalSafetyPage() {
     }
     setSaving(true);
     try {
-      const body = { campaign: campaignId, scores };
+      const body = { campaign: campaignId, scope, scores };
       const r = existing
         ? await apiClient.put<PsiResponse>(`/psychological-safety-responses/${existing.id}/`, body)
         : await apiClient.post<PsiResponse>("/psychological-safety-responses/", body);
@@ -82,8 +86,6 @@ export default function PsychologicalSafetyPage() {
 
   useUnsavedChanges(dirty, handleSave);
 
-  if (!user?.department) return <Alert severity="info">{t("psi.noDepartment")}</Alert>;
-
   return (
     <Stack spacing={2.5} maxWidth={980}>
       <Typography variant="h5" fontWeight={700}>
@@ -93,22 +95,40 @@ export default function PsychologicalSafetyPage() {
         « {t("psi.quote")} »
       </Typography>
 
-      <TextField
-        select
-        size="small"
-        label={t("psi.campaign")}
-        value={campaignId}
-        onChange={(e) => setCampaignId(Number(e.target.value))}
-        sx={{ width: 280 }}
-      >
-        {campaigns.map((c) => (
-          <MenuItem key={c.id} value={c.id}>
-            {c.name}
-          </MenuItem>
-        ))}
-      </TextField>
+      <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+        <TextField
+          select
+          size="small"
+          label={t("psi.campaign")}
+          value={campaignId}
+          onChange={(e) => setCampaignId(Number(e.target.value))}
+          sx={{ width: 280 }}
+        >
+          {campaigns.map((c) => (
+            <MenuItem key={c.id} value={c.id}>
+              {c.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        {/* Sans direction, seule l'organisation peut être notée : pas de choix à offrir. */}
+        {hasTeam && (
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="body2" color="text.secondary">
+              {t("psi.scope.label")}
+            </Typography>
+            <ToggleButtonGroup size="small" exclusive color="primary" value={scope} onChange={(_, v) => v && setScope(v)}>
+              <ToggleButton value="TEAM" sx={{ fontWeight: 700, textTransform: "none" }}>
+                {t("psi.scope.team")}
+              </ToggleButton>
+              <ToggleButton value="ORGANISATION" sx={{ fontWeight: 700, textTransform: "none" }}>
+                {t("psi.scope.organisation")}
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Stack>
+        )}
+      </Stack>
 
-      <Typography fontWeight={700}>{t("psi.question")}</Typography>
+      <Typography fontWeight={700}>{t(org ? "psi.questionOrg" : "psi.question")}</Typography>
       <Typography variant="caption" color="text.secondary">
         {t("psi.scale")}
       </Typography>
@@ -133,7 +153,7 @@ export default function PsychologicalSafetyPage() {
               <Box sx={{ bgcolor: "primary.main", color: "#fff", px: 2, py: 1 }}>
                 <Typography fontWeight={800}>{t(`psi.dimensionTitle.${dim}`)}</Typography>
                 <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                  « {t(`psi.dimensionQuestion.${dim}`)} »
+                  « {t(`${org ? "psi.dimensionQuestionOrg" : "psi.dimensionQuestion"}.${dim}`)} »
                 </Typography>
               </Box>
           <Stack divider={<Box sx={{ borderTop: "1px solid", borderColor: "divider" }} />}>
@@ -150,7 +170,7 @@ export default function PsychologicalSafetyPage() {
                   sx={{ px: 2, py: 1, bgcolor: unanswered ? "rgba(178,63,63,0.08)" : undefined }}
                 >
                   <Typography variant="body2" sx={{ flex: 1 }}>
-                    <strong>{i + 1}.</strong> {t(`psi.statements.${i}`)}
+                    <strong>{i + 1}.</strong> {t(`${org ? "psi.statementsOrg" : "psi.statements"}.${i}`)}
                   </Typography>
                   <RadioGroup
                     row
@@ -185,7 +205,7 @@ export default function PsychologicalSafetyPage() {
 
       {showMissing && missing > 0 && <Alert severity="warning">{t("psi.incomplete", { count: missing })}</Alert>}
       {error && <Alert severity="error">{error}</Alert>}
-      {saved && <Alert severity="success">{t("psi.saved")}</Alert>}
+      {saved && <Alert severity="success">{t(org ? "psi.savedOrg" : "psi.saved")}</Alert>}
       {!readOnly && (
         <Stack direction="row" justifyContent="flex-end">
           <Button variant="contained" onClick={handleSave} disabled={saving || (!dirty && !!existing)}>

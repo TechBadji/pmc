@@ -87,6 +87,10 @@
         "trendDown": "Overall index down {{delta}} pt compared with {{campaign}}.",
         "trendFlat": "Overall index unchanged compared with {{campaign}}.",
         "participation": "Participation"
+      },
+      "source": {
+        "teams": "Answers about teams",
+        "organisation": "Opinions on the organisation"
       }
     },
     "readingDim": {
@@ -107,6 +111,33 @@
       "notPublished": "Results hidden: {{n}} respondent(s), {{min}} are needed to protect anonymity.",
       "noData": "No answers to the PSI questionnaire for this team.",
       "loadFailed": "The Psychological Safety summary could not be loaded."
+    },
+    "scope": {
+      "label": "My answer is about",
+      "team": "My team",
+      "organisation": "My organisation"
+    },
+    "questionOrg": "To what extent do the following statements match what you actually experience in your organisation?",
+    "savedOrg": "Your answers are saved. They stay anonymous: only the organisation average is read.",
+    "statementsOrg": [
+      "I feel respected and considered a full member of this organisation, regardless of my role, seniority or status.",
+      "Differences in personality, background, culture, working style or point of view are genuinely accepted in this organisation.",
+      "I am involved in the discussions and decisions concerning my scope, and I do not feel deliberately kept out.",
+      "I can ask a question, request clarification or admit I do not master a topic without fear of being seen as incompetent.",
+      "I can openly acknowledge a mistake or a bad decision without fear that it will later be used against me.",
+      "When something does not work, we first seek to understand and learn before looking for someone to blame.",
+      "My ideas, proposals and contributions are listened to and considered, even when they are ultimately not adopted.",
+      "I have enough autonomy to take initiative and solve problems within my level of responsibility.",
+      "Leadership deliberately creates opportunities for everyone to contribute, including those who speak up less spontaneously.",
+      "I can openly express disagreement with a decision, even when it is backed by my superior or someone more influential than me.",
+      "I can report a risk, bad news or an important problem even when the message is likely to be unwelcome.",
+      "In this organisation, questioning an old way of doing things or proposing a radically different approach is encouraged when it can improve performance."
+    ],
+    "dimensionQuestionOrg": {
+      "belonging": "Can I be a full member of this organisation without having to conform or fear being marginalised?",
+      "learning": "Can I show that I don't know without losing credibility?",
+      "contributing": "Can I really bring what I can do and take initiative?",
+      "challenging": "Can I say what I think when what I think is uncomfortable?"
     }
   },
   "cohesion": {

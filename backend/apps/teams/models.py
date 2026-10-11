@@ -275,8 +275,10 @@ class PsychologicalSafetyResponse(models.Model):
     """Réponse d'un collaborateur au questionnaire ID-PMC Psychological Safety
     Index (PSI) pour une campagne : 12 affirmations notées de 1 à 5, rangées par
     dimension de trois — Belonging (1-3), Learning (4-6), Contributing (7-9),
-    Challenging (10-12). Une réponse par personne et par campagne, portant sur
-    sa propre direction. L'entreprise n'en lit que les moyennes d'équipe ; seul
+    Challenging (10-12). Par campagne, une personne peut répondre deux fois : sur
+    sa propre direction (portée TEAM) et sur l'organisation entière (portée
+    ORGANISATION, sans direction — la seule ouverte à qui n'est rattaché à
+    aucune direction). L'entreprise n'en lit que les moyennes ; seul
     le super administrateur (le consultant ID-PMC) consulte les réponses
     individuelles et porte son appréciation — jamais montrée à l'entreprise ni
     au répondant."""
@@ -286,8 +288,14 @@ class PsychologicalSafetyResponse(models.Model):
         WATCH = "WATCH", "À surveiller"
         UNSAFE = "UNSAFE", "Non safe"
 
+    class Scope(models.TextChoices):
+        TEAM = "TEAM", "Mon équipe"
+        ORGANISATION = "ORGANISATION", "Mon organisation"
+
     company = models.ForeignKey("core.Company", on_delete=models.CASCADE, related_name="psi_responses")
-    team = models.ForeignKey("core.Department", on_delete=models.CASCADE, related_name="psi_responses")
+    scope = models.CharField("Portée", max_length=12, choices=Scope.choices, default=Scope.TEAM)
+    # Nul pour un avis sur l'organisation.
+    team = models.ForeignKey("core.Department", null=True, blank=True, on_delete=models.CASCADE, related_name="psi_responses")
     campaign = models.ForeignKey("evaluations.EvaluationCampaign", on_delete=models.CASCADE, related_name="psi_responses")
     respondent = models.ForeignKey("core.User", on_delete=models.CASCADE, related_name="psi_responses")
     scores = models.JSONField("Notes (12 affirmations)", default=list)
@@ -303,7 +311,9 @@ class PsychologicalSafetyResponse(models.Model):
     class Meta:
         verbose_name = "Réponse Psychological Safety"
         verbose_name_plural = "Réponses Psychological Safety"
-        constraints = [models.UniqueConstraint(fields=["respondent", "campaign"], name="unique_psi_per_respondent_campaign")]
+        constraints = [
+            models.UniqueConstraint(fields=["respondent", "campaign", "scope"], name="unique_psi_per_respondent_campaign_scope")
+        ]
 
     def __str__(self):
         return f"PSI — {self.respondent} ({self.campaign})"

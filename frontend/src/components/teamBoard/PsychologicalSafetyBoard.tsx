@@ -54,6 +54,14 @@ export default function PsychologicalSafetyBoard({
   const [reloadKey, setReloadKey] = useState(0);
   const [orgVersion, setOrgVersion] = useState<OrgVersion>(storedOrgVersion);
   const [previous, setPrevious] = useState<{ summary: PsiSummary; name: string } | null>(null);
+  // À l'échelle de l'entreprise, deux lectures : les réponses données sur les
+  // équipes, réunies, ou les avis donnés sur l'organisation elle-même. Tant
+  // que le lecteur n'a pas choisi, celle qui a des réponses s'affiche.
+  const [sourceChoice, setSourceChoice] = useState<"teams" | "organisation" | null>(null);
+  const wholeCompany = orgView && !byDirection;
+  const source: "teams" | "organisation" =
+    sourceChoice ?? (data?.organisation?.respondents && !data.company?.respondents ? "organisation" : "teams");
+  const fromOrganisation = wholeCompany && source === "organisation";
 
   useEffect(() => {
     apiClient
@@ -90,14 +98,14 @@ export default function PsychologicalSafetyBoard({
     apiClient
       .get<PsiResults>("/psychological-safety-responses/results/", { params: { campaign: before.id }, silent: true })
       .then((r) => {
-        const company = r.data.company;
+        const company = fromOrganisation ? r.data.organisation : r.data.company;
         if (!cancelled && company?.published && company.global != null) setPrevious({ summary: company, name: before.name });
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [orgView, byDirection, campaignId, campaigns, reloadKey]);
+  }, [orgView, byDirection, campaignId, campaigns, reloadKey, fromOrganisation]);
 
   const chooseOrgVersion = (version: OrgVersion) => {
     setOrgVersion(version);
@@ -108,7 +116,7 @@ export default function PsychologicalSafetyBoard({
     }
   };
 
-  const summary: PsiSummary | undefined = orgView ? data?.company : data?.teams[0];
+  const summary: PsiSummary | undefined = fromOrganisation ? data?.organisation : orgView ? data?.company : data?.teams[0];
 
   const chart = summary?.published
     ? PSI_DIMENSIONS.map((k) => ({ dimension: t(`psi.dimension.${k}`), score: summary.dimensions?.find((d) => d.key === k)?.score ?? 0 }))
@@ -201,6 +209,16 @@ export default function PsychologicalSafetyBoard({
             </MenuItem>
           ))}
         </TextField>
+        {wholeCompany && data?.organisation && (
+          <ToggleButtonGroup size="small" exclusive color="primary" value={source} onChange={(_, v) => v && setSourceChoice(v)} className="pmc-no-print">
+            <ToggleButton value="teams" sx={{ fontWeight: 700, textTransform: "none" }}>
+              {t("psi.dash.source.teams")}
+            </ToggleButton>
+            <ToggleButton value="organisation" sx={{ fontWeight: 700, textTransform: "none" }}>
+              {t("psi.dash.source.organisation")}
+            </ToggleButton>
+          </ToggleButtonGroup>
+        )}
         {user?.role === "MANAGER" && !peerReadOnly && (
           <Button
             size="small"

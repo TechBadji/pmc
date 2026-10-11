@@ -361,27 +361,31 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
 
 
 class PsychologicalSafetyResponseViewSet(viewsets.ModelViewSet):
-    """Questionnaire Psychological Safety Index : chacun dépose et relit sa propre
-    réponse ; `results` livre les moyennes par direction à l'encadrement, jamais
-    une réponse nominative."""
+    """Questionnaire Psychological Safety Index : chacun dépose et relit ses propres
+    réponses — sur son équipe et sur son organisation ; `results` livre les
+    moyennes à l'encadrement, jamais une réponse nominative."""
 
     serializer_class = PsychologicalSafetyResponseSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filterset_fields = ["campaign"]
+    filterset_fields = ["campaign", "scope"]
 
     def get_queryset(self):
         return PsychologicalSafetyResponse.objects.filter(respondent=self.request.user)
 
     def perform_create(self, serializer):
         user = self.request.user
-        serializer.save(respondent=user, company=user.company, team=user.department)
+        scope = serializer.validated_data.get("scope", PsychologicalSafetyResponse.Scope.TEAM)
+        team = user.department if scope == PsychologicalSafetyResponse.Scope.TEAM else None
+        serializer.save(respondent=user, company=user.company, team=team)
 
     @action(detail=False, methods=["get"], url_path="results")
     def results(self, request):
         """Indice par direction et par dimension pour une campagne. Le CEO voit
         toutes les directions, un encadrant les siennes ; une direction n'est
         publiée qu'à partir du seuil de répondants de l'entreprise, pour que
-        personne ne puisse être reconnu derrière une moyenne."""
+        personne ne puisse être reconnu derrière une moyenne. Le CEO reçoit en
+        plus `company` (toutes les réponses d'équipe réunies) et `organisation`
+        (les avis donnés sur l'organisation elle-même), sous le même seuil."""
         user = request.user
         if user.role == user.Role.MEMBER:
             raise PermissionDenied("Les résultats sont réservés à l'encadrement.")
@@ -412,14 +416,23 @@ class PsychologicalSafetyResponseViewSet(viewsets.ModelViewSet):
 
         teams, everything = [], []
         for dept in departments.order_by("name"):
-            rs = list(PsychologicalSafetyResponse.objects.filter(team=dept, campaign=campaign))
+            rs = list(PsychologicalSafetyResponse.objects.filter(
+                team=dept, campaign=campaign, scope=PsychologicalSafetyResponse.Scope.TEAM
+            ))
             everything += rs
             summary = summarise(rs, User.objects.filter(department=dept, is_active=True).count())
             summary.update({"team": dept.id, "team_name": dept.name})
             teams.append(summary)
         payload = {"teams": teams}
         if user.role in (user.Role.COMPANY_ADMIN, user.Role.SUPER_ADMIN) and not team:
-            payload["company"] = summarise(everything, User.objects.filter(company_id=user.company_id, is_active=True).count())
+            headcount = User.objects.filter(company_id=user.company_id, is_active=True).count()
+            payload["company"] = summarise(everything, headcount)
+            payload["organisation"] = summarise(
+                list(PsychologicalSafetyResponse.objects.filter(
+                    company_id=user.company_id, campaign=campaign, scope=PsychologicalSafetyResponse.Scope.ORGANISATION
+                )),
+                headcount,
+            )
         return Response(payload)
 
 

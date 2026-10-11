@@ -252,8 +252,15 @@ PSI_DIMENSIONS = ["belonging", "learning", "contributing", "challenging"]  # tro
 class PsychologicalSafetyResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = PsychologicalSafetyResponse
-        fields = ["id", "campaign", "team", "scores", "updated_at"]
+        fields = ["id", "campaign", "scope", "team", "scores", "updated_at"]
         read_only_fields = ["id", "team", "updated_at"]
+
+    def validate_scope(self, scope):
+        if self.instance is not None and scope != self.instance.scope:
+            raise serializers.ValidationError(
+                "Une réponse ne change pas de portée : répondez séparément pour votre équipe et pour votre organisation."
+            )
+        return scope
 
     def validate_scores(self, value):
         if (
@@ -277,12 +284,13 @@ class PsychologicalSafetyResponseSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         user = self.context["request"].user
-        if not user.department_id:
+        scope = attrs.get("scope") or (self.instance.scope if self.instance else PsychologicalSafetyResponse.Scope.TEAM)
+        if scope == PsychologicalSafetyResponse.Scope.TEAM and not user.department_id:
             raise serializers.ValidationError(
-                "Vous n'êtes rattaché à aucune direction : le questionnaire porte sur votre équipe."
+                "Vous n'êtes rattaché à aucune direction : répondez au questionnaire sur votre organisation."
             )
         if self.instance is None and PsychologicalSafetyResponse.objects.filter(
-            respondent=user, campaign=attrs["campaign"]
+            respondent=user, campaign=attrs["campaign"], scope=scope
         ).exists():
             raise serializers.ValidationError({"campaign": "Vous avez déjà répondu pour cette campagne : modifiez votre réponse."})
         return attrs
@@ -302,7 +310,7 @@ class PsychologicalSafetyReviewSerializer(serializers.ModelSerializer):
     `verdict_comment` s'écrivent : les notes restent celles du répondant."""
 
     campaign_name = serializers.CharField(source="campaign.name", read_only=True)
-    team_name = serializers.CharField(source="team.name", read_only=True)
+    team_name = serializers.SerializerMethodField()
     respondent_name = serializers.CharField(source="respondent.get_full_name", read_only=True)
     respondent_login = serializers.CharField(source="respondent.generated_login", read_only=True)
     respondent_role = serializers.CharField(source="respondent.role", read_only=True)
@@ -315,7 +323,7 @@ class PsychologicalSafetyReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = PsychologicalSafetyResponse
         fields = [
-            "id", "company", "campaign", "campaign_name", "team", "team_name",
+            "id", "company", "campaign", "campaign_name", "scope", "team", "team_name",
             "respondent", "respondent_name", "respondent_login", "respondent_role", "respondent_position",
             "respondent_avatar", "scores", "dimensions", "global_score",
             "verdict", "verdict_comment", "verdict_by_name", "verdict_at", "updated_at",
@@ -324,6 +332,10 @@ class PsychologicalSafetyReviewSerializer(serializers.ModelSerializer):
 
     def get_respondent_avatar(self, obj):
         return obj.respondent.avatar.url if obj.respondent.avatar else None
+
+    def get_team_name(self, obj):
+        # Un avis sur l'organisation n'a pas de direction : il se range sous ce libellé.
+        return obj.team.name if obj.team_id else "Organisation"
 
     def get_dimensions(self, obj):
         return psi_dimension_scores(obj.scores)
