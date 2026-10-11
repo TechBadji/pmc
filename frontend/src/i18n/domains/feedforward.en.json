@@ -43,8 +43,9 @@
         "hint": "I may think of: expertise, reliability, analytical ability, team spirit, results orientation, decision-making, leadership, client relations, ability to mobilise others."
       },
       "achievements": {
-        "title": "3. Your great achievements at {{company}} that we are all proud of",
-        "question": "The results or performance you achieved in your work over the last 2 years that we are proud of?"
+        "title": "3. Your great achievements at {{company}} that we recognise and value",
+        "question": "The results, achievements or contributions you have delivered and that we are particularly proud of over the last 2 years or since you joined {{company}}? The positive impact they have had for {{company}}, your team, clients or your colleagues?",
+        "hint": "Name 1 to 3 achievements and state their real impact for {{company}}, or the teams, or clients or partners."
       },
       "impact": {
         "title": "4. What could further increase your impact",

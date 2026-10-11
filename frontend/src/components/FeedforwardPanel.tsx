@@ -150,7 +150,7 @@ export default function FeedforwardPanel() {
         {t(`feedforward.${round}.${key}.question`, { company, defaultValue: "" })}
       </Typography>
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
-        {t(`feedforward.${round}.${key}.hint`, { defaultValue: "" })}
+        {t(`feedforward.${round}.${key}.hint`, { company, defaultValue: "" })}
       </Typography>
     </Box>
   );

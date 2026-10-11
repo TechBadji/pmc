@@ -43,8 +43,9 @@
         "hint": "Je peux notamment penser à : expertise, fiabilité, capacité d'analyse, esprit d'équipe, orientation résultats, décision, leadership, relation client, capacité à mobiliser les autres."
       },
       "achievements": {
-        "title": "3. Tes grandes réalisations à {{company}} dont nous sommes tous fiers",
-        "question": "Les résultats atteints ou performances que tu as réalisées dans ton travail ces 2 dernières années dont nous sommes fiers ?"
+        "title": "3. Tes grandes réalisations à {{company}} que nous reconnaissons et valorisons",
+        "question": "Les résultats, réalisations ou contributions que tu as accomplis et dont nous sommes particulièrement fiers durant ces 2 dernières années ou depuis que tu es arrivé(e) à {{company}} ? Les impacts positifs qu'ils ont eus pour {{company}}, ton équipe, les clients ou tes collègues ?",
+        "hint": "Citez 1 à 3 réalisations et précisez leur impact réel pour {{company}}, ou les équipes, ou les clients ou les partenaires."
       },
       "impact": {
         "title": "4. Ce qui pourrait encore augmenter ton impact",
