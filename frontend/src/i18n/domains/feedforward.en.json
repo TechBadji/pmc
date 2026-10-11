@@ -21,7 +21,6 @@
     "readOnlyOther": "You are viewing a team member's guide: only they can fill it in.",
     "noneReceived": "No contribution received for this campaign.",
     "noRound2": "Round 2 has not been filled in yet for this campaign.",
-    "from": "From",
     "count_one": "{{count}} contribution",
     "count_other": "{{count}} contributions",
     "save": "Save",
@@ -105,6 +104,10 @@
         "question": "What kind of support, feedback, cooperation or reminder do I need to succeed in this commitment?"
       }
     },
-    "viewHint": "What your colleagues see in you, what they commit to by your side, and what you decide to do with it. Contributions are signed."
+    "viewHint": "What your colleagues see in you, what they commit to by your side, and what you decide to do with it. Contributions are signed.",
+    "byColleague": "By colleague",
+    "bySection": "By section",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all"
   }
 }

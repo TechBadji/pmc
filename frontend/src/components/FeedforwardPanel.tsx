@@ -1,4 +1,5 @@
-import { Alert, Avatar, Box, Button, Chip, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Avatar, Box, Button, Chip, MenuItem, Paper, Stack, Tab, Tabs, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
@@ -54,6 +55,12 @@ export default function FeedforwardPanel() {
   const [viewedId, setViewedId] = useState<number | "">(user?.id ?? "");
   const [received, setReceived] = useState<FeedforwardReceived | null>(null);
   const [decided, setDecided] = useState<Answers>({});
+  // Lecture des contributions reçues : une fiche repliable par collègue, ou
+  // les réponses de tous réunies sous chaque rubrique. Rien n'est déplié
+  // d'office : dix contributions tiennent ainsi sur un écran.
+  const [receivedView, setReceivedView] = useState<"colleague" | "section">("colleague");
+  const [open, setOpen] = useState<string[]>([]);
+  const toggleOpen = (id: string) => setOpen((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +121,9 @@ export default function FeedforwardPanel() {
     setSaved(false);
     setError(null);
   }, [tab, campaignId]);
+  useEffect(() => {
+    setOpen([]);
+  }, [campaignId, viewedId, receivedView]);
 
   async function save(subject: number, answers: Answers, existing: Feedback360 | null) {
     setError(null);
@@ -325,25 +335,94 @@ export default function FeedforwardPanel() {
               {t("feedforward.count", { count: received.round1.length })}
             </Typography>
           )}
-          {received?.round1.map((c) => (
-            <Paper key={c.author} variant="outlined" sx={{ overflow: "hidden" }}>
-              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ px: 2, py: 1.25, bgcolor: "action.hover", borderBottom: "1px solid", borderColor: "divider" }}>
-                <Avatar src={c.author_avatar ?? undefined} sx={{ width: 40, height: 40 }}>
+          {received && received.round1.length > 0 && (() => {
+            const rows = received.round1;
+            const ids =
+              receivedView === "colleague"
+                ? rows.map((c) => `c${c.author}`)
+                : ROUND1.filter((b) => rows.some((c) => b.fields.some((f) => c.answers[f]))).map((b) => `s${b.key}`);
+            const allOpen = ids.length > 0 && ids.every((id) => open.includes(id));
+            const author = (c: (typeof rows)[number], size: number) => (
+              <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
+                <Avatar src={c.author_avatar ?? undefined} sx={{ width: size, height: size, fontSize: size / 2.4 }}>
                   {c.author_name.charAt(0).toUpperCase()}
                 </Avatar>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t("feedforward.from")}
-                  </Typography>
-                  <Typography fontWeight={800} sx={{ lineHeight: 1.2 }}>
-                    {c.author_name}
+                <Typography fontWeight={800} sx={{ lineHeight: 1.2 }}>
+                  {c.author_name}
+                  <Typography component="span" variant="body2" color="text.secondary">
                     {c.author_position ? ` · ${c.author_position}` : ""}
                   </Typography>
-                </Box>
+                </Typography>
               </Stack>
-              <Box sx={{ p: 2 }}>{guide("r1", ROUND1, c.answers)}</Box>
-            </Paper>
-          ))}
+            );
+            return (
+              <>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+                  <ToggleButtonGroup size="small" exclusive color="primary" value={receivedView} onChange={(_, v) => v && setReceivedView(v)}>
+                    <ToggleButton value="colleague" sx={{ fontWeight: 700, textTransform: "none" }}>
+                      {t("feedforward.byColleague")}
+                    </ToggleButton>
+                    <ToggleButton value="section" sx={{ fontWeight: 700, textTransform: "none" }}>
+                      {t("feedforward.bySection")}
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                  <Button size="small" onClick={() => setOpen(allOpen ? [] : ids)}>
+                    {t(allOpen ? "feedforward.collapseAll" : "feedforward.expandAll")}
+                  </Button>
+                </Stack>
+                <Box>
+                  {receivedView === "colleague"
+                    ? rows.map((c) => (
+                        <Accordion key={c.author} disableGutters variant="outlined" expanded={open.includes(`c${c.author}`)} onChange={() => toggleOpen(`c${c.author}`)} sx={{ "&:not(:first-of-type)": { borderTop: 0 } }}>
+                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>{author(c, 36)}</AccordionSummary>
+                          <AccordionDetails sx={{ borderTop: "1px solid", borderColor: "divider", pt: 2 }}>{guide("r1", ROUND1, c.answers)}</AccordionDetails>
+                        </Accordion>
+                      ))
+                    : ROUND1.filter((b) => ids.includes(`s${b.key}`)).map((b) => {
+                        const answered = rows.filter((c) => b.fields.some((f) => c.answers[f]));
+                        return (
+                          <Accordion key={b.key} disableGutters variant="outlined" expanded={open.includes(`s${b.key}`)} onChange={() => toggleOpen(`s${b.key}`)} sx={{ "&:not(:first-of-type)": { borderTop: 0 } }}>
+                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ width: "100%", pr: 1 }}>
+                                <Typography fontWeight={800} sx={{ color: b.color }}>
+                                  {t(`feedforward.r1.${b.key}.title`, { company })}
+                                </Typography>
+                                <Chip size="small" label={answered.length} />
+                              </Stack>
+                            </AccordionSummary>
+                            <AccordionDetails sx={{ borderTop: "1px solid", borderColor: "divider", pt: 1.5 }}>
+                              <Typography fontWeight={700} variant="body2" sx={{ mb: 1.5 }}>
+                                {t(`feedforward.r1.${b.key}.question`, { company })}
+                              </Typography>
+                              <Stack spacing={1.5} divider={<Box sx={{ borderTop: "1px dashed", borderColor: "divider" }} />}>
+                                {answered.map((c) => (
+                                  <Stack key={c.author} spacing={0.5}>
+                                    {author(c, 26)}
+                                    {b.fields
+                                      .filter((f) => c.answers[f])
+                                      .map((f) => (
+                                        <Box key={f} sx={{ pl: 4.75 }}>
+                                          {b.fields.length > 1 && (
+                                            <Typography variant="caption" fontWeight={800} color="text.secondary" display="block">
+                                              {t(`feedforward.r1.${f}.title`)}
+                                            </Typography>
+                                          )}
+                                          <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+                                            {c.answers[f]}
+                                          </Typography>
+                                        </Box>
+                                      ))}
+                                  </Stack>
+                                ))}
+                              </Stack>
+                            </AccordionDetails>
+                          </Accordion>
+                        );
+                      })}
+                </Box>
+              </>
+            );
+          })()}
         </Stack>
       )}
 

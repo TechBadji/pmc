@@ -21,7 +21,6 @@
     "readOnlyOther": "Vous consultez le guide d'un collaborateur : seul l'intéressé peut le remplir.",
     "noneReceived": "Aucune contribution reçue pour cette campagne.",
     "noRound2": "Le Round 2 n'a pas encore été rempli pour cette campagne.",
-    "from": "De la part de",
     "count_one": "{{count}} contribution",
     "count_other": "{{count}} contributions",
     "save": "Enregistrer",
@@ -105,6 +104,10 @@
         "question": "De quel type de soutien, feedback, coopération ou rappel ai-je besoin pour réussir cet engagement ?"
       }
     },
-    "viewHint": "Ce que vos collègues voient en vous, ce qu'ils s'engagent à faire à vos côtés, et ce que vous décidez d'en faire. Les contributions sont signées."
+    "viewHint": "Ce que vos collègues voient en vous, ce qu'ils s'engagent à faire à vos côtés, et ce que vous décidez d'en faire. Les contributions sont signées.",
+    "byColleague": "Par collègue",
+    "bySection": "Par rubrique",
+    "expandAll": "Tout déplier",
+    "collapseAll": "Tout replier"
   }
 }
