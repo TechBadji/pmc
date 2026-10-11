@@ -245,14 +245,6 @@ export default function FeedforwardPanel() {
   return (
     <Stack spacing={2.5} maxWidth={920}>
       <Box>
-        <Stack direction="row" sx={{ height: 8, borderRadius: 1, overflow: "hidden", mb: 2 }}>
-          {[BLUE, TEAL, ORANGE].map((c) => (
-            <Box key={c} sx={{ flex: 1, bgcolor: c }} />
-          ))}
-        </Stack>
-        <Typography variant="h5" fontWeight={800} align="center" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
-          {t("feedforward.guideTitle")}
-        </Typography>
         <Typography variant="h6" fontWeight={800} align="center" sx={{ color: BLUE }}>
           {t("feedforward.team", { company })}
         </Typography>
