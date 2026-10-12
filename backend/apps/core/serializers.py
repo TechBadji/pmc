@@ -228,9 +228,9 @@ class UserSerializer(serializers.ModelSerializer):
             "must_change_password", "avatar", "avatar_full_body", "phone",
             "birth_date", "age", "career_start_date", "total_experience_years",
             "hire_date", "years_in_company", "role_start_date", "years_in_current_role",
-            "theme_preference", "language", "date_joined",
+            "theme_preference", "language", "date_joined", "leadership_rank",
         ]
-        read_only_fields = ["id", "date_joined", "company", "generated_login"]
+        read_only_fields = ["id", "date_joined", "company", "generated_login", "leadership_rank"]
 
     def validate(self, attrs):
         """Dates de carrière cohérentes entre elles : la naissance précède le

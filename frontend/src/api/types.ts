@@ -109,6 +109,8 @@ export interface UserRecord {
   total_experience_years: number | null;
   hire_date: string | null;
   years_in_company: number | null;
+  /** Place fixée dans l'aperçu de l'équipe dirigeante : 0 = au côté du dirigeant, 1… = rang en dessous. */
+  leadership_rank?: number | null;
   role_start_date: string | null;
   years_in_current_role: number | null;
   theme_preference: ThemePreference;

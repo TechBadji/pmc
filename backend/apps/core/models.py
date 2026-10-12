@@ -93,6 +93,11 @@ class User(AbstractUser):
         blank=True,
         related_name="direct_reports",
     )
+    # Place dans l'« Aperçu de l'Équipe Dirigeante » du tableau de bord du
+    # dirigeant, quand l'entreprise la fixe elle-même : 0 = au côté du
+    # dirigeant, sur la ligne du haut (un co-fondateur) ; 1, 2, 3… = rang dans
+    # la ligne du dessous. Vide partout : l'aperçu montre tous les managers.
+    leadership_rank = models.PositiveSmallIntegerField("Rang dans l'équipe dirigeante", null=True, blank=True)
     generated_login = models.CharField(
         "Login généré",
         max_length=150,

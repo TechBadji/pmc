@@ -76,7 +76,15 @@ export default function CompanyAdminDashboard() {
     ? evaluations.reduce((s, e) => s + Number(e.altitude_percentage), 0) / evaluations.length
     : 0;
 
-  const directors = members.filter((m) => m.role === "MANAGER");
+  // Par défaut, tous les managers figurent sous le dirigeant. Quand
+  // l'entreprise a fixé elle-même sa ligne dirigeante (`leadership_rank`),
+  // elle seule est montrée, dans son ordre ; le rang 0 désigne ceux qui se
+  // tiennent au côté du dirigeant (un co-fondateur), sur la ligne du haut.
+  const ranked = members
+    .filter((m) => m.id !== user?.id && m.leadership_rank != null)
+    .sort((a, b) => a.leadership_rank! - b.leadership_rank!);
+  const partners = ranked.filter((m) => m.leadership_rank === 0);
+  const directors = ranked.length ? ranked.filter((m) => m.leadership_rank! > 0) : members.filter((m) => m.role === "MANAGER");
   // Effectif encadré par chaque directeur : dernière ligne du tableau de tête.
   const headcountByDirector = new Map<number, number>();
   departments.forEach((d) => {
@@ -90,6 +98,7 @@ export default function CompanyAdminDashboard() {
         <LeadershipOverview
           root={user}
           people={directors}
+          partners={partners}
           headcountById={headcountByDirector}
           lastEvaluationByUser={lastEvaluationByUser}
         />

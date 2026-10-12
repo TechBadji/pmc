@@ -140,6 +140,7 @@ interface RootPerson {
 export default function LeadershipOverview({
   root,
   people,
+  partners = [],
   headcountById,
   titleKey = "dashboard.companyAdmin.leadershipTitle",
   lastEvaluationByUser,
@@ -147,6 +148,8 @@ export default function LeadershipOverview({
 }: {
   root: RootPerson;
   people: UserRecord[];
+  /** Personnes placées au côté de la racine, sur la ligne du haut (un co-fondateur). */
+  partners?: UserRecord[];
   headcountById?: Map<number, number>;
   titleKey?: string;
   lastEvaluationByUser: Map<number, Evaluation>;
@@ -193,9 +196,28 @@ export default function LeadershipOverview({
           {/* CEO centré sur les colonnes des directeurs (pas sur toute la
               largeur, décalée par la colonne des intitulés à gauche). */}
           <Box />
-          <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center", width: 128 }}>
-            <PersonNode name={root.full_name} position={root.position} avatar={root.avatar} evaluation={lastEvaluationByUser.get(root.id)} root hidePerformance={hidePerformance} />
-          </Box>
+          {partners.length === 0 ? (
+            <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center", width: 128 }}>
+              <PersonNode name={root.full_name} position={root.position} avatar={root.avatar} evaluation={lastEvaluationByUser.get(root.id)} root hidePerformance={hidePerformance} />
+            </Box>
+          ) : (
+            // Ligne du haut partagée : les associés à gauche, la racine à
+            // droite, reliés par un trait dont le milieu descend vers la
+            // ligne du dessous (le trait vertical ci-après est centré).
+            <Stack direction="row" alignItems="center" sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center" }}>
+              {partners.map((p) => (
+                <Stack key={p.id} direction="row" alignItems="center">
+                  <Box sx={{ width: 200 }}>
+                    <PersonNode name={p.full_name || p.email} position={p.position} avatar={p.avatar} evaluation={lastEvaluationByUser.get(p.id)} root hidePerformance={hidePerformance} />
+                  </Box>
+                  <Box sx={{ width: 90, height: 2, bgcolor: "divider", mb: 6 }} />
+                </Stack>
+              ))}
+              <Box sx={{ width: 200 }}>
+                <PersonNode name={root.full_name} position={root.position} avatar={root.avatar} evaluation={lastEvaluationByUser.get(root.id)} root hidePerformance={hidePerformance} />
+              </Box>
+            </Stack>
+          )}
 
           <Box />
           <Box sx={{ gridColumn: `2 / ${directors.length + 2}`, justifySelf: "center", width: 2, height: 15, bgcolor: "divider" }} />
