@@ -45,6 +45,7 @@ import { BoardPeriodBar } from "@/components/teamBoard/BoardPieces";
 import TeamRelationshipBoard from "@/components/teamBoard/TeamRelationshipBoard";
 import PsychologicalSafetyBoard from "@/components/teamBoard/PsychologicalSafetyBoard";
 import CohesionOpinionBoard from "@/components/teamBoard/CohesionOpinionBoard";
+import CohesionSurveyPage from "@/pages/CohesionSurveyPage";
 import TeamStrengthsBoard from "@/components/teamBoard/TeamStrengthsBoard";
 import { today as boardToday, useTeamBoard } from "@/features/teamBoard";
 import { useAppSelector } from "@/app/hooks";
@@ -209,6 +210,10 @@ export default function CohesionFormPage() {
   const [campaignId, setCampaignId] = useState<number | "">("");
   const [sheetOpinion, setSheetOpinion] = useState<CohesionDirectionResult | null>(null);
   const [orgView, setOrgView] = useState(false);
+  // Un encadrant note sa propre équipe sur la fiche, et donne aussi — comme
+  // tout collaborateur — son avis sur l'organisation entière. Le dirigeant,
+  // lui, ne note pas l'organisation : il en lit le résultat.
+  const [ownOrgOpinion, setOwnOrgOpinion] = useState(false);
   const [teamMembers, setTeamMembers] = useState<UserRecord[]>([]);
   // Vue « Tous les directeurs » : la planche reste celle du comité de
   // direction, seule sa composition change.
@@ -905,7 +910,22 @@ export default function CohesionFormPage() {
         </Alert>
       )}
 
-      {view === "cohesion" && (
+      {view === "cohesion" && user?.role === "MANAGER" && !peerReadOnly && (
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          color="primary"
+          value={ownOrgOpinion ? "organisation" : "team"}
+          onChange={(_, v) => v && setOwnOrgOpinion(v === "organisation")}
+          sx={{ alignSelf: "flex-start", "& .MuiToggleButton-root": { px: 2, fontWeight: 700, textTransform: "none" } }}
+        >
+          <ToggleButton value="team">{t("cohesion.sheetMyTeam")}</ToggleButton>
+          <ToggleButton value="organisation">{t("cohesion.sheetOrganisation", { company: user?.company_name ?? "" })}</ToggleButton>
+        </ToggleButtonGroup>
+      )}
+      {view === "cohesion" && user?.role === "MANAGER" && ownOrgOpinion && <CohesionSurveyPage scope="ORGANISATION" embedded />}
+
+      {view === "cohesion" && !(user?.role === "MANAGER" && ownOrgOpinion) && (
       <>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={3}>
         <Stack spacing={1.5}>

@@ -70,7 +70,14 @@ function ScoreOval({
  * le nombre minimum de répondants. Ce n'est pas une politesse — c'est la seule
  * chose qui rende les réponses sincères, donc l'exercice utile.
  */
-export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" | "ORGANISATION" }) {
+export default function CohesionSurveyPage({
+  scope = "TEAM",
+  embedded = false,
+}: {
+  scope?: "TEAM" | "ORGANISATION";
+  /** Affiché à l'intérieur d'une autre page (un onglet) : le titre de page est remplacé par un simple intertitre. */
+  embedded?: boolean;
+}) {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   // Un avis "sur sa direction" nomme la direction, pas l'entreprise : c'est
@@ -187,13 +194,27 @@ export default function CohesionSurveyPage({ scope = "TEAM" }: { scope?: "TEAM" 
 
   return (
     <Stack spacing={3} maxWidth={1180}>
-      <PageHeader
-        title={t(scope === "TEAM" ? "cohesionSurvey.title" : "cohesionSurvey.titleOrg")}
-        subtitle={t(scope === "TEAM" ? "cohesionSurvey.subtitle" : "cohesionSurvey.subtitleOrg", {
-          team: user?.department_name ?? "",
-          company: user?.company_name ?? "",
-        })}
-      />
+      {embedded ? (
+        <Box>
+          <Typography variant="h6" fontWeight={800}>
+            {t(scope === "TEAM" ? "cohesionSurvey.title" : "cohesionSurvey.titleOrg")}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t(scope === "TEAM" ? "cohesionSurvey.subtitle" : "cohesionSurvey.subtitleOrg", {
+              team: user?.department_name ?? "",
+              company: user?.company_name ?? "",
+            })}
+          </Typography>
+        </Box>
+      ) : (
+        <PageHeader
+          title={t(scope === "TEAM" ? "cohesionSurvey.title" : "cohesionSurvey.titleOrg")}
+          subtitle={t(scope === "TEAM" ? "cohesionSurvey.subtitle" : "cohesionSurvey.subtitleOrg", {
+            team: user?.department_name ?? "",
+            company: user?.company_name ?? "",
+          })}
+        />
+      )}
 
       <Alert severity="info">
         {t(scope === "TEAM" ? "cohesionSurvey.privacy" : "cohesionSurvey.privacyOrg", { min: user?.company_cohesion_min_respondents ?? 2 })}
