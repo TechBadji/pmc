@@ -399,9 +399,16 @@ export default function CohesionFormPage() {
         const headsOfDirection = new Set(
           departments.filter((d) => d.parent === null).map((d) => d.manager)
         );
-        const directors = managers.data.results.filter(
-          (m) => m.manager === user?.id || headsOfDirection.has(m.id)
-        );
+        // Quand l'entreprise a fixé elle-même sa ligne dirigeante
+        // (`leadership_rank`, celle de l'« Aperçu de l'Équipe Dirigeante »),
+        // c'est elle qui entoure le dirigeant, dans le même ordre — y compris
+        // les managers qui reportent à un co-dirigeant et non au dirigeant.
+        const ranked = managers.data.results
+          .filter((m) => m.leadership_rank != null)
+          .sort((a, b) => a.leadership_rank! - b.leadership_rank!);
+        const directors = ranked.length
+          ? ranked
+          : managers.data.results.filter((m) => m.manager === user?.id || headsOfDirection.has(m.id));
         const ceo = admins.data.results.find((a) => a.id === user?.id);
         setTeamMembers(ceo ? [ceo, ...directors] : directors);
       }).catch(() => undefined);
