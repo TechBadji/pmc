@@ -98,6 +98,11 @@ class User(AbstractUser):
     # dirigeant, sur la ligne du haut (un co-fondateur) ; 1, 2, 3… = rang dans
     # la ligne du dessous. Vide partout : l'aperçu montre tous les managers.
     leadership_rank = models.PositiveSmallIntegerField("Rang dans l'équipe dirigeante", null=True, blank=True)
+    # Chiffres de l'« Aperçu de l'Équipe Dirigeante » saisis à la main par le
+    # dirigeant (saisie rapide) : age, years_in_role, years_in_company,
+    # total_experience, team_managers. Une clé présente l'emporte sur la valeur
+    # calculée depuis les dates de carrière ou l'effectif de l'équipe.
+    leadership_stats = models.JSONField("Chiffres saisis de l'équipe dirigeante", default=dict, blank=True)
     generated_login = models.CharField(
         "Login généré",
         max_length=150,

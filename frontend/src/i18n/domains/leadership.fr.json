@@ -1,0 +1,15 @@
+{
+  "leadershipStats": {
+    "open": "Saisie rapide",
+    "title": "Saisie rapide — Équipe dirigeante",
+    "subtitle": "Les chiffres saisis ici s'affichent sous chaque photo de l'Aperçu de l'Équipe Dirigeante, sur votre tableau de bord.",
+    "person": "Membre de l'équipe dirigeante",
+    "hint": "Nombres entiers, en années. Une case laissée vide reprend la valeur calculée depuis le profil de la personne.",
+    "save": "Enregistrer",
+    "back": "Retour au tableau de bord",
+    "saved": "Les chiffres sont enregistrés : ils sont affichés sur votre tableau de bord.",
+    "saveFailed": "L'enregistrement n'a pas abouti. Réessayez dans un instant.",
+    "notANumber": "{{name}} — {{field}} : « {{value}} » n'est pas un nombre entier.",
+    "adminOnly": "Cette saisie est réservée au dirigeant de l'entreprise."
+  }
+}

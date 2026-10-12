@@ -482,6 +482,59 @@ class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             qs = visible
         return qs.distinct()
 
+    # Chiffres de l'aperçu de l'équipe dirigeante : libellé pour les messages, bornes admises.
+    LEADERSHIP_STATS = {
+        "age": ("l'âge", 18, 80),
+        "years_in_role": ("l'expérience dans le poste", 0, 60),
+        "years_in_company": ("l'ancienneté dans l'entreprise", 0, 60),
+        "total_experience": ("l'expérience totale", 0, 60),
+        "team_managers": ("le nombre de managers dans l'équipe", 0, 500),
+    }
+
+    @action(detail=False, methods=["post"], url_path="leadership-stats")
+    def leadership_stats(self, request):
+        """Saisie rapide, par le dirigeant, des chiffres affichés sous chaque
+        membre de son équipe dirigeante. Tout est contrôlé avant d'écrire : une
+        seule ligne en erreur et rien n'est enregistré. Une case vidée rend la
+        main à la valeur calculée."""
+        actor = request.user
+        if actor.role != User.Role.COMPANY_ADMIN:
+            raise PermissionDenied("Cette saisie est réservée au dirigeant de l'entreprise.")
+        rows = request.data.get("rows")
+        if not isinstance(rows, list) or not rows:
+            raise ValidationError({"rows": "Aucune ligne à enregistrer."})
+        people = {u.id: u for u in User.objects.filter(company_id=actor.company_id)}
+        errors, updates = [], []
+        for row in rows:
+            person = people.get(row.get("user")) if isinstance(row, dict) else None
+            if person is None:
+                errors.append("Une ligne désigne une personne qui n'appartient pas à votre entreprise : rechargez la page.")
+                continue
+            name, stats = person.get_full_name(), {}
+            for key, (label, low, high) in self.LEADERSHIP_STATS.items():
+                value = row.get(key)
+                if value is None or value == "":
+                    continue
+                if isinstance(value, bool) or not isinstance(value, int) or not (low <= value <= high):
+                    errors.append(f"{name} : {label} doit être un nombre entier entre {low} et {high} (vous avez saisi {value!r}).")
+                    continue
+                stats[key] = value
+            role, company, total, age = (stats.get(k) for k in ("years_in_role", "years_in_company", "total_experience", "age"))
+            if role is not None and company is not None and role > company:
+                errors.append(f"{name} : l'expérience dans le poste ({role}) ne peut pas dépasser l'ancienneté dans l'entreprise ({company}).")
+            if company is not None and total is not None and company > total:
+                errors.append(f"{name} : l'ancienneté dans l'entreprise ({company}) ne peut pas dépasser l'expérience totale ({total}).")
+            if total is not None and age is not None and total > age - 15:
+                errors.append(f"{name} : une expérience totale de {total} ans n'est pas compatible avec un âge de {age} ans.")
+            updates.append((person, stats))
+        if errors:
+            raise ValidationError({"rows": errors})
+        for person, stats in updates:
+            person.leadership_stats = stats
+            person.save(update_fields=["leadership_stats"])
+        log_event(actor, "leadership.stats_updated", f"a mis à jour les chiffres de l'équipe dirigeante ({len(updates)} personne(s)).", company=actor.company)
+        return Response({"updated": len(updates)})
+
     @staticmethod
     def _assignable_roles(actor):
         """Rôles qu'un acteur a le droit d'attribuer à un compte (création ou

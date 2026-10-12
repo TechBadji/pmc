@@ -36,6 +36,7 @@ const ID3AMatrixPage = lazy(() => import("@/pages/ID3AMatrixPage"));
 const LogsPage = lazy(() => import("@/pages/LogsPage"));
 const MyPerformancePage = lazy(() => import("@/pages/MyPerformancePage"));
 const MyPerformanceIdPage = lazy(() => import("@/pages/MyPerformanceIdPage"));
+const LeadershipStatsPage = lazy(() => import("@/pages/LeadershipStatsPage"));
 const MyStrengthsPage = lazy(() => import("@/pages/MyStrengthsPage"));
 const PsychologicalSafetyPage = lazy(() => import("@/pages/PsychologicalSafetyPage"));
 const PsychologicalSafetyReviewPage = lazy(() => import("@/pages/PsychologicalSafetyReviewPage"));
@@ -94,6 +95,7 @@ export default function App() {
           <Route path="/performances" element={<PerformancePage />} />
           <Route path="/my-performance" element={<MyPerformancePage />} />
           <Route path="/my-performance-id" element={<MyPerformanceIdPage />} />
+          <Route path="/leadership-stats" element={<LeadershipStatsPage />} />
           <Route path="/team-cohesion" element={<TeamCohesionPage />} />
           <Route path="/my-strengths" element={<MyStrengthsPage />} />
           <Route path="/psychological-safety" element={<PsychologicalSafetyPage />} />

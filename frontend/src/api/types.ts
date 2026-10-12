@@ -111,6 +111,8 @@ export interface UserRecord {
   years_in_company: number | null;
   /** Place fixée dans l'aperçu de l'équipe dirigeante : 0 = au côté du dirigeant, 1… = rang en dessous. */
   leadership_rank?: number | null;
+  /** Chiffres de l'aperçu de l'équipe dirigeante saisis par le dirigeant ; ils l'emportent sur les valeurs calculées. */
+  leadership_stats?: Partial<Record<"age" | "years_in_role" | "years_in_company" | "total_experience" | "team_managers", number>>;
   role_start_date: string | null;
   years_in_current_role: number | null;
   theme_preference: ThemePreference;
