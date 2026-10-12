@@ -10,6 +10,7 @@
     "saved": "Les chiffres sont enregistrés : ils sont affichés sur votre tableau de bord.",
     "saveFailed": "L'enregistrement n'a pas abouti. Réessayez dans un instant.",
     "notANumber": "{{name}} — {{field}} : « {{value}} » n'est pas un nombre entier.",
-    "adminOnly": "Cette saisie est réservée au dirigeant de l'entreprise."
+    "adminOnly": "Cette saisie est réservée au dirigeant de l'entreprise.",
+    "backTeams": "Retour aux équipes"
   }
 }

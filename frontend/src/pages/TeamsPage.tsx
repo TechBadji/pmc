@@ -1,6 +1,7 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
 import PersonRemoveOutlinedIcon from "@mui/icons-material/PersonRemoveOutlined";
@@ -311,6 +312,10 @@ export default function TeamsPage() {
               }}
             >
               {t("teams.unblockAll")}
+            </Button>
+            {/* Chiffres de l'« Aperçu de l'Équipe Dirigeante » du tableau de bord. */}
+            <Button variant="outlined" startIcon={<EditOutlinedIcon />} onClick={() => navigate("/leadership-stats")}>
+              {t("leadershipStats.open")}
             </Button>
             <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={openDeptDialog}>
               {t("departments.newDepartment")}

@@ -10,6 +10,7 @@
     "saved": "The figures are saved: they are shown on your dashboard.",
     "saveFailed": "Saving failed. Try again in a moment.",
     "notANumber": "{{name}} — {{field}}: “{{value}}” is not a whole number.",
-    "adminOnly": "This entry is reserved for the company's leader."
+    "adminOnly": "This entry is reserved for the company's leader.",
+    "backTeams": "Back to teams"
   }
 }

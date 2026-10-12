@@ -88,7 +88,7 @@ export default function LeadershipStatsPage() {
 
   return (
     <Stack spacing={2.5} maxWidth={1100}>
-      <PageHeader title={t("leadershipStats.title")} subtitle={t("leadershipStats.subtitle")} parent={{ label: t("nav.dashboard"), to: "/" }} />
+      <PageHeader title={t("leadershipStats.title")} subtitle={t("leadershipStats.subtitle")} parent={{ label: t("nav.teams"), to: "/teams" }} />
       {loadError && <Alert severity="error">{t("common.loadError")}</Alert>}
       <TableContainer component={Paper} variant="outlined">
         <Table size="small">
@@ -152,6 +152,7 @@ export default function LeadershipStatsPage() {
       {saved && <Alert severity="success">{t("leadershipStats.saved")}</Alert>}
       <Stack direction="row" justifyContent="flex-end" spacing={1.5}>
         <Button onClick={() => navigate("/")}>{t("leadershipStats.back")}</Button>
+        <Button onClick={() => navigate("/teams")}>{t("leadershipStats.backTeams")}</Button>
         <Button variant="contained" onClick={handleSave} disabled={saving || people.length === 0}>
           {t("leadershipStats.save")}
         </Button>

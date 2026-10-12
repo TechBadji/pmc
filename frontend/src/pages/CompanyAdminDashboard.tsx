@@ -94,7 +94,6 @@ export default function CompanyAdminDashboard() {
           people={directors}
           partners={partners}
           headcountById={headcountByDirector}
-          onQuickEntry={() => navigate("/leadership-stats")}
           lastEvaluationByUser={lastEvaluationByUser}
         />
       )}

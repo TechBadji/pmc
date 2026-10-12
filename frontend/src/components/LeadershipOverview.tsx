@@ -1,6 +1,5 @@
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import { Avatar, Box, Button, Paper, Stack, Tooltip, Typography } from "@mui/material";
+import { Avatar, Box, Paper, Stack, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import type { Evaluation, UserRecord } from "@/api/types";
 import { EXECUTIVE_BADGE_COLOR, performanceColors } from "@/theme";
@@ -143,7 +142,6 @@ export default function LeadershipOverview({
   root,
   people,
   partners = [],
-  onQuickEntry,
   headcountById,
   titleKey = "dashboard.companyAdmin.leadershipTitle",
   lastEvaluationByUser,
@@ -153,8 +151,6 @@ export default function LeadershipOverview({
   people: UserRecord[];
   /** Personnes placées au côté de la racine, sur la ligne du haut (un co-fondateur). */
   partners?: UserRecord[];
-  /** Ouvre la saisie rapide des chiffres du tableau ; le bouton n'apparaît que si elle est fournie. */
-  onQuickEntry?: () => void;
   headcountById?: Map<number, number>;
   titleKey?: string;
   lastEvaluationByUser: Map<number, Evaluation>;
@@ -190,13 +186,6 @@ export default function LeadershipOverview({
       <Typography variant="subtitle1" fontWeight={800} textAlign="center" sx={{ color: "primary.main", mb: 2, letterSpacing: 0.3 }}>
         {t(titleKey)}
       </Typography>
-      {onQuickEntry && (
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: -5.5, mb: 2 }} className="pmc-no-print">
-          <Button size="small" variant="outlined" startIcon={<EditOutlinedIcon />} onClick={onQuickEntry} sx={{ textTransform: "none", fontWeight: 700 }}>
-            {t("leadershipStats.open")}
-          </Button>
-        </Box>
-      )}
 
       {/* Au-delà de sept ou huit colonnes les grilles sont plus larges que la
           carte : elles défilent alors à l'intérieur de celle-ci. `width: 0`
