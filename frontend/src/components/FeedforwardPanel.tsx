@@ -13,6 +13,7 @@ const ORANGE = "#F28C28";
 const MAX = 2000;
 
 type Answers = Record<string, string>;
+type Colleague = { id: number; full_name: string; position: string; avatar: string | null };
 /** Une rubrique du guide : sa couleur de titre et ses champs. Une rubrique à
  * plusieurs champs (leviers d'impact, engagement) porte un chapeau commun. */
 type Block = { key: string; color: string; fields: string[]; table?: boolean };
@@ -45,6 +46,8 @@ export default function FeedforwardPanel() {
   const [campaigns, setCampaigns] = useState<EvaluationCampaign[]>([]);
   const [campaignId, setCampaignId] = useState<number | "">("");
   const [people, setPeople] = useState<UserRecord[]>([]);
+  // Tous les collègues de l'entreprise, pour le Round 1 : on peut s'adresser à n'importe lequel.
+  const [colleagues, setColleagues] = useState<Colleague[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [mine, setMine] = useState<Feedback360[]>([]);
   const [reloadKey, setReloadKey] = useState(0);
@@ -78,11 +81,15 @@ export default function FeedforwardPanel() {
       // Le guide se remplit entre membres de l'équipe managériale : un
       // directeur y retrouve ses pairs et le CEO, pas seulement son équipe.
       apiClient.get<Paginated<UserRecord>>("/users/", { params: { page_size: 500, leadership: 1 } }),
+      apiClient.get<Colleague[]>("/users/colleagues/"),
     ])
-      .then(([c, u]) => {
+      .then(([c, u, all]) => {
         const sorted = [...c.data.results].sort((a, b) => b.start_date.localeCompare(a.start_date));
         setCampaigns(sorted);
         setPeople(u.data.results);
+        setColleagues(
+          all.data.filter((p) => p.id !== user?.id).sort((a, b) => a.full_name.localeCompare(b.full_name, undefined, { sensitivity: "base" }))
+        );
         setCampaignId((sorted.find((x) => !x.is_closed) ?? sorted[0])?.id ?? "");
       })
       .catch(() => setLoadError(true));
@@ -250,7 +257,7 @@ export default function FeedforwardPanel() {
       {saved && <Alert severity="success">{t(savedKey)}</Alert>}
     </>
   );
-  const subject = others.find((p) => p.id === subjectId) ?? null;
+  const subject = colleagues.find((p) => p.id === subjectId) ?? null;
 
   return (
     <Stack spacing={2.5} maxWidth={920}>
@@ -282,7 +289,13 @@ export default function FeedforwardPanel() {
       {tab === 0 && (
         <Stack spacing={2.5}>
           {roundTitle("feedforward.round1Title")}
-          {personPicker(t("feedforward.colleague"), subjectId, setSubjectId, false)}
+          <TextField select size="small" label={t("feedforward.colleague")} value={subjectId} onChange={(e) => setSubjectId(Number(e.target.value))} sx={{ width: 360 }}>
+            {colleagues.map((p) => (
+              <MenuItem key={p.id} value={p.id}>
+                {p.full_name}
+              </MenuItem>
+            ))}
+          </TextField>
           {subjectId === "" ? (
             <Alert severity="info">{t("feedforward.pickColleague")}</Alert>
           ) : (
@@ -290,10 +303,10 @@ export default function FeedforwardPanel() {
               {subject && (
                 <Paper variant="outlined" sx={{ p: 1.5, display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", borderLeft: "4px solid", borderLeftColor: BLUE }}>
                   <Avatar src={subject.avatar ?? undefined} sx={{ width: 44, height: 44 }}>
-                    {nameOf(subject).charAt(0).toUpperCase()}
+                    {subject.full_name.charAt(0).toUpperCase()}
                   </Avatar>
                   <Box sx={{ flex: 1, minWidth: 180 }}>
-                    <Typography fontWeight={800}>{nameOf(subject)}</Typography>
+                    <Typography fontWeight={800}>{subject.full_name}</Typography>
                     <Typography variant="caption" color="text.secondary">
                       {subject.position}
                     </Typography>

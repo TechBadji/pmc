@@ -482,6 +482,21 @@ class UserViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet):
             qs = visible
         return qs.distinct()
 
+    @action(detail=False, methods=["get"], url_path="colleagues")
+    def colleagues(self, request):
+        """Annuaire de l'entreprise, pour désigner un collègue (le destinataire
+        d'un 360° Feedforward) : tous les comptes actifs, par ordre alphabétique,
+        réduits à ce qu'il faut pour les reconnaître. Ouvert à tous les rôles —
+        un manager y trouve aussi ceux qu'il n'encadre pas, que la liste des
+        utilisateurs lui masque."""
+        people = User.objects.filter(company_id=request.user.company_id, is_active=True).exclude(company__isnull=True)
+        rows = [
+            {"id": u.id, "full_name": u.get_full_name() or u.email, "position": u.position, "avatar": u.avatar.url if u.avatar else None}
+            for u in people
+        ]
+        rows.sort(key=lambda r: r["full_name"].casefold())
+        return Response(rows)
+
     # Chiffres de l'aperçu de l'équipe dirigeante : libellé pour les messages, bornes admises.
     LEADERSHIP_STATS = {
         "age": ("l'âge", 18, 80),
