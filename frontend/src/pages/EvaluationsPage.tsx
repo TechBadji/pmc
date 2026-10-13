@@ -110,10 +110,11 @@ export default function EvaluationsPage() {
   const { issues, check, clear } = useIssues();
   // Trois lectures d'une même campagne : l'évaluation ID-3A, la fiche
   // d'objectifs d'un employé, celle de son équipe.
-  // La page s'ouvre sur les évaluations ID-3A, ou sur la fiche d'objectifs
-  // quand cette vue est retirée du périmètre affiché de l'entreprise.
+  // La page s'ouvre sur les évaluations ID-3A, ou sur la première vue qui
+  // reste quand certaines sont retirées du périmètre affiché de l'entreprise.
   const [view, setView] = useState<"id3a" | "employee" | "team" | "managerial" | "monkey" | "feedback" | "forward">(
-    scope.viewHidden("evaluations.id3a") ? "employee" : "id3a"
+    () =>
+      (["id3a", "employee", "team", "feedback"] as const).find((v) => !scope.viewHidden(`evaluations.${v}`)) ?? "forward"
   );
   const [departments, setDepartments] = useState<Department[]>([]);
 
@@ -380,8 +381,8 @@ export default function EvaluationsPage() {
           }}
         >
           {!scope.viewHidden("evaluations.id3a") && <ToggleButton value="id3a">{t("objectivesSheet.viewId3a")}</ToggleButton>}
-          <ToggleButton value="employee">{t("objectivesSheet.viewEmployee")}</ToggleButton>
-          <ToggleButton value="team">{t("objectivesSheet.viewTeam")}</ToggleButton>
+          {!scope.viewHidden("evaluations.employee") && <ToggleButton value="employee">{t("objectivesSheet.viewEmployee")}</ToggleButton>}
+          {!scope.viewHidden("evaluations.team") && <ToggleButton value="team">{t("objectivesSheet.viewTeam")}</ToggleButton>}
           {!peerReadOnly && !scope.viewHidden("evaluations.managerial") && <ToggleButton value="managerial">{t("objectivesSheet.viewManagerial")}</ToggleButton>}
           {!peerReadOnly && !scope.viewHidden("evaluations.monkey") && <ToggleButton value="monkey">{t("objectivesSheet.viewMonkeyManagement")}</ToggleButton>}
           {!peerReadOnly && !scope.viewHidden("evaluations.feedback") && <ToggleButton value="feedback">{t("feedback360.feedbackTitle")}</ToggleButton>}

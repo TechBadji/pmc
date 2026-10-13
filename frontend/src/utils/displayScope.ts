@@ -5,6 +5,8 @@ export type ScopedView =
   | "cohesion.psi"
   | "cohesion.strengths"
   | "evaluations.id3a"
+  | "evaluations.employee"
+  | "evaluations.team"
   | "evaluations.feedback"
   | "evaluations.managerial"
   | "evaluations.monkey";
