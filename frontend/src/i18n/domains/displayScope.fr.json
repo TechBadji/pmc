@@ -1,0 +1,28 @@
+{
+  "displayScope": {
+    "title": "Rubriques affichées — {{company}}",
+    "subtitle": "Choisissez, pour chaque rôle, les rubriques du menu et les sous-rubriques montrées à cette entreprise. Ce réglage sert aux démonstrations : il masque des écrans, il ne change aucun droit.",
+    "tooltip": "Rubriques affichées",
+    "role": {
+      "COMPANY_ADMIN": "Dirigeant",
+      "MANAGER": "Managers",
+      "MEMBER": "Collaborateurs"
+    },
+    "section": "Rubrique du menu",
+    "views": "Sous-rubriques",
+    "noViews": "Pas de sous-rubrique",
+    "alwaysShown": "Toujours affichée : c'est la page d'arrivée.",
+    "emptySection": "Aucune sous-rubrique cochée : la rubrique disparaît du menu.",
+    "summary": "{{shown}} rubrique(s) affichée(s) sur {{total}}",
+    "showAll": "Tout afficher pour ce rôle",
+    "copyTo": "Appliquer ce réglage aux autres rôles",
+    "save": "Enregistrer",
+    "back": "Retour aux entreprises",
+    "saved": "Le réglage est enregistré. Il s'applique à la prochaine ouverture de session des utilisateurs de l'entreprise, ou dès qu'ils rechargent la page.",
+    "saveFailed": "L'enregistrement n'a pas abouti. Réessayez dans un instant.",
+    "loadFailed": "L'entreprise n'a pas pu être chargée : rechargez la page.",
+    "adminOnly": "Ce réglage est réservé au super administrateur.",
+    "viewIndividualPlans": "Plans individuels",
+    "viewPersonSheet": "Fiche individuelle"
+  }
+}

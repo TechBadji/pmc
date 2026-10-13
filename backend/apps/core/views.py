@@ -167,7 +167,15 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         previous_plan = serializer.instance.plan
+        previous_scope = serializer.instance.display_scope
         company = serializer.save()
+        if company.display_scope != previous_scope:
+            log_event(
+                self.request.user,
+                "company.display_scope_changed",
+                f"a modifié les rubriques affichées pour « {company.name} ».",
+                company=company,
+            )
         if company.plan != previous_plan:
             log_event(
                 self.request.user,

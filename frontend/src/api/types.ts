@@ -65,6 +65,8 @@ export interface Company {
   admin_login: string | null;
   admin_is_active: boolean | null;
   admin_must_change_password: boolean | null;
+  /** Périmètre affiché de l'entreprise (voir `utils/displayScope.ts`). */
+  display_scope?: { nav?: Record<string, string[]>; hidden_views?: string[]; hidden_views_by_role?: Record<string, string[]> };
   user_count: number;
   department_count: number;
   created_at: string;

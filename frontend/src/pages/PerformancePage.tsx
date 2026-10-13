@@ -1,3 +1,4 @@
+import { useDisplayScope } from "@/utils/displayScope";
 import { Alert, Box, Button, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,7 +20,8 @@ export default function PerformancePage() {
   const [people, setPeople] = useState<UserRecord[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   // Deux fiches d'identité : celle d'une personne, celle de l'équipe.
-  const [view, setView] = useState<"person" | "team" | "entry">("person");
+  const scope = useDisplayScope();
+  const [view, setView] = useState<"person" | "team" | "entry">(() => scope.firstShown("performance", ["person", "team", "entry"] as const));
   const [teamId, setTeamId] = useState<number | "">("");
   const board = useTeamBoard(teamId);
   // La planche se lit en texte ; on n'ouvre les champs que pendant une saisie,
@@ -75,11 +77,13 @@ export default function PerformancePage() {
             "& .Mui-selected": { bgcolor: "primary.main", color: "#fff !important", "&:hover": { bgcolor: "primary.dark" } },
           }}
         >
-          <ToggleButton value="person">
-            {isCompanyAdmin ? t("performanceId.viewManager") : t("performanceId.viewMember")}
-          </ToggleButton>
-          <ToggleButton value="team">{t("performanceId.viewTeam")}</ToggleButton>
-          <ToggleButton value="entry">{t("performanceEntry.toggleLabel")}</ToggleButton>
+          {!scope.viewHidden("performance.person") && (
+            <ToggleButton value="person">
+              {isCompanyAdmin ? t("performanceId.viewManager") : t("performanceId.viewMember")}
+            </ToggleButton>
+          )}
+          {!scope.viewHidden("performance.team") && <ToggleButton value="team">{t("performanceId.viewTeam")}</ToggleButton>}
+          {!scope.viewHidden("performance.entry") && <ToggleButton value="entry">{t("performanceEntry.toggleLabel")}</ToggleButton>}
         </ToggleButtonGroup>
 
         {view === "team" && (

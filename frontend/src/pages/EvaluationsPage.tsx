@@ -114,7 +114,7 @@ export default function EvaluationsPage() {
   // reste quand certaines sont retirées du périmètre affiché de l'entreprise.
   const [view, setView] = useState<"id3a" | "employee" | "team" | "managerial" | "monkey" | "feedback" | "forward">(
     () =>
-      (["id3a", "employee", "team", "feedback"] as const).find((v) => !scope.viewHidden(`evaluations.${v}`)) ?? "forward"
+      scope.firstShown("evaluations", ["id3a", "employee", "team", "managerial", "monkey", "feedback", "forward"] as const)
   );
   const [departments, setDepartments] = useState<Department[]>([]);
 
@@ -386,7 +386,7 @@ export default function EvaluationsPage() {
           {!peerReadOnly && !scope.viewHidden("evaluations.managerial") && <ToggleButton value="managerial">{t("objectivesSheet.viewManagerial")}</ToggleButton>}
           {!peerReadOnly && !scope.viewHidden("evaluations.monkey") && <ToggleButton value="monkey">{t("objectivesSheet.viewMonkeyManagement")}</ToggleButton>}
           {!peerReadOnly && !scope.viewHidden("evaluations.feedback") && <ToggleButton value="feedback">{t("feedback360.feedbackTitle")}</ToggleButton>}
-          {!peerReadOnly && <ToggleButton value="forward">{t("feedback360.forwardTitle")}</ToggleButton>}
+          {!peerReadOnly && !scope.viewHidden("evaluations.forward") && <ToggleButton value="forward">{t("feedback360.forwardTitle")}</ToggleButton>}
         </ToggleButtonGroup>
       </Stack>
 

@@ -1,3 +1,4 @@
+import { useDisplayScope } from "@/utils/displayScope";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import GridOnOutlinedIcon from "@mui/icons-material/GridOnOutlined";
 import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
@@ -694,7 +695,8 @@ export default function ID3AMatrixPage() {
   // Exceptionnelle) ou de ne montrer que les performances moyennes.
   const [ratingFilter, setRatingFilter] = useState<PerformanceRating[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<"matrix" | "objectives">("matrix");
+  const displayScope = useDisplayScope();
+  const [viewMode, setViewMode] = useState<"matrix" | "objectives">(() => displayScope.firstShown("matrix", ["matrix", "objectives"] as const));
   const [matrixBackground, setMatrixBackground] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -961,8 +963,8 @@ export default function ID3AMatrixPage() {
         * département) au plus fin (collaborateur, palier). */}
       <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
         <ToggleButtonGroup size="small" exclusive value={viewMode} onChange={(_, v) => v && setViewMode(v)}>
-          <ToggleButton value="matrix">{t("id3aMatrix.matrixTab")}</ToggleButton>
-          <ToggleButton value="objectives">{t("id3aMatrix.objectivesTab")}</ToggleButton>
+          {!displayScope.viewHidden("matrix.matrix") && <ToggleButton value="matrix">{t("id3aMatrix.matrixTab")}</ToggleButton>}
+          {!displayScope.viewHidden("matrix.objectives") && <ToggleButton value="objectives">{t("id3aMatrix.objectivesTab")}</ToggleButton>}
         </ToggleButtonGroup>
 
         {canFilterLeadership && (

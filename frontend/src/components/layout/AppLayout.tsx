@@ -109,8 +109,7 @@ export default function AppLayout() {
   const items = NAV_BY_ROLE[user.role].filter(
     (item) =>
       (item.path !== "/cohesion-survey" || Boolean(user.department)) &&
-      scope.navShown(item.path) &&
-      !(item.path === "/team-cohesion" && scope.viewHidden("cohesion.psi") && scope.viewHidden("cohesion.strengths"))
+      scope.navShown(item.path)
   );
 
   function handleLogout() {

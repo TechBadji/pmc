@@ -203,7 +203,11 @@ export default function CohesionFormPage() {
   // Trois lectures d'une même équipe, dans l'ordre où elles se travaillent :
   // la cohésion mesurée, la dynamique relationnelle qui l'explique, puis les
   // forces et faiblesses qui s'en déduisent.
-  const [view, setView] = useState<"cohesion" | "strengths" | "relationship" | "opinion" | "psi">("cohesion");
+  const VIEW_KEYS = { cohesion: "cohesion.sheet", relationship: "cohesion.relationship", strengths: "cohesion.strengths", opinion: "cohesion.opinion", psi: "cohesion.psi" } as const;
+  // La page s'ouvre sur la première vue que le périmètre affiché de l'entreprise laisse en place.
+  const [view, setView] = useState<"cohesion" | "strengths" | "relationship" | "opinion" | "psi">(
+    () => (["cohesion", "relationship", "strengths", "opinion", "psi"] as const).find((v) => !scope.viewHidden(VIEW_KEYS[v])) ?? "cohesion"
+  );
   const [aggregate, setAggregate] = useState<CohesionAggregate | null>(null);
   // La fiche se lit désormais par campagne : une campagne borne une période,
   // et tout avis déposé dans cette fenêtre lui appartient. Les collaborateurs
@@ -792,10 +796,10 @@ export default function CohesionFormPage() {
             "& .Mui-selected": { bgcolor: "primary.main", color: "#fff !important", "&:hover": { bgcolor: "primary.dark" } },
           }}
         >
-          <ToggleButton value="cohesion">{t("cohesion.viewSheet")}</ToggleButton>
-          <ToggleButton value="relationship">{t("cohesion.viewRelationship")}</ToggleButton>
+          {!scope.viewHidden("cohesion.sheet") && <ToggleButton value="cohesion">{t("cohesion.viewSheet")}</ToggleButton>}
+          {!scope.viewHidden("cohesion.relationship") && <ToggleButton value="relationship">{t("cohesion.viewRelationship")}</ToggleButton>}
           {!scope.viewHidden("cohesion.strengths") && <ToggleButton value="strengths">{t("cohesion.viewStrengths")}</ToggleButton>}
-          <ToggleButton value="opinion">{t("cohesion.viewOpinion")}</ToggleButton>
+          {!scope.viewHidden("cohesion.opinion") && <ToggleButton value="opinion">{t("cohesion.viewOpinion")}</ToggleButton>}
           {!scope.viewHidden("cohesion.psi") && <ToggleButton value="psi">{t("cohesion.viewPsi")}</ToggleButton>}
         </ToggleButtonGroup>
 

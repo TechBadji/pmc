@@ -1,3 +1,4 @@
+import { useDisplayScope } from "@/utils/displayScope";
 import {
   Alert,
   Box,
@@ -722,7 +723,8 @@ export default function TalentsDashboardPage() {
   // "" = tout le monde, DIRECTORS_ONLY = les seuls directeurs de département,
   // un identifiant = un collaborateur suivi individuellement.
   const [personFilter, setPersonFilter] = useState<number | "" | typeof DIRECTORS_ONLY>("");
-  const [view, setView] = useState<"boxes" | "trajectory" | "visio">("boxes");
+  const scope = useDisplayScope();
+  const [view, setView] = useState<"boxes" | "trajectory" | "visio">(() => scope.firstShown("talents", ["boxes", "trajectory", "visio"] as const));
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -1056,9 +1058,9 @@ export default function TalentsDashboardPage() {
             },
           }}
         >
-          <ToggleButton value="boxes">{t("talents.viewBoxes")}</ToggleButton>
-          <ToggleButton value="trajectory">{t("talents.viewTrajectory")}</ToggleButton>
-          <ToggleButton value="visio">{t("talents.viewVisio")}</ToggleButton>
+          {!scope.viewHidden("talents.boxes") && <ToggleButton value="boxes">{t("talents.viewBoxes")}</ToggleButton>}
+          {!scope.viewHidden("talents.trajectory") && <ToggleButton value="trajectory">{t("talents.viewTrajectory")}</ToggleButton>}
+          {!scope.viewHidden("talents.visio") && <ToggleButton value="visio">{t("talents.viewVisio")}</ToggleButton>}
         </ToggleButtonGroup>
       </Stack>
 

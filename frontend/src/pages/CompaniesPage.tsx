@@ -1,4 +1,5 @@
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -286,6 +287,11 @@ export default function CompaniesPage() {
                           onClick={() => navigate(`/companies/${c.id}/upload`)}
                         >
                           <UploadFileOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={t("displayScope.tooltip")}>
+                        <IconButton size="small" onClick={() => navigate(`/companies/${c.id}/display`)}>
+                          <VisibilityOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title={t("companies.changePlanTooltip")}>

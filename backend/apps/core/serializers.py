@@ -60,9 +60,40 @@ class CompanySerializer(serializers.ModelSerializer):
             "id", "name", "slug", "sector", "employee_count", "plan", "plan_features",
             "is_active", "is_compliant", "admin_first_name", "admin_last_name", "admin_user",
             "admin_email", "admin_login", "admin_is_active", "admin_must_change_password",
-            "user_count", "department_count", "created_at", "updated_at",
+            "user_count", "department_count", "created_at", "updated_at", "display_scope",
         ]
         read_only_fields = ["id", "slug", "admin_user", "created_at", "updated_at"]
+
+    SCOPED_ROLES = ("COMPANY_ADMIN", "MANAGER", "MEMBER")
+
+    def validate_display_scope(self, value):
+        """Périmètre affiché : rubriques du menu montrées par rôle, vues
+        masquées. La forme est contrôlée ici ; les rubriques et vues elles-mêmes
+        sont celles du catalogue de l'application (`utils/displayCatalog.ts`)."""
+        import re
+
+        if not isinstance(value, dict) or set(value) - {"nav", "hidden_views", "hidden_views_by_role"}:
+            raise serializers.ValidationError("Le périmètre affiché n'a pas la forme attendue : rechargez la page puis réessayez.")
+        path, view = re.compile(r"^/[a-z0-9\-/]{0,60}$"), re.compile(r"^[a-z0-9]{1,30}\.[a-z0-9]{1,30}$")
+
+        def strings(items, pattern, what):
+            if not isinstance(items, list) or len(items) > 60 or any(not isinstance(i, str) or not pattern.match(i) for i in items):
+                raise serializers.ValidationError(f"La liste des {what} contient une valeur inattendue : rechargez la page puis réessayez.")
+            return sorted(set(items))
+
+        def by_role(block, pattern, what):
+            if not isinstance(block, dict) or set(block) - set(self.SCOPED_ROLES):
+                raise serializers.ValidationError(f"Les {what} se règlent par rôle (dirigeant, manager, collaborateur) : rôle inconnu reçu.")
+            return {role: strings(items, pattern, what) for role, items in block.items()}
+
+        clean = {}
+        if "nav" in value:
+            clean["nav"] = by_role(value["nav"], path, "rubriques")
+        if value.get("hidden_views"):
+            clean["hidden_views"] = strings(value["hidden_views"], view, "vues masquées")
+        if "hidden_views_by_role" in value:
+            clean["hidden_views_by_role"] = {r: v for r, v in by_role(value["hidden_views_by_role"], view, "vues masquées").items() if v}
+        return {k: v for k, v in clean.items() if v}
 
     def get_plan_features(self, obj):
         return PLAN_FEATURES.get(obj.plan, {})

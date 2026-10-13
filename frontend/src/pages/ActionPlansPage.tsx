@@ -1,3 +1,4 @@
+import { useDisplayScope } from "@/utils/displayScope";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import {
@@ -56,7 +57,8 @@ export default function ActionPlansPage() {
   const [selectedManagerId, setSelectedManagerId] = useState<number | "" | typeof DIRECTORS_TEAM>("");
   // Deux plans coexistent : celui d'une personne (grille de développement) et
   // celui de l'équipe (actions libres). Ils ne se lisent pas ensemble.
-  const [view, setView] = useState<"individual" | "team">("team");
+  const displayScope = useDisplayScope();
+  const [view, setView] = useState<"individual" | "team">(() => displayScope.firstShown("actionplans", ["team", "individual"] as const));
   const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
   // Le comité de direction : le département dont le CEO est le manager. C'est
   // lui que désigne l'option « Tous les directeurs ».
@@ -243,12 +245,16 @@ export default function ActionPlansPage() {
               "& .Mui-selected": { bgcolor: "primary.main", color: "#fff !important", "&:hover": { bgcolor: "primary.dark" } },
             }}
           >
-            <ToggleButton value="individual">
-              {isCompanyAdmin ? t("actionPlans.viewIndividualManagers") : t("actionPlans.viewIndividualMembers")}
-            </ToggleButton>
-            <ToggleButton value="team">
-              {isCompanyAdmin ? t("actionPlans.viewTeam") : t("actionPlans.viewTeamDepartment")}
-            </ToggleButton>
+            {!displayScope.viewHidden("actionplans.individual") && (
+              <ToggleButton value="individual">
+                {isCompanyAdmin ? t("actionPlans.viewIndividualManagers") : t("actionPlans.viewIndividualMembers")}
+              </ToggleButton>
+            )}
+            {!displayScope.viewHidden("actionplans.team") && (
+              <ToggleButton value="team">
+                {isCompanyAdmin ? t("actionPlans.viewTeam") : t("actionPlans.viewTeamDepartment")}
+              </ToggleButton>
+            )}
           </ToggleButtonGroup>
 
           {/* Un seul sélecteur pour les deux vues : il désigne la personne dont

@@ -1,0 +1,28 @@
+{
+  "displayScope": {
+    "title": "Displayed sections — {{company}}",
+    "subtitle": "Choose, for each role, the menu sections and sub-sections shown to this company. This setting is for demonstrations: it hides screens, it changes no permission.",
+    "tooltip": "Displayed sections",
+    "role": {
+      "COMPANY_ADMIN": "Leader",
+      "MANAGER": "Managers",
+      "MEMBER": "Team members"
+    },
+    "section": "Menu section",
+    "views": "Sub-sections",
+    "noViews": "No sub-section",
+    "alwaysShown": "Always shown: it is the landing page.",
+    "emptySection": "No sub-section ticked: the section disappears from the menu.",
+    "summary": "{{shown}} of {{total}} section(s) shown",
+    "showAll": "Show everything for this role",
+    "copyTo": "Apply this setting to the other roles",
+    "save": "Save",
+    "back": "Back to companies",
+    "saved": "The setting is saved. It applies the next time the company's users sign in, or as soon as they reload the page.",
+    "saveFailed": "Saving failed. Try again in a moment.",
+    "loadFailed": "The company could not be loaded: reload the page.",
+    "adminOnly": "This setting is reserved for the super administrator.",
+    "viewIndividualPlans": "Individual plans",
+    "viewPersonSheet": "Individual sheet"
+  }
+}
