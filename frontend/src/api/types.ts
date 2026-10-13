@@ -16,7 +16,7 @@ export interface Me {
   company_name: string | null;
   company_cohesion_min_respondents: number | null;
   /** Périmètre affiché pour l'entreprise (voir `utils/displayScope.ts`). */
-  company_display_scope?: { nav?: Record<string, string[]>; hidden_views?: string[] };
+  company_display_scope?: { nav?: Record<string, string[]>; hidden_views?: string[]; hidden_views_by_role?: Record<string, string[]> };
   department: number | null;
   department_name: string | null;
   manager: number | null;

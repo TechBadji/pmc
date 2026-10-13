@@ -110,7 +110,11 @@ export default function EvaluationsPage() {
   const { issues, check, clear } = useIssues();
   // Trois lectures d'une même campagne : l'évaluation ID-3A, la fiche
   // d'objectifs d'un employé, celle de son équipe.
-  const [view, setView] = useState<"id3a" | "employee" | "team" | "managerial" | "monkey" | "feedback" | "forward">("id3a");
+  // La page s'ouvre sur les évaluations ID-3A, ou sur la fiche d'objectifs
+  // quand cette vue est retirée du périmètre affiché de l'entreprise.
+  const [view, setView] = useState<"id3a" | "employee" | "team" | "managerial" | "monkey" | "feedback" | "forward">(
+    scope.viewHidden("evaluations.id3a") ? "employee" : "id3a"
+  );
   const [departments, setDepartments] = useState<Department[]>([]);
 
   function load() {
@@ -375,12 +379,12 @@ export default function EvaluationsPage() {
             "& .Mui-selected": { bgcolor: "primary.main", color: "#fff !important", "&:hover": { bgcolor: "primary.dark" } },
           }}
         >
-          <ToggleButton value="id3a">{t("objectivesSheet.viewId3a")}</ToggleButton>
+          {!scope.viewHidden("evaluations.id3a") && <ToggleButton value="id3a">{t("objectivesSheet.viewId3a")}</ToggleButton>}
           <ToggleButton value="employee">{t("objectivesSheet.viewEmployee")}</ToggleButton>
           <ToggleButton value="team">{t("objectivesSheet.viewTeam")}</ToggleButton>
           {!peerReadOnly && !scope.viewHidden("evaluations.managerial") && <ToggleButton value="managerial">{t("objectivesSheet.viewManagerial")}</ToggleButton>}
           {!peerReadOnly && !scope.viewHidden("evaluations.monkey") && <ToggleButton value="monkey">{t("objectivesSheet.viewMonkeyManagement")}</ToggleButton>}
-          {!peerReadOnly && <ToggleButton value="feedback">{t("feedback360.feedbackTitle")}</ToggleButton>}
+          {!peerReadOnly && !scope.viewHidden("evaluations.feedback") && <ToggleButton value="feedback">{t("feedback360.feedbackTitle")}</ToggleButton>}
           {!peerReadOnly && <ToggleButton value="forward">{t("feedback360.forwardTitle")}</ToggleButton>}
         </ToggleButtonGroup>
       </Stack>
@@ -773,7 +777,8 @@ export default function EvaluationsPage() {
         </Paper>
       )}
 
-      {selectedMember && selectedEvaluation && (
+      {/* Tiré de l'évaluation ID-3A : retiré avec elle quand cette vue sort du périmètre affiché. */}
+      {selectedMember && selectedEvaluation && !scope.viewHidden("evaluations.id3a") && (
         <StrengthsWeaknesses
           evaluationId={selectedEvaluation.id}
           userName={selectedMember.full_name || selectedMember.email}
