@@ -45,6 +45,7 @@ import { apiClient } from "@/api/client";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { UnsavedChangesProvider, type UnsavedGuard } from "@/app/unsavedChanges";
 import { logout } from "@/features/auth/authSlice";
+import { useDisplayScope } from "@/utils/displayScope";
 import { NAV_BY_ROLE, type NavItem } from "./navConfig";
 
 const PENDING_RESET_POLL_MS = 20000;
@@ -101,8 +102,15 @@ export default function AppLayout() {
   // collaborateurs rattachés directement à l'entreprise n'ont que l'avis sur
   // l'organisation, et l'entrée de menu ne menait pour eux qu'à un message
   // d'indisponibilité.
+  // S'y ajoute le périmètre affiché de l'entreprise : une démonstration sur
+  // quelques rubriques retire les autres du menu. La page « Cohésion d'équipe »
+  // du collaborateur ne tient que deux vues : elle disparaît avec elles.
+  const scope = useDisplayScope();
   const items = NAV_BY_ROLE[user.role].filter(
-    (item) => item.path !== "/cohesion-survey" || Boolean(user.department)
+    (item) =>
+      (item.path !== "/cohesion-survey" || Boolean(user.department)) &&
+      scope.navShown(item.path) &&
+      !(item.path === "/team-cohesion" && scope.viewHidden("cohesion.psi") && scope.viewHidden("cohesion.strengths"))
   );
 
   function handleLogout() {

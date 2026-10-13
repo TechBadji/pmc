@@ -46,6 +46,7 @@ import TeamRelationshipBoard from "@/components/teamBoard/TeamRelationshipBoard"
 import PsychologicalSafetyBoard from "@/components/teamBoard/PsychologicalSafetyBoard";
 import CohesionOpinionBoard from "@/components/teamBoard/CohesionOpinionBoard";
 import CohesionSurveyPage from "@/pages/CohesionSurveyPage";
+import { useDisplayScope } from "@/utils/displayScope";
 import TeamStrengthsBoard from "@/components/teamBoard/TeamStrengthsBoard";
 import { today as boardToday, useTeamBoard } from "@/features/teamBoard";
 import { useAppSelector } from "@/app/hooks";
@@ -194,6 +195,7 @@ export default function CohesionFormPage() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
+  const scope = useDisplayScope();
   const { readOnly: peerReadOnly } = usePeerDirection();
 
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -792,9 +794,9 @@ export default function CohesionFormPage() {
         >
           <ToggleButton value="cohesion">{t("cohesion.viewSheet")}</ToggleButton>
           <ToggleButton value="relationship">{t("cohesion.viewRelationship")}</ToggleButton>
-          <ToggleButton value="strengths">{t("cohesion.viewStrengths")}</ToggleButton>
+          {!scope.viewHidden("cohesion.strengths") && <ToggleButton value="strengths">{t("cohesion.viewStrengths")}</ToggleButton>}
           <ToggleButton value="opinion">{t("cohesion.viewOpinion")}</ToggleButton>
-          <ToggleButton value="psi">{t("cohesion.viewPsi")}</ToggleButton>
+          {!scope.viewHidden("cohesion.psi") && <ToggleButton value="psi">{t("cohesion.viewPsi")}</ToggleButton>}
         </ToggleButtonGroup>
 
         {/* La campagne borne la vue des avis comme elle borne la fiche : les

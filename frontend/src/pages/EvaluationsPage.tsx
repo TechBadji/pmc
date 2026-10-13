@@ -41,6 +41,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import ManagerialSelfAssessmentPanel from "@/components/ManagerialSelfAssessmentPanel";
 import Feedback360Panel from "@/components/Feedback360Panel";
 import FeedforwardPanel from "@/components/FeedforwardPanel";
+import { useDisplayScope } from "@/utils/displayScope";
 import MonkeyManagementPanel from "@/components/MonkeyManagementPanel";
 import ObjectivesSheetPanel from "@/components/objectives/ObjectivesSheetPanel";
 import StatCard from "@/components/StatCard";
@@ -90,6 +91,7 @@ export default function EvaluationsPage() {
   const { user } = useAppSelector((s) => s.auth);
   // Direction d'un pair consultée : lecture seule, sans saisie ni vues personnelles.
   const { readOnly: peerReadOnly } = usePeerDirection();
+  const scope = useDisplayScope();
   // Un manager évalue les membres de son équipe ; l'Admin Entreprise évalue
   // ses directeurs (rôle MANAGER) — même page, même parcours, scope différent.
   const evaluatedRole = user?.role === "COMPANY_ADMIN" ? "MANAGER" : "MEMBER";
@@ -376,8 +378,8 @@ export default function EvaluationsPage() {
           <ToggleButton value="id3a">{t("objectivesSheet.viewId3a")}</ToggleButton>
           <ToggleButton value="employee">{t("objectivesSheet.viewEmployee")}</ToggleButton>
           <ToggleButton value="team">{t("objectivesSheet.viewTeam")}</ToggleButton>
-          {!peerReadOnly && <ToggleButton value="managerial">{t("objectivesSheet.viewManagerial")}</ToggleButton>}
-          {!peerReadOnly && <ToggleButton value="monkey">{t("objectivesSheet.viewMonkeyManagement")}</ToggleButton>}
+          {!peerReadOnly && !scope.viewHidden("evaluations.managerial") && <ToggleButton value="managerial">{t("objectivesSheet.viewManagerial")}</ToggleButton>}
+          {!peerReadOnly && !scope.viewHidden("evaluations.monkey") && <ToggleButton value="monkey">{t("objectivesSheet.viewMonkeyManagement")}</ToggleButton>}
           {!peerReadOnly && <ToggleButton value="feedback">{t("feedback360.feedbackTitle")}</ToggleButton>}
           {!peerReadOnly && <ToggleButton value="forward">{t("feedback360.forwardTitle")}</ToggleButton>}
         </ToggleButtonGroup>

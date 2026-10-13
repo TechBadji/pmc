@@ -26,6 +26,13 @@ class Company(models.Model):
         default=SubscriptionPlan.DEMO,
     )
     is_active = models.BooleanField("Actif", default=True)
+    # Périmètre montré à l'entreprise, quand il est restreint (démonstration sur
+    # quelques rubriques) : {"nav": {"<ROLE>": ["/", "/cohesion", …]}} borne le
+    # menu d'un rôle aux entrées citées ; {"hidden_views": ["cohesion.psi", …]}
+    # retire des vues à l'intérieur d'une rubrique. Vide : tout est montré.
+    # C'est un réglage d'affichage, pas un contrôle d'accès : les droits restent
+    # ceux du rôle.
+    display_scope = models.JSONField("Périmètre affiché", default=dict, blank=True)
     cohesion_min_respondents = models.PositiveSmallIntegerField(
         "Seuil de publication de la cohésion",
         default=2,
