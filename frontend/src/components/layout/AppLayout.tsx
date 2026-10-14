@@ -6,6 +6,7 @@ import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import HubOutlinedIcon from "@mui/icons-material/HubOutlined";
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
+import SensorsOutlinedIcon from "@mui/icons-material/SensorsOutlined";
 import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -46,6 +47,7 @@ import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { UnsavedChangesProvider, type UnsavedGuard } from "@/app/unsavedChanges";
 import { logout } from "@/features/auth/authSlice";
 import { useDisplayScope } from "@/utils/displayScope";
+import { leavePresence, pingPresence, PRESENCE_PING_MS } from "@/utils/presence";
 import { NAV_BY_ROLE, type NavItem } from "./navConfig";
 
 const PENDING_RESET_POLL_MS = 20000;
@@ -68,6 +70,7 @@ const ICONS: Record<NavItem["icon"], React.ReactNode> = {
   upload: <UploadFileOutlinedIcon />,
   lockReset: <LockResetOutlinedIcon />,
   history: <HistoryOutlinedIcon />,
+  online: <SensorsOutlinedIcon />,
 };
 
 export default function AppLayout() {
@@ -80,6 +83,15 @@ export default function AppLayout() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [pendingResetCount, setPendingResetCount] = useState(0);
   const canSeeResetRequests = user?.role === "COMPANY_ADMIN" || user?.role === "SUPER_ADMIN";
+
+  // Présence : cet onglet se signale tant qu'il est ouvert et connecté (lu par
+  // le super administrateur dans « Connexions »).
+  useEffect(() => {
+    if (!user) return;
+    void pingPresence();
+    const interval = setInterval(() => void pingPresence(), PRESENCE_PING_MS);
+    return () => clearInterval(interval);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!canSeeResetRequests) return;
@@ -120,6 +132,7 @@ export default function AppLayout() {
       setPendingPath(LOGOUT_PATH);
       return;
     }
+    void leavePresence();
     dispatch(logout());
     navigate("/login", { replace: true });
   }
@@ -154,6 +167,7 @@ export default function AppLayout() {
   function goTo(path: string | null) {
     if (!path) return;
     if (path === LOGOUT_PATH) {
+      void leavePresence();
       dispatch(logout());
       navigate("/login", { replace: true });
       return;

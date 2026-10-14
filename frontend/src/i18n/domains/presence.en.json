@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "presence": "Connections"
+  },
+  "presence": {
+    "title": "Current connections",
+    "subtitle": "The accounts connected to the application right now, and how many instances (tabs or devices) each has open. An instance silent for {{minutes}} minutes is considered closed.",
+    "people": "People connected",
+    "instances": "Open instances",
+    "companies": "Companies",
+    "refreshed": "Updated at {{time}} — refreshed every 30 seconds",
+    "refresh": "Refresh",
+    "company": "All companies",
+    "account": "Account",
+    "role": "Role",
+    "companyCol": "Company",
+    "instanceCount": "Instances",
+    "lastSeen": "Last signal",
+    "where": "Browser and address",
+    "since": "opened at {{time}}",
+    "thisTab": "this tab",
+    "none": "Nobody is connected right now.",
+    "loadFailed": "Connections could not be loaded.",
+    "adminOnly": "This page is reserved for the super administrator.",
+    "ago": {
+      "now": "just now",
+      "min": "{{n}} min ago"
+    },
+    "roles": {
+      "SUPER_ADMIN": "Super admin",
+      "COMPANY_ADMIN": "Leader",
+      "MANAGER": "Manager",
+      "MEMBER": "Team member"
+    }
+  }
+}

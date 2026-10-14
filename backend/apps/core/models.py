@@ -311,6 +311,29 @@ class PasswordResetRequest(models.Model):
         return f"Réinitialisation pour {self.user} ({'traitée' if self.resolved else 'en attente'})"
 
 
+class Presence(models.Model):
+    """Une instance de l'application ouverte (un onglet de navigateur) et
+    l'utilisateur qui y est connecté. L'application signale sa présence à
+    intervalle régulier ; une instance silencieuse depuis quelques minutes est
+    considérée comme fermée. Sert au super administrateur à voir qui est
+    connecté, et sur combien d'onglets ou d'appareils."""
+
+    user = models.ForeignKey("core.User", on_delete=models.CASCADE, related_name="presences")
+    instance = models.CharField("Instance", max_length=64)
+    last_seen = models.DateTimeField("Dernier signal", db_index=True)
+    ip_address = models.CharField("Adresse IP", max_length=64, blank=True)
+    user_agent = models.CharField("Navigateur", max_length=300, blank=True)
+    started_at = models.DateTimeField("Ouverture", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Présence"
+        verbose_name_plural = "Présences"
+        constraints = [models.UniqueConstraint(fields=["user", "instance"], name="unique_presence_per_instance")]
+
+    def __str__(self):
+        return f"{self.user} — {self.instance}"
+
+
 class AuditLog(models.Model):
     """Journal des événements administratifs importants de la plateforme
     (entreprises, comptes, campagnes) — consulté par le Super Admin.

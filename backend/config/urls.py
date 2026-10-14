@@ -1,4 +1,5 @@
 """URL principal de l'API ID-PMC."""
+from apps.core.presence import PresenceView
 from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponse
@@ -82,6 +83,7 @@ urlpatterns = [
     path("api/auth/me/", MeView.as_view(), name="me"),
     path("api/auth/change-password/", ChangePasswordView.as_view(), name="change_password"),
     path("api/auth/forgot-password/", ForgotPasswordView.as_view(), name="forgot_password"),
+    path("api/presence/", PresenceView.as_view(), name="presence"),
     path("api/company-settings/", CompanySettingsView.as_view(), name="company-settings"),
     path("api/company-settings/peer-access/", PeerAccessView.as_view(), name="peer-access"),
     path("api/company-settings/data-reset/", DataResetCatalogueView.as_view(), name="data-reset-catalogue"),

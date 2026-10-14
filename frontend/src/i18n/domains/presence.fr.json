@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "presence": "Connexions"
+  },
+  "presence": {
+    "title": "Connexions en cours",
+    "subtitle": "Les comptes connectés à l'application en ce moment, et le nombre d'instances (onglets ou appareils) ouvertes par chacun. Une instance silencieuse depuis {{minutes}} minutes est considérée comme fermée.",
+    "people": "Personnes connectées",
+    "instances": "Instances ouvertes",
+    "companies": "Entreprises",
+    "refreshed": "Actualisé à {{time}} — rafraîchi toutes les 30 secondes",
+    "refresh": "Actualiser",
+    "company": "Toutes les entreprises",
+    "account": "Compte",
+    "role": "Rôle",
+    "companyCol": "Entreprise",
+    "instanceCount": "Instances",
+    "lastSeen": "Dernier signal",
+    "where": "Navigateur et adresse",
+    "since": "ouverte à {{time}}",
+    "thisTab": "cet onglet",
+    "none": "Personne n'est connecté en ce moment.",
+    "loadFailed": "Les connexions n'ont pas pu être chargées.",
+    "adminOnly": "Cette page est réservée au super administrateur.",
+    "ago": {
+      "now": "à l'instant",
+      "min": "il y a {{n}} min"
+    },
+    "roles": {
+      "SUPER_ADMIN": "Super admin",
+      "COMPANY_ADMIN": "Dirigeant",
+      "MANAGER": "Manager",
+      "MEMBER": "Collaborateur"
+    }
+  }
+}
