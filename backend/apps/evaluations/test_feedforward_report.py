@@ -92,3 +92,6 @@ class FeedforwardReportTests(TestCase):
         self.assertIn("delegation", themes_in("Déléguer davantage et faire grandir ton équipe.", BEHAVIOUR))
         self.assertNotIn("communication", themes_in("Ce projet nous a éclairés.", BEHAVIOUR))
         self.assertEqual(themes_in("Un rôle d'encadrement d'ici trois ans.", POTENTIAL), {"management"})
+        self.assertIn("energie", themes_in("Toujours de bonne humeur, très positive", BEHAVIOUR))
+        self.assertNotIn("energie", themes_in("Sa position sur le sujet est claire", BEHAVIOUR))
+        self.assertIn("direction", themes_in("Je te vois prendre des responsabilités plus larges, jusqu'au C-level", POTENTIAL))

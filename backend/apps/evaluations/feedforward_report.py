@@ -159,7 +159,7 @@ BEHAVIOUR = [
           "ancrer des règles de fonctionnement explicites sur le respect et le désaccord constructif",
           "votre bienveillance et votre respect des autres", "exprimer davantage de reconnaissance au quotidien"),
     Theme("fiabilite", "Fiabilité et sens de l'engagement",
-          ("fiab", "tient ses engagements", "tenir ses engagements", "fait ce qu", "tiens les dates", "loyaut", "constan", "parole donnée", "compter sur"),
+          ("fiab", "tient ses engagements", "tenir ses engagements", "fait ce qu", "tiens les dates", "loyaut", "constan", "parole donnée", "compter sur", "confiance"),
           "une culture de la parole donnée, où l'on peut compter les uns sur les autres",
           "rendre visibles les engagements pris, au moyen de points d'étape et de tableaux de suivi partagés",
           "votre fiabilité : vos collègues savent pouvoir compter sur vous", "rendre vos engagements plus visibles et les tenir dans la durée"),
@@ -174,12 +174,12 @@ BEHAVIOUR = [
           "multiplier les occasions de coopération entre équipes, par des projets transverses et des binômes inter-équipes",
           "votre esprit d'équipe et votre sens de la coopération", "aller davantage vers les autres équipes et coopérer au-delà de votre périmètre"),
     Theme("leadership", "Leadership et capacité à mobiliser",
-          ("leadership", "mobilis", "fédère", "fédérer", "inspir", "entraîn", "donner envie", "embarquer", "montrer l'exemple"),
+          ("leadership", "mobilis", "fédère", "fédérer", "inspir", "entraîn", "donner envie", "embarquer", "montrer l'exemple", "manag", "décision", "trancher", "affirm", "prendre plus de place", "prendre sa place"),
           "des leaders capables de fédérer et d'entraîner",
           "développer le leadership des managers de proximité par un parcours de développement managérial",
           "votre capacité à fédérer et à entraîner", "affirmer davantage votre leadership"),
     Theme("communication", "Communication et prise de parole",
-          ("communic", "prise de parole", "prendre la parole", "parole en", "expliqu", "clarté", "clair", "message", "compte rendu", "comptes rendus", "exprimer"),
+          ("communic", "prise de parole", "prendre la parole", "parole en", "expliqu", "clarté", "clair", "message", "compte rendu", "comptes rendus", "exprimer", "échange", "partag", "transparen"),
           "une communication claire et accessible",
           "structurer les rituels de communication et donner à chacun un temps de parole en réunion",
           "votre communication et votre clarté", "prendre davantage la parole et structurer votre communication"),
@@ -204,7 +204,7 @@ BEHAVIOUR = [
           "outiller la gestion des situations de tension et de la charge de travail",
           "votre calme et votre maîtrise de vous-même", "mieux gérer les situations de tension et de charge"),
     Theme("organisation", "Organisation et gestion des priorités",
-          ("organis", "priorit", "planif", "gestion du temps", "délais", "échéance", "charge"),
+          ("organis", "priorit", "planif", "gestion du temps", "délais", "échéance", "charge", "process", "suivi", "structur", "méthod", "formalis", "documen", "focus", "concentr"),
           "une bonne maîtrise de l'organisation et des délais",
           "travailler collectivement la priorisation et la gestion de la charge, avec des méthodes et des outils de planification communs",
           "votre organisation et votre sens des priorités", "mieux organiser vos priorités et votre temps"),
@@ -214,41 +214,61 @@ BEHAVIOUR = [
           "proposer aux managers un parcours « déléguer pour développer »",
           "votre souci de faire grandir les autres", "déléguer davantage et faire grandir votre entourage"),
     Theme("analyse", "Analyse et résolution de problèmes",
-          ("analys", "résolution", "résoudre", "problème", "synthès", "raisonn", "diagnostic"),
+          ("analys", "résolution", "résoudre", "problème", "synthès", "raisonn", "diagnostic", "solution"),
           "une solide capacité d'analyse et de résolution de problèmes",
           "diffuser des méthodes communes de résolution de problèmes",
           "votre capacité d'analyse et de résolution de problèmes", "structurer davantage votre analyse des problèmes"),
     Theme("vision", "Vision stratégique et innovation",
-          ("stratég", "innov", "curios", "nouvelles idées", "créativ", "transformation", "numérique", "digital", "vision", "anticip"),
+          ("stratég", "innov", "curios", "nouvelles idées", "créativ", "transformation", "numérique", "digital", "vision", "anticip", "recul", "hauteur"),
           "une capacité à se projeter et à innover",
           "associer davantage de collaborateurs aux réflexions stratégiques et d'innovation",
           "votre vision et votre goût de l'innovation", "prendre davantage de recul stratégique"),
     Theme("resultats", "Pilotage de la performance et des résultats",
-          ("résultat", "pilotage", "piloter", "budget", "objectif", "indicateur", "chiffre d'affaires", "marge", "performance", "rentab"),
+          ("résultat", "pilotage", "piloter", "budget", "objectif", "indicateur", "chiffre d'affaires", "marge", "performance", "rentab", "business"),
           "une forte orientation résultats",
           "partager des indicateurs de performance lisibles par tous et suivis en équipe",
           "votre orientation résultats", "renforcer le pilotage de vos résultats et de vos budgets"),
+    Theme("energie", "Énergie positive et convivialité",
+          ("drôle", "humour", "bonne humeur", "humeur", "souri", "positif", "positive", "positivit", "enthousias", "attachant", "sympa", "convivia", "joyeu", "énergie", "dynamis"),
+          "une ambiance de travail chaleureuse, portée par l'énergie et la bonne humeur",
+          "préserver les moments de convivialité et la reconnaissance dans le rythme de croissance",
+          "votre énergie positive et votre bonne humeur", "canaliser votre énergie vers les sujets prioritaires"),
+    Theme("engagement", "Engagement et professionnalisme",
+          ("engagé", "engagement", "investi", "investissement", "bosseur", "travailleu", "sérieu", "professionnalisme", "dévou", "implication", "impliqué"),
+          "un engagement fort et un professionnalisme reconnu",
+          "veiller à la soutenabilité de l'engagement : charge, équilibre, reconnaissance",
+          "votre engagement et votre professionnalisme", "préserver votre énergie dans la durée"),
+    Theme("ouverture", "Ouverture d'esprit et vivacité intellectuelle",
+          ("ouverture", "ouvert", "smart", "intelligen", "vif", "vivacité", "brillant", "esprit d'analyse", "apprend vite", "comprend vite"),
+          "des profils ouverts et vifs, qui comprennent et apprennent vite",
+          "nourrir cette vivacité par des défis, des rotations et des formations exigeantes",
+          "votre ouverture d'esprit et votre vivacité intellectuelle", "élargir encore votre champ de vision"),
+    Theme("reactivite", "Réactivité et rapidité d'exécution",
+          ("rapid", "réactiv", "efficac", "vite", "agil"),
+          "une grande réactivité dans l'exécution",
+          "concilier vitesse d'exécution et qualité, par des points de contrôle légers",
+          "votre réactivité et votre efficacité", "gagner en rapidité d'exécution"),
 ]
 
 POTENTIAL = [
     Theme("management", "Encadrement et management d'équipe",
-          ("encadr", "manag", "chef d'équipe", "responsable d'équipe", "poste de responsable", "petite équipe", "diriger une équipe"),
+          ("encadr", "manag", "chef d'équipe", "responsable d'équipe", "poste de responsable", "petite équipe", "diriger une équipe", "gérer des équipes", "gérer une équipe", "faire grandir"),
           you="un rôle d'encadrement et de management d'équipe"),
     Theme("referent", "Expertise et rôle de référent",
-          ("référent", "expert", "former les nouveaux", "spécialiste"),
+          ("référent", "expert", "former les nouveaux", "spécialiste", "référence", "technique", "domaine"),
           you="un rôle de référent dans votre domaine d'expertise"),
     Theme("projets", "Pilotage de projets et missions transverses",
           ("projet", "transverse", "mission", "programme"),
           you="le pilotage de projets et de missions transverses"),
     Theme("business", "Développement commercial et clients",
-          ("client", "portefeuille", "commercial", "vente", "partenari", "marché", "sous-région"),
+          ("client", "portefeuille", "commercial", "vente", "partenari", "marché", "sous-région", "business", "croissance", "afrique", "international", "expansion", "pays"),
           you="des responsabilités élargies sur le développement commercial et les clients"),
     Theme("direction", "Rôle de direction et responsabilités élargies",
-          ("direction", "directeur", "dirigeant", "générale", "responsabilités élargies", "rôle élargi", "décisions stratégiques", "conseil"),
+          ("direction", "directeur", "dirigeant", "générale", "responsabilit", "rôle élargi", "décisions stratégiques", "conseil", "c-level", "codir", "comité de direction", "diriger", "head of", "chief", "associé", "porter"),
           you="des responsabilités de direction élargies"),
-    Theme("transformation", "Transformation et innovation",
-          ("transformation", "innovation", "numérique", "digital", "diversification", "nouvelles offres"),
-          you="un rôle moteur dans la transformation et l'innovation"),
+    Theme("transformation", "Innovation, produit et transformation",
+          ("transformation", "innovation", "numérique", "digital", "diversification", "nouvelles offres", "construire", "créer", "licorne", "produit", "vision"),
+          you="un rôle moteur dans l'innovation, le produit et la transformation"),
 ]
 
 COMMITMENT = [
@@ -636,7 +656,8 @@ class Builder:
         ]))
         self.add(table, Spacer(1, 10))
 
-    def box(self, title, body, tint=TINT_BLUE, color=BLUE):
+    def box(self, title, body, tint=TINT_BLUE, color=BLUE, keep_with=None):
+        """Encadré ; `keep_with` : flowables qui le précèdent et ne doivent pas en être séparés."""
         content = [para(escape(title).upper(), ParagraphStyle("bt", parent=self.s["box_title"], textColor=color))]
         content += [para(b, self.s["box_body"]) for b in (body if isinstance(body, list) else [body])]
         table = Table([[content]], colWidths=[CONTENT_W])
@@ -648,7 +669,7 @@ class Builder:
             ("TOPPADDING", (0, 0), (-1, -1), 8),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
         ]))
-        self.add(KeepTogether([table]), Spacer(1, 10))
+        self.add(KeepTogether((keep_with or []) + [table]), Spacer(1, 10))
 
     def quote(self, text, attribution, color=TEAL):
         rows = [[para(f"« {safe(text)} »", self.s["quote"])]]
@@ -663,11 +684,13 @@ class Builder:
         ]))
         self.add(KeepTogether([table]), Spacer(1, 7))
 
-    def figure_block(self, title, flowable, note=None):
+    def figure_items(self, title, flowable, note=None):
         self.figure += 1
-        items = [para(f"Figure {self.figure} — {escape(title)}", self.s["caption"]), Spacer(1, 3), flowable,
-                 para(f"{('Note : ' + note + '. ') if note else ''}Source : {escape(self.source)}.", self.s["source"])]
-        self.add(KeepTogether(items))
+        return [para(f"Figure {self.figure} — {escape(title)}", self.s["caption"]), Spacer(1, 3), flowable,
+                para(f"{('Note : ' + note + '. ') if note else ''}Source : {escape(self.source)}.", self.s["source"])]
+
+    def figure_block(self, title, flowable, note=None):
+        self.add(KeepTogether(self.figure_items(title, flowable, note)))
 
     def table(self, title, header, rows, widths, align=None, zebra=True, note=None, head_color=NAVY):
         self.table_no += 1
@@ -730,6 +753,16 @@ def theme_counts(contributions, fields, grid):
         text = " ".join(c.answers.get(f, "") for f in fields)
         counter.update(themes_in(text, grid))
     return counter
+
+
+def uncoded_note(contributions, fields, grid):
+    """Part des réponses qu'aucun thème de la grille ne couvre : dite sous la figure, par transparence."""
+    answered = [c for c in contributions if any((c.answers.get(f) or "").strip() for f in fields)]
+    missing = sum(1 for c in answered if not themes_in(" ".join(c.answers.get(f, "") for f in fields), grid))
+    if not answered or not missing:
+        return None
+    return (f"{missing} réponse{'s' if missing > 1 else ''} sur {len(answered)} ({fmt_pct(pct(missing, len(answered)))}) "
+            "n'évoque{0} aucun thème de la grille ; elles sont lues dans les verbatims").format("nt" if missing > 1 else "")
 
 
 def pick_quotes(contributions, fields, theme, grid, limit, used):
@@ -907,8 +940,8 @@ def build_global_report(company, campaign, prepared_for):
     b.bullets([
         "<b>Analyse quantitative</b> : participation, couverture (nombre de regards reçus par personne), origine des regards, engagements "
         "et appropriation au Round 2.",
-        "<b>Analyse thématique</b> : chaque réponse libre est rapprochée d'une grille de 16 thèmes comportementaux et managériaux, de 6 "
-        "thèmes de potentiel et de 6 types d'engagement (annexe B). Un thème compte une fois par contribution ; les pourcentages indiquent "
+        f"<b>Analyse thématique</b> : chaque réponse libre est rapprochée d'une grille de {len(BEHAVIOUR)} thèmes comportementaux et managériaux, "
+        f"de {len(POTENTIAL)} thèmes de potentiel et de {len(COMMITMENT)} types d'engagement (annexe B). Un thème compte une fois par contribution ; les pourcentages indiquent "
         "la part des contributions qui l'évoquent.",
         "<b>Verbatims</b> : choisis pour leur représentativité, cités sans le nom de leur auteur.",
     ])
@@ -943,7 +976,7 @@ def build_global_report(company, campaign, prepared_for):
             note="une direction ne compte ici que les personnes qui lui sont directement rattachées ; ses services figurent en dessous")
     b.figure_block("Regards reçus en moyenne par personne, par équipe",
                    BarList(sorted(bars, key=lambda t: -t[1]), color=BLUE, label_width=62 * mm))
-    b.figure_block("Origine des regards du Round 1", StackedBar([
+    origin = b.figure_items("Origine des regards du Round 1", StackedBar([
         ("Responsable", relations.get("MANAGER", 0), NAVY), ("Pairs", relations.get("PEER", 0), BLUE), ("Collaborateurs", relations.get("REPORT", 0), TEAL),
     ]))
     weak = [name for name, value, _t in bars if value < avg * 0.75]
@@ -955,7 +988,7 @@ def build_global_report(company, campaign, prepared_for):
     if relations.get("REPORT", 0) < 0.1 * total:
         reading.append("Les regards ascendants (des collaborateurs vers leur responsable) restent rares : les encourager enrichirait la lecture du "
                        "leadership.")
-    b.box("Lecture", reading)
+    b.box("Lecture", reading, keep_with=origin)
 
     # -- 4. Forces --------------------------------------------------------------------
     action = (f"Un socle de forces partagé : {top_strengths[0][0].label.lower()}, {top_strengths[1][0].label.lower()} et "
@@ -965,7 +998,8 @@ def build_global_report(company, campaign, prepared_for):
         "les autres. Leur lecture d'ensemble dessine la culture vécue de l'organisation.")
     if top_strengths:
         b.figure_block("Forces les plus citées — part des contributions qui évoquent chaque thème",
-                       BarList([(t.label, v, fmt_pct(pct(v, total))) for t, v in top_strengths], color=BLUE, max_value=total))
+                       BarList([(t.label, v, fmt_pct(pct(v, total))) for t, v in top_strengths], color=BLUE, max_value=total),
+                       note=uncoded_note(contributions, ("human_qualities", "professional_contribution"), BEHAVIOUR))
     hq, pc = top(human, BEHAVIOUR, 5), top(professional, BEHAVIOUR, 5)
     rows = []
     for i in range(max(len(hq), len(pc))):
@@ -1010,10 +1044,12 @@ def build_global_report(company, campaign, prepared_for):
     lead, skill = top(levers_lead, BEHAVIOUR, 6), top(levers_skill, BEHAVIOUR, 6)
     if lead:
         b.figure_block("Leviers de leadership, d'attitudes et de comportements (4.1)",
-                       BarList([(t.label, v, fmt_pct(pct(v, total))) for t, v in lead], color=TEAL, max_value=total))
+                       BarList([(t.label, v, fmt_pct(pct(v, total))) for t, v in lead], color=TEAL, max_value=total),
+                       note=uncoded_note(contributions, ("impact_leadership",), BEHAVIOUR))
     if skill:
         b.figure_block("Leviers de compétences et de pratiques professionnelles (4.2)",
-                       BarList([(t.label, v, fmt_pct(pct(v, total))) for t, v in skill], color=TEAL, max_value=total))
+                       BarList([(t.label, v, fmt_pct(pct(v, total))) for t, v in skill], color=TEAL, max_value=total),
+                       note=uncoded_note(contributions, ("impact_skills",), BEHAVIOUR))
     quotes = []
     for theme, _v in top_levers[:2]:
         quotes += pick_quotes(contributions, ("impact_leadership", "impact_skills"), theme.key, BEHAVIOUR, 2, used)
@@ -1033,7 +1069,8 @@ def build_global_report(company, campaign, prepared_for):
     b.h1("Potentiel perçu et engagements", action)
     if top_potential:
         b.figure_block("Potentiel perçu à trois à cinq ans — part des contributions",
-                       BarList([(t.label, v, fmt_pct(pct(v, total))) for t, v in top_potential], color=NAVY, max_value=total))
+                       BarList([(t.label, v, fmt_pct(pct(v, total))) for t, v in top_potential], color=NAVY, max_value=total),
+                       note=uncoded_note(contributions, ("potential",), POTENTIAL))
     b.h2("Les engagements entre collègues")
     b.kpis([
         (str(len(commitments)), "engagements de soutien pris"),
@@ -1255,8 +1292,11 @@ def build_individual_report(company, campaign, subject, prepared_for):
     b.toc()
 
     # -- 1. Synthèse ------------------------------------------------------------------
-    if strengths and levers:
-        action = f"Un point d'appui : {strengths[0][0].label.lower()} — un levier : {levers[0][0].label.lower()}"
+    distinct = [t for t, _v in levers if not strengths or t.key != strengths[0][0].key]
+    if strengths and distinct:
+        action = f"Un point d'appui : {strengths[0][0].label.lower()} — un levier : {distinct[0].label.lower()}"
+    elif strengths and levers:
+        action = f"Un point d'appui à prolonger : {strengths[0][0].label.lower()}"
     elif strengths:
         action = f"Un point d'appui reconnu : {strengths[0][0].label.lower()}"
     else:
@@ -1287,6 +1327,8 @@ def build_individual_report(company, campaign, subject, prepared_for):
         reading.append(first + ".")
     if levers:
         second = f"Pour accroître votre impact, ils vous invitent surtout à {levers[0][0].lever_you}"
+        if any(levers[0][0].key == t.key for t, _v in strengths[:2]):
+            second += " — un prolongement de ce qu'ils apprécient déjà chez vous"
         if len(levers) > 1:
             second += f", et à {levers[1][0].lever_you}"
         reading.append(second + ".")
