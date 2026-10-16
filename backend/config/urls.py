@@ -37,6 +37,7 @@ from apps.evaluations.views import (
     Feedback360ViewSet,
     MonkeyManagementAssessmentViewSet,
     PerformanceObjectiveViewSet,
+    ReportArchiveViewSet,
     SkillNoteViewSet,
 )
 from apps.skills.views import SkillItemViewSet, SkillMatrixViewSet
@@ -61,6 +62,7 @@ router.register("skill-notes", SkillNoteViewSet, basename="skill-note")
 router.register("managerial-self-assessments", ManagerialSelfAssessmentViewSet, basename="managerial-self-assessment")
 router.register("managerial-syntheses", ManagerialSynthesisViewSet, basename="managerial-synthesis")
 router.register("feedback-360", Feedback360ViewSet, basename="feedback-360")
+router.register("report-archives", ReportArchiveViewSet, basename="report-archive")
 router.register("monkey-management-assessments", MonkeyManagementAssessmentViewSet, basename="monkey-management-assessment")
 router.register("performance-objectives", PerformanceObjectiveViewSet, basename="performance-objective")
 router.register("cohesion-analyses", TeamCohesionAnalysisViewSet, basename="cohesion-analysis")

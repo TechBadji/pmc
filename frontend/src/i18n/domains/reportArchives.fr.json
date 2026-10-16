@@ -1,0 +1,41 @@
+{
+  "nav": {
+    "reportArchives": "Rapports"
+  },
+  "reportArchives": {
+    "title": "Rapports 360° Feedforward",
+    "subtitle": "Produisez, pour une entreprise et une campagne, le rapport global et tous les rapports individuels du Round 1, réunis dans une archive ZIP à télécharger.",
+    "company": "Entreprise",
+    "campaign": "Campagne",
+    "generate": "Produire les rapports (global + individuels)",
+    "hint": "La production prend de quelques secondes à une minute selon la taille de l'entreprise ; l'archive apparaît ci-dessous dès qu'elle est prête. Elle n'est téléchargeable que depuis cette page, par le super administrateur.",
+    "pickBoth": "Choisissez une entreprise et une campagne.",
+    "none": "Aucune archive n'a encore été produite.",
+    "inProgress": "Production en cours…",
+    "content_one": "1 rapport global + {{count}} rapport individuel",
+    "content_other": "1 rapport global + {{count}} rapports individuels",
+    "skipped_one": "{{count}} personne sans rapport individuel (aucune contribution reçue)",
+    "skipped_other": "{{count}} personnes sans rapport individuel (aucune contribution reçue)",
+    "download": "Télécharger",
+    "delete": "Supprimer l'archive",
+    "confirmDelete": "Supprimer l'archive « {{file}} » ? Elle pourra être produite de nouveau.",
+    "failed": "La production n'a pas pu être lancée. Réessayez dans un instant.",
+    "downloadFailed": "Le téléchargement a échoué. Réessayez dans un instant.",
+    "deleteFailed": "L'archive n'a pas pu être supprimée.",
+    "loadFailed": "Les archives n'ont pas pu être chargées.",
+    "adminOnly": "Cette page est réservée au super administrateur.",
+    "col": {
+      "company": "Entreprise",
+      "campaign": "Campagne",
+      "content": "Contenu",
+      "produced": "Produite le",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "status": {
+      "PENDING": "En cours",
+      "READY": "Prête",
+      "FAILED": "Échec"
+    }
+  }
+}

@@ -7,6 +7,7 @@ import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import HubOutlinedIcon from "@mui/icons-material/HubOutlined";
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import SensorsOutlinedIcon from "@mui/icons-material/SensorsOutlined";
+import FolderZipOutlinedIcon from "@mui/icons-material/FolderZipOutlined";
 import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -71,6 +72,7 @@ const ICONS: Record<NavItem["icon"], React.ReactNode> = {
   lockReset: <LockResetOutlinedIcon />,
   history: <HistoryOutlinedIcon />,
   online: <SensorsOutlinedIcon />,
+  archive: <FolderZipOutlinedIcon />,
 };
 
 export default function AppLayout() {

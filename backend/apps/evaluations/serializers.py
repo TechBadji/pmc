@@ -8,6 +8,7 @@ from apps.skills.models import SkillItem
 from apps.core.scoping import manages_user
 
 from .models import (
+    ReportArchive,
     Feedback360,
     Evaluation,
     EvaluationCampaign,
@@ -642,3 +643,29 @@ class Feedback360Serializer(serializers.ModelSerializer):
         if self.instance is None and Feedback360.objects.filter(author=user, subject=subject, campaign=campaign, kind=kind).exists():
             raise serializers.ValidationError("Vous avez déjà donné cet avis pour cette campagne : ouvrez-le pour le modifier.")
         return attrs
+
+
+class ReportArchiveSerializer(serializers.ModelSerializer):
+    """Archive de rapports, telle que la liste le super administrateur : le
+    fichier lui-même ne passe que par le téléchargement."""
+
+    company_name = serializers.CharField(source="company.name", read_only=True)
+    campaign_name = serializers.CharField(source="campaign.name", read_only=True)
+    created_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ReportArchive
+        fields = [
+            "id", "company", "company_name", "campaign", "campaign_name", "kind", "status", "filename", "size",
+            "individual_count", "skipped", "error", "created_by_name", "created_at", "finished_at",
+        ]
+        read_only_fields = [f for f in fields if f not in ("company", "campaign")]
+
+    def get_created_by_name(self, obj):
+        return obj.created_by.get_full_name() if obj.created_by else "Commande serveur"
+
+    def validate(self, attrs):
+        if attrs["campaign"].company_id != attrs["company"].id:
+            raise serializers.ValidationError({"campaign": "Cette campagne n'appartient pas à l'entreprise choisie : choisissez l'une de ses campagnes."})
+        return attrs
+

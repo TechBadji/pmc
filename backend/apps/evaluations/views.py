@@ -1,9 +1,11 @@
+import threading
+from datetime import timedelta
 from urllib.parse import quote
 
 from django.db.models import ProtectedError, Q
 from django.http import HttpResponse
 from django.utils import timezone
-from rest_framework import permissions, viewsets
+from rest_framework import mixins, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
@@ -12,6 +14,7 @@ from apps.core.audit import log_event
 from apps.core.models import User
 from apps.core.permissions import (
     CompanyScopedQuerySetMixin,
+    IsSuperAdmin,
     IsCompanyAdminOrManager,
     IsSuperAdminOrCompanyAdmin,
 )
@@ -20,9 +23,10 @@ from apps.core.validators import require_same_company
 
 from apps.core.scoping import managed_department_ids, readable_department_ids, viewing_peer
 
-from .feedforward_report import ReportError, build_global_report, build_individual_report, report_filename
+from .feedforward_report import ReportError, build_global_report, build_individual_report, generate_archive, report_filename
 from .models import (
     Feedback360,
+    ReportArchive,
     Evaluation,
     EvaluationCampaign,
     ManagerialSelfAssessment,
@@ -34,6 +38,7 @@ from .models import (
 )
 from .serializers import (
     Feedback360Serializer,
+    ReportArchiveSerializer,
     EvaluationCampaignSerializer,
     EvaluationSerializer,
     EvaluationWriteSerializer,
@@ -625,3 +630,72 @@ class Feedback360ViewSet(viewsets.ModelViewSet):
                 ]
             groups.append(group)
         return Response({"subject": subject.id, "subject_name": subject.get_full_name(), "groups": groups})
+
+
+class ReportArchiveViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    """Archives de rapports PDF (360° Feedforward : rapport global et tous les
+    rapports individuels d'une campagne), pour le seul super administrateur.
+
+    La création rend la main tout de suite : l'archive se construit dans un
+    fil d'exécution à part, et la liste en donne l'état (en cours, prête,
+    échec). Le téléchargement passe par `download`, jamais par une adresse
+    publique."""
+
+    serializer_class = ReportArchiveSerializer
+    permission_classes = [IsSuperAdmin]
+    queryset = ReportArchive.objects.select_related("company", "campaign", "created_by").defer("content")
+    filterset_fields = ["company", "campaign", "status"]
+    # Les tests construisent l'archive dans la requête : un fil à part ne
+    # verrait pas leur transaction.
+    run_in_background = True
+    STALE_AFTER = timedelta(minutes=15)
+
+    def list(self, request, *args, **kwargs):
+        # Une génération interrompue (redémarrage du serveur) resterait « en cours » indéfiniment.
+        ReportArchive.objects.filter(status=ReportArchive.Status.PENDING, created_at__lt=timezone.now() - self.STALE_AFTER).update(
+            status=ReportArchive.Status.FAILED, error="La génération a été interrompue : relancez-la.", finished_at=timezone.now(),
+        )
+        return super().list(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        record = serializer.save(created_by=self.request.user, status=ReportArchive.Status.PENDING)
+        log_event(
+            self.request.user,
+            "reports.archive_requested",
+            f"a lancé la production des rapports 360° Feedforward de « {record.company.name} » ({record.campaign.name}).",
+            company=record.company,
+        )
+        if self.run_in_background:
+            threading.Thread(target=generate_archive, args=(record.id, True), daemon=True).start()
+        else:
+            generate_archive(record.id)
+            record.refresh_from_db()
+        serializer.instance = ReportArchive.objects.select_related("company", "campaign", "created_by").defer("content").get(pk=record.id)
+
+    @action(detail=True, methods=["get"], url_path="download")
+    def download(self, request, pk=None):
+        record = ReportArchive.objects.select_related("company", "campaign").filter(pk=pk).first()
+        if record is None:
+            raise ValidationError({"detail": "Cette archive n'existe plus."})
+        if record.status != ReportArchive.Status.READY or not record.content:
+            raise ValidationError({"detail": "Cette archive n'est pas prête : attendez la fin de sa production."})
+        log_event(
+            request.user,
+            "reports.archive_downloaded",
+            f"a téléchargé les rapports 360° Feedforward de « {record.company.name} » ({record.campaign.name}).",
+            company=record.company,
+        )
+        response = HttpResponse(bytes(record.content), content_type="application/zip")
+        response["Content-Disposition"] = f"attachment; filename=\"{record.filename}\"; filename*=UTF-8''{quote(record.filename)}"
+        response["Access-Control-Expose-Headers"] = "Content-Disposition"
+        return response
+
+    def perform_destroy(self, instance):
+        log_event(
+            self.request.user,
+            "reports.archive_deleted",
+            f"a supprimé une archive de rapports 360° Feedforward de « {instance.company.name} » ({instance.campaign.name}).",
+            company=instance.company,
+        )
+        instance.delete()
+

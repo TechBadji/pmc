@@ -39,6 +39,7 @@ const MyPerformanceIdPage = lazy(() => import("@/pages/MyPerformanceIdPage"));
 const LeadershipStatsPage = lazy(() => import("@/pages/LeadershipStatsPage"));
 const CompanyDisplayScopePage = lazy(() => import("@/pages/CompanyDisplayScopePage"));
 const PresencePage = lazy(() => import("@/pages/PresencePage"));
+const ReportArchivesPage = lazy(() => import("@/pages/ReportArchivesPage"));
 const MyStrengthsPage = lazy(() => import("@/pages/MyStrengthsPage"));
 const PsychologicalSafetyPage = lazy(() => import("@/pages/PsychologicalSafetyPage"));
 const PsychologicalSafetyReviewPage = lazy(() => import("@/pages/PsychologicalSafetyReviewPage"));
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="/companies/:companyId/upload" element={<BulkUploadPage />} />
           <Route path="/companies/:companyId/display" element={<CompanyDisplayScopePage />} />
           <Route path="/presence" element={<PresencePage />} />
+          <Route path="/reports" element={<ReportArchivesPage />} />
           <Route path="/skills-admin" element={<SkillsAdminPage />} />
           <Route path="/upload" element={<BulkUploadPage />} />
           <Route path="/teams" element={<TeamsPage />} />

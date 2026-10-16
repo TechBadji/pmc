@@ -633,3 +633,45 @@ class Feedback360(models.Model):
 
     def __str__(self):
         return f"{self.get_kind_display()} — {self.author} → {self.subject}"
+
+
+class ReportArchive(models.Model):
+    """Archive ZIP de rapports PDF produite pour le super administrateur :
+    aujourd'hui le rapport global du 360° Feedforward d'une campagne et tous
+    ses rapports individuels du Round 1.
+
+    Le fichier est gardé en base et ne sort que par l'API, réservée au super
+    administrateur : ces rapports nomment des personnes et citent les
+    contributions signées de leurs collègues. Ils n'ont rien à faire parmi les
+    fichiers publics (/media), qu'une simple adresse suffit à ouvrir."""
+
+    class Kind(models.TextChoices):
+        FEEDFORWARD = "FEEDFORWARD", "360° Feedforward"
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "En cours"
+        READY = "READY", "Prête"
+        FAILED = "FAILED", "Échec"
+
+    company = models.ForeignKey("core.Company", on_delete=models.CASCADE, related_name="report_archives")
+    campaign = models.ForeignKey(EvaluationCampaign, on_delete=models.CASCADE, related_name="report_archives")
+    kind = models.CharField("Type", max_length=20, choices=Kind.choices, default=Kind.FEEDFORWARD)
+    status = models.CharField("Statut", max_length=10, choices=Status.choices, default=Status.PENDING)
+    filename = models.CharField("Nom du fichier", max_length=255, blank=True)
+    content = models.BinaryField("Archive", null=True, blank=True, editable=False)
+    size = models.PositiveIntegerField("Taille (octets)", default=0)
+    individual_count = models.PositiveIntegerField("Rapports individuels", default=0)
+    skipped = models.JSONField("Personnes sans rapport individuel", default=list, blank=True)
+    error = models.TextField("Motif d'échec", blank=True)
+    created_by = models.ForeignKey("core.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Archive de rapports"
+        verbose_name_plural = "Archives de rapports"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} — {self.company} — {self.campaign} ({self.get_status_display()})"
+

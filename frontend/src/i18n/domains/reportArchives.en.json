@@ -1,0 +1,41 @@
+{
+  "nav": {
+    "reportArchives": "Reports"
+  },
+  "reportArchives": {
+    "title": "360° Feedforward reports",
+    "subtitle": "Produce, for a company and a campaign, the global report and every individual Round 1 report, bundled in a ZIP archive to download.",
+    "company": "Company",
+    "campaign": "Campaign",
+    "generate": "Produce the reports (global + individual)",
+    "hint": "Production takes from a few seconds to a minute depending on the company size; the archive appears below as soon as it is ready. Only the super administrator can download it, from this page.",
+    "pickBoth": "Choose a company and a campaign.",
+    "none": "No archive has been produced yet.",
+    "inProgress": "In progress…",
+    "content_one": "1 global report + {{count}} individual report",
+    "content_other": "1 global report + {{count}} individual reports",
+    "skipped_one": "{{count}} person without an individual report (no contribution received)",
+    "skipped_other": "{{count}} people without an individual report (no contribution received)",
+    "download": "Download",
+    "delete": "Delete the archive",
+    "confirmDelete": "Delete the archive “{{file}}”? It can be produced again.",
+    "failed": "Production could not be started. Try again in a moment.",
+    "downloadFailed": "The download failed. Try again in a moment.",
+    "deleteFailed": "The archive could not be deleted.",
+    "loadFailed": "Archives could not be loaded.",
+    "adminOnly": "This page is reserved for the super administrator.",
+    "col": {
+      "company": "Company",
+      "campaign": "Campaign",
+      "content": "Content",
+      "produced": "Produced",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "PENDING": "In progress",
+      "READY": "Ready",
+      "FAILED": "Failed"
+    }
+  }
+}

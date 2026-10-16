@@ -19,7 +19,8 @@ export interface NavItem {
     | "history"
     | "event"
     | "insights"
-    | "online";
+    | "online"
+    | "archive";
 }
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
@@ -32,6 +33,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { labelKey: "nav.passwordRequests", path: "/password-requests", icon: "lockReset" },
     { labelKey: "nav.logs", path: "/logs", icon: "history" },
     { labelKey: "nav.presence", path: "/presence", icon: "online" },
+    { labelKey: "nav.reportArchives", path: "/reports", icon: "archive" },
   ],
   COMPANY_ADMIN: [
     { labelKey: "nav.dashboard", path: "/", icon: "dashboard" },

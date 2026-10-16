@@ -21,9 +21,9 @@ ROUND1 = {
 }
 
 
-class FeedforwardReportTests(TestCase):
-    """Rapports PDF du 360° Feedforward : réservés au dirigeant, bornés à son
-    entreprise, refusés avec un motif quand il n'y a rien à présenter."""
+class ReportFixture(TestCase):
+    """Une entreprise, une campagne, trois contributions Round 1 pour une seule
+    personne et son Round 2 ; une autre entreprise pour les contrôles de cloisonnement."""
 
     def setUp(self):
         self.company = Company.objects.create(name="Rapport Co", slug="rapport-co")
@@ -52,6 +52,13 @@ class FeedforwardReportTests(TestCase):
         other = Company.objects.create(name="Autre", slug="autre")
         self.other_campaign = EvaluationCampaign.objects.create(company=other, name="2026", start_date=date(2026, 1, 1), end_date=date(2026, 12, 31))
         self.stranger = User.objects.create_user(email="s@o.co", password="x", role=User.Role.MEMBER, company=other, generated_login="RSTR")
+
+
+
+
+class FeedforwardReportTests(ReportFixture):
+    """Rapports PDF du 360° Feedforward : réservés au dirigeant, bornés à son
+    entreprise, refusés avec un motif quand il n'y a rien à présenter."""
 
     def get(self, user, **params):
         client = APIClient()
@@ -95,3 +102,62 @@ class FeedforwardReportTests(TestCase):
         self.assertIn("energie", themes_in("Toujours de bonne humeur, très positive", BEHAVIOUR))
         self.assertNotIn("energie", themes_in("Sa position sur le sujet est claire", BEHAVIOUR))
         self.assertIn("direction", themes_in("Je te vois prendre des responsabilités plus larges, jusqu'au C-level", POTENTIAL))
+
+
+class ReportArchiveTests(ReportFixture):
+    """Archives de rapports : produites et téléchargées par le seul super
+    administrateur ; l'archive contient le rapport global, un rapport par
+    personne ayant reçu une contribution et un LISEZ-MOI."""
+
+    ARCHIVES = "/api/report-archives/"
+
+    def setUp(self):
+        super().setUp()
+        from apps.evaluations.views import ReportArchiveViewSet
+
+        self.admin = User.objects.create_user(email="sa@r.co", password="x", role=User.Role.SUPER_ADMIN, generated_login="RSA")
+        ReportArchiveViewSet.run_in_background = False
+        self.addCleanup(setattr, ReportArchiveViewSet, "run_in_background", True)
+
+    def client_for(self, user):
+        client = APIClient()
+        client.force_authenticate(user)
+        return client
+
+    def test_super_admin_builds_and_downloads_the_archive(self):
+        import io
+        import zipfile
+
+        client = self.client_for(self.admin)
+        created = client.post(self.ARCHIVES, {"company": self.company.id, "campaign": self.campaign.id}, format="json", HTTP_HOST="localhost")
+        self.assertEqual(created.status_code, 201, created.data)
+        self.assertEqual((created.data["status"], created.data["individual_count"]), ("READY", 1))
+        self.assertEqual(len(created.data["skipped"]), 4)
+        listed = client.get(self.ARCHIVES, HTTP_HOST="localhost").data
+        self.assertNotIn("content", listed["results"][0])
+        download = client.get(f"{self.ARCHIVES}{created.data['id']}/download/", HTTP_HOST="localhost")
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Type"], "application/zip")
+        names = zipfile.ZipFile(io.BytesIO(download.content)).namelist()
+        root = "Rapport-Co_360-Feedforward_Semestre-1-2026/"
+        self.assertIn(root + "00_Rapport-Co_360-Feedforward_Rapport-global_Semestre-1-2026.pdf", names)
+        self.assertIn(root + "Rapports-individuels/Rapport-Co_360-Feedforward_Round-1_Coumba0-Sarr_Semestre-1-2026.pdf", names)
+        self.assertIn(root + "LISEZ-MOI.txt", names)
+        self.assertEqual(len(names), 3)
+
+    def test_only_the_super_admin(self):
+        for user in (self.ceo, self.manager):
+            client = self.client_for(user)
+            self.assertEqual(client.get(self.ARCHIVES, HTTP_HOST="localhost").status_code, 403)
+            self.assertEqual(client.post(self.ARCHIVES, {"company": self.company.id, "campaign": self.campaign.id}, format="json", HTTP_HOST="localhost").status_code, 403)
+
+    def test_campaign_of_another_company_and_empty_campaign(self):
+        client = self.client_for(self.admin)
+        wrong = client.post(self.ARCHIVES, {"company": self.company.id, "campaign": self.other_campaign.id}, format="json", HTTP_HOST="localhost")
+        self.assertEqual(wrong.status_code, 400)
+        empty = EvaluationCampaign.objects.create(company=self.company, name="2027", start_date=date(2027, 1, 1), end_date=date(2027, 12, 31))
+        failed = client.post(self.ARCHIVES, {"company": self.company.id, "campaign": empty.id}, format="json", HTTP_HOST="localhost")
+        self.assertEqual(failed.data["status"], "FAILED")
+        self.assertIn("aucun rapport à produire", failed.data["error"])
+        self.assertEqual(client.get(f"{self.ARCHIVES}{failed.data['id']}/download/", HTTP_HOST="localhost").status_code, 400)
+

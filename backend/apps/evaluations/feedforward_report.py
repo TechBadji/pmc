@@ -803,8 +803,8 @@ class Recommendation:
     priority: str
 
 
-def build_global_report(company, campaign, prepared_for):
-    data = Dataset.load(company, campaign)
+def build_global_report(company, campaign, prepared_for, data=None):
+    data = data or Dataset.load(company, campaign)
     if not data.round1:
         raise ReportError(
             f"Aucune contribution Round 1 n'a été déposée sur la campagne « {campaign.name} » : le rapport global n'aurait rien à présenter."
@@ -1237,8 +1237,8 @@ def _global_recommendations(data, total, n_people, below3, round2_done, top_stre
 # ---------------------------------------------------------------------------
 # Rapport individuel — Round 1
 # ---------------------------------------------------------------------------
-def build_individual_report(company, campaign, subject, prepared_for):
-    data = Dataset.load(company, campaign)
+def build_individual_report(company, campaign, subject, prepared_for, data=None):
+    data = data or Dataset.load(company, campaign)
     got = sorted(data.received(subject.id), key=lambda c: ({"MANAGER": 0, "PEER": 1, "REPORT": 2}.get(c.relation, 3), name_of(c.author)))
     if not got:
         raise ReportError(
@@ -1432,3 +1432,86 @@ def _signature(c):
 def report_filename(company, campaign, subject=None):
     parts = [slug(company.name), "360-Feedforward", "Rapport-global" if subject is None else f"Round-1_{slug(name_of(subject))}", slug(campaign.name)]
     return "_".join(parts) + ".pdf"
+
+
+# ---------------------------------------------------------------------------
+# Archive complète : rapport global + tous les rapports individuels
+# ---------------------------------------------------------------------------
+def build_feedforward_archive(company, campaign):
+    """ZIP du rapport global et d'un rapport Round 1 par personne ayant reçu au
+    moins une contribution, avec un LISEZ-MOI qui dit ce que contient
+    l'archive et qui n'a pas de rapport individuel. Rend (nom du fichier,
+    contenu, nombre de rapports individuels, personnes sans rapport)."""
+    import zipfile
+
+    data = Dataset.load(company, campaign)
+    if not data.round1:
+        raise ReportError(
+            f"Aucune contribution Round 1 n'a été déposée sur la campagne « {campaign.name} » : il n'y a aucun rapport à produire."
+        )
+    leader = company.admin_user
+    prepared_for = (f"{name_of(leader)}{', ' + leader.position if leader.position else ''}" if leader
+                    else f"Direction Générale de {company.name}")
+    root = f"{slug(company.name)}_360-Feedforward_{slug(campaign.name)}"
+    subjects = sorted({c.subject.id: c.subject for c in data.round1}.values(), key=lambda u: name_of(u).casefold())
+    received = {u.id for u in subjects}
+    skipped = [name_of(u) for u in data.people if u.id not in received]
+    today = timezone.localdate()
+    buffer, names = io.BytesIO(), set()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(f"{root}/00_{report_filename(company, campaign)}", build_global_report(company, campaign, prepared_for, data))
+        for subject in subjects:
+            name = report_filename(company, campaign, subject)
+            if name in names:  # deux homonymes : l'identifiant les départage
+                name = name[:-4] + f"_{slug(subject.generated_login or str(subject.id))}.pdf"
+            names.add(name)
+            archive.writestr(f"{root}/Rapports-individuels/{name}", build_individual_report(company, campaign, subject, prepared_for, data))
+        lines = [
+            f"360° Feedforward — {company.name} — {campaign.name}",
+            f"Archive produite le {fr_date(today)} par la plateforme ID-PMC.",
+            "",
+            "CONTENU",
+            f"- 00_{report_filename(company, campaign)} : rapport global, synthèse de l'organisation.",
+            f"- Rapports-individuels/ : {len(subjects)} rapport(s) Round 1, un par personne ayant reçu au moins une contribution.",
+            "",
+            f"SANS RAPPORT INDIVIDUEL — {len(skipped)} personne(s) n'ont reçu aucune contribution Round 1 sur cette campagne :",
+            *[f"- {name}" for name in skipped],
+            "",
+            "CONFIDENTIALITÉ",
+            "Ces documents nomment des personnes et citent les contributions signées de leurs collègues.",
+            "Chaque rapport individuel ne se remet qu'à la personne concernée et à sa hiérarchie ;",
+            "le rapport global est destiné à la Direction Générale et à la fonction RH. Aucune autre diffusion.",
+        ]
+        archive.writestr(f"{root}/LISEZ-MOI.txt", "\ufeff" + "\r\n".join(lines) + "\r\n")
+    return f"{root}.zip", buffer.getvalue(), len(subjects), skipped
+
+
+def generate_archive(archive_id, close_connection=False):
+    """Remplit une `ReportArchive` en attente. Appelée dans un fil d'exécution
+    à part depuis l'API (la production d'une grande entreprise dépasse le
+    délai d'une requête), ou directement par la commande de gestion."""
+    import logging
+
+    from django.db import connection
+
+    from .models import ReportArchive
+
+    try:
+        record = ReportArchive.objects.select_related("company", "campaign").get(pk=archive_id)
+        filename, content, count, skipped = build_feedforward_archive(record.company, record.campaign)
+        record.filename, record.content, record.size = filename, content, len(content)
+        record.individual_count, record.skipped = count, skipped
+        record.status, record.finished_at, record.error = ReportArchive.Status.READY, timezone.now(), ""
+        record.save()
+    except ReportError as error:
+        ReportArchive.objects.filter(pk=archive_id).update(status=ReportArchive.Status.FAILED, error=str(error), finished_at=timezone.now())
+    except Exception:  # noqa: BLE001 — l'échec doit se lire dans la liste, pas rester « en cours »
+        logging.getLogger(__name__).exception("Archive de rapports %s : échec de la génération", archive_id)
+        ReportArchive.objects.filter(pk=archive_id).update(
+            status=ReportArchive.Status.FAILED, error="La génération a échoué sur une erreur interne : réessayez, puis signalez-le si elle persiste.",
+            finished_at=timezone.now(),
+        )
+    finally:
+        if close_connection:
+            connection.close()
+
