@@ -108,6 +108,22 @@
     "byColleague": "Par collègue",
     "bySection": "Par rubrique",
     "expandAll": "Tout déplier",
-    "collapseAll": "Tout replier"
+    "collapseAll": "Tout replier",
+    "report": {
+      "open": "Générer le rapport d'évaluation",
+      "title": "Rapport d'évaluation — 360° Feedforward",
+      "intro": "Choisissez le rapport à produire pour la campagne « {{campaign}} ». Le fichier PDF se télécharge dès qu'il est prêt.",
+      "global": "Rapport global 360° Feedforward",
+      "globalHint": "Synthèse de l'organisation : participation, forces reconnues, leviers d'impact, potentiel, engagements, Round 2, recommandations et annexes.",
+      "individual": "Rapport individuel — Round 1",
+      "individualHint": "Ce que les collègues d'une personne voient en elle et pour elle, leurs engagements, et les prochaines étapes vers le Round 2.",
+      "pickPerson": "Choisissez la personne dont vous voulez le rapport individuel.",
+      "pickCampaign": "Choisissez d'abord une campagne.",
+      "generate": "Générer le PDF",
+      "busy": "Génération en cours…",
+      "cancel": "Annuler",
+      "done": "Le rapport « {{file}} » a été téléchargé.",
+      "failed": "Le rapport n'a pas pu être généré. Réessayez dans un instant."
+    }
   }
 }

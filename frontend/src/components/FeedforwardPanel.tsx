@@ -1,5 +1,32 @@
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Avatar, Box, Button, Chip, MenuItem, Paper, Stack, Tab, Tabs, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  MenuItem,
+  Paper,
+  Radio,
+  RadioGroup,
+  Stack,
+  Tab,
+  Tabs,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from "@mui/material";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
@@ -67,6 +94,14 @@ export default function FeedforwardPanel() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Rapports PDF, pour le dirigeant : synthèse de l'organisation ou Round 1 d'une personne.
+  const isLeader = user?.role === "COMPANY_ADMIN";
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportScope, setReportScope] = useState<"global" | "individual">("global");
+  const [reportSubject, setReportSubject] = useState<number | "">("");
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [reportDone, setReportDone] = useState<string | null>(null);
 
   const campaign = campaigns.find((c) => c.id === campaignId) ?? null;
   const closed = !!campaign?.is_closed;
@@ -258,6 +293,65 @@ export default function FeedforwardPanel() {
     </>
   );
   const subject = colleagues.find((p) => p.id === subjectId) ?? null;
+  // Toute l'entreprise, dirigeant compris, pour le rapport individuel.
+  const reportPeople = useMemo(() => {
+    const all = [...colleagues];
+    if (user) all.push({ id: user.id, full_name: user.full_name || user.email, position: user.position ?? "", avatar: user.avatar ?? null });
+    return all.sort((a, b) => a.full_name.localeCompare(b.full_name, undefined, { sensitivity: "base" }));
+  }, [colleagues, user]);
+
+  function openReport() {
+    setReportError(null);
+    setReportDone(null);
+    if (reportSubject === "" && viewedId !== "" && viewedId !== user?.id) setReportSubject(viewedId);
+    setReportOpen(true);
+  }
+
+  async function generateReport() {
+    setReportError(null);
+    if (campaignId === "") {
+      setReportError(t("feedforward.report.pickCampaign"));
+      return;
+    }
+    if (reportScope === "individual" && reportSubject === "") {
+      setReportError(t("feedforward.report.pickPerson"));
+      return;
+    }
+    setReportBusy(true);
+    try {
+      const r = await apiClient.get("/feedback-360/report/", {
+        params: { campaign: campaignId, scope: reportScope, ...(reportScope === "individual" ? { subject: reportSubject } : {}) },
+        responseType: "blob",
+        silent: true,
+      });
+      const header = String(r.headers["content-disposition"] ?? "");
+      const encoded = /filename\*=UTF-8''([^;]+)/i.exec(header)?.[1];
+      const plain = /filename="([^"]+)"/i.exec(header)?.[1];
+      const filename = encoded ? decodeURIComponent(encoded) : plain ?? "rapport-360-feedforward.pdf";
+      const url = window.URL.createObjectURL(new Blob([r.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setReportDone(filename);
+      setReportOpen(false);
+    } catch (err: any) {
+      // La réponse d'erreur arrive elle aussi sous forme de fichier : on la relit pour en donner le motif.
+      let detail = "";
+      try {
+        const body = JSON.parse(await (err?.response?.data as Blob).text());
+        detail = Object.values(body).flat().join(" ");
+      } catch {
+        detail = "";
+      }
+      setReportError(detail || t("feedforward.report.failed"));
+    } finally {
+      setReportBusy(false);
+    }
+  }
 
   return (
     <Stack spacing={2.5} maxWidth={920}>
@@ -271,13 +365,85 @@ export default function FeedforwardPanel() {
       </Box>
 
       {loadError && <Alert severity="error">{t("feedforward.loadFailed")}</Alert>}
-      <TextField select size="small" label={t("feedforward.campaign")} value={campaignId} onChange={(e) => setCampaignId(Number(e.target.value))} sx={{ width: 280 }}>
-        {campaigns.map((c) => (
-          <MenuItem key={c.id} value={c.id}>
-            {c.name}
-          </MenuItem>
-        ))}
-      </TextField>
+      <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" flexWrap="wrap" useFlexGap>
+        <TextField select size="small" label={t("feedforward.campaign")} value={campaignId} onChange={(e) => setCampaignId(Number(e.target.value))} sx={{ width: 280 }}>
+          {campaigns.map((c) => (
+            <MenuItem key={c.id} value={c.id}>
+              {c.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        {isLeader && (
+          <Button variant="contained" startIcon={<PictureAsPdfOutlinedIcon />} onClick={openReport} disabled={campaignId === ""}>
+            {t("feedforward.report.open")}
+          </Button>
+        )}
+      </Stack>
+      {reportDone && (
+        <Alert severity="success" onClose={() => setReportDone(null)}>
+          {t("feedforward.report.done", { file: reportDone })}
+        </Alert>
+      )}
+      <Dialog open={reportOpen} onClose={() => !reportBusy && setReportOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 800 }}>{t("feedforward.report.title")}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 0.5 }}>
+            <Typography variant="body2" color="text.secondary">
+              {t("feedforward.report.intro", { campaign: campaign?.name ?? "" })}
+            </Typography>
+            <RadioGroup value={reportScope} onChange={(e) => setReportScope(e.target.value as "global" | "individual")}>
+              <FormControlLabel
+                value="global"
+                control={<Radio />}
+                label={
+                  <Box sx={{ py: 0.5 }}>
+                    <Typography fontWeight={700}>{t("feedforward.report.global")}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {t("feedforward.report.globalHint")}
+                    </Typography>
+                  </Box>
+                }
+              />
+              <FormControlLabel
+                value="individual"
+                control={<Radio />}
+                label={
+                  <Box sx={{ py: 0.5 }}>
+                    <Typography fontWeight={700}>{t("feedforward.report.individual")}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {t("feedforward.report.individualHint")}
+                    </Typography>
+                  </Box>
+                }
+              />
+            </RadioGroup>
+            {reportScope === "individual" && (
+              <TextField select size="small" label={t("feedforward.person")} value={reportSubject} onChange={(e) => setReportSubject(Number(e.target.value))}>
+                {reportPeople.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>
+                    {p.full_name}
+                    {p.position ? ` — ${p.position}` : ""}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+            {reportError && <Alert severity="error">{reportError}</Alert>}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setReportOpen(false)} disabled={reportBusy}>
+            {t("feedforward.report.cancel")}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={generateReport}
+            disabled={reportBusy}
+            startIcon={reportBusy ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdfOutlinedIcon />}
+          >
+            {t(reportBusy ? "feedforward.report.busy" : "feedforward.report.generate")}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto" sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
         <Tab label={t("feedforward.tabGive")} sx={{ textTransform: "none", fontWeight: 700 }} />

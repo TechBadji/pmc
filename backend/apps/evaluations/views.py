@@ -1,4 +1,7 @@
+from urllib.parse import quote
+
 from django.db.models import ProtectedError, Q
+from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
@@ -17,6 +20,7 @@ from apps.core.validators import require_same_company
 
 from apps.core.scoping import managed_department_ids, readable_department_ids, viewing_peer
 
+from .feedforward_report import ReportError, build_global_report, build_individual_report, report_filename
 from .models import (
     Feedback360,
     Evaluation,
@@ -515,6 +519,44 @@ class Feedback360ViewSet(viewsets.ModelViewSet):
         user = self.request.user
         subject = serializer.validated_data.get("subject", serializer.instance.subject)
         serializer.save(relation=self._relation(user, subject))
+
+    @action(detail=False, methods=["get"], url_path="report")
+    def report(self, request):
+        """Rapport PDF du 360° Feedforward, pour le seul dirigeant :
+        `scope=global` (synthèse de l'organisation) ou `scope=individual`
+        avec `subject` (Round 1 d'une personne). Rien n'est écrit en base."""
+        user = request.user
+        if user.role != user.Role.COMPANY_ADMIN:
+            raise PermissionDenied("Les rapports du 360° Feedforward sont réservés au dirigeant de l'entreprise.")
+        campaign = EvaluationCampaign.objects.filter(pk=request.query_params.get("campaign"), company_id=user.company_id).first()
+        if campaign is None:
+            raise ValidationError({"campaign": "Choisissez une campagne de votre entreprise."})
+        scope = request.query_params.get("scope")
+        prepared_for = f"{user.get_full_name()}{', ' + user.position if user.position else ''}"
+        subject = None
+        try:
+            if scope == "global":
+                pdf = build_global_report(user.company, campaign, prepared_for)
+            elif scope == "individual":
+                subject = User.objects.filter(pk=request.query_params.get("subject"), company_id=user.company_id).select_related("department").first()
+                if subject is None:
+                    raise ValidationError({"subject": "Choisissez la personne dont vous voulez le rapport individuel."})
+                pdf = build_individual_report(user.company, campaign, subject, prepared_for)
+            else:
+                raise ValidationError({"scope": "Type de rapport inconnu : global ou individuel."})
+        except ReportError as error:
+            raise ValidationError({"detail": str(error)})
+        filename = report_filename(user.company, campaign, subject)
+        log_event(
+            user,
+            "feedforward.report",
+            f"a généré le rapport {'individuel de ' + subject.get_full_name() if subject else 'global'} du 360° Feedforward ({campaign.name}).",
+            company=user.company,
+        )
+        response = HttpResponse(pdf, content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename=\"{filename}\"; filename*=UTF-8''{quote(filename)}"
+        response["Access-Control-Expose-Headers"] = "Content-Disposition"
+        return response
 
     @action(detail=False, methods=["get"], url_path="received")
     def received(self, request):

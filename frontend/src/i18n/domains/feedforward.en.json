@@ -108,6 +108,22 @@
     "byColleague": "By colleague",
     "bySection": "By section",
     "expandAll": "Expand all",
-    "collapseAll": "Collapse all"
+    "collapseAll": "Collapse all",
+    "report": {
+      "open": "Generate the evaluation report",
+      "title": "Evaluation report — 360° Feedforward",
+      "intro": "Choose the report to produce for the “{{campaign}}” campaign. The PDF file downloads as soon as it is ready.",
+      "global": "Global 360° Feedforward report",
+      "globalHint": "Organisation summary: participation, recognised strengths, impact levers, potential, commitments, Round 2, recommendations and appendices.",
+      "individual": "Individual report — Round 1",
+      "individualHint": "What a person's colleagues see in them and for them, their commitments, and the next steps towards Round 2.",
+      "pickPerson": "Choose the person whose individual report you want.",
+      "pickCampaign": "Choose a campaign first.",
+      "generate": "Generate the PDF",
+      "busy": "Generating…",
+      "cancel": "Cancel",
+      "done": "The report “{{file}}” has been downloaded.",
+      "failed": "The report could not be generated. Try again in a moment."
+    }
   }
 }

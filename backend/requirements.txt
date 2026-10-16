@@ -9,3 +9,4 @@ gunicorn==22.0.0
 Pillow==10.3.0
 whitenoise==6.7.0
 geoip2==4.8.0
+reportlab==4.2.2
