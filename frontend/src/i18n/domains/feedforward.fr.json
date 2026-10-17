@@ -123,7 +123,10 @@
       "busy": "Génération en cours…",
       "cancel": "Annuler",
       "done": "Le rapport « {{file}} » a été téléchargé.",
-      "failed": "Le rapport n'a pas pu être généré. Réessayez dans un instant."
+      "failed": "Le rapport n'a pas pu être généré. Réessayez dans un instant.",
+      "scopeSome_one": "Périmètre : le participant de la séance désigné par le consultant ; les pourcentages sont calculés sur lui.",
+      "scopeSome_other": "Périmètre : les {{count}} participants de la séance désignés par le consultant ; les pourcentages sont calculés sur eux.",
+      "scopeAll": "Périmètre : toute l'entreprise."
     }
   }
 }

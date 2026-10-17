@@ -391,6 +391,11 @@ export default function FeedforwardPanel() {
             <Typography variant="body2" color="text.secondary">
               {t("feedforward.report.intro", { campaign: campaign?.name ?? "" })}
             </Typography>
+            <Alert severity="info" icon={false} sx={{ py: 0.25 }}>
+              {campaign?.feedforward_participants?.length
+                ? t("feedforward.report.scopeSome", { count: campaign.feedforward_participants.length })
+                : t("feedforward.report.scopeAll")}
+            </Alert>
             <RadioGroup value={reportScope} onChange={(e) => setReportScope(e.target.value as "global" | "individual")}>
               <FormControlLabel
                 value="global"

@@ -1,12 +1,18 @@
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import FolderZipOutlinedIcon from "@mui/icons-material/FolderZipOutlined";
 import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   MenuItem,
   Paper,
@@ -26,7 +32,7 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import PageHeader from "@/components/layout/PageHeader";
-import type { Company, EvaluationCampaign, Paginated } from "@/api/types";
+import type { Company, EvaluationCampaign, Paginated, UserRecord } from "@/api/types";
 
 type Archive = {
   id: number;
@@ -62,6 +68,15 @@ export default function ReportArchivesPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [downloading, setDownloading] = useState<number | null>(null);
+  // Participants de la séance : périmètre des rapports de la campagne choisie.
+  const [scope, setScope] = useState<EvaluationCampaign | null>(null);
+  const [people, setPeople] = useState<UserRecord[]>([]);
+  const [picking, setPicking] = useState(false);
+  const [picked, setPicked] = useState<number[]>([]);
+  // Personnes retenues à l'ouverture du dialogue : affichées en tête, ordre figé pour que les lignes ne bougent pas au clic.
+  const [retained, setRetained] = useState<number[]>([]);
+  const [savingScope, setSavingScope] = useState(false);
+  const [scopeError, setScopeError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     apiClient
@@ -91,6 +106,50 @@ export default function ReportArchivesPage() {
       })
       .catch(() => setError(t("reportArchives.loadFailed")));
   }, [companyId, t]);
+
+  useEffect(() => {
+    setScope(null);
+    if (campaignId === "") return;
+    apiClient
+      .get<EvaluationCampaign>(`/evaluation-campaigns/${campaignId}/`, { params: { activity: 1 } })
+      .then((r) => setScope(r.data))
+      .catch(() => setError(t("reportArchives.loadFailed")));
+  }, [campaignId, t]);
+
+  useEffect(() => {
+    setPeople([]);
+    if (companyId === "") return;
+    apiClient
+      .get<Paginated<UserRecord>>("/users/", { params: { company: companyId, page_size: 1000 } })
+      .then((r) => setPeople([...r.data.results].sort((a, b) => (a.full_name || a.email).localeCompare(b.full_name || b.email))))
+      .catch(() => setError(t("reportArchives.loadFailed")));
+  }, [companyId, t]);
+
+  const activity = (id: number) => scope?.feedforward_activity?.[String(id)] ?? { given: 0, received: 0 };
+  const participants = scope?.feedforward_participants ?? [];
+
+  function openPicker() {
+    setScopeError(null);
+    setPicked(participants);
+    setRetained(participants);
+    setPicking(true);
+  }
+
+  async function saveScope() {
+    if (!scope) return;
+    setSavingScope(true);
+    setScopeError(null);
+    try {
+      const r = await apiClient.patch<EvaluationCampaign>(`/evaluation-campaigns/${scope.id}/`, { feedforward_participants: picked }, { params: { activity: 1 }, silent: true });
+      setScope(r.data);
+      setPicking(false);
+    } catch (err: any) {
+      const d = err?.response?.data;
+      setScopeError((d && typeof d === "object" ? Object.values(d).flat().join(" ") : "") || t("reportArchives.scope.failed"));
+    } finally {
+      setSavingScope(false);
+    }
+  }
 
   // Tant qu'une archive se construit, la liste se rafraîchit toute seule.
   const pending = archives.some((a) => a.status === "PENDING");
@@ -181,10 +240,91 @@ export default function ReportArchivesPage() {
             {t("reportArchives.generate")}
           </Button>
         </Stack>
+        {scope && (
+          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: 1.75 }}>
+            <Chip
+              icon={<GroupsOutlinedIcon />}
+              color={participants.length ? "primary" : "default"}
+              variant={participants.length ? "filled" : "outlined"}
+              label={participants.length ? t("reportArchives.scope.some", { count: participants.length }) : t("reportArchives.scope.all")}
+              sx={{ fontWeight: 700 }}
+            />
+            <Button size="small" onClick={openPicker}>
+              {t("reportArchives.scope.edit")}
+            </Button>
+          </Stack>
+        )}
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.25 }}>
           {t("reportArchives.hint")}
         </Typography>
       </Paper>
+      <Dialog open={picking} onClose={() => !savingScope && setPicking(false)} fullWidth maxWidth="md">
+        <DialogTitle sx={{ fontWeight: 800 }}>{t("reportArchives.scope.title")}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            {t("reportArchives.scope.intro")}
+          </Typography>
+          <Stack direction="row" spacing={1} sx={{ mb: 1 }} flexWrap="wrap" useFlexGap>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => setPicked(people.filter((p) => activity(p.id).given >= 1 || activity(p.id).received >= 2).map((p) => p.id))}
+            >
+              {t("reportArchives.scope.suggest")}
+            </Button>
+            <Button size="small" onClick={() => setPicked([])}>
+              {t("reportArchives.scope.clear")}
+            </Button>
+            <Typography variant="body2" sx={{ alignSelf: "center", ml: "auto", fontWeight: 700 }}>
+              {picked.length ? t("reportArchives.scope.some", { count: picked.length }) : t("reportArchives.scope.all")}
+            </Typography>
+          </Stack>
+          <Paper variant="outlined" sx={{ maxHeight: 420, overflow: "auto" }}>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell padding="checkbox" />
+                  <TableCell sx={{ fontWeight: 700 }}>{t("reportArchives.scope.person")}</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="center">{t("reportArchives.scope.given")}</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="center">{t("reportArchives.scope.received")}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {[...people].sort((a, b) => Number(retained.includes(b.id)) - Number(retained.includes(a.id))).map((p) => {
+                  const a = activity(p.id);
+                  const on = picked.includes(p.id);
+                  return (
+                    <TableRow key={p.id} hover onClick={() => setPicked((prev) => (on ? prev.filter((x) => x !== p.id) : [...prev, p.id]))} sx={{ cursor: "pointer" }}>
+                      <TableCell padding="checkbox">
+                        <Checkbox size="small" checked={on} />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={on ? 700 : 400}>
+                          {p.full_name || p.email}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {[p.position, p.department_name].filter(Boolean).join(" · ")}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">{a.given || "—"}</TableCell>
+                      <TableCell align="center">{a.received || "—"}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Paper>
+          {scopeError && <Alert severity="error" sx={{ mt: 1.5 }}>{scopeError}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setPicking(false)} disabled={savingScope}>
+            {t("reportArchives.scope.cancel")}
+          </Button>
+          <Button variant="contained" onClick={saveScope} disabled={savingScope}>
+            {t("reportArchives.scope.save")}
+          </Button>
+        </DialogActions>
+      </Dialog>
       {error && <Alert severity="error">{error}</Alert>}
       {archives.length === 0 ? (
         <Alert severity="info">{t("reportArchives.none")}</Alert>

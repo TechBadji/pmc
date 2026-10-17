@@ -33,14 +33,44 @@ class EvaluationCampaignSerializer(serializers.ModelSerializer):
     created_by_name = serializers.CharField(source="created_by.get_full_name", read_only=True, default=None)
     evaluations_count = serializers.IntegerField(source="evaluations.count", read_only=True)
     effective_end_date = serializers.DateField(read_only=True)
+    feedforward_activity = serializers.SerializerMethodField()
 
     class Meta:
         model = EvaluationCampaign
         fields = [
             "id", "company", "name", "start_date", "end_date", "effective_end_date", "is_closed",
-            "created_by", "created_by_name", "evaluations_count", "created_at",
+            "created_by", "created_by_name", "evaluations_count", "created_at", "feedforward_participants", "feedforward_activity",
         ]
         read_only_fields = ["id", "company", "created_by", "created_at"]
+
+    def get_feedforward_activity(self, obj):
+        """Contributions Round 1 données et reçues par personne, pour aider à
+        désigner les participants de la séance. Sur demande (`?activity=1`)
+        et pour la direction seulement : la liste des campagnes sert partout."""
+        request = self.context.get("request")
+        if not request or request.query_params.get("activity") != "1" or request.user.role not in ("SUPER_ADMIN", "COMPANY_ADMIN"):
+            return None
+        rows = Feedback360.objects.filter(campaign=obj, kind=Feedback360.Kind.FORWARD).exclude(answers={}).values_list("author_id", "subject_id")
+        activity = {}
+        for author, subject in rows:
+            if author == subject:
+                continue
+            activity.setdefault(author, {"given": 0, "received": 0})["given"] += 1
+            activity.setdefault(subject, {"given": 0, "received": 0})["received"] += 1
+        return activity
+
+    def validate_feedforward_participants(self, value):
+        if not isinstance(value, list) or len(value) > 2000 or any(isinstance(v, bool) or not isinstance(v, int) for v in value):
+            raise serializers.ValidationError("La liste des participants n'a pas pu être lue : rechargez la page puis réessayez.")
+        ids = sorted(set(value))
+        company_id = getattr(self.instance, "company_id", None)
+        if ids and company_id:
+            from apps.core.models import User
+
+            known = set(User.objects.filter(company_id=company_id, id__in=ids).values_list("id", flat=True))
+            if len(known) != len(ids):
+                raise serializers.ValidationError("Certaines personnes choisies n'appartiennent pas à l'entreprise de cette campagne : rechargez la page.")
+        return ids
 
     def validate(self, attrs):
         start_date = attrs.get("start_date", getattr(self.instance, "start_date", None))

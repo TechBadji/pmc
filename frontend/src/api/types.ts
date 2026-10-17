@@ -279,6 +279,10 @@ export interface EvaluationCampaign {
   created_by_name: string | null;
   evaluations_count: number;
   created_at: string;
+  /** Participants de la séance du 360° Feedforward : périmètre des rapports (vide = toute l'entreprise). */
+  feedforward_participants?: number[];
+  /** Contributions Round 1 données et reçues par personne (sur demande, direction seulement). */
+  feedforward_activity?: Record<string, { given: number; received: number }> | null;
 }
 
 export interface SkillItem {

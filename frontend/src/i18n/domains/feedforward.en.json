@@ -123,7 +123,10 @@
       "busy": "Generating…",
       "cancel": "Cancel",
       "done": "The report “{{file}}” has been downloaded.",
-      "failed": "The report could not be generated. Try again in a moment."
+      "failed": "The report could not be generated. Try again in a moment.",
+      "scopeSome_one": "Scope: the session participant designated by the consultant; percentages are computed on them.",
+      "scopeSome_other": "Scope: the {{count}} session participants designated by the consultant; percentages are computed on them.",
+      "scopeAll": "Scope: the whole company."
     }
   }
 }

@@ -36,6 +36,22 @@
       "PENDING": "En cours",
       "READY": "Prête",
       "FAILED": "Échec"
+    },
+    "scope": {
+      "some_one": "Périmètre des rapports : {{count}} participant à la séance",
+      "some_other": "Périmètre des rapports : {{count}} participants à la séance",
+      "all": "Périmètre des rapports : toute l'entreprise",
+      "edit": "Choisir les participants",
+      "title": "Participants à la séance du 360° Feedforward",
+      "intro": "Les rapports de cette campagne ne porteront que sur les personnes cochées, et sur les contributions échangées entre elles : tous les pourcentages seront calculés sur elles. Sans personne cochée, ils portent sur toute l'entreprise.",
+      "suggest": "Suggérer : personnes actives (au moins 1 contribution donnée ou 2 reçues)",
+      "clear": "Toute l'entreprise",
+      "person": "Personne",
+      "given": "Données",
+      "received": "Reçues",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "failed": "Le périmètre n'a pas pu être enregistré. Réessayez dans un instant."
     }
   }
 }

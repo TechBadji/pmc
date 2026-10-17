@@ -37,6 +37,10 @@ class EvaluationCampaign(models.Model):
         "Clôturée le", null=True, blank=True,
         help_text="Jour où le CEO a clôturé la campagne : les saisies faites jusque-là lui restent rattachées.",
     )
+    # Participants de la séance du 360° Feedforward (identifiants de comptes).
+    # Vide : les rapports portent sur toute l'entreprise ; renseigné : sur ces
+    # seules personnes et les contributions échangées entre elles.
+    feedforward_participants = models.JSONField("Participants à la séance Feedforward", default=list, blank=True)
     created_by = models.ForeignKey(
         "core.User",
         verbose_name="Créée par",

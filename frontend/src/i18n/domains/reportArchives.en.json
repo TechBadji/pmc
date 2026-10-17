@@ -36,6 +36,22 @@
       "PENDING": "In progress",
       "READY": "Ready",
       "FAILED": "Failed"
+    },
+    "scope": {
+      "some_one": "Report scope: {{count}} session participant",
+      "some_other": "Report scope: {{count}} session participants",
+      "all": "Report scope: the whole company",
+      "edit": "Choose the participants",
+      "title": "360° Feedforward session participants",
+      "intro": "This campaign's reports will only cover the people ticked, and the contributions exchanged between them: every percentage is computed on them. With nobody ticked, they cover the whole company.",
+      "suggest": "Suggest: active people (at least 1 contribution given or 2 received)",
+      "clear": "Whole company",
+      "person": "Person",
+      "given": "Given",
+      "received": "Received",
+      "cancel": "Cancel",
+      "save": "Save",
+      "failed": "The scope could not be saved. Try again in a moment."
     }
   }
 }

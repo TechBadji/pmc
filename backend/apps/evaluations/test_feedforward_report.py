@@ -161,3 +161,38 @@ class ReportArchiveTests(ReportFixture):
         self.assertIn("aucun rapport à produire", failed.data["error"])
         self.assertEqual(client.get(f"{self.ARCHIVES}{failed.data['id']}/download/", HTTP_HOST="localhost").status_code, 400)
 
+
+class SessionParticipantsTests(ReportFixture):
+    """Participants de la séance : les rapports ne portent que sur eux et sur
+    les contributions échangées entre eux ; la liste se règle sur la campagne."""
+
+    def test_scope_limits_people_and_contributions(self):
+        from apps.evaluations.feedforward_report import Dataset, ReportError, build_individual_report
+
+        subject, outsider = self.members[0], self.members[2]
+        self.campaign.feedforward_participants = [self.manager.id, self.members[0].id, self.members[1].id]
+        self.campaign.save()
+        data = Dataset.load(self.company, self.campaign)
+        self.assertTrue(data.scoped)
+        self.assertEqual({u.id for u in data.people}, {self.manager.id, subject.id, self.members[1].id})
+        # La contribution d'un non-participant (members[2]) est écartée.
+        self.assertEqual((len(data.round1), data.outside), (2, 1))
+        with self.assertRaises(ReportError):
+            build_individual_report(self.company, self.campaign, outsider, "x", data)
+
+    def test_participants_are_set_on_the_campaign_with_checks(self):
+        client = APIClient()
+        client.force_authenticate(self.ceo)
+        url = f"/api/evaluation-campaigns/{self.campaign.id}/"
+        ok = client.patch(url, {"feedforward_participants": [self.manager.id, self.members[0].id, self.members[0].id]}, format="json", HTTP_HOST="localhost")
+        self.assertEqual(ok.status_code, 200, ok.data)
+        self.assertEqual(ok.data["feedforward_participants"], sorted([self.manager.id, self.members[0].id]))
+        bad = client.patch(url, {"feedforward_participants": [self.stranger.id]}, format="json", HTTP_HOST="localhost")
+        self.assertEqual(bad.status_code, 400)
+        activity = client.get(url, {"activity": "1"}, HTTP_HOST="localhost").data["feedforward_activity"]
+        self.assertEqual(activity[self.members[0].id]["received"], 3)
+        self.assertEqual(activity[self.manager.id]["given"], 1)
+        member = APIClient()
+        member.force_authenticate(self.members[1])
+        self.assertIsNone(member.get(url, {"activity": "1"}, HTTP_HOST="localhost").data["feedforward_activity"])
+

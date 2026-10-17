@@ -55,6 +55,7 @@ from reportlab.platypus.tableofcontents import TableOfContents
 
 from apps.core.models import Department, User
 
+from . import report_cover as cover
 from .models import Feedback360
 
 # ---------------------------------------------------------------------------
@@ -114,10 +115,6 @@ def _styles():
     s["kpi_label"] = ParagraphStyle("kpi_label", fontName=F_REG, fontSize=7.5, leading=9.5, textColor=GREY)
     s["box_title"] = ParagraphStyle("box_title", fontName=F_BOLD, fontSize=8.5, leading=11, textColor=BLUE, spaceAfter=3)
     s["box_body"] = ParagraphStyle("box_body", fontName=F_REG, fontSize=9, leading=13, textColor=TEXT)
-    s["cover_label"] = ParagraphStyle("cover_label", fontName=F_SEMI, fontSize=9, leading=12, textColor=BLUE)
-    s["cover_title"] = ParagraphStyle("cover_title", fontName=F_BOLD, fontSize=28, leading=33, textColor=NAVY, spaceBefore=6, spaceAfter=6)
-    s["cover_sub"] = ParagraphStyle("cover_sub", fontName=F_REG, fontSize=14, leading=19, textColor=TEXT, spaceAfter=18)
-    s["cover_meta"] = ParagraphStyle("cover_meta", fontName=F_REG, fontSize=9, leading=13, textColor=TEXT)
     s["toc0"] = ParagraphStyle("toc0", fontName=F_SEMI, fontSize=10, leading=17, textColor=NAVY)
     s["toc1"] = ParagraphStyle("toc1", fontName=F_REG, fontSize=9, leading=14, textColor=TEXT, leftIndent=14)
     return s
@@ -335,21 +332,28 @@ class Dataset:
     people: list
     round1: list = field(default_factory=list)
     round2: dict = field(default_factory=dict)
+    scoped: bool = False  # périmètre restreint aux participants de la séance
+    outside: int = 0      # contributions écartées : auteur ou bénéficiaire hors du périmètre
 
     @classmethod
     def load(cls, company, campaign):
-        people = list(
-            User.objects.filter(company=company, is_active=True)
-            .select_related("department__parent")
-            .order_by("last_name", "first_name")
-        )
+        """Données de la campagne. Quand des participants à la séance sont
+        désignés sur la campagne, le rapport ne porte que sur eux : leurs
+        comptes, et les contributions qu'ils ont échangées entre eux."""
+        participants = {int(i) for i in (campaign.feedforward_participants or [])}
+        users = User.objects.filter(company=company)
+        users = users.filter(id__in=participants) if participants else users.filter(is_active=True)
+        people = list(users.select_related("department__parent").order_by("last_name", "first_name"))
         rows = (
             Feedback360.objects.filter(company=company, campaign=campaign, kind=Feedback360.Kind.FORWARD)
             .exclude(answers={})
             .select_related("author", "subject__department__parent")
         )
-        data = cls(company=company, campaign=campaign, people=people)
+        data = cls(company=company, campaign=campaign, people=people, scoped=bool(participants))
         for row in rows:
+            if participants and (row.author_id not in participants or row.subject_id not in participants):
+                data.outside += 1
+                continue
             if row.author_id == row.subject_id:
                 data.round2[row.subject_id] = row.answers
             else:
@@ -525,14 +529,15 @@ def _numbered_canvas(header_left, header_right, classification):
             self.saveState()
             self.setStrokeColor(RULE)
             self.setLineWidth(0.6)
-            top = PAGE_H - 13 * mm
-            self.line(MARGIN_X, top - 2.5 * mm, PAGE_W - MARGIN_X, top - 2.5 * mm)
+            rule = PAGE_H - 16.5 * mm
+            self.line(MARGIN_X, rule, PAGE_W - MARGIN_X, rule)
+            cover.draw_logo(self, MARGIN_X - 0.8 * mm, rule + 1.6 * mm, 19 * mm)
             self.setFont(F_SEMI, 7.5)
             self.setFillColor(NAVY)
-            self.drawString(MARGIN_X, top, header_left)
-            self.setFont(F_REG, 7.5)
+            self.drawRightString(PAGE_W - MARGIN_X, rule + 6.4 * mm, header_left)
+            self.setFont(F_REG, 7.2)
             self.setFillColor(GREY)
-            self.drawRightString(PAGE_W - MARGIN_X, top, header_right)
+            self.drawRightString(PAGE_W - MARGIN_X, rule + 2.6 * mm, header_right)
             bottom = 11 * mm
             self.line(MARGIN_X, bottom + 4 * mm, PAGE_W - MARGIN_X, bottom + 4 * mm)
             self.setFont(F_SEMI, 7)
@@ -548,39 +553,20 @@ def _numbered_canvas(header_left, header_right, classification):
 
 
 class ReportDoc(BaseDocTemplate):
-    def __init__(self, buffer, title, subject):
+    def __init__(self, buffer, title, subject, cover_info):
         super().__init__(
             buffer, pagesize=A4, leftMargin=MARGIN_X, rightMargin=MARGIN_X, topMargin=22 * mm, bottomMargin=20 * mm,
             title=title, subject=subject, author="ID-PMC", creator="ID-PMC · People Management Canvas",
         )
+        self.cover_info = cover_info
         body = Frame(MARGIN_X, 20 * mm, CONTENT_W, PAGE_H - 42 * mm, id="body", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
-        cover = Frame(MARGIN_X, 30 * mm, CONTENT_W, PAGE_H * 0.58, id="cover", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
+        # La page de garde est entièrement dessinée (voir report_cover) : son cadre ne reçoit qu'un repère vide.
+        blank = Frame(MARGIN_X, 20 * mm, CONTENT_W, 10 * mm, id="cover", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
         self.addPageTemplates([
-            PageTemplate(id="cover", frames=[cover], onPage=self._draw_cover),
+            PageTemplate(id="cover", frames=[blank], onPage=lambda c, doc: cover.draw_cover(c, PAGE_W, PAGE_H, doc.cover_info)),
             PageTemplate(id="body", frames=[body]),
         ])
         self._heading_seq = 0
-
-    @staticmethod
-    def _draw_cover(c, _doc):
-        c.saveState()
-        c.setFillColor(NAVY)
-        c.rect(0, PAGE_H - 92 * mm, PAGE_W, 92 * mm, stroke=0, fill=1)
-        c.setFillColor(BLUE)
-        c.rect(0, PAGE_H - 94.5 * mm, PAGE_W, 2.5 * mm, stroke=0, fill=1)
-        c.setFillColor(colors.white)
-        c.setFont(F_BOLD, 22)
-        c.drawString(MARGIN_X, PAGE_H - 34 * mm, "ID-PMC")
-        c.setFont(F_REG, 9)
-        c.drawString(MARGIN_X, PAGE_H - 40 * mm, "People Management Canvas")
-        c.setFont(F_SEMI, 8)
-        c.drawString(MARGIN_X, PAGE_H - 80 * mm, "RECONNAISSANCE  ·  DÉVELOPPEMENT  ·  ENGAGEMENT  ·  COHÉSION")
-        c.setStrokeColor(RULE)
-        c.line(MARGIN_X, 22 * mm, PAGE_W - MARGIN_X, 22 * mm)
-        c.setFillColor(GREY)
-        c.setFont(F_REG, 7.5)
-        c.drawString(MARGIN_X, 16 * mm, "Document généré par la plateforme ID-PMC à partir des contributions saisies par les collaborateurs.")
-        c.restoreState()
 
     def beforeDocument(self):
         # Chaque passe de mise en page renumérote les titres à l'identique :
@@ -729,19 +715,9 @@ class Builder:
         toc.dotsMinLevel = 0
         self.add(toc)
 
-    def doc_info(self, rows):
-        table = Table([[para(k, self.s["cell_bold"]), para(v, self.s["cell"])] for k, v in rows], colWidths=[45 * mm, CONTENT_W - 45 * mm])
-        table.setStyle(TableStyle([
-            ("LINEBELOW", (0, 0), (-1, -1), 0.4, RULE),
-            ("TOPPADDING", (0, 0), (-1, -1), 3),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ]))
-        self.add(table, Spacer(1, 10))
-
-    def render(self, title, subject, header_left, header_right, classification):
+    def render(self, title, subject, header_left, header_right, classification, cover_info):
         buffer = io.BytesIO()
-        doc = ReportDoc(buffer, title, subject)
+        doc = ReportDoc(buffer, title, subject, cover_info)
         doc.multiBuild(self.story, canvasmaker=_numbered_canvas(header_left, header_right, classification))
         return buffer.getvalue()
 
@@ -846,25 +822,34 @@ def build_global_report(company, campaign, prepared_for, data=None):
     b = Builder(source)
     s = b.s
 
-    # -- Couverture ----------------------------------------------------------
-    b.add(Spacer(1, 4), para("RAPPORT D'ÉVALUATION · SYNTHÈSE DE L'ORGANISATION", s["cover_label"]))
-    b.add(para("360° Feedforward", s["cover_title"]))
-    b.add(para(f"{escape(company.name)} — {escape(campaign.name)}", s["cover_sub"]))
-    b.doc_info([
-        ("Préparé pour", escape(prepared_for)),
-        ("Périmètre", f"{n_people} collaborateurs · {len({u.department_id for u in people if u.department_id})} équipes"),
-        ("Période couverte", f"Du {fr_date(campaign.start_date)} au {fr_date(campaign.end_date)}"),
-        ("Date d'édition", fr_date(today)),
-        ("Classification", '<font color="#B23F3F"><b>Strictement confidentiel</b></font> — Direction Générale et fonction RH'),
-    ])
-    b.add(NextPageTemplate("body"))
+    # -- Couverture : dessinée par report_cover --------------------------------------
+    scoped = data.scoped
+    who = "participants" if scoped else "collaborateurs"
+    n_teams = len({u.department_id for u in people if u.department_id})
+    scope_label = f"{n_people} participants à la séance · {n_teams} équipes" if scoped else f"{n_people} collaborateurs · {n_teams} équipes"
+    cover_info = dict(
+        label="RAPPORT D'ÉVALUATION", kicker=f"360° FEEDFORWARD · {campaign.name.upper()}",
+        eyebrow="SYNTHÈSE DE LA SÉANCE" if scoped else "SYNTHÈSE DE L'ORGANISATION",
+        title="360° Feedforward", subtitle=f"{company.name} — {campaign.name}",
+        meta=[("Préparé pour", prepared_for), ("Périmètre", scope_label),
+              ("Période couverte", f"Du {fr_date(campaign.start_date)} au {fr_date(campaign.end_date)}"), ("Date d'édition", fr_date(today))],
+        classification="STRICTEMENT CONFIDENTIEL",
+    )
+    b.add(Spacer(1, 1), NextPageTemplate("body"))
 
     # -- À propos & sommaire -------------------------------------------------------
     b.h1_plain("À propos de ce rapport")
-    b.p(f"Ce rapport présente la synthèse du 360° Feedforward conduit au sein de <b>{escape(company.name)}</b> sur la campagne "
-        f"« {escape(campaign.name)} ». Il consolide l'ensemble des contributions déposées sur la plateforme ID-PMC au {fr_date(today)} : "
-        "les regards croisés du Round 1 — ce que chacun reconnaît, suggère et s'engage à faire pour un collègue — et les décisions "
-        "formalisées par chacun au Round 2.")
+    if scoped:
+        b.p(f"Ce rapport présente la synthèse du 360° Feedforward conduit au sein de <b>{escape(company.name)}</b> sur la campagne "
+            f"« {escape(campaign.name)} ». Il porte sur les <b>{n_people} participants de la séance</b> et sur les contributions qu'ils ont "
+            f"échangées entre eux, déposées sur la plateforme ID-PMC au {fr_date(today)} : les regards croisés du Round 1 — ce que chacun "
+            "reconnaît, suggère et s'engage à faire pour un collègue — et les décisions formalisées par chacun au Round 2. Tous les "
+            "pourcentages sont calculés sur ces participants.")
+    else:
+        b.p(f"Ce rapport présente la synthèse du 360° Feedforward conduit au sein de <b>{escape(company.name)}</b> sur la campagne "
+            f"« {escape(campaign.name)} ». Il consolide l'ensemble des contributions déposées sur la plateforme ID-PMC au {fr_date(today)} : "
+            "les regards croisés du Round 1 — ce que chacun reconnaît, suggère et s'engage à faire pour un collègue — et les décisions "
+            "formalisées par chacun au Round 2.")
     b.p("Le Feedforward ne juge pas la performance passée : il éclaire les forces sur lesquelles s'appuyer et les leviers qui "
         "augmenteront l'impact de chacun. Les enseignements qui suivent doivent être lus dans cet esprit, comme une base de dialogue "
         "et de décision, et non comme une évaluation des personnes.")
@@ -886,14 +871,14 @@ def build_global_report(company, campaign, prepared_for, data=None):
     b.kpis([
         (str(total), "contributions Round 1, toutes signées"),
         (fmt_num(avg), "regards reçus en moyenne par personne"),
-        (fmt_pct(pct(covered3, n_people)), "des collaborateurs ont reçu au moins trois regards"),
+        (fmt_pct(pct(covered3, n_people)), f"des {who} ont reçu au moins trois regards"),
         (str(len(commitments)), "engagements de soutien pris entre collègues"),
         (fmt_pct(pct(round2_done, n_people)), "ont formalisé leurs décisions au Round 2"),
     ])
     b.h2("Messages clés")
     messages = [
-        f"<b>Participation.</b> {contributors} personnes sur {n_people} ({fmt_pct(pct(contributors, n_people))}) ont contribué au Round 1, "
-        f"pour {total} contributions signées. {covered3} collaborateurs sur {n_people} bénéficient d'au moins trois regards, seuil à partir "
+        f"<b>Participation.</b> {contributors} {who} sur {n_people} ({fmt_pct(pct(contributors, n_people))}) ont contribué au Round 1, "
+        f"pour {total} contributions signées. {covered3} {who} sur {n_people} bénéficient d'au moins trois regards, seuil à partir "
         "duquel une lecture croisée devient fiable.",
     ]
     if len(top_strengths) >= 3:
@@ -911,11 +896,11 @@ def build_global_report(company, campaign, prepared_for, data=None):
         f"<b>Engagements.</b> {len(commitments)} engagements de soutien ont été pris entre collègues, dont "
         f"{fmt_pct(pct(with_action, len(commitments)))} assortis d'une première action concrète : un capital relationnel à faire vivre.")
     messages.append(
-        f"<b>Appropriation.</b> {round2_done} personnes sur {n_people} ({fmt_pct(pct(round2_done, n_people))}) ont formalisé leurs priorités "
+        f"<b>Appropriation.</b> {round2_done} {who} sur {n_people} ({fmt_pct(pct(round2_done, n_people))}) ont formalisé leurs priorités "
         "au Round 2" + (" ; l'appropriation reste à achever." if pct(round2_done, n_people) < 80 else ", signe d'une appropriation réelle de l'exercice."))
     b.bullets(messages)
     recommendations = _global_recommendations(data, total, n_people, below3, round2_done, top_strengths, top_levers, top_potential,
-                                              commitments, with_action, dated)
+                                              commitments, with_action, dated, who)
     b.h2("Nos recommandations prioritaires")
     b.bullets([f"<b>{escape(r.title)}</b> — {escape(r.owner)}, {escape(r.horizon)}." for r in recommendations[:3]], color=ORANGE)
 
@@ -933,9 +918,18 @@ def build_global_report(company, campaign, prepared_for, data=None):
          "1. Ce qui m'a touché · 2. Forces à capitaliser · 3. Priorités de développement · 4. Engagement à 90 jours · 5. Soutien attendu"],
     ], [24 * mm, 52 * mm, CONTENT_W - 76 * mm])
     b.h2("Le périmètre")
-    b.p(f"La campagne « {escape(campaign.name)} » couvre la période du {fr_date(campaign.start_date)} au {fr_date(campaign.end_date)}. "
-        f"Le rapport porte sur les {n_people} comptes actifs de {escape(company.name)} et sur l'ensemble des contributions disponibles "
-        f"au {fr_date(today)}.")
+    if scoped:
+        b.p(f"La campagne « {escape(campaign.name)} » couvre la période du {fr_date(campaign.start_date)} au {fr_date(campaign.end_date)}. "
+            f"Le rapport porte sur les <b>{n_people} personnes qui ont participé à la séance</b> (liste en annexe A) et sur les {total} "
+            f"contributions qu'elles ont échangées entre elles, disponibles au {fr_date(today)}. Toutes les proportions sont rapportées à "
+            "ces participants."
+            + ((f" {data.outside} contributions échangées avec des personnes extérieures à la séance ne sont pas prises en compte."
+                if data.outside > 1 else " Une contribution échangée avec une personne extérieure à la séance n'est pas prise en compte.")
+               if data.outside else ""))
+    else:
+        b.p(f"La campagne « {escape(campaign.name)} » couvre la période du {fr_date(campaign.start_date)} au {fr_date(campaign.end_date)}. "
+            f"Le rapport porte sur les {n_people} comptes actifs de {escape(company.name)} et sur l'ensemble des contributions disponibles "
+            f"au {fr_date(today)}.")
     b.h2("La méthode d'analyse")
     b.bullets([
         "<b>Analyse quantitative</b> : participation, couverture (nombre de regards reçus par personne), origine des regards, engagements "
@@ -953,7 +947,7 @@ def build_global_report(company, campaign, prepared_for, data=None):
 
     # -- 3. Participation ----------------------------------------------------------
     b.h1("Participation et couverture",
-         f"{fmt_pct(pct(covered1, n_people))} des collaborateurs ont reçu au moins un regard, {fmt_pct(pct(covered3, n_people))} au moins trois")
+         f"{fmt_pct(pct(covered1, n_people))} des {who} ont reçu au moins un regard, {fmt_pct(pct(covered3, n_people))} au moins trois")
     teams = _team_rows(company, people)
     rows, bars = [], []
     for dept, level, members in teams:
@@ -982,7 +976,7 @@ def build_global_report(company, campaign, prepared_for, data=None):
     weak = [name for name, value, _t in bars if value < avg * 0.75]
     reading = [f"En moyenne, chaque collaborateur a reçu {fmt_num(avg)} regards. "
                + (f"{len(below3)} personne(s) restent sous le seuil de trois regards (liste en annexe A)." if below3 else
-                  "Tous les collaborateurs ont reçu au moins trois regards.")]
+                  f"Tous les {who} ont reçu au moins trois regards.")]
     if weak:
         reading.append(f"Les équipes les moins couvertes — {escape(', '.join(weak))} — appellent une relance ciblée.")
     if relations.get("REPORT", 0) < 0.1 * total:
@@ -1087,7 +1081,7 @@ def build_global_report(company, campaign, prepared_for, data=None):
 
     # -- 7. Round 2 -------------------------------------------------------------------------
     b.h1("Le Round 2 : appropriation et décisions",
-         f"{round2_done} collaborateurs sur {n_people} ont formalisé ce qu'ils retiennent et décident ({fmt_pct(pct(round2_done, n_people))})")
+         f"{round2_done} {who} sur {n_people} ont formalisé ce qu'ils retiennent et décident ({fmt_pct(pct(round2_done, n_people))})")
     if round2_rows:
         prio = top(priorities, BEHAVIOUR, 6)
         if prio:
@@ -1120,7 +1114,7 @@ def build_global_report(company, campaign, prepared_for, data=None):
             [7 * mm, 62 * mm, 38 * mm, 27 * mm, 17 * mm, 19 * mm], ["center", "left", "left", "left", "center", "center"])
 
     # -- Annexes ---------------------------------------------------------------------------
-    b.h1_plain("Annexe A — Participation par personne")
+    b.h1_plain("Annexe A — Participants à la séance" if scoped else "Annexe A — Participation par personne")
     rows = []
     for dept, level, members in teams:
         for u in members:
@@ -1148,16 +1142,17 @@ def build_global_report(company, campaign, prepared_for, data=None):
         ["<b>Round 1</b>", "Contribution signée d'un collègue pour une personne : qualités, contribution, réalisations, leviers d'impact, potentiel, engagement."],
         ["<b>Round 2</b>", "Réponse de la personne elle-même : ce qu'elle retient, ses forces à capitaliser, une à deux priorités, un engagement à 90 jours, le soutien attendu."],
         ["<b>Regard</b>", "Une contribution Round 1 reçue par une personne."],
-        ["<b>Couverture</b>", "Part des collaborateurs ayant reçu un nombre donné de regards ; trois regards constituent le seuil d'une lecture croisée fiable."],
+        ["<b>Couverture</b>", "Part des personnes du périmètre ayant reçu un nombre donné de regards ; trois regards constituent le seuil d'une lecture croisée fiable."],
         ["<b>Engagement de soutien</b>", "Promesse concrète d'un collègue pour aider la personne à réussir (rubrique 6 du Round 1)."],
     ], [42 * mm, CONTENT_W - 42 * mm])
 
     return b.render(
-        title=f"360° Feedforward — Synthèse de l'organisation — {company.name}",
+        title=f"360° Feedforward — Synthèse {'de la séance' if scoped else 'de l’organisation'} — {company.name}",
         subject=f"{company.name} · {campaign.name}",
-        header_left="360° Feedforward — Synthèse de l'organisation",
+        header_left=f"360° Feedforward — Synthèse {'de la séance' if scoped else 'de l’organisation'}",
         header_right=f"{company.name} · {campaign.name}",
         classification="STRICTEMENT CONFIDENTIEL",
+        cover_info=cover_info,
     )
 
 
@@ -1177,12 +1172,12 @@ def _team_rows(company, people):
     return rows
 
 
-def _global_recommendations(data, total, n_people, below3, round2_done, top_strengths, top_levers, top_potential, commitments, with_action, dated):
+def _global_recommendations(data, total, n_people, below3, round2_done, top_strengths, top_levers, top_potential, commitments, with_action, dated, who="collaborateurs"):
     recs = [Recommendation(
         "Organiser la restitution individuelle de chaque rapport Round 1",
         "Un échange de 30 à 45 minutes entre chaque collaborateur et son responsable pour lire ensemble les contributions, repérer les "
         "convergences et arrêter une à deux priorités.",
-        f"{round2_done} collaborateurs sur {n_people} ont formalisé leur Round 2.",
+        f"{round2_done} {who} sur {n_people} ont formalisé leur Round 2.",
         "Managers, avec l'appui RH", "30 jours", "Haute",
     )]
     if below3:
@@ -1195,7 +1190,7 @@ def _global_recommendations(data, total, n_people, below3, round2_done, top_stre
         recs.append(Recommendation(
             "Relancer et accompagner le Round 2",
             "Fixer une échéance, rappeler l'enjeu — transformer les regards reçus en décisions — et proposer un appui RH à ceux qui le souhaitent.",
-            f"Round 2 rempli par {fmt_pct(pct(round2_done, n_people))} des collaborateurs.", "Fonction RH", "30 jours", "Haute",
+            f"Round 2 rempli par {fmt_pct(pct(round2_done, n_people))} des {who}.", "Fonction RH", "30 jours", "Haute",
         ))
     for theme, value in top_levers[:2]:
         recs.append(Recommendation(
@@ -1239,6 +1234,11 @@ def _global_recommendations(data, total, n_people, below3, round2_done, top_stre
 # ---------------------------------------------------------------------------
 def build_individual_report(company, campaign, subject, prepared_for, data=None):
     data = data or Dataset.load(company, campaign)
+    if data.scoped and subject.id not in {u.id for u in data.people}:
+        raise ReportError(
+            f"{name_of(subject)} ne fait pas partie des participants de la séance retenus pour la campagne « {campaign.name} » : "
+            "son rapport individuel n'est pas produit."
+        )
     got = sorted(data.received(subject.id), key=lambda c: ({"MANAGER": 0, "PEER": 1, "REPORT": 2}.get(c.relation, 3), name_of(c.author)))
     if not got:
         raise ReportError(
@@ -1259,19 +1259,18 @@ def build_individual_report(company, campaign, subject, prepared_for, data=None)
     b = Builder(source)
     s = b.s
 
-    # -- Couverture ----------------------------------------------------------
-    b.add(Spacer(1, 4), para("RAPPORT INDIVIDUEL · ROUND 1", s["cover_label"]))
-    b.add(para("360° Feedforward", s["cover_title"]))
-    b.add(para("Ce que mes collègues voient en moi et pour moi", s["cover_sub"]))
-    b.doc_info([
-        ("Bénéficiaire", f"<b>{person}</b>"),
-        ("Fonction", escape(subject.position or "—") + (f" · {escape(team)}" if team else "")),
-        ("Entreprise · campagne", f"{escape(company.name)} · {escape(campaign.name)}"),
-        ("Préparé à la demande de", escape(prepared_for)),
-        ("Date d'édition", fr_date(today)),
-        ("Classification", '<font color="#B23F3F"><b>Confidentiel</b></font> — usage personnel et managérial'),
-    ])
-    b.add(NextPageTemplate("body"))
+    # -- Couverture : dessinée par report_cover --------------------------------------
+    role = " · ".join(part for part in (subject.position, team) if part)
+    cover_info = dict(
+        label="RAPPORT INDIVIDUEL", kicker="360° FEEDFORWARD · ROUND 1",
+        eyebrow="CE QUE MES COLLÈGUES VOIENT EN MOI ET POUR MOI",
+        title="360° Feedforward", emphasis=name_of(subject),
+        subtitle=(f"{role} — " if role else "") + f"{company.name}, {campaign.name}",
+        meta=[("Préparé à la demande de", prepared_for), ("Contributions reçues", f"{n} contribution{'s' if n > 1 else ''} signée{'s' if n > 1 else ''}"),
+              ("Période couverte", f"Du {fr_date(campaign.start_date)} au {fr_date(campaign.end_date)}"), ("Date d'édition", fr_date(today))],
+        classification="CONFIDENTIEL · USAGE PERSONNEL ET MANAGÉRIAL",
+    )
+    b.add(Spacer(1, 1), NextPageTemplate("body"))
 
     # -- À propos ---------------------------------------------------------------------------
     b.h1_plain("À propos de ce rapport")
@@ -1421,6 +1420,7 @@ def build_individual_report(company, campaign, subject, prepared_for, data=None)
         header_left=f"360° Feedforward — Round 1 · {name_of(subject)}",
         header_right=f"{company.name} · {campaign.name}",
         classification="CONFIDENTIEL",
+        cover_info=cover_info,
     )
 
 
@@ -1474,6 +1474,10 @@ def build_feedforward_archive(company, campaign):
             f"- 00_{report_filename(company, campaign)} : rapport global, synthèse de l'organisation.",
             f"- Rapports-individuels/ : {len(subjects)} rapport(s) Round 1, un par personne ayant reçu au moins une contribution.",
             "",
+            *([f"PÉRIMÈTRE — {len(data.people)} participants à la séance ; les pourcentages des rapports sont calculés sur eux.",
+               *[f"- {name_of(u)}" for u in data.people],
+               *([f"{data.outside} contribution(s) échangée(s) avec des personnes extérieures à la séance ne sont pas prises en compte."] if data.outside else []),
+               ""] if data.scoped else []),
             f"SANS RAPPORT INDIVIDUEL — {len(skipped)} personne(s) n'ont reçu aucune contribution Round 1 sur cette campagne :",
             *[f"- {name}" for name in skipped],
             "",
