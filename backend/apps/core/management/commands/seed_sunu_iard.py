@@ -62,10 +62,12 @@ class Command(BaseCommand):
         for n in range(1, EMPLOYEE_COUNT + 1):
             self._user(company, f"{EMPLOYEE_PREFIX}{n}", User.Role.MEMBER, "Collaborateur")
 
-        EvaluationCampaign.objects.get_or_create(
-            company=company, name=CAMPAIGN_NAME,
-            defaults={"start_date": CAMPAIGN_START, "end_date": CAMPAIGN_END, "created_by": ceo},
-        )
+        # Une fois les campagnes posées par `seed_sunu_iard_rubriques`, on n'en recrée pas.
+        if not EvaluationCampaign.objects.filter(company=company).exists():
+            EvaluationCampaign.objects.create(
+                company=company, name=CAMPAIGN_NAME,
+                start_date=CAMPAIGN_START, end_date=CAMPAIGN_END, created_by=ceo,
+            )
         scope = dict(company.display_scope or {})
         scope.setdefault("nav", {})["COMPANY_ADMIN"] = CEO_NAV
         scope.setdefault("hidden_views_by_role", {})["COMPANY_ADMIN"] = CEO_HIDDEN_VIEWS
