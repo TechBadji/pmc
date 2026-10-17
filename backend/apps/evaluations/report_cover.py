@@ -262,8 +262,8 @@ def _lamp(c, x, top, length, scale):
     _ellipse(c, x, top - length - 6.4 * s, 5 * s, 1.4 * s, colors.HexColor("#FFE7B3"))
 
 
-def _screen(c, x, y, w, h):
-    """Écran mural : un anneau à 360° aux couleurs du logo, des barres, des lignes de texte."""
+def _screen(c, x, y, w, h, label="360°"):
+    """Écran mural : un anneau (« 360° » par défaut) aux couleurs du logo, des barres, des lignes de texte."""
     _round_rect(c, x - 1.2 * mm, y - 1.2 * mm, w + 2.4 * mm, h + 2.4 * mm, 2.2 * mm, INK)
     _round_rect(c, x, y, w, h, 1.6 * mm, colors.HexColor("#22305A"))
     cx, cy, r = x + w * 0.3, y + h * 0.52, h * 0.32
@@ -275,8 +275,8 @@ def _screen(c, x, y, w, h):
     _circle(c, cx, cy, r * 0.58, colors.HexColor("#22305A"))
     c.setFillColor(WHITE)
     c.setFillAlpha(1)
-    c.setFont("OpenSans-Bold", r * 0.62)
-    c.drawCentredString(cx, cy - r * 0.2, "360°")
+    c.setFont("OpenSans-Bold", r * (0.62 if len(label) <= 4 else 0.5))
+    c.drawCentredString(cx, cy - r * 0.2, label)
     for i, (value, color) in enumerate(((0.55, BLUE), (0.85, ORANGE), (0.68, MAGENTA), (0.95, TEAL))):
         bx = x + w * (0.6 + i * 0.09)
         _round_rect(c, bx, y + h * 0.18, w * 0.055, h * 0.62 * value, 0.5 * mm, color)
@@ -292,7 +292,7 @@ def _cup(c, x, y, scale, color):
     c.circle(x + 3 * s, y + 2.8 * s, 1.3 * s, stroke=1, fill=0)
 
 
-def office_scene(c, x, y, w, h):
+def office_scene(c, x, y, w, h, screen="360°"):
     """Une équipe en réunion dans un bureau vitré sur la ville : quatre personnes
     autour de la table, une cinquième qui présente un anneau à 360° à l'écran."""
     c.saveState()
@@ -333,7 +333,7 @@ def office_scene(c, x, y, w, h):
     # écran mural
     scr_w, scr_h = w * 0.24, h * 0.3
     scr_x, scr_y = x + w * 0.735, y + floor_h + h * 0.36
-    _screen(c, scr_x, scr_y, scr_w, scr_h)
+    _screen(c, scr_x, scr_y, scr_w, scr_h, screen)
 
     # plante
     _plant(c, x + w * 0.06, y + floor_h * 0.35, 0.85 * mm)
@@ -426,7 +426,7 @@ def draw_cover(c, page_w, page_h, info):
     # illustration
     card_x, card_w, card_h = 14 * mm, page_w - 28 * mm, 122 * mm
     card_y = page_h - 47 * mm - card_h
-    office_scene(c, card_x, card_y, card_w, card_h)
+    office_scene(c, card_x, card_y, card_w, card_h, info.get("screen", "360°"))
 
     # bloc de titre, centré dans l'espace entre l'illustration et le pied de page
     col_w = (page_w - 2 * margin) / 2

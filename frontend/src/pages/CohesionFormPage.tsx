@@ -64,6 +64,7 @@ import type {
 import { cohesionColor } from "@/theme";
 import { useCohesionCriteria } from "@/utils/cohesionCriteria";
 import ValidationSummary from "@/components/feedback/ValidationSummary";
+import CohesionReportButton from "@/components/teamBoard/CohesionReportButton";
 import { isBlank, isRealDate, toNumber, useIssues } from "@/utils/validation";
 
 type PlanStatus = ActionPlan["status"];
@@ -802,6 +803,15 @@ export default function CohesionFormPage() {
           {!scope.viewHidden("cohesion.opinion") && <ToggleButton value="opinion">{t("cohesion.viewOpinion")}</ToggleButton>}
           {!scope.viewHidden("cohesion.psi") && <ToggleButton value="psi">{t("cohesion.viewPsi")}</ToggleButton>}
         </ToggleButtonGroup>
+
+        {/* Rapports PDF : cohésion (avis des collaborateurs) ou dynamique relationnelle. */}
+        <CohesionReportButton
+          campaigns={campaigns}
+          departments={departments}
+          defaultKind={view === "relationship" ? "relational" : "cohesion"}
+          defaultTeam={orgView || directorsView ? "" : teamId}
+          defaultCampaign={campaignId}
+        />
 
         {/* La campagne borne la vue des avis comme elle borne la fiche : les
           * deux côtés de la comparaison doivent venir du même exercice. */}

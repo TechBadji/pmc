@@ -1,0 +1,21 @@
+{
+  "cohesionReport": {
+    "open": "Generate a report",
+    "title": "Report — Team cohesion",
+    "intro": "Choose the report, the scope and the campaign. The PDF downloads as soon as it is ready.",
+    "cohesion": "Team cohesion report",
+    "cohesionHint": "What employees answered: participation, index, criterion-by-criterion reading, trend, manager's view, psychological safety and recommendations. Available once the anonymity threshold is reached.",
+    "relational": "Relationship dynamic report",
+    "relationalHint": "Relationship map, pivot people, tensions and asymmetries, catalysts, nourishers, inhibitors and toxins, recommendations. Named report.",
+    "perimeter": "Scope",
+    "organisation": "Whole organisation ({{company}})",
+    "campaign": "Campaign",
+    "pickTeam": "Choose a department.",
+    "pickCampaign": "Choose a campaign.",
+    "generate": "Generate PDF",
+    "busy": "Generating…",
+    "cancel": "Cancel",
+    "done": "The report \"{{file}}\" has been downloaded.",
+    "failed": "The report could not be generated. Please try again shortly."
+  }
+}

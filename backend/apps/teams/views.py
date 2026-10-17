@@ -1,4 +1,7 @@
+from urllib.parse import quote
+
 from django.db.models import Count
+from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import mixins, permissions, viewsets
 from rest_framework.decorators import action
@@ -358,6 +361,49 @@ class CohesionResponseViewSet(CompanyScopedQuerySetMixin, viewsets.ModelViewSet)
         if user.role in (user.Role.COMPANY_ADMIN, user.Role.SUPER_ADMIN):
             payload["organisation"] = organisation
         return Response(payload)
+
+    @action(detail=False, methods=["get"], url_path="report")
+    def report(self, request):
+        """Rapport PDF de la rubrique Cohésion d'équipe : `kind=cohesion` (avis
+        des collaborateurs) ou `kind=relational` (dynamique relationnelle), sur
+        une campagne, pour une direction (`team`) ou l'organisation entière
+        (sans `team`, dirigeant seulement). Mêmes droits que les résultats
+        agrégés ; rien n'est écrit en base."""
+        from .cohesion_report import ReportError, build_cohesion_report, build_relational_report, report_filename
+
+        user = request.user
+        if user.role not in (user.Role.COMPANY_ADMIN, user.Role.MANAGER):
+            raise PermissionDenied("Les rapports de cohésion sont réservés au dirigeant et à l'encadrement.")
+        campaign = EvaluationCampaign.objects.filter(pk=request.query_params.get("campaign"), company_id=user.company_id).first()
+        if campaign is None:
+            raise ValidationError({"campaign": "Choisissez une campagne de votre entreprise."})
+        kind = request.query_params.get("kind")
+        if kind not in ("cohesion", "relational"):
+            raise ValidationError({"kind": "Type de rapport inconnu : cohésion d'équipe ou dynamique relationnelle."})
+        team = None
+        team_id = request.query_params.get("team")
+        if team_id:
+            departments = Department.objects.filter(company_id=user.company_id)
+            if user.role == user.Role.MANAGER:
+                departments = departments.filter(id__in=readable_department_ids(request, ("COHESION",)))
+            team = departments.filter(pk=team_id).first()
+            if team is None:
+                raise ValidationError({"team": "Choisissez une direction que vous encadrez."})
+        elif user.role != user.Role.COMPANY_ADMIN:
+            raise ValidationError({"team": "Le rapport sur l'organisation entière est réservé au dirigeant : choisissez une de vos directions."})
+        prepared_for = f"{user.get_full_name() or user.generated_login}{', ' + user.position if user.position else ''}"
+        build = build_cohesion_report if kind == "cohesion" else build_relational_report
+        try:
+            pdf = build(user.company, campaign, team, prepared_for)
+        except ReportError as error:
+            raise ValidationError({"detail": str(error)})
+        filename = report_filename(user.company, campaign, kind, team)
+        label = "de cohésion d'équipe" if kind == "cohesion" else "de dynamique relationnelle"
+        log_event(user, "cohesion.report", f"a généré le rapport {label} — {team.name if team else 'organisation'} ({campaign.name}).", company=user.company)
+        response = HttpResponse(pdf, content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename=\"{filename}\"; filename*=UTF-8''{quote(filename)}"
+        response["Access-Control-Expose-Headers"] = "Content-Disposition"
+        return response
 
 
 class PsychologicalSafetyResponseViewSet(viewsets.ModelViewSet):

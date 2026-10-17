@@ -1,0 +1,21 @@
+{
+  "cohesionReport": {
+    "open": "Générer un rapport",
+    "title": "Rapport — Cohésion d'équipe",
+    "intro": "Choisissez le rapport, le périmètre et la campagne. Le fichier PDF se télécharge dès qu'il est prêt.",
+    "cohesion": "Rapport de cohésion d'équipe",
+    "cohesionHint": "Ce que les collaborateurs ont répondu : participation, indice, lecture critère par critère, évolution, regard de l'encadrant, sécurité psychologique et recommandations. Disponible dès que le seuil d'anonymat est atteint.",
+    "relational": "Rapport de dynamique relationnelle",
+    "relationalHint": "Cartographie des relations, personnes pivots, tensions et asymétries, catalyseurs, nourrisseurs, inhibiteurs et toxines, recommandations. Rapport nominatif.",
+    "perimeter": "Périmètre",
+    "organisation": "Toute l'organisation ({{company}})",
+    "campaign": "Campagne",
+    "pickTeam": "Choisissez une direction.",
+    "pickCampaign": "Choisissez une campagne.",
+    "generate": "Générer le PDF",
+    "busy": "Génération en cours…",
+    "cancel": "Annuler",
+    "done": "Le rapport « {{file}} » a été téléchargé.",
+    "failed": "Le rapport n'a pas pu être généré. Réessayez dans un instant."
+  }
+}
