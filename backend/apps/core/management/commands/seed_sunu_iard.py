@@ -21,7 +21,7 @@ from apps.core.text_utils import slugify_company
 from apps.evaluations.models import EvaluationCampaign
 
 COMPANY_NAME = "SUNU IARD"
-CEO_LOGIN = "CEOSUNU"
+CEO_LOGIN = "CEOIARD"
 EMPLOYEE_PREFIX = "SUNU"
 EMPLOYEE_COUNT = 50
 PASSWORD = "123456"
