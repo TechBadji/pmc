@@ -974,11 +974,13 @@ def build_global_report(company, campaign, prepared_for, data=None):
         ("Responsable", relations.get("MANAGER", 0), NAVY), ("Pairs", relations.get("PEER", 0), BLUE), ("Collaborateurs", relations.get("REPORT", 0), TEAL),
     ]))
     weak = [name for name, value, _t in bars if value < avg * 0.75]
-    reading = [f"En moyenne, chaque collaborateur a reçu {fmt_num(avg)} regards. "
-               + (f"{len(below3)} personne(s) restent sous le seuil de trois regards (liste en annexe A)." if below3 else
-                  f"Tous les {who} ont reçu au moins trois regards.")]
+    reading = [f"En moyenne, chaque {who[:-1]} a reçu {fmt_num(avg)} regards. "
+               + (f"{len(below3)} personne{'s' if len(below3) > 1 else ''} reste{'nt' if len(below3) > 1 else ''} sous le seuil de trois "
+                  "regards (liste en annexe A)." if below3 else f"Tous les {who} ont reçu au moins trois regards.")]
     if weak:
-        reading.append(f"Les équipes les moins couvertes — {escape(', '.join(weak))} — appellent une relance ciblée.")
+        reading.append(f"Les équipes les moins couvertes — {escape(', '.join(weak))} — appellent une relance ciblée." if below3 else
+                       f"Les équipes les moins couvertes — {escape(', '.join(weak))} — restent au-dessus de ce seuil : l'écart ne fragilise "
+                       "pas la lecture.")
     if relations.get("REPORT", 0) < 0.1 * total:
         reading.append("Les regards ascendants (des collaborateurs vers leur responsable) restent rares : les encourager enrichirait la lecture du "
                        "leadership.")
@@ -1184,7 +1186,7 @@ def _global_recommendations(data, total, n_people, below3, round2_done, top_stre
         recs.append(Recommendation(
             "Compléter la couverture des regards",
             f"Solliciter deux à trois contributeurs supplémentaires pour les {len(below3)} personnes qui ont reçu moins de trois regards (annexe A).",
-            f"{len(below3)} personne(s) sous le seuil de trois regards.", "Fonction RH", "30 jours", "Haute",
+            f"{len(below3)} personne{'s' if len(below3) > 1 else ''} sous le seuil de trois regards.", "Fonction RH", "30 jours", "Haute",
         ))
     if pct(round2_done, n_people) < 80:
         recs.append(Recommendation(
@@ -1255,7 +1257,7 @@ def build_individual_report(company, campaign, subject, prepared_for, data=None)
     commitments = [c for c in got if (c.answers.get("commitment") or "").strip()]
     achievements = [c for c in got if (c.answers.get("achievements") or "").strip()]
 
-    source = f"ID-PMC, 360° Feedforward — Round 1, {campaign.name} — {n} contribution(s) reçue(s), édition du {fr_date(today)}"
+    source = f"ID-PMC, 360° Feedforward — Round 1, {campaign.name} — {n} contribution{'s' if n > 1 else ''} reçue{'s' if n > 1 else ''}, édition du {fr_date(today)}"
     b = Builder(source)
     s = b.s
 
@@ -1466,19 +1468,25 @@ def build_feedforward_archive(company, campaign):
                 name = name[:-4] + f"_{slug(subject.generated_login or str(subject.id))}.pdf"
             names.add(name)
             archive.writestr(f"{root}/Rapports-individuels/{name}", build_individual_report(company, campaign, subject, prepared_for, data))
+        focus = "la séance" if data.scoped else "l'organisation"
         lines = [
             f"360° Feedforward — {company.name} — {campaign.name}",
             f"Archive produite le {fr_date(today)} par la plateforme ID-PMC.",
             "",
             "CONTENU",
-            f"- 00_{report_filename(company, campaign)} : rapport global, synthèse de l'organisation.",
-            f"- Rapports-individuels/ : {len(subjects)} rapport(s) Round 1, un par personne ayant reçu au moins une contribution.",
+            f"- 00_{report_filename(company, campaign)} : rapport global, synthèse de {focus}.",
+            f"- Rapports-individuels/ : {len(subjects)} rapport{'s' if len(subjects) > 1 else ''} Round 1, un par personne ayant reçu au moins "
+            "une contribution.",
             "",
             *([f"PÉRIMÈTRE — {len(data.people)} participants à la séance ; les pourcentages des rapports sont calculés sur eux.",
                *[f"- {name_of(u)}" for u in data.people],
-               *([f"{data.outside} contribution(s) échangée(s) avec des personnes extérieures à la séance ne sont pas prises en compte."] if data.outside else []),
+               *([f"{data.outside} contributions échangées avec des personnes extérieures à la séance ne sont pas prises en compte."
+                  if data.outside > 1 else "Une contribution échangée avec une personne extérieure à la séance n'est pas prise en compte."]
+                 if data.outside else []),
                ""] if data.scoped else []),
-            f"SANS RAPPORT INDIVIDUEL — {len(skipped)} personne(s) n'ont reçu aucune contribution Round 1 sur cette campagne :",
+            (f"SANS RAPPORT INDIVIDUEL — {len(skipped)} personne{'s' if len(skipped) > 1 else ''} n'{'ont' if len(skipped) > 1 else 'a'} "
+             "reçu aucune contribution Round 1 sur cette campagne :" if skipped else
+             f"SANS RAPPORT INDIVIDUEL — aucun : chaque {'participant' if data.scoped else 'collaborateur'} a reçu au moins une contribution Round 1."),
             *[f"- {name}" for name in skipped],
             "",
             "CONFIDENTIALITÉ",
