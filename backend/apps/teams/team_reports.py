@@ -179,8 +179,16 @@ def _boards(company, team, campaign):
 
 
 def build_strengths_report(company, campaign, team, prepared_for):
-    scope = People(company, team)
-    boards = _boards(company, team, campaign)
+    scope = People.of(company, team)
+    if scope.team is not None or scope.is_org:
+        boards = _boards(company, scope.team, campaign)
+    elif scope.group in ("leadership", "directors"):
+        # La carte de l'équipe dirigeante est celle de l'équipe que dirige le CEO (« Comité de Direction »).
+        own = Department.objects.filter(company=company, manager__role="COMPANY_ADMIN").first()
+        boards = _boards(company, own, campaign) if own else []
+    else:
+        boards = []
+    team = scope.team
     notes = list(SkillNote.objects.filter(evaluation__campaign=campaign, evaluation__user__in=scope.users()).exclude(text="")
                  .select_related("evaluation__user"))
     if not boards and not notes:
@@ -197,7 +205,7 @@ def build_strengths_report(company, campaign, team, prepared_for):
     today = timezone.localdate()
     b = Builder(f"ID-PMC, Forces & faiblesses, {company.name}, {campaign.name} — édition du {fr_date(today)}")
     cover = _cover(f"FORCES & FAIBLESSES · {campaign.name.upper()}", "CE SUR QUOI S'APPUYER, CE QU'IL FAUT RENFORCER", "Forces & faiblesses",
-                   f"{scope.name} — {campaign.name}", prepared_for, f"{scope.name}" + (f" · {len(boards)} équipes" if team is None else ""), campaign, "F/F")
+                   f"{scope.name} — {campaign.name}", prepared_for, f"{scope.name}" + (f" · {len(boards)} équipes" if scope.is_org else ""), campaign, "F/F")
     _intro(b, [
         f"Ce rapport consolide les forces et les faiblesses de <b>{escape(scope.label)}</b> sur la campagne « {escape(campaign.name)} », "
         "à deux niveaux : la carte collective « Forces & faiblesses » de l'équipe (People et Business), et les forces et axes de progrès "
@@ -231,7 +239,7 @@ def build_strengths_report(company, campaign, team, prepared_for):
                 rows = [[escape(s_items[i][0]) if i < len(s_items) else "", escape(w_items[i][0]) if i < len(w_items) else ""]
                         for i in range(max(len(s_items), len(w_items)))]
                 b.table(f"Forces et faiblesses — {title}", ["Forces", "Faiblesses"], rows, [CONTENT_W / 2, CONTENT_W / 2], head_color=TEAL,
-                        note="éléments les plus cités en tête" if team is None and len(boards) > 1 else None)
+                        note="éléments les plus cités en tête" if scope.is_org and len(boards) > 1 else None)
 
     if notes:
         b.h1("Forces et axes de progrès individuels", "Ce qui revient le plus souvent dans les évaluations")

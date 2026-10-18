@@ -36,6 +36,13 @@
     "busy": "Génération en cours…",
     "cancel": "Annuler",
     "done": "Le rapport « {{file}} » a été téléchargé.",
-    "failed": "Le rapport n'a pas pu être généré. Réessayez dans un instant."
+    "failed": "Le rapport n'a pas pu être généré. Réessayez dans un instant.",
+    "group": {
+      "leadership": "Équipe dirigeante",
+      "directors": "Tous les directeurs",
+      "service_heads": "Tous les responsables de services"
+    },
+    "onePerson": "Une personne (rapport individuel)",
+    "ownTeam": "{{name}} — équipe dirigeante"
   }
 }

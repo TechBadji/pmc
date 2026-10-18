@@ -77,3 +77,28 @@ class ReportPdfTests(TestCase):
         self.assertEqual(self.get(self.manager, kind="id3a").status_code, 400)
         self.assertEqual(self.get(self.manager, kind="id3a", team=self.other.id).status_code, 400)
         self.assertEqual(self.get(self.ceo, kind="inconnu").status_code, 400)
+
+    def test_group_and_person_scopes(self):
+        self.ceo.department = None
+        Evaluation.objects.create(user=self.ceo, campaign=self.c1, business_objectives_score=90, people_objectives_score=90)
+        Evaluation.objects.create(user=self.ceo, campaign=self.c2, business_objectives_score=95, people_objectives_score=95)
+        for group in ("leadership", "directors"):
+            for kind in ("id3a", "ninebox", "tpd"):
+                self.assertPdf(self.get(self.ceo, kind=kind, group=group))
+        self.assertPdf(self.get(self.ceo, kind="id3a", subject=self.members[0].id))
+        self.assertPdf(self.get(self.manager, kind="tpd", subject=self.members[1].id))
+        # Réservé au dirigeant, inconnu, ou impossible sur des avis anonymes.
+        self.assertEqual(self.get(self.manager, kind="id3a", group="leadership").status_code, 400)
+        self.assertEqual(self.get(self.ceo, kind="id3a", group="inconnu").status_code, 400)
+        self.assertEqual(self.get(self.ceo, kind="psi", subject=self.members[0].id).status_code, 400)
+        self.assertEqual(self.get(self.manager, kind="id3a", subject=self.outsider.id).status_code, 403)
+
+    def test_directors_group_lists_department_heads_only(self):
+        from apps.evaluations.talent_reports import People
+        service = Department.objects.create(company=self.company, code="A1", name="Alpha service", parent=self.dept, manager=self.members[2])
+        self.members[2].role = User.Role.MANAGER
+        self.members[2].save()
+        self.assertEqual(set(People(self.company, group="directors").users()), {self.manager})
+        self.assertEqual(set(People(self.company, group="service_heads").users()), {self.members[2]})
+        self.assertEqual(set(People(self.company, group="leadership").users()), {self.ceo, self.manager, self.members[2]})
+        self.assertTrue(service.pk)

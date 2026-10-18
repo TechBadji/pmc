@@ -61,30 +61,66 @@ RATING_LABEL = {k: label for k, label, _r, _c in RATINGS}
 # ---------------------------------------------------------------------------
 # Périmètre commun : une direction (services compris) ou toute l'entreprise
 # ---------------------------------------------------------------------------
+GROUPS = {
+    "leadership": "Équipe dirigeante",
+    "directors": "Tous les directeurs",
+    "service_heads": "Tous les responsables de services",
+}
+
+
 class People:
-    def __init__(self, company, team=None):
-        self.company, self.team = company, team
+    """Ce sur quoi porte un rapport : l'organisation entière, un groupe
+    (équipe dirigeante, directeurs, responsables de services — mêmes groupes
+    qu'à l'écran), une direction avec ses services, ou une seule personne."""
+
+    def __init__(self, company, team=None, group=None, person=None):
+        self.company, self.team, self.group, self.person = company, team, group, person
+
+    @classmethod
+    def of(cls, company, target):
+        return target if isinstance(target, cls) else cls(company, target)
 
     @property
     def is_org(self):
-        return self.team is None
+        return self.team is None and self.group is None and self.person is None
+
+    @property
+    def spans_departments(self):
+        """Vrai quand le périmètre couvre plusieurs directions : la lecture par direction a alors un sens."""
+        return self.is_org or self.group is not None
 
     @property
     def name(self):
+        if self.person is not None:
+            return name_of(self.person)
+        if self.group:
+            return GROUPS[self.group]
         return self.company.name if self.is_org else self.team.name
 
     @property
     def label(self):
+        if self.person is not None:
+            return name_of(self.person)
+        if self.group:
+            return f"le périmètre « {GROUPS[self.group]} » de {self.company.name}"
         return f"l'organisation {self.company.name}" if self.is_org else f"la direction « {self.team.name} »"
 
     def department_ids(self):
-        if self.is_org:
+        if self.team is None:
             return None
         return [self.team.id] + list(Department.objects.filter(parent_id=self.team.id).values_list("id", flat=True))
 
     def users(self):
         qs = User.objects.filter(company=self.company).exclude(role=User.Role.SUPER_ADMIN)
-        if not self.is_org:
+        if self.person is not None:
+            return qs.filter(pk=self.person.pk)
+        if self.group == "leadership":
+            return qs.filter(role__in=[User.Role.COMPANY_ADMIN, User.Role.MANAGER])
+        if self.group in ("directors", "service_heads"):
+            heads = Department.objects.filter(company=self.company, manager__isnull=False, manager__role=User.Role.MANAGER)
+            heads = heads.filter(parent__isnull=self.group == "directors")
+            return qs.filter(pk__in=heads.values("manager_id")).distinct()
+        if self.team is not None:
             qs = qs.filter(Q(department_id__in=self.department_ids()) | Q(pk=self.team.manager_id))
         return qs.distinct()
 
@@ -221,7 +257,7 @@ class QuadrantChart(Flowable):
 
 
 def build_id3a_report(company, campaign, team, prepared_for):
-    scope = People(company, team)
+    scope = People.of(company, team)
     evals = scope.evaluations(campaign)
     if not evals:
         raise ReportError(f"Aucune évaluation n'a été enregistrée pour {scope.label} sur la campagne « {campaign.name} » : la matrice ID-3A n'a rien à présenter.")
@@ -310,7 +346,7 @@ def build_id3a_report(company, campaign, team, prepared_for):
         b.table("Indices et quadrant, campagne précédente » actuelle", ["Personne", "HSI", "SSI", "Altitude", "Avant", "Maintenant"], evo,
                 [38 * mm, 25 * mm, 25 * mm, 28 * mm, 27 * mm, 27 * mm], align=["left", "center", "center", "center", "center", "center"])
 
-    if scope.is_org:
+    if scope.spans_departments:
         by_dept = defaultdict(list)
         for r in rows:
             by_dept[_department_name(r["user"])].append(r)
@@ -488,7 +524,7 @@ def _talent_kpis(placed):
 
 
 def build_ninebox_report(company, campaign, team, prepared_for):
-    scope = People(company, team)
+    scope = People.of(company, team)
     points, _history = talents(scope, campaign)
     if not points:
         raise ReportError(f"Aucune évaluation n'a été enregistrée pour {scope.label} sur la campagne « {campaign.name} » : le 9 Box n'a rien à présenter.")
@@ -569,7 +605,7 @@ def build_ninebox_report(company, campaign, team, prepared_for):
 
 
 def build_tpd_report(company, campaign, team, prepared_for):
-    scope = People(company, team)
+    scope = People.of(company, team)
     points, history = talents(scope, campaign)
     if not points:
         raise ReportError(f"Aucune évaluation n'a été enregistrée pour {scope.label} sur la campagne « {campaign.name} » : le tableau de bord n'a rien à présenter.")
@@ -631,7 +667,7 @@ def build_tpd_report(company, campaign, team, prepared_for):
         b.table("Altitude par campagne", ["Personne"] + [escape(c.name) for c in campaigns], rows,
                 [50 * mm] + [w] * len(campaigns), align=["left"] + ["center"] * len(campaigns))
 
-    if scope.is_org:
+    if scope.spans_departments:
         by_dept = defaultdict(list)
         for t in points:
             by_dept[_department_name(t.user)].append(t)

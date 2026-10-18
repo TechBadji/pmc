@@ -36,6 +36,13 @@
     "busy": "Generating…",
     "cancel": "Cancel",
     "done": "The report \"{{file}}\" has been downloaded.",
-    "failed": "The report could not be generated. Please try again shortly."
+    "failed": "The report could not be generated. Please try again shortly.",
+    "group": {
+      "leadership": "Leadership team",
+      "directors": "All directors",
+      "service_heads": "All heads of department"
+    },
+    "onePerson": "One person (individual report)",
+    "ownTeam": "{{name}} — leadership team"
   }
 }

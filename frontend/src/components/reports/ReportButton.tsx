@@ -24,9 +24,27 @@ import type { Department, EvaluationCampaign, Paginated, UserRecord } from "@/ap
 
 export type ReportKind = "cohesion" | "relational" | "psi" | "strengths" | "team_id" | "id3a" | "ninebox" | "tpd" | "person_id";
 
-/** Rapports qui portent sur une équipe sans pouvoir viser l'organisation entière. */
-const TEAM_ONLY: ReportKind[] = ["team_id"];
+type Scope = "org" | "group" | "team" | "person";
+type Group = "leadership" | "directors" | "service_heads";
+/** Périmètres acceptés par chaque rapport — mêmes règles que le serveur
+ * (`report_views.KINDS`). Les rapports fondés sur des avis anonymes ne
+ * descendent pas à la personne. */
+const SCOPES: Record<ReportKind, Scope[]> = {
+  cohesion: ["org", "team"],
+  relational: ["org", "team"],
+  psi: ["org", "team"],
+  strengths: ["org", "group", "team"],
+  team_id: ["team"],
+  id3a: ["org", "group", "team", "person"],
+  ninebox: ["org", "group", "team", "person"],
+  tpd: ["org", "group", "team", "person"],
+  person_id: ["person"],
+};
+const GROUPS: Group[] = ["leadership", "directors", "service_heads"];
 const ORGANISATION = "org";
+const PERSON = "person";
+/** Valeur du sélecteur de périmètre : "org", "person", "g:<groupe>" ou l'id d'une direction. */
+type Perimeter = typeof ORGANISATION | typeof PERSON | `g:${Group}` | number | "";
 
 /**
  * Bouton « Générer un rapport » commun à toutes les rubriques : chaque page
@@ -56,7 +74,7 @@ export default function ReportButton({
   const [campaigns, setCampaigns] = useState<EvaluationCampaign[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [people, setPeople] = useState<UserRecord[]>([]);
-  const [perimeter, setPerimeter] = useState<number | typeof ORGANISATION | "">("");
+  const [perimeter, setPerimeter] = useState<Perimeter>("");
   const [subject, setSubject] = useState<number | "">("");
   const [campaignId, setCampaignId] = useState<number | "">("");
   const [busy, setBusy] = useState(false);
@@ -72,7 +90,7 @@ export default function ReportButton({
     const [c, d, p] = await Promise.all([
       apiClient.get<Paginated<EvaluationCampaign>>("/evaluation-campaigns/", { params: { page_size: 500 }, silent: true }).catch(() => null),
       isMember ? null : apiClient.get<Paginated<Department>>("/departments/", { params: { page_size: 500 }, silent: true }).catch(() => null),
-      isMember || !kinds.includes("person_id") ? null : apiClient.get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 }, silent: true }).catch(() => null),
+      isMember || !kinds.some((k) => SCOPES[k].includes("person")) ? null : apiClient.get<Paginated<UserRecord>>("/users/", { params: { page_size: 500 }, silent: true }).catch(() => null),
     ]);
     const sorted = [...(c?.data.results ?? [])].sort((a, b) => b.start_date.localeCompare(a.start_date));
     const depts = d?.data.results ?? [];
@@ -81,24 +99,51 @@ export default function ReportButton({
     setPeople([...(p?.data.results ?? [])].sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? "")));
     setCampaignId(defaultCampaign !== "" ? defaultCampaign : sorted[0]?.id ?? "");
     const ownTeam = depts.find((x) => x.manager === user?.id)?.id ?? depts[0]?.id ?? "";
-    setPerimeter(defaultTeam !== "" ? defaultTeam : isCompanyAdmin && !TEAM_ONLY.includes(startKind) ? ORGANISATION : ownTeam);
+    setPerimeter(initialPerimeter(startKind, defaultTeam !== "" ? defaultTeam : ownTeam, depts));
     setSubject(defaultSubject !== "" ? defaultSubject : isMember ? user?.id ?? "" : "");
   }
 
+  function initialPerimeter(k: ReportKind, team: number | "", depts: Department[]): Perimeter {
+    const scopes = SCOPES[k];
+    if (scopes.length === 1 && scopes[0] === "person") return PERSON;
+    if (team !== "" && scopes.includes("team")) return team;
+    if (isCompanyAdmin && scopes.includes("org")) return ORGANISATION;
+    return scopes.includes("team") ? depts[0]?.id ?? "" : PERSON;
+  }
+
+  /** Le périmètre choisi reste s'il convient au nouveau rapport ; sinon on prend le premier qui convient. */
   function changeKind(next: ReportKind) {
     setKind(next);
-    if (TEAM_ONLY.includes(next) && perimeter === ORGANISATION) setPerimeter(departments[0]?.id ?? "");
+    const scopes = SCOPES[next];
+    const current: Scope | null =
+      perimeter === ORGANISATION ? "org" : perimeter === PERSON ? "person" : typeof perimeter === "number" ? "team" : perimeter ? "group" : null;
+    if (!current || !scopes.includes(current)) setPerimeter(initialPerimeter(next, typeof perimeter === "number" ? perimeter : "", departments));
   }
+
+  /** Directions puis leurs services, en retrait. */
+  const orderedDepartments = [...departments.filter((d) => d.parent === null)]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .flatMap((d) => [d, ...departments.filter((x) => x.parent === d.id).sort((a, b) => a.name.localeCompare(b.name))]);
+  const orphanServices = departments.filter((d) => d.parent !== null && !departments.some((x) => x.id === d.parent));
+  const hasServices = departments.some((d) => d.parent !== null);
 
   async function generate() {
     setError(null);
-    const bySubject = kind === "person_id";
+    const bySubject = perimeter === PERSON;
     if (campaignId === "") return setError(t("reports.pickCampaign"));
     if (bySubject && subject === "" && !isMember) return setError(t("reports.pickPerson"));
-    if (!bySubject && perimeter === "") return setError(t("reports.pickTeam"));
+    if (perimeter === "") return setError(t("reports.pickTeam"));
     setBusy(true);
     try {
-      const target = bySubject ? (subject === "" ? {} : { subject }) : perimeter === ORGANISATION ? {} : { team: perimeter };
+      const target = bySubject
+        ? subject === ""
+          ? {}
+          : { subject }
+        : perimeter === ORGANISATION
+          ? {}
+          : typeof perimeter === "string"
+            ? { group: perimeter.slice(2) }
+            : { team: perimeter };
       const r = await apiClient.get("/reports/pdf/", { params: { campaign: campaignId, kind, ...target }, responseType: "blob", silent: true });
       const header = String(r.headers["content-disposition"] ?? "");
       const encoded = /filename\*=UTF-8''([^;]+)/i.exec(header)?.[1];
@@ -177,31 +222,42 @@ export default function ReportButton({
                 </Typography>
               </Box>
             )}
-            {kind === "person_id" ? (
-              !isMember && (
-                <TextField select size="small" label={t("reports.person")} value={subject} onChange={(e) => setSubject(Number(e.target.value))}>
-                  {people.map((p) => (
-                    <MenuItem key={p.id} value={p.id}>
-                      {p.full_name}
-                      {p.position ? ` — ${p.position}` : ""}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )
-            ) : (
+            {!(kind === "person_id" && isMember) && SCOPES[kind].join() !== "person" && (
               <TextField
                 select
                 size="small"
                 label={t("reports.perimeter")}
                 value={perimeter}
-                onChange={(e) => setPerimeter(e.target.value === ORGANISATION ? ORGANISATION : Number(e.target.value))}
+                onChange={(e) => {
+                  const v = e.target.value as string | number;
+                  setPerimeter(v === ORGANISATION || v === PERSON || (typeof v === "string" && v.startsWith("g:")) ? (v as Perimeter) : Number(v));
+                }}
               >
-                {isCompanyAdmin && !TEAM_ONLY.includes(kind) && (
+                {isCompanyAdmin && SCOPES[kind].includes("org") && (
                   <MenuItem value={ORGANISATION}>{t("reports.organisation", { company: user?.company_name ?? "" })}</MenuItem>
                 )}
-                {departments.map((d) => (
-                  <MenuItem key={d.id} value={d.id}>
-                    {d.name}
+                {isCompanyAdmin &&
+                  SCOPES[kind].includes("group") &&
+                  GROUPS.filter((g) => g !== "service_heads" || hasServices).map((g) => (
+                    <MenuItem key={g} value={`g:${g}`}>
+                      {t(`reports.group.${g}`)}
+                    </MenuItem>
+                  ))}
+                {SCOPES[kind].includes("team") &&
+                  [...orderedDepartments, ...orphanServices].map((d) => (
+                    <MenuItem key={d.id} value={d.id} sx={d.parent !== null ? { pl: 4, fontSize: 14 } : undefined}>
+                      {d.manager === user?.id && isCompanyAdmin ? t("reports.ownTeam", { name: d.name }) : d.name}
+                    </MenuItem>
+                  ))}
+                {SCOPES[kind].includes("person") && <MenuItem value={PERSON}>{t("reports.onePerson")}</MenuItem>}
+              </TextField>
+            )}
+            {perimeter === PERSON && !isMember && (
+              <TextField select size="small" label={t("reports.person")} value={subject} onChange={(e) => setSubject(Number(e.target.value))}>
+                {people.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>
+                    {p.full_name}
+                    {p.position ? ` — ${p.position}` : ""}
                   </MenuItem>
                 ))}
               </TextField>

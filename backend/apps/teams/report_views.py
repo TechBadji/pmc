@@ -25,18 +25,21 @@ from . import cohesion_report as C
 from . import team_reports as R
 
 COHESION, TALENTS = ("COHESION",), ("ID3A", "EVALUATIONS")
+ORG, GROUP, TEAM, PERSON = "org", "group", "team", "person"
 
-# kind → (libellé, constructeur, rubriques de droit, cible : "team" | "team_required" | "subject", nom de fichier)
+# kind → (libellé, constructeur, rubriques de droit, périmètres acceptés, nom de fichier).
+# Les rapports fondés sur des avis anonymes (cohésion, PSI) ne descendent pas à
+# la personne ; les rapports de talents acceptent tous les périmètres de l'écran.
 KINDS = {
-    "cohesion": ("Cohésion d'équipe", C.build_cohesion_report, COHESION, "team", "Cohesion-equipe"),
-    "relational": ("Dynamique relationnelle", C.build_relational_report, COHESION, "team", "Dynamique-relationnelle"),
-    "psi": ("Psychological Safety", R.build_psi_report, COHESION, "team", "Psychological-Safety"),
-    "strengths": ("Forces & faiblesses", R.build_strengths_report, COHESION, "team", "Forces-faiblesses"),
-    "team_id": ("Team Performance ID", R.build_team_id_report, COHESION, "team_required", "Team-Performance-ID"),
-    "id3a": ("Matrice ID-3A", T.build_id3a_report, TALENTS, "team", "Matrice-ID-3A"),
-    "ninebox": ("9 Box", T.build_ninebox_report, TALENTS, "team", "9-Box"),
-    "tpd": ("ID-TPD", T.build_tpd_report, TALENTS, "team", "ID-TPD"),
-    "person_id": ("Performance ID", T.build_person_id_report, TALENTS, "subject", "Performance-ID"),
+    "cohesion": ("Cohésion d'équipe", C.build_cohesion_report, COHESION, {ORG, TEAM}, "Cohesion-equipe"),
+    "relational": ("Dynamique relationnelle", C.build_relational_report, COHESION, {ORG, TEAM}, "Dynamique-relationnelle"),
+    "psi": ("Psychological Safety", R.build_psi_report, COHESION, {ORG, TEAM}, "Psychological-Safety"),
+    "strengths": ("Forces & faiblesses", R.build_strengths_report, COHESION, {ORG, GROUP, TEAM}, "Forces-faiblesses"),
+    "team_id": ("Team Performance ID", R.build_team_id_report, COHESION, {TEAM}, "Team-Performance-ID"),
+    "id3a": ("Matrice ID-3A", T.build_id3a_report, TALENTS, {ORG, GROUP, TEAM, PERSON}, "Matrice-ID-3A"),
+    "ninebox": ("9 Box", T.build_ninebox_report, TALENTS, {ORG, GROUP, TEAM, PERSON}, "9-Box"),
+    "tpd": ("ID-TPD", T.build_tpd_report, TALENTS, {ORG, GROUP, TEAM, PERSON}, "ID-TPD"),
+    "person_id": ("Performance ID", T.build_person_id_report, TALENTS, {PERSON}, "Performance-ID"),
 }
 
 
@@ -57,38 +60,51 @@ class ReportPdfView(APIView):
         kind = request.query_params.get("kind")
         if kind not in KINDS:
             raise ValidationError({"kind": "Type de rapport inconnu."})
-        label, build, rubrics, target, file_label = KINDS[kind]
+        label, build, rubrics, scopes, file_label = KINDS[kind]
         if user.company_id is None:
             raise PermissionDenied("Les rapports se génèrent depuis le compte d'une entreprise.")
-        if target != "subject" and user.role not in (user.Role.COMPANY_ADMIN, user.Role.MANAGER):
+        if scopes != {PERSON} and user.role not in (user.Role.COMPANY_ADMIN, user.Role.MANAGER):
             raise PermissionDenied("Ces rapports sont réservés au dirigeant et à l'encadrement.")
         campaign = EvaluationCampaign.objects.filter(pk=request.query_params.get("campaign"), company_id=user.company_id).first()
         if campaign is None:
             raise ValidationError({"campaign": "Choisissez une campagne de votre entreprise."})
         prepared_for = f"{user.get_full_name() or user.generated_login}{', ' + user.position if user.position else ''}"
+        params = request.query_params
+        group, team_id, subject_id = params.get("group"), params.get("team"), params.get("subject")
+        if scopes == {PERSON} and not subject_id:
+            subject_id = user.id
+        is_admin = user.role == user.Role.COMPANY_ADMIN
 
-        if target == "subject":
-            subject = User.objects.filter(pk=request.query_params.get("subject") or user.id, company_id=user.company_id).select_related("department").first()
+        if subject_id:
+            if PERSON not in scopes:
+                raise ValidationError({"subject": "Ce rapport repose sur des avis anonymes : il ne se produit pas pour une personne."})
+            subject = User.objects.filter(pk=subject_id, company_id=user.company_id).select_related("department").first()
             if subject is None:
                 raise ValidationError({"subject": "Choisissez une personne de votre entreprise."})
             if not _can_read_person(request, subject):
                 raise PermissionDenied("Vous ne pouvez générer que les rapports des personnes que vous encadrez.")
-            args, target_name = (user.company, campaign, subject, prepared_for), name_of(subject)
+            target, target_name = (subject if scopes == {PERSON} else T.People(user.company, person=subject)), name_of(subject)
+        elif group:
+            if GROUP not in scopes or group not in T.GROUPS:
+                raise ValidationError({"group": "Ce périmètre n'est pas proposé pour ce rapport."})
+            if not is_admin:
+                raise ValidationError({"group": "Les périmètres « équipe dirigeante », « directeurs » et « responsables de services » sont réservés au dirigeant."})
+            target, target_name = T.People(user.company, group=group), T.GROUPS[group]
+        elif team_id:
+            departments = Department.objects.filter(company_id=user.company_id)
+            if user.role == user.Role.MANAGER:
+                departments = departments.filter(id__in=readable_department_ids(request, rubrics))
+            target = departments.filter(pk=team_id).first()
+            if target is None:
+                raise ValidationError({"team": "Choisissez une direction que vous encadrez."})
+            target_name = target.name
         else:
-            team = None
-            team_id = request.query_params.get("team")
-            if team_id:
-                departments = Department.objects.filter(company_id=user.company_id)
-                if user.role == user.Role.MANAGER:
-                    departments = departments.filter(id__in=readable_department_ids(request, rubrics))
-                team = departments.filter(pk=team_id).first()
-                if team is None:
-                    raise ValidationError({"team": "Choisissez une direction que vous encadrez."})
-            elif target == "team_required":
+            if ORG not in scopes:
                 raise ValidationError({"team": "Ce rapport porte sur une équipe : choisissez une direction."})
-            elif user.role != user.Role.COMPANY_ADMIN:
+            if not is_admin:
                 raise ValidationError({"team": "Le rapport sur l'organisation entière est réservé au dirigeant : choisissez une de vos directions."})
-            args, target_name = (user.company, campaign, team, prepared_for), team.name if team else "Organisation"
+            target, target_name = None, "Organisation"
+        args = (user.company, campaign, target, prepared_for)
         try:
             pdf = build(*args)
         except ReportError as error:
