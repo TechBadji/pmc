@@ -36,6 +36,7 @@ from apps.evaluations.models import EvaluationCampaign, SkillNote
 from apps.evaluations.talent_reports import GREEN, QUADRANT, People, _cover, _intro, _recommendations, quadrant_of
 
 from .aggregation import MIN_RESPONDENTS, aggregate_responses
+from .cohesion_report import ICE_READING, ice_band
 from .models import CohesionResponse, PsychologicalSafetyResponse, TeamBoard
 from .psi_texts import DIMENSION_NAME, DIMENSION_QUESTION, DIMENSION_TITLE, STATEMENTS, STATEMENTS_ORG
 from .serializers import PSI_DIMENSIONS
@@ -300,7 +301,8 @@ def build_team_id_report(company, campaign, team, prepared_for):
     alt = [float(e.altitude_percentage) for e in evals]
     b.h1("Synthèse exécutive", "L'équipe en un coup d'œil")
     b.kpis([(str(len(evals)), "membres évalués"), (fmt_pct(round(sum(alt) / len(alt))) if alt else "—", "Altitude moyenne"),
-            (fmt_num(cohesion["score"], 2) if cohesion["published"] else "—", "indice de cohésion (avis des membres)"),
+            (fmt_num(cohesion["score"], 2) if cohesion["published"] else "—",
+             f"ICE — {ICE_READING[ice_band(cohesion['score'])][0].lower()}" if cohesion["published"] else "ICE (avis des membres non publiés)"),
             (fmt_num(sum(float(e.hsi) for e in evals) / len(evals), 2) if evals else "—", "Aptitudes moyennes (HSI)"),
             (fmt_num(sum(float(e.ssi) for e in evals) / len(evals), 2) if evals else "—", "Attitudes moyennes (SSI)")])
     if board and board.vision_missions:
@@ -334,7 +336,10 @@ def build_team_id_report(company, campaign, team, prepared_for):
                 [38 * mm, 42 * mm, 16 * mm, 16 * mm, 20 * mm, 38 * mm], align=["left", "left", "center", "center", "center", "left"])
 
     if cohesion["published"]:
-        b.h1("Cohésion de l'équipe", "Ce que les membres disent de leur direction")
+        title, reading = ICE_READING[ice_band(cohesion["score"])]
+        b.h1("Cohésion de l'équipe", f"ICE de {fmt_num(cohesion['score'], 2)} : {title.lower()}")
+        b.p(f"{reading} <i>Grille de lecture : ICE inférieur à 3, un groupe ; de 3 à 3,9, une équipe moyennement soudée ; "
+            "4 et plus, une vraie équipe à forte cohésion.</i>")
         b.figure_block("Avis des membres par critère (sur 5)", BarList([(c["criterion"][:70], c["score"], fmt_num(c["score"], 2)) for c in cohesion["criteria"] if c["score"] is not None],
                                                                      color=BLUE, max_value=5, label_width=95 * mm), note=f"{cohesion['respondents']} répondants")
     recs = [("Restituer cette carte d'identité à l'équipe et la mettre à jour à chaque campagne", "Encadrant", "1 mois", "Moyenne")]

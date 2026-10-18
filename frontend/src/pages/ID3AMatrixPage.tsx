@@ -66,6 +66,8 @@ import { CHART_NEUTRALS, performanceColors } from "@/theme";
  *  restent découpés à 2,5 sur chaque axe. */
 const AXIS_MAX = 6;
 const AXIS_MAX_Y = 6;
+/** Niveau moyen d'une compétence (3 sur 5, Hard comme Soft Skills) : il sépare les quadrants. */
+const ID3A_MID = 3;
 // Hauteur du tracé. Relevée une première fois de 480 à 640 avec la taille
 // des vignettes (des pastilles presque doublées se seraient recouvertes dès
 // que deux personnes partagent un cadran), puis à 880 : le pas entre deux
@@ -476,10 +478,10 @@ function MatrixQuadrants({ xAxisMap, yAxisMap }: any) {
   if (!xAxis || !yAxis) return null;
   const x0 = xAxis.scale(0);
   const x5 = xAxis.scale(AXIS_MAX);
-  const xMid = xAxis.scale(2.5);
+  const xMid = xAxis.scale(ID3A_MID);
   const y0 = yAxis.scale(0);
   const y5 = yAxis.scale(AXIS_MAX_Y);
-  const yMid = yAxis.scale(2.5);
+  const yMid = yAxis.scale(ID3A_MID);
   const labelStyle = {
     fontSize: 10,
     fontWeight: 700,

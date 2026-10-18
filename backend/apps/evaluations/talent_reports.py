@@ -178,7 +178,8 @@ QUADRANTS = [
     ("watch", "Zone de vigilance", "Aptitudes et attitudes sous le seuil : plan de développement rapproché et décision à terme.", RED),
 ]
 QUADRANT = {k: (label, text, color) for k, label, text, color in QUADRANTS}
-ID3A_MID = 2.5
+# Niveau moyen d'une compétence : 3 sur 5, pour les savoir-faire comme pour les savoir-être.
+ID3A_MID = 3.0
 
 
 def quadrant_of(hsi, ssi):
@@ -309,7 +310,8 @@ def build_id3a_report(company, campaign, team, prepared_for):
     b.bullets([
         "<b>HSI — Aptitudes.</b> Moyenne pondérée des notes (1 à 5) des savoir-faire du référentiel métier de la personne.",
         "<b>SSI — Attitudes.</b> Moyenne pondérée des notes (1 à 5) des savoir-être du référentiel comportemental.",
-        f"<b>Quadrants.</b> Seuil de {fmt_num(ID3A_MID, 1)} sur chaque axe, comme à l'écran : Talents clés, Experts techniques, Potentiel relationnel, Zone de vigilance.",
+        f"<b>Quadrants.</b> Une compétence est jugée de niveau moyen à {fmt_num(ID3A_MID, 0)} sur 5, en Hard Skills comme en Soft Skills : "
+        "ce niveau sépare les quadrants, comme à l'écran — Talents clés (les deux indices à 3 ou plus), Experts techniques, Potentiel relationnel, Zone de vigilance.",
         "<b>Altitude.</b> Moyenne du taux d'atteinte des objectifs business et people ; paliers : très faible (< 50 %), faible (50-74 %), "
         "moyen (75-89 %), bon (90-100 %), exceptionnel (> 100 %).",
     ])

@@ -121,16 +121,27 @@ def short_label(label):
     return c.short if c else label
 
 
-def level_of(score):
+# Grille de lecture de l'ICE (Indice de Cohésion d'Équipe), fixée par le cabinet :
+# en dessous de 3, un groupe ; de 3 à 3,9, une équipe moyennement soudée ; à
+# partir de 4, une vraie équipe, qui a de fortes chances de performer dans la durée.
+ICE_TEAM, ICE_STRONG = 3.0, 4.0
+ICE_READING = {
+    "group": ("Un groupe", "C'est encore un groupe plutôt qu'une équipe : les personnes travaillent côte à côte sans former un collectif soudé."),
+    "average": ("Cohésion moyenne", "C'est une équipe moyennement soudée : un collectif existe, mais ses liens restent à renforcer pour durer."),
+    "strong": ("Forte cohésion", "C'est une vraie équipe, qui a de fortes chances de performer dans le long terme."),
+}
+
+
+def ice_band(score):
     if score is None:
-        return "non mesurée"
-    if score < 2.5:
-        return "fragile"
-    if score < 3.25:
-        return "à consolider"
-    if score < 4:
-        return "solide"
-    return "forte"
+        return None
+    return "group" if score < ICE_TEAM else "average" if score < ICE_STRONG else "strong"
+
+
+def level_of(score):
+    """Niveau d'un indice ou d'un critère, sur la même grille que l'ICE."""
+    band = ice_band(score)
+    return {"group": "faible", "average": "moyen", "strong": "fort", None: "non mesuré"}[band]
 
 
 def fmt_score(value):
@@ -294,21 +305,27 @@ def build_cohesion_report(company, campaign, team, prepared_for):
     # 1. Synthèse exécutive
     participation = agg["participation"]
     action = {
-        "fragile": "Une cohésion fragile, qui appelle un plan d'action prioritaire et suivi",
-        "à consolider": "Une cohésion à consolider : des appuis réels, mais des fragilités qui pèsent sur le collectif",
-        "solide": "Une cohésion solide, à entretenir en traitant les quelques points de vigilance",
-        "forte": "Une cohésion forte, sur laquelle l'organisation peut s'appuyer pour ses projets",
-    }[level_of(score)]
+        "group": "Un groupe plutôt qu'une équipe : la cohésion est à construire",
+        "average": "Une équipe moyennement soudée : des appuis réels, des liens à renforcer pour durer",
+        "strong": "Une vraie équipe, soudée, qui a de fortes chances de performer dans le long terme",
+    }[ice_band(score)]
     b.h1("Synthèse exécutive", action)
-    tiles = [(f"{fmt_num(score, 2)} / 5", "indice de cohésion (moyenne des dix critères)"),
+    tiles = [(f"{fmt_num(score, 2)} / 5", "ICE — indice de cohésion d'équipe (moyenne des dix critères)"),
              (fmt_pct(round(100 * participation)) if participation is not None else str(len(responses)),
               f"de participation ({len(responses)} avis sur {headcount} personnes)"),
              (fmt_pct(round(100 * low_share)), f"des notes sont basses (≤ {LOW_SCORE} sur 5)")]
     tiles.append((fmt_delta(delta) if delta is not None else "—", "évolution depuis la campagne précédente" if delta is not None else "pas de campagne précédente publiée"))
     b.kpis(tiles)
+    band = ice_band(score)
+    grid = [("group", "ICE inférieur à 3", "c'est un groupe"),
+            ("average", "ICE de 3 à 3,9", "cohésion moyenne : équipe moyennement soudée"),
+            ("strong", "ICE de 4 et plus", "forte cohésion : une vraie équipe, qui a de fortes chances de performer dans le long terme")]
+    b.box("Lecture de l'ICE", [(f"<b>» {label} : {text}</b> — position de {escape(perimeter.name)}" if key == band else f"{label} : {text}")
+                               for key, label, text in grid], tint=TINT_BLUE, color=BLUE)
     b.h2("Messages clés")
-    msgs = [f"<b>Niveau d'ensemble.</b> Avec un indice de {fmt_num(score, 2)} sur 5, la cohésion de {escape(perimeter.label)} est "
-            f"<b>{level_of(score)}</b>. {fmt_pct(round(100 * low_share))} des notes données sont basses, ce qui "
+    title, reading = ICE_READING[ice_band(score)]
+    msgs = [f"<b>Niveau d'ensemble.</b> Avec un ICE de {fmt_num(score, 2)} sur 5 — <b>{title.lower()}</b> — {reading[0].lower()}{reading[1:]} "
+            f"{fmt_pct(round(100 * low_share))} des notes données sont basses, ce qui "
             + ("signale des situations difficiles à ne pas laisser s'installer." if low_share >= 0.2 else "reste contenu.")]
     if strongest:
         msgs.append("<b>Points d'appui.</b> Les critères les mieux notés sont " + ", ".join(
@@ -339,7 +356,9 @@ def build_cohesion_report(company, campaign, team, prepared_for):
         "<b>Calcul.</b> Chaque critère est moyenné sur ceux qui y ont répondu, puis l'indice est la moyenne des dix critères. "
         f"La part d'avis bas compte les notes de 1 et 2 ; la note dominante est celle que le plus de répondants ont choisie.",
         f"<b>Seuil de publication.</b> {threshold} répondants au minimum, réglé par l'entreprise.",
-        "<b>Lecture des niveaux.</b> Moins de 2,5 : fragile · 2,5 à 3,25 : à consolider · 3,25 à 4 : solide · 4 et plus : forte.",
+        "<b>Lecture de l'ICE.</b> ICE inférieur à 3 : c'est un <b>groupe</b>. ICE de 3 à 3,9 : <b>cohésion moyenne</b>, équipe moyennement "
+        "soudée. ICE de 4 et plus : <b>forte cohésion</b>, une vraie équipe qui a de fortes chances de performer dans le long terme. "
+        "La même grille qualifie chaque critère (faible, moyen, fort).",
     ])
 
     # 3. Résultats par critère
@@ -449,9 +468,9 @@ def _cohesion_recommendations(criteria, strongest):
         if not crit:
             continue
         low = c["low_share"] or 0
-        if c["score"] < 2.5 or low >= 0.35:
+        if c["score"] < ICE_TEAM or low >= 0.35:
             priority = "Haute"
-        elif c["score"] < 3.25 or low >= 0.2:
+        elif c["score"] < ICE_STRONG or low >= 0.2:
             priority = "Moyenne"
         else:
             continue

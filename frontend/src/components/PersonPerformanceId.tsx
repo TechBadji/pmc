@@ -297,6 +297,7 @@ function noteCells(
 }
 
 const ID3A_AXIS_MAX = 6; // même échelle que la page Matrice ID-3A
+const ID3A_MID = 3; // niveau moyen d'une compétence : même seuil que la page Matrice ID-3A
 
 /** Mini-matrice ID-3A d'une personne : Aptitudes (HSI) en X, Attitudes (SSI)
  * en Y, quadrants et projections sur les axes — même langage visuel que la
@@ -321,8 +322,8 @@ function Id3aMiniMatrix({ hsi, ssi, altitude, rating }: { hsi: number; ssi: numb
       <rect x={ML} y={MT} width={plotW} height={plotH} fill="#f3f2ee" />
 
       {/* Séparateurs de quadrants : toujours à 2,5, milieu du barème 1-5. */}
-      <line x1={x(2.5)} y1={y(ID3A_AXIS_MAX)} x2={x(2.5)} y2={y(0)} stroke="#e1e0d9" strokeDasharray="3 3" />
-      <line x1={x(0)} y1={y(2.5)} x2={x(ID3A_AXIS_MAX)} y2={y(2.5)} stroke="#e1e0d9" strokeDasharray="3 3" />
+      <line x1={x(ID3A_MID)} y1={y(ID3A_AXIS_MAX)} x2={x(ID3A_MID)} y2={y(0)} stroke="#e1e0d9" strokeDasharray="3 3" />
+      <line x1={x(0)} y1={y(ID3A_MID)} x2={x(ID3A_AXIS_MAX)} y2={y(ID3A_MID)} stroke="#e1e0d9" strokeDasharray="3 3" />
       <text x={x(0) + 4} y={y(ID3A_AXIS_MAX) + 9} textAnchor="start" style={quadrantLabel}>
         {t("id3aMatrix.quadrantExperts").toUpperCase()}
       </text>
