@@ -83,3 +83,10 @@ class CohesionReportTests(TestCase):
         response = self.get(self.ceo, kind="relational", team=self.dept.id)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.content.startswith(b"%PDF"))
+
+
+class IceReadingTests(TestCase):
+    def test_ice_is_read_on_its_value_rounded_to_one_decimal(self):
+        from apps.teams.cohesion_report import ice_band
+        self.assertEqual([ice_band(v) for v in (2.94, 2.95, 3.5, 3.94, 3.95, 4.0, 4.6)],
+                         ["group", "average", "average", "average", "strong", "strong", "strong"])

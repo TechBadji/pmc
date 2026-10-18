@@ -17,6 +17,7 @@ seuil d'anonymat de l'entreprise : il n'est produit qu'une fois ce nombre
 d'avis déposé, et ne cite jamais un avis individuel.
 """
 import unicodedata
+from decimal import ROUND_HALF_UP, Decimal
 from collections import Counter
 from dataclasses import dataclass
 
@@ -133,9 +134,12 @@ ICE_READING = {
 
 
 def ice_band(score):
+    """Niveau de l'ICE, lu sur sa valeur arrondie au dixième (arrondi commercial) :
+    3,95 compte pour 4,0 — une vraie équipe — et 2,95 pour 3,0, comme l'a fixé le cabinet."""
     if score is None:
         return None
-    return "group" if score < ICE_TEAM else "average" if score < ICE_STRONG else "strong"
+    rounded = float(Decimal(str(score)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
+    return "group" if rounded < ICE_TEAM else "average" if rounded < ICE_STRONG else "strong"
 
 
 def level_of(score):
@@ -358,7 +362,7 @@ def build_cohesion_report(company, campaign, team, prepared_for):
         f"<b>Seuil de publication.</b> {threshold} répondants au minimum, réglé par l'entreprise.",
         "<b>Lecture de l'ICE.</b> ICE inférieur à 3 : c'est un <b>groupe</b>. ICE de 3 à 3,9 : <b>cohésion moyenne</b>, équipe moyennement "
         "soudée. ICE de 4 et plus : <b>forte cohésion</b>, une vraie équipe qui a de fortes chances de performer dans le long terme. "
-        "La même grille qualifie chaque critère (faible, moyen, fort).",
+        "L'ICE est lu arrondi au dixième : 3,95 compte pour 4. La même grille qualifie chaque critère (faible, moyen, fort).",
     ])
 
     # 3. Résultats par critère
