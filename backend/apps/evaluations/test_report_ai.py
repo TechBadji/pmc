@@ -51,3 +51,12 @@ class StrategicSummaryTests(SimpleTestCase):
         self.assertIsNone(self.call(broken))
         with mock.patch.dict("os.environ", {"ANTHROPIC_API_KEY": ""}):
             self.assertIsNone(report_ai.strategic_summary("Rapport", "x", "2026", {}))
+
+
+class WorkspaceHeaderTests(SimpleTestCase):
+    def test_workspace_header_is_sent_when_configured(self):
+        client = fake_client(json.dumps(ANSWER))
+        with mock.patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test", "ANTHROPIC_WORKSPACE_ID": "wrkspc_123"}), \
+                mock.patch("anthropic.Anthropic", return_value=client) as constructor:
+            report_ai.strategic_summary("Rapport", "x", "2026", {})
+        self.assertEqual(constructor.call_args.kwargs["default_headers"], {"anthropic-workspace-id": "wrkspc_123"})

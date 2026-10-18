@@ -133,7 +133,10 @@ def strategic_summary(report_title, scope_label, campaign_name, facts):
     try:
         import anthropic
 
-        client = anthropic.Anthropic(timeout=TIMEOUT_SECONDS, max_retries=1)
+        # Une clé d'organisation non rattachée à un espace de travail exige l'en-tête de l'espace à utiliser.
+        workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID", "").strip()
+        headers = {"anthropic-workspace-id": workspace} if workspace else None
+        client = anthropic.Anthropic(timeout=TIMEOUT_SECONDS, max_retries=1, default_headers=headers)
         prompt = (
             f"Rapport : {report_title}\nPérimètre : {scope_label}\nCampagne : {campaign_name}\n\n"
             "Faits calculés par la plateforme (JSON) :\n"
