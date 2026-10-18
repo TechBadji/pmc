@@ -48,10 +48,12 @@ from apps.evaluations.feedforward_report import (
     fmt_pct,
     fr_date,
     name_of,
+    para,
     pct,
     slug,
 )
 from apps.evaluations.models import EvaluationCampaign
+from apps.evaluations.report_ai import render_executive, render_recommendations, strategic_summary
 
 from .aggregation import LOW_SCORE, MIN_RESPONDENTS, aggregate_responses
 from .models import CohesionResponse, PsychologicalSafetyResponse, TeamBoard, TeamCohesionAnalysis, TeamRelationship
@@ -313,7 +315,29 @@ def build_cohesion_report(company, campaign, team, prepared_for):
         "average": "Une équipe moyennement soudée : des appuis réels, des liens à renforcer pour durer",
         "strong": "Une vraie équipe, soudée, qui a de fortes chances de performer dans le long terme",
     }[ice_band(score)]
-    b.h1("Synthèse exécutive", action)
+    recs = _cohesion_recommendations(criteria, strongest)
+    ai = strategic_summary("Cohésion d'équipe (avis des collaborateurs)", perimeter.label, campaign.name, {
+        "grille_du_cabinet": {
+            "ICE": "Indice de Cohésion d'Équipe, moyenne des dix critères notés de 1 à 5, lu arrondi au dixième",
+            "lecture": "ICE < 3 : c'est un groupe ; ICE de 3 à 3,9 : cohésion moyenne, équipe moyennement soudée ; "
+                       "ICE >= 4 : forte cohésion, une vraie équipe qui a de fortes chances de performer dans le long terme",
+            "avis_bas": f"notes <= {LOW_SCORE} sur 5",
+        },
+        "anonymat": f"avis anonymes, publiés à partir de {threshold} répondants",
+        "ICE": round(score, 2), "lecture_ICE": ICE_READING[ice_band(score)][0],
+        "participation": {"repondants": len(responses), "effectif": headcount, "taux_pct": round(100 * participation) if participation is not None else None},
+        "part_avis_bas_pct": round(100 * low_share),
+        "criteres": [{"critere": short_label(c["criterion"]), "moyenne": round(c["score"], 2), "avis_bas_pct": round(100 * (c["low_share"] or 0)),
+                      "avis_4_ou_5_pct": round(100 * (c["distribution"].get(4, 0) + c["distribution"].get(5, 0)) / (c["answers"] or 1)),
+                      "note_dominante": c["mode"]} for c in criteria],
+        "historique_ICE": {camp.name: (round(a["score"], 2) if a["published"] else None) for camp, a in history},
+        "evolution_depuis_campagne_precedente": round(delta, 2) if delta is not None else None,
+        "regard_de_l_encadrant": {"ICE_fiche": float(sheet.ice_score), "OCE_objectif": float(sheet.oce_score)} if sheet_scores else None,
+        "par_direction": {d.name: (round(a["score"], 2) if a["published"] else "non publié") for d, a in directions} or None,
+        "securite_psychologique_PSI": {"global": round(psi["global"], 2), "dimensions": {PSI_LABELS[k]: round(v, 2) for k, v in psi["dimensions"]}} if psi else None,
+        "pistes_identifiees_par_la_plateforme": [r[0] for r in recs],
+    })
+    b.h1("Synthèse exécutive", ai.headline if ai else action)
     tiles = [(f"{fmt_num(score, 2)} / 5", "ICE — indice de cohésion d'équipe (moyenne des dix critères)"),
              (fmt_pct(round(100 * participation)) if participation is not None else str(len(responses)),
               f"de participation ({len(responses)} avis sur {headcount} personnes)"),
@@ -326,29 +350,31 @@ def build_cohesion_report(company, campaign, team, prepared_for):
             ("strong", "ICE de 4 et plus", "forte cohésion : une vraie équipe, qui a de fortes chances de performer dans le long terme")]
     b.box("Lecture de l'ICE", [(f"<b>» {label} : {text}</b> — position de {escape(perimeter.name)}" if key == band else f"{label} : {text}")
                                for key, label, text in grid], tint=TINT_BLUE, color=BLUE)
-    b.h2("Messages clés")
-    title, reading = ICE_READING[ice_band(score)]
-    msgs = [f"<b>Niveau d'ensemble.</b> Avec un ICE de {fmt_num(score, 2)} sur 5 — <b>{title.lower()}</b> — {reading[0].lower()}{reading[1:]} "
-            f"{fmt_pct(round(100 * low_share))} des notes données sont basses, ce qui "
-            + ("signale des situations difficiles à ne pas laisser s'installer." if low_share >= 0.2 else "reste contenu.")]
-    if strongest:
-        msgs.append("<b>Points d'appui.</b> Les critères les mieux notés sont " + ", ".join(
-            f"« {escape(short_label(c['criterion']))} » ({fmt_num(c['score'], 2)})" for c in strongest) + ".")
-    if weakest:
-        msgs.append("<b>Fragilités.</b> Les critères les plus faibles sont " + ", ".join(
-            f"« {escape(short_label(c['criterion']))} » ({fmt_num(c['score'], 2)})" for c in weakest) + " : c'est là que se jouent les progrès.")
-    if divisive and (divisive["low_share"] or 0) >= 0.2:
-        msgs.append(f"<b>Avis partagés.</b> Sur « {escape(short_label(divisive['criterion']))} », "
-                    f"{fmt_pct(round(100 * divisive['low_share']))} des répondants donnent une note basse : un sujet de dialogue prioritaire.")
-    if delta is not None:
-        msgs.append(f"<b>Trajectoire.</b> L'indice {'progresse' if delta > 0.04 else 'recule' if delta < -0.04 else 'est stable'} "
-                    f"({fmt_delta(delta)} point) par rapport à la campagne précédente.")
-    if psi:
-        msgs.append(f"<b>Sécurité psychologique.</b> L'indice PSI s'établit à {fmt_num(psi['global'], 2)} sur 5 "
-                    f"({psi['respondents']} répondants).")
-    b.bullets(msgs)
-    recs = _cohesion_recommendations(criteria, strongest)
-    b.box("Trois priorités pour la suite", [f"<b>{i}.</b> {escape(r[0])}" for i, r in enumerate(recs[:3], 1)], tint=TINT_TEAL, color=TEAL)
+    if ai:
+        render_executive(b, ai, para, escape)
+    else:
+        b.h2("Messages clés")
+        title, reading = ICE_READING[ice_band(score)]
+        msgs = [f"<b>Niveau d'ensemble.</b> Avec un ICE de {fmt_num(score, 2)} sur 5 — <b>{title.lower()}</b> — {reading[0].lower()}{reading[1:]} "
+                f"{fmt_pct(round(100 * low_share))} des notes données sont basses, ce qui "
+                + ("signale des situations difficiles à ne pas laisser s'installer." if low_share >= 0.2 else "reste contenu.")]
+        if strongest:
+            msgs.append("<b>Points d'appui.</b> Les critères les mieux notés sont " + ", ".join(
+                f"« {escape(short_label(c['criterion']))} » ({fmt_num(c['score'], 2)})" for c in strongest) + ".")
+        if weakest:
+            msgs.append("<b>Fragilités.</b> Les critères les plus faibles sont " + ", ".join(
+                f"« {escape(short_label(c['criterion']))} » ({fmt_num(c['score'], 2)})" for c in weakest) + " : c'est là que se jouent les progrès.")
+        if divisive and (divisive["low_share"] or 0) >= 0.2:
+            msgs.append(f"<b>Avis partagés.</b> Sur « {escape(short_label(divisive['criterion']))} », "
+                        f"{fmt_pct(round(100 * divisive['low_share']))} des répondants donnent une note basse : un sujet de dialogue prioritaire.")
+        if delta is not None:
+            msgs.append(f"<b>Trajectoire.</b> L'indice {'progresse' if delta > 0.04 else 'recule' if delta < -0.04 else 'est stable'} "
+                        f"({fmt_delta(delta)} point) par rapport à la campagne précédente.")
+        if psi:
+            msgs.append(f"<b>Sécurité psychologique.</b> L'indice PSI s'établit à {fmt_num(psi['global'], 2)} sur 5 "
+                        f"({psi['respondents']} répondants).")
+        b.bullets(msgs)
+        b.box("Trois priorités pour la suite", [f"<b>{i}.</b> {escape(r[0])}" for i, r in enumerate(recs[:3], 1)], tint=TINT_TEAL, color=TEAL)
 
     # 2. Méthodologie
     b.h1("Méthodologie et périmètre", "Dix critères notés de 1 à 5 par chaque collaborateur, agrégés sous un seuil d'anonymat")
@@ -445,8 +471,13 @@ def build_cohesion_report(company, campaign, team, prepared_for):
             "équipes à exprimer un désaccord ou à signaler un problème, et donc à faire progresser les critères de cohésion ci-dessus.")
 
     # 9. Recommandations
-    b.h1("Plan de recommandations", "Des actions ciblées sur les critères les plus faibles, portées et datées")
-    b.table("Recommandations", ["#", "Action", "Porteur", "Horizon", "Priorité"],
+    if ai:
+        b.h1("Recommandations stratégiques", "Les décisions qui comptent, portées et mesurées")
+        render_recommendations(b, ai, escape, mm, CONTENT_W)
+        b.h2("Plan d'actions opérationnel", room=40 * mm)
+    else:
+        b.h1("Plan de recommandations", "Des actions ciblées sur les critères les plus faibles, portées et datées")
+    b.table("Actions opérationnelles" if ai else "Recommandations", ["#", "Action", "Porteur", "Horizon", "Priorité"],
             [[str(i), escape(r[0]), escape(r[1]), escape(r[2]), r[3]] for i, r in enumerate(recs, 1)],
             [8 * mm, 92 * mm, 30 * mm, 22 * mm, 18 * mm], align=["center", "left", "left", "center", "center"])
     b.box("Prochaines étapes", [
@@ -596,34 +627,53 @@ def build_relational_report(company, campaign, team, prepared_for):
                   "Un climat relationnel tendu, qui appelle une intervention rapide")
     else:
         action = "Une cartographie des relations encore à établir ; les facteurs relationnels sont décrits"
-    b.h1("Synthèse exécutive", action)
+    factors = _factor_counts(boards)
+    recs = _relational_recommendations(total, tension, asymmetric, isolated, pivots, factors, coverage)
+    ai = strategic_summary("Dynamique relationnelle", perimeter.label, campaign.name, {
+        "grille_du_cabinet": {
+            "qualites": "chaque relation est qualifiée dans un sens (de A vers B) : excellente, correcte, difficile, toxique",
+            "pivot": "reçoit au moins deux relations excellentes", "tension": "reçoit une relation toxique ou deux difficiles",
+            "asymetrie": "l'un juge la relation positive, l'autre tendue",
+            "facteurs": "catalyseurs et nourrisseurs font grandir la relation ; inhibiteurs et toxines l'abîment",
+        },
+        "personnes": len(members), "relations_qualifiees": total, "couverture_pct": round(100 * coverage) if coverage else None,
+        "repartition": {QUALITY_LABEL[k]: counts[k] for k in QUALITY_LABEL},
+        "relations_reciproques": reciprocal, "asymetries": [f"{name_of(l.from_user)} / {name_of(l.to_user)} : {QUALITY_LABEL[l.quality]} contre {QUALITY_LABEL[b2.quality]}" for l, b2 in asymmetric[:15]],
+        "pivots": [name_of(m) for m in pivots], "en_tension": [name_of(m) for m in tensions], "sans_relation_qualifiee": len(isolated),
+        "facteurs": {k: [t for t, _n in factors[k].most_common(6)] for k in ("catalysts", "nourishers", "inhibitors", "toxins", "people_strengths", "people_weaknesses")},
+        "par_equipe": {t.name: {"relations": len(tl), "tension_pct": pct(sum(1 for l in tl if l.quality in TENSION), len(tl))}
+                       for t in teams if (tl := [l for l in links if l.team_id == t.id])} if perimeter.is_org else None,
+        "pistes_identifiees_par_la_plateforme": [r[0] for r in recs],
+    })
+    b.h1("Synthèse exécutive", ai.headline if ai else (action))
     b.kpis([
         (str(len(members)), "personnes dans le périmètre"),
         (str(total), "relations qualifiées" + (f" ({fmt_pct(round(100 * coverage))} des relations possibles)" if coverage else "")),
         (fmt_pct(pct(positive, total)) if total else "—", "de relations excellentes ou correctes"),
         (fmt_pct(pct(tension, total)) if total else "—", "de relations difficiles ou toxiques"),
     ])
-    msgs = []
-    if total:
-        msgs.append(f"<b>Climat relationnel.</b> Sur {total} relations qualifiées, {counts['EXCELLENT']} sont excellentes, {counts['CORRECT']} correctes, "
-                    f"{counts['DIFFICULT']} difficiles et {counts['TOXIC']} toxiques.")
-        if pivots:
-            msgs.append("<b>Personnes pivots.</b> " + ", ".join(escape(name_of(m)) for m in pivots[:3])
-                        + " entretiennent le plus de relations excellentes : des relais naturels pour les projets collectifs.")
-        if tensions:
-            msgs.append(f"<b>Tensions.</b> {len(tensions)} personne(s) concentrent des relations difficiles ou toxiques ; elles appellent un échange individuel.")
-        if asymmetric:
-            msgs.append(f"<b>Asymétries.</b> {len(asymmetric)} relation(s) sont vécues de façon opposée par les deux personnes concernées.")
-        if isolated:
-            msgs.append(f"<b>Isolement.</b> {len(isolated)} personne(s) n'apparaissent dans aucune relation qualifiée.")
+    if ai:
+        render_executive(b, ai, para, escape)
     else:
-        msgs.append("<b>Cartographie.</b> Aucune relation n'est encore qualifiée : le rapport s'appuie sur la planche des facteurs relationnels.")
-    factors = _factor_counts(boards)
-    if factors["toxins"]:
-        msgs.append("<b>Toxines relevées.</b> " + ", ".join(f"« {escape(t)} »" for t, _n in factors["toxins"].most_common(3)) + ".")
-    b.bullets(msgs)
-    recs = _relational_recommendations(total, tension, asymmetric, isolated, pivots, factors, coverage)
-    b.box("Trois priorités pour la suite", [f"<b>{i}.</b> {escape(r[0])}" for i, r in enumerate(recs[:3], 1)], tint=TINT_TEAL, color=TEAL)
+        msgs = []
+        if total:
+            msgs.append(f"<b>Climat relationnel.</b> Sur {total} relations qualifiées, {counts['EXCELLENT']} sont excellentes, {counts['CORRECT']} correctes, "
+                        f"{counts['DIFFICULT']} difficiles et {counts['TOXIC']} toxiques.")
+            if pivots:
+                msgs.append("<b>Personnes pivots.</b> " + ", ".join(escape(name_of(m)) for m in pivots[:3])
+                            + " entretiennent le plus de relations excellentes : des relais naturels pour les projets collectifs.")
+            if tensions:
+                msgs.append(f"<b>Tensions.</b> {len(tensions)} personne(s) concentrent des relations difficiles ou toxiques ; elles appellent un échange individuel.")
+            if asymmetric:
+                msgs.append(f"<b>Asymétries.</b> {len(asymmetric)} relation(s) sont vécues de façon opposée par les deux personnes concernées.")
+            if isolated:
+                msgs.append(f"<b>Isolement.</b> {len(isolated)} personne(s) n'apparaissent dans aucune relation qualifiée.")
+        else:
+            msgs.append("<b>Cartographie.</b> Aucune relation n'est encore qualifiée : le rapport s'appuie sur la planche des facteurs relationnels.")
+        if factors["toxins"]:
+            msgs.append("<b>Toxines relevées.</b> " + ", ".join(f"« {escape(t)} »" for t, _n in factors["toxins"].most_common(3)) + ".")
+        b.bullets(msgs)
+        b.box("Trois priorités pour la suite", [f"<b>{i}.</b> {escape(r[0])}" for i, r in enumerate(recs[:3], 1)], tint=TINT_TEAL, color=TEAL)
 
     # 2. Méthodologie
     b.h1("Méthodologie", "Une cartographie qualifiée par l'encadrement, complétée par les facteurs observés")
@@ -699,8 +749,13 @@ def build_relational_report(company, campaign, team, prepared_for):
                      for i in range(max(len(people[0]), len(people[1])))], [CONTENT_W / 2, CONTENT_W / 2], head_color=TEAL)
 
     # 6. Recommandations
-    b.h1("Plan de recommandations", "Agir sur les tensions tôt, s'appuyer sur les relais naturels")
-    b.table("Recommandations", ["#", "Action", "Porteur", "Horizon", "Priorité"],
+    if ai:
+        b.h1("Recommandations stratégiques", "Les décisions qui comptent, portées et mesurées")
+        render_recommendations(b, ai, escape, mm, CONTENT_W)
+        b.h2("Plan d'actions opérationnel", room=40 * mm)
+    else:
+        b.h1("Plan de recommandations", "Agir sur les tensions tôt, s'appuyer sur les relais naturels")
+    b.table("Actions opérationnelles" if ai else "Recommandations", ["#", "Action", "Porteur", "Horizon", "Priorité"],
             [[str(i), escape(r[0]), escape(r[1]), escape(r[2]), r[3]] for i, r in enumerate(recs, 1)],
             [8 * mm, 92 * mm, 30 * mm, 22 * mm, 18 * mm], align=["center", "left", "left", "center", "center"])
 

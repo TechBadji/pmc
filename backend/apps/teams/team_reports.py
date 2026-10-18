@@ -30,14 +30,17 @@ from apps.evaluations.feedforward_report import (
     fmt_pct,
     fr_date,
     name_of,
+    para,
     pct,
 )
 from apps.evaluations.models import EvaluationCampaign, SkillNote
-from apps.evaluations.talent_reports import GREEN, QUADRANT, People, _cover, _intro, _recommendations, quadrant_of
+from apps.evaluations.talent_reports import GREEN, QUADRANT, QUADRANTS as QUADRANTS_LIST, People, _cover, _intro, _recommendations, quadrant_of
 
 from .aggregation import MIN_RESPONDENTS, aggregate_responses
 from .cohesion_report import ICE_READING, ice_band
 from .models import CohesionResponse, PsychologicalSafetyResponse, TeamBoard
+from apps.evaluations.report_ai import render_executive, render_recommendations, strategic_summary
+
 from .psi_texts import DIMENSION_NAME, DIMENSION_QUESTION, DIMENSION_TITLE, STATEMENTS, STATEMENTS_ORG
 from .serializers import PSI_DIMENSIONS
 
@@ -106,19 +109,31 @@ def build_psi_report(company, campaign, team, prepared_for):
     ], [f"Les réponses sont anonymes ; aucun résultat n'est publié en dessous de {threshold} répondants et ce rapport ne présente que des moyennes.",
         "Il est destiné à la Direction Générale, à l'encadrement concerné et à la fonction RH."])
 
-    b.h1("Synthèse exécutive", f"Une sécurité psychologique {psi_level(s['global'])}, portée par « {DIMENSION_TITLE[strongest_dim[0]]} »")
     delta = s["global"] - prev["global"] if prev else None
+    ai = strategic_summary("Psychological Safety Index (PSI)", scope.label, campaign.name, {
+        "grille_du_cabinet": {"dimensions": {DIMENSION_NAME[k]: f"{DIMENSION_TITLE[k]} — {DIMENSION_QUESTION[k]}" for k in PSI_DIMENSIONS},
+                              "lecture": "moins de 2,5 fragile ; 2,5 à 3,25 à consolider ; 3,25 à 4 solide ; 4 et plus forte", "avis_bas": "notes de 1 ou 2"},
+        "anonymat": f"réponses anonymes, publiées à partir de {threshold} répondants",
+        "repondants": s["n"], "effectif": headcount, "indice_global": round(s["global"], 2),
+        "dimensions": {DIMENSION_NAME[k]: round(v, 2) for k, v in s["dims"].items()},
+        "affirmations": [{"texte": statements[i], "moyenne": round(s["items"][i], 2), "avis_bas_pct": round(100 * s["low"][i])} for i in range(12)],
+        "historique": {c.name: {"global": round(h["global"], 2), **{DIMENSION_NAME[k]: round(h["dims"][k], 2) for k in PSI_DIMENSIONS}} for c, h in history},
+    })
+    b.h1("Synthèse exécutive", ai.headline if ai else (f"Une sécurité psychologique {psi_level(s['global'])}, portée par « {DIMENSION_TITLE[strongest_dim[0]]} »"))
     b.kpis([(f"{fmt_num(s['global'], 2)} / 5", "indice PSI global"), (fmt_pct(pct(s["n"], headcount)) if headcount else str(s["n"]), f"de participation ({s['n']} répondants)"),
             (fmt_num(strongest_dim[1], 2), f"dimension la plus forte : {DIMENSION_NAME[strongest_dim[0]]}"),
             (fmt_num(weakest_dim[1], 2), f"dimension la plus faible : {DIMENSION_NAME[weakest_dim[0]]}"),
             ((f"{'+' if delta > 0 else '−' if delta < 0 else '±'}{fmt_num(abs(delta), 2)}") if delta is not None else "—", "évolution depuis la campagne précédente")])
-    worst_items = sorted(range(12), key=lambda i: s["items"][i])[:3]
-    b.bullets([
-        f"<b>Niveau d'ensemble.</b> Indice de {fmt_num(s['global'], 2)} sur 5 : sécurité psychologique <b>{psi_level(s['global'])}</b>.",
-        f"<b>Point d'appui.</b> « {DIMENSION_TITLE[strongest_dim[0]]} » ({fmt_num(strongest_dim[1], 2)}).",
-        f"<b>Fragilité.</b> « {DIMENSION_TITLE[weakest_dim[0]]} » ({fmt_num(weakest_dim[1], 2)}) — {escape(DIMENSION_QUESTION[weakest_dim[0]])}",
-        "<b>Affirmations les moins partagées.</b> " + " ; ".join(f"« {escape(statements[i][:90])}{'…' if len(statements[i]) > 90 else ''} » ({fmt_num(s['items'][i], 2)})" for i in worst_items) + ".",
-    ])
+    if ai:
+        render_executive(b, ai, para, escape)
+    else:
+        worst_items = sorted(range(12), key=lambda i: s["items"][i])[:3]
+        b.bullets([
+            f"<b>Niveau d'ensemble.</b> Indice de {fmt_num(s['global'], 2)} sur 5 : sécurité psychologique <b>{psi_level(s['global'])}</b>.",
+            f"<b>Point d'appui.</b> « {DIMENSION_TITLE[strongest_dim[0]]} » ({fmt_num(strongest_dim[1], 2)}).",
+            f"<b>Fragilité.</b> « {DIMENSION_TITLE[weakest_dim[0]]} » ({fmt_num(weakest_dim[1], 2)}) — {escape(DIMENSION_QUESTION[weakest_dim[0]])}",
+            "<b>Affirmations les moins partagées.</b> " + " ; ".join(f"« {escape(statements[i][:90])}{'…' if len(statements[i]) > 90 else ''} » ({fmt_num(s['items'][i], 2)})" for i in worst_items) + ".",
+        ])
 
     b.h1("Méthodologie", "Douze affirmations, quatre dimensions, un seuil d'anonymat")
     b.bullets([f"<b>{DIMENSION_NAME[k]} — {DIMENSION_TITLE[k]}.</b> {escape(DIMENSION_QUESTION[k])}" for k in PSI_DIMENSIONS] + [
@@ -159,7 +174,7 @@ def build_psi_report(company, campaign, team, prepared_for):
         action, owner = PSI_ADVICE[key]
         recs.append((action, owner, "3 à 6 mois", "Haute" if value < 3 else "Moyenne"))
     recs.append(("Restituer les résultats aux équipes et co-construire avec elles deux engagements concrets", "Managers", "1 mois", "Moyenne"))
-    _recommendations(b, recs)
+    _recommendations(b, recs, ai=ai)
     return b.render(f"Psychological Safety — {scope.name} — {campaign.name}", "Rapport Psychological Safety", f"Psychological Safety · {scope.name}",
                     campaign.name, "CONFIDENTIEL", cover)
 
@@ -215,22 +230,34 @@ def build_strengths_report(company, campaign, team, prepared_for):
     ], ["Les forces et faiblesses individuelles sont présentées de façon agrégée, sans nom.",
         "Ce document est destiné à la Direction Générale, à l'encadrement concerné et à la fonction RH."])
 
-    b.h1("Synthèse exécutive", "Des forces collectives identifiées, des fragilités à traiter en priorité")
     top_soft_s = sorted(by_cat["SOFT_STRENGTH"].items(), key=lambda kv: -len(kv[1]))[:3]
     top_hard_w = sorted(by_cat["HARD_WEAKNESS"].items(), key=lambda kv: -len(kv[1]))[:3]
+    ai = strategic_summary("Forces & faiblesses", scope.label, campaign.name, {
+        "consigne": "Consolider la carte collective (People / Business) et les forces et axes de progrès individuels relevés en évaluation, présentés de façon agrégée.",
+        "cartes_d_equipe": len(boards), "personnes_evaluees": people_evaluated,
+        "carte_collective": {k: [t for t, _n in v.most_common(10)] for k, v in collected.items()},
+        "individuel": {label: [{"element": t, "personnes": len(v), "note_moyenne": round(sum(x for x in v if x is not None) / max(1, len([x for x in v if x is not None])), 2)}
+                               for t, v in sorted(by_cat[cat].items(), key=lambda kv: -len(kv[1]))[:10]]
+                       for cat, label in (("HARD_STRENGTH", "forces_savoir_faire"), ("SOFT_STRENGTH", "forces_savoir_etre"),
+                                          ("HARD_WEAKNESS", "axes_de_progres_savoir_faire"), ("SOFT_WEAKNESS", "axes_de_progres_savoir_etre"))},
+    })
+    b.h1("Synthèse exécutive", ai.headline if ai else ("Des forces collectives identifiées, des fragilités à traiter en priorité"))
     b.kpis([(str(len(boards)), "carte(s) d'équipe exploitée(s)"), (str(people_evaluated), "personnes évaluées"),
             (str(sum(len(v) for v in by_cat["SOFT_STRENGTH"].values()) + sum(len(v) for v in by_cat["HARD_STRENGTH"].values())), "forces individuelles relevées"),
             (str(sum(len(v) for v in by_cat["SOFT_WEAKNESS"].values()) + sum(len(v) for v in by_cat["HARD_WEAKNESS"].values())), "axes de progrès relevés")])
-    msgs = []
-    if collected["people_strengths"]:
-        msgs.append("<b>Forces People de l'équipe.</b> " + ", ".join(f"« {escape(t)} »" for t, _ in collected["people_strengths"].most_common(3)) + ".")
-    if collected["business_weaknesses"]:
-        msgs.append("<b>Faiblesses Business.</b> " + ", ".join(f"« {escape(t)} »" for t, _ in collected["business_weaknesses"].most_common(3)) + ".")
-    if top_soft_s:
-        msgs.append("<b>Savoir-être les plus souvent cités comme forces.</b> " + ", ".join(f"« {escape(t)} » ({len(v)})" for t, v in top_soft_s) + ".")
-    if top_hard_w:
-        msgs.append("<b>Savoir-faire les plus souvent à renforcer.</b> " + ", ".join(f"« {escape(t)} » ({len(v)})" for t, v in top_hard_w) + ".")
-    b.bullets(msgs or ["Les éléments disponibles sont présentés ci-après."])
+    if ai:
+        render_executive(b, ai, para, escape)
+    else:
+        msgs = []
+        if collected["people_strengths"]:
+            msgs.append("<b>Forces People de l'équipe.</b> " + ", ".join(f"« {escape(t)} »" for t, _ in collected["people_strengths"].most_common(3)) + ".")
+        if collected["business_weaknesses"]:
+            msgs.append("<b>Faiblesses Business.</b> " + ", ".join(f"« {escape(t)} »" for t, _ in collected["business_weaknesses"].most_common(3)) + ".")
+        if top_soft_s:
+            msgs.append("<b>Savoir-être les plus souvent cités comme forces.</b> " + ", ".join(f"« {escape(t)} » ({len(v)})" for t, v in top_soft_s) + ".")
+        if top_hard_w:
+            msgs.append("<b>Savoir-faire les plus souvent à renforcer.</b> " + ", ".join(f"« {escape(t)} » ({len(v)})" for t, v in top_hard_w) + ".")
+        b.bullets(msgs or ["Les éléments disponibles sont présentés ci-après."])
 
     if boards:
         b.h1("La carte collective", "Ce que l'équipe dit d'elle-même")
@@ -266,7 +293,7 @@ def build_strengths_report(company, campaign, team, prepared_for):
         recs.append((f"Traiter la faiblesse Business « {top} » dans le plan d'action de l'équipe", "Encadrant", "3 mois", "Moyenne"))
     if by_cat["SOFT_STRENGTH"] or collected["people_strengths"]:
         recs.append(("Capitaliser sur les forces reconnues : confier des rôles de référent, partager les bonnes pratiques", "Managers", "En continu", "Basse"))
-    _recommendations(b, recs or [("Compléter la carte Forces & faiblesses de l'équipe", "Encadrant", "1 mois", "Moyenne")])
+    _recommendations(b, recs or [("Compléter la carte Forces & faiblesses de l'équipe", "Encadrant", "1 mois", "Moyenne")], ai=ai)
     return b.render(f"Forces & faiblesses — {scope.name} — {campaign.name}", "Rapport Forces & faiblesses", f"Forces & faiblesses · {scope.name}",
                     campaign.name, "CONFIDENTIEL", cover)
 
@@ -299,7 +326,20 @@ def build_team_id_report(company, campaign, team, prepared_for):
     ], ["Ce document est destiné à la Direction Générale, à l'encadrant de l'équipe et à la fonction RH."])
 
     alt = [float(e.altitude_percentage) for e in evals]
-    b.h1("Synthèse exécutive", "L'équipe en un coup d'œil")
+    ai = strategic_summary("Team Performance ID (carte d'identité de la performance de l'équipe)", scope.label, campaign.name, {
+        "grille_du_cabinet": {"ICE": "< 3 un groupe ; 3 à 3,9 équipe moyennement soudée ; >= 4 vraie équipe à forte cohésion",
+                              "niveau_moyen_competence": "3 sur 5 (HSI aptitudes, SSI attitudes)", "quadrants_ID3A": {label: text for _k, label, text, _c in QUADRANTS_LIST}},
+        "carte_d_identite": {f: getattr(board, f) for f in ("vision_missions", "values", "counter_values", "achievements", "failures_lessons", "objectives",
+                                                             "priorities_cohesion", "priorities_business", "targets_vs_actuals", "objectives_plan",
+                                                             "people_strengths", "people_weaknesses", "business_strengths", "business_weaknesses")} if board else None,
+        "membres_evalues": len(evals), "altitude_moyenne_pct": round(sum(alt) / len(alt), 1) if alt else None,
+        "HSI_moyen": round(sum(float(e.hsi) for e in evals) / len(evals), 2) if evals else None,
+        "SSI_moyen": round(sum(float(e.ssi) for e in evals) / len(evals), 2) if evals else None,
+        "quadrants": dict(Counter(QUADRANT[quadrant_of(float(e.hsi), float(e.ssi))][0] for e in evals)),
+        "cohesion": {"ICE": round(cohesion["score"], 2), "lecture": ICE_READING[ice_band(cohesion["score"])][0], "repondants": cohesion["respondents"],
+                     "criteres": {c["criterion"][:80]: round(c["score"], 2) for c in cohesion["criteria"] if c["score"] is not None}} if cohesion["published"] else None,
+    })
+    b.h1("Synthèse exécutive", ai.headline if ai else "L'équipe en un coup d'œil")
     b.kpis([(str(len(evals)), "membres évalués"), (fmt_pct(round(sum(alt) / len(alt))) if alt else "—", "Altitude moyenne"),
             (fmt_num(cohesion["score"], 2) if cohesion["published"] else "—",
              f"ICE — {ICE_READING[ice_band(cohesion['score'])][0].lower()}" if cohesion["published"] else "ICE (avis des membres non publiés)"),
@@ -307,6 +347,8 @@ def build_team_id_report(company, campaign, team, prepared_for):
             (fmt_num(sum(float(e.ssi) for e in evals) / len(evals), 2) if evals else "—", "Attitudes moyennes (SSI)")])
     if board and board.vision_missions:
         b.box("Vision / missions", escape(board.vision_missions), tint=TINT_TEAL, color=TEAL)
+    if ai:
+        render_executive(b, ai, para, escape)
 
     if board:
         b.h1("Identité de l'équipe", "Ce qui la fonde et ce qu'elle a accompli")
@@ -347,6 +389,6 @@ def build_team_id_report(company, campaign, team, prepared_for):
         recs.append((f"Décliner la priorité business « {board.priorities_business[0]} » en objectifs individuels", "Encadrant", "Prochaine campagne", "Moyenne"))
     if board and board.priorities_cohesion:
         recs.append((f"Engager la priorité de cohésion « {board.priorities_cohesion[0]} » dans le plan d'action de l'équipe", "Encadrant", "3 mois", "Moyenne"))
-    _recommendations(b, recs)
+    _recommendations(b, recs, ai=ai)
     return b.render(f"Team Performance ID — {team.name} — {campaign.name}", "Rapport Team Performance ID", f"Team Performance ID · {team.name}",
                     campaign.name, "CONFIDENTIEL", cover)

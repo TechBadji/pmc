@@ -102,3 +102,40 @@ class ReportPdfTests(TestCase):
         self.assertEqual(set(People(self.company, group="service_heads").users()), {self.members[2]})
         self.assertEqual(set(People(self.company, group="leadership").users()), {self.ceo, self.manager, self.members[2]})
         self.assertTrue(service.pk)
+
+
+class ReportJobTests(ReportPdfTests):
+    """Production en arrière-plan : lancer, suivre, télécharger — pour son seul demandeur."""
+
+    def setUp(self):
+        super().setUp()
+        from apps.teams.report_views import ReportJobView
+        ReportJobView.run_in_background = False
+        self.addCleanup(setattr, ReportJobView, "run_in_background", True)
+
+    def client_for(self, user):
+        client = APIClient()
+        client.force_authenticate(user)
+        return client
+
+    def test_job_runs_and_downloads(self):
+        ceo = self.client_for(self.ceo)
+        started = ceo.post("/api/reports/jobs/", {"campaign": self.c2.id, "kind": "tpd"}, format="json", HTTP_HOST="localhost")
+        self.assertEqual(started.status_code, 202, started.data)
+        self.assertEqual(started.data["status"], "READY")
+        self.assertFalse(started.data["ai_written"])
+        status = ceo.get(f"/api/reports/jobs/{started.data['id']}/", HTTP_HOST="localhost")
+        self.assertEqual(status.data["status"], "READY")
+        pdf = ceo.get(f"/api/reports/jobs/{started.data['id']}/download/", HTTP_HOST="localhost")
+        self.assertTrue(pdf.content.startswith(b"%PDF"))
+        other = self.client_for(self.manager)
+        self.assertEqual(other.get(f"/api/reports/jobs/{started.data['id']}/download/", HTTP_HOST="localhost").status_code, 404)
+
+    def test_job_failure_keeps_its_reason(self):
+        started = self.client_for(self.ceo).post("/api/reports/jobs/", {"campaign": self.c1.id, "kind": "ninebox"}, format="json", HTTP_HOST="localhost")
+        self.assertEqual(started.data["status"], "FAILED")
+        self.assertIn("première fois", started.data["error"])
+
+    def test_job_checks_rights_before_starting(self):
+        refused = self.client_for(self.members[0]).post("/api/reports/jobs/", {"campaign": self.c2.id, "kind": "id3a"}, format="json", HTTP_HOST="localhost")
+        self.assertEqual(refused.status_code, 403)

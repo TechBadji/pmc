@@ -43,6 +43,7 @@
       "service_heads": "Tous les responsables de services"
     },
     "onePerson": "Une personne (rapport individuel)",
-    "ownTeam": "{{name}} — équipe dirigeante"
+    "ownTeam": "{{name}} — équipe dirigeante",
+    "writing": "Le rapport est en préparation : la synthèse exécutive est rédigée à partir de vos données, ce qui prend généralement une à deux minutes. Vous pouvez laisser cette fenêtre ouverte."
   }
 }

@@ -43,6 +43,7 @@
       "service_heads": "All heads of department"
     },
     "onePerson": "One person (individual report)",
-    "ownTeam": "{{name}} — leadership team"
+    "ownTeam": "{{name}} — leadership team",
+    "writing": "The report is being prepared: the executive summary is written from your data, which usually takes one to two minutes. You can keep this window open."
   }
 }

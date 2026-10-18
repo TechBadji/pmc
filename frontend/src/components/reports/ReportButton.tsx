@@ -41,6 +41,13 @@ const SCOPES: Record<ReportKind, Scope[]> = {
   person_id: ["person"],
 };
 const GROUPS: Group[] = ["leadership", "directors", "service_heads"];
+interface ReportJob {
+  id: number;
+  status: "PENDING" | "READY" | "FAILED";
+  filename: string;
+  error: string;
+  ai_written: boolean;
+}
 const ORGANISATION = "org";
 const PERSON = "person";
 /** Valeur du sélecteur de périmètre : "org", "person", "g:<groupe>" ou l'id d'une direction. */
@@ -106,7 +113,9 @@ export default function ReportButton({
   function initialPerimeter(k: ReportKind, team: number | "", depts: Department[]): Perimeter {
     const scopes = SCOPES[k];
     if (scopes.length === 1 && scopes[0] === "person") return PERSON;
-    if (team !== "" && scopes.includes("team")) return team;
+    // Pour le dirigeant, sa propre équipe (présélectionnée par la page) n'est pas un choix : l'organisation l'est.
+    const ownTeam = depts.find((d) => d.id === team)?.manager === user?.id;
+    if (team !== "" && scopes.includes("team") && !(isCompanyAdmin && ownTeam && scopes.includes("org"))) return team;
     if (isCompanyAdmin && scopes.includes("org")) return ORGANISATION;
     return scopes.includes("team") ? depts[0]?.id ?? "" : PERSON;
   }
@@ -144,11 +153,20 @@ export default function ReportButton({
           : typeof perimeter === "string"
             ? { group: perimeter.slice(2) }
             : { team: perimeter };
-      const r = await apiClient.get("/reports/pdf/", { params: { campaign: campaignId, kind, ...target }, responseType: "blob", silent: true });
-      const header = String(r.headers["content-disposition"] ?? "");
-      const encoded = /filename\*=UTF-8''([^;]+)/i.exec(header)?.[1];
-      const plain = /filename="([^"]+)"/i.exec(header)?.[1];
-      const filename = encoded ? decodeURIComponent(encoded) : plain ?? "rapport.pdf";
+      // Production en arrière-plan : la rédaction de la synthèse par Claude prend une à deux minutes.
+      const started = await apiClient.post<ReportJob>("/reports/jobs/", { campaign: campaignId, kind, ...target }, { silent: true });
+      let job = started.data;
+      const deadline = Date.now() + 6 * 60 * 1000;
+      while (job.status === "PENDING" && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        job = (await apiClient.get<ReportJob>(`/reports/jobs/${job.id}/`, { silent: true })).data;
+      }
+      if (job.status !== "READY") {
+        setError(job.error || t("reports.failed"));
+        return;
+      }
+      const r = await apiClient.get(`/reports/jobs/${job.id}/download/`, { responseType: "blob", silent: true });
+      const filename = job.filename || "rapport.pdf";
       const url = window.URL.createObjectURL(new Blob([r.data], { type: "application/pdf" }));
       const link = document.createElement("a");
       link.href = url;
@@ -163,7 +181,8 @@ export default function ReportButton({
       // La réponse d'erreur arrive elle aussi sous forme de fichier : on la relit pour en donner le motif.
       let detail = "";
       try {
-        const body = JSON.parse(await (err?.response?.data as Blob).text());
+        const raw = err?.response?.data;
+        const body = raw instanceof Blob ? JSON.parse(await raw.text()) : raw ?? {};
         detail = Object.entries(body)
           .filter(([key]) => key !== "code")
           .map(([, value]) => value)
@@ -269,6 +288,11 @@ export default function ReportButton({
                 </MenuItem>
               ))}
             </TextField>
+            {busy && (
+              <Alert severity="info" icon={<CircularProgress size={18} />}>
+                {t("reports.writing")}
+              </Alert>
+            )}
             {error && <Alert severity="error">{error}</Alert>}
           </Stack>
         </DialogContent>

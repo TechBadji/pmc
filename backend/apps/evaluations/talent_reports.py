@@ -41,6 +41,7 @@ from .feedforward_report import (
     TINT_TEAL,
     BarList,
     Builder,
+    para,
     ReportError,
     escape,
     fmt_num,
@@ -51,6 +52,7 @@ from .feedforward_report import (
     slug,
 )
 from .models import Evaluation, EvaluationCampaign, SkillNote
+from .report_ai import render_executive, render_recommendations, strategic_summary
 
 GREEN = colors.HexColor("#4A9A52")
 RATINGS = [("VERY_LOW", "Très faible", "< 50 %", RED), ("LOW", "Faible", "50-74 %", ORANGE), ("AVERAGE", "Moyen", "75-89 %", colors.HexColor("#D9B42C")),
@@ -149,9 +151,17 @@ def _intro(b, text, confidentiality):
     b.toc()
 
 
-def _recommendations(b, recs, intro="Des actions ciblées, portées et datées"):
-    b.h1("Plan de recommandations", intro)
-    b.table("Recommandations", ["#", "Action", "Porteur", "Horizon", "Priorité"],
+def _recommendations(b, recs, intro="Des actions ciblées, portées et datées", ai=None):
+    """Recommandations stratégiques rédigées (si la rédaction a répondu), puis le plan d'actions opérationnel."""
+    if ai:
+        b.h1("Recommandations stratégiques", "Les décisions qui comptent, portées et mesurées")
+        render_recommendations(b, ai, escape, mm, CONTENT_W)
+        if not recs:
+            return
+        b.h2("Plan d'actions opérationnel", room=40 * mm)
+    else:
+        b.h1("Plan de recommandations", intro)
+    b.table("Actions opérationnelles" if ai else "Recommandations", ["#", "Action", "Porteur", "Horizon", "Priorité"],
             [[str(i), escape(r[0]), escape(r[1]), escape(r[2]), r[3]] for i, r in enumerate(recs, 1)],
             [8 * mm, 92 * mm, 30 * mm, 22 * mm, 18 * mm], align=["center", "left", "left", "center", "center"])
 
@@ -289,22 +299,54 @@ def build_id3a_report(company, campaign, team, prepared_for):
     ], ["Ce rapport est nominatif. Il est destiné à la Direction Générale, à l'encadrement concerné et à la fonction RH."])
 
     talents_share = pct(by_q["talents"], n)
-    b.h1("Synthèse exécutive", "Un vivier de talents clés à fidéliser" if talents_share >= 50 else
-         "Un potentiel réel, mais une part importante des équipes à accompagner")
+    ratings = Counter(r["rating"] for r in rows)
+    gap = avg("hsi") - avg("ssi")
+    transitions = Counter()
+    if prev:
+        for r in rows:
+            if r["user"].id in prev:
+                transitions[f"{QUADRANT[quadrant_of(prev[r['user'].id][0], prev[r['user'].id][1])][0]} -> {QUADRANT[r['q']][0]}"] += 1
+    by_dept_facts = defaultdict(list)
+    for r in rows:
+        by_dept_facts[_department_name(r["user"])].append(r)
+    ai = strategic_summary("Matrice ID-3A (Aptitudes × Attitudes = Altitude)", scope.label, campaign.name, {
+        "grille_du_cabinet": {
+            "niveau_moyen_competence": "3 sur 5, en Hard Skills (HSI, aptitudes) comme en Soft Skills (SSI, attitudes)",
+            "quadrants": {label: text for _k, label, text, _c in QUADRANTS},
+            "altitude": "moyenne des taux d'atteinte des objectifs business et people ; paliers : très faible < 50 %, faible 50-74 %, moyen 75-89 %, bon 90-100 %, exceptionnel > 100 %",
+        },
+        "effectif_evalue": n,
+        "moyennes": {"HSI": round(avg("hsi"), 2), "SSI": round(avg("ssi"), 2), "altitude_pct": round(avg("alt"), 1), "ecart_HSI_moins_SSI": round(gap, 2)},
+        "quadrants": {QUADRANT[k][0]: {"effectif": by_q[k], "part_pct": pct(by_q[k], n),
+                                       "altitude_moyenne_pct": round(sum(r["alt"] for r in rows if r["q"] == k) / by_q[k], 1) if by_q[k] else None}
+                      for k, *_ in QUADRANTS},
+        "paliers_de_performance": {RATING_LABEL[k]: ratings[k] for k, *_ in RATINGS},
+        "objectifs_moyens": {"business_pct": round(sum(r["biz"] or 0 for r in rows) / n, 1), "people_pct": round(sum(r["ppl"] or 0 for r in rows) / n, 1)},
+        "campagne_precedente": prev_camp.name if prev else None,
+        "changements_de_quadrant_depuis_la_campagne_precedente": dict(transitions) if prev else None,
+        "par_direction": {d: {"evalues": len(rs), "HSI": round(sum(r["hsi"] for r in rs) / len(rs), 2), "SSI": round(sum(r["ssi"] for r in rs) / len(rs), 2),
+                              "altitude_pct": round(sum(r["alt"] for r in rs) / len(rs), 1), "talents_cles_pct": pct(sum(1 for r in rs if r["q"] == "talents"), len(rs))}
+                          for d, rs in sorted(by_dept_facts.items())} if scope.spans_departments else None,
+        "personnes": [{"nom": name_of(r["user"]), "poste": r["user"].position, "HSI": round(r["hsi"], 2), "SSI": round(r["ssi"], 2),
+                       "altitude_pct": round(r["alt"]), "quadrant": QUADRANT[r["q"]][0]} for r in rows[:80]],
+    })
+    b.h1("Synthèse exécutive", ai.headline if ai else ("Un vivier de talents clés à fidéliser" if talents_share >= 50 else
+         "Un potentiel réel, mais une part importante des équipes à accompagner"))
     b.kpis([(str(n), "personnes évaluées"), (fmt_num(avg("hsi"), 2), "indice moyen des Aptitudes (HSI)"),
             (fmt_num(avg("ssi"), 2), "indice moyen des Attitudes (SSI)"), (fmt_pct(round(avg("alt"))), "Altitude moyenne (objectifs)"),
             (fmt_pct(talents_share), "en quadrant « Talents clés »")])
-    msgs = [f"<b>Répartition.</b> " + ", ".join(f"{by_q[k]} {QUADRANT[k][0].lower()} ({fmt_pct(pct(by_q[k], n))})" for k, *_ in QUADRANTS) + "."]
-    gap = avg("hsi") - avg("ssi")
-    msgs.append(f"<b>Équilibre.</b> " + ("Les aptitudes devancent les attitudes" if gap > 0.15 else "Les attitudes devancent les aptitudes" if gap < -0.15
-                                         else "Aptitudes et attitudes sont équilibrées") + f" (écart moyen {fmt_num(abs(gap), 2)}).")
-    ratings = Counter(r["rating"] for r in rows)
-    msgs.append(f"<b>Altitude.</b> {ratings['GOOD'] + ratings['OUTSTANDING']} personnes atteignent ou dépassent leurs objectifs (≥ 90 %), "
-                f"{ratings['VERY_LOW'] + ratings['LOW']} restent sous 75 %.")
-    if prev:
-        moved = [r for r in rows if r["user"].id in prev and quadrant_of(prev[r["user"].id][0], prev[r["user"].id][1]) != r["q"]]
-        msgs.append(f"<b>Mouvements.</b> {len(moved)} personne(s) ont changé de quadrant depuis « {escape(prev_camp.name)} ».")
-    b.bullets(msgs)
+    if ai:
+        render_executive(b, ai, para, escape)
+    else:
+        msgs = [f"<b>Répartition.</b> " + ", ".join(f"{by_q[k]} {QUADRANT[k][0].lower()} ({fmt_pct(pct(by_q[k], n))})" for k, *_ in QUADRANTS) + "."]
+        msgs.append(f"<b>Équilibre.</b> " + ("Les aptitudes devancent les attitudes" if gap > 0.15 else "Les attitudes devancent les aptitudes" if gap < -0.15
+                                             else "Aptitudes et attitudes sont équilibrées") + f" (écart moyen {fmt_num(abs(gap), 2)}).")
+        msgs.append(f"<b>Altitude.</b> {ratings['GOOD'] + ratings['OUTSTANDING']} personnes atteignent ou dépassent leurs objectifs (≥ 90 %), "
+                    f"{ratings['VERY_LOW'] + ratings['LOW']} restent sous 75 %.")
+        if prev:
+            msgs.append(f"<b>Mouvements.</b> {sum(transitions.values()) - sum(v for k, v in transitions.items() if k.split(' -> ')[0] == k.split(' -> ')[1])} "
+                        f"personne(s) ont changé de quadrant depuis « {escape(prev_camp.name)} ».")
+        b.bullets(msgs)
 
     b.h1("Méthodologie", "Deux indices de compétences, un seuil, quatre quadrants")
     b.bullets([
@@ -370,7 +412,7 @@ def build_id3a_report(company, campaign, team, prepared_for):
         recs.append(("Fidéliser les talents clés : missions élargies, visibilité, plan de carrière et préparation de la relève", "Direction Générale et RH", "En continu", "Moyenne"))
     if ratings["VERY_LOW"] + ratings["LOW"]:
         recs.append(("Revoir avec chaque personne sous 75 % d'Altitude la faisabilité de ses objectifs et les moyens alloués", "Managers", "1 mois", "Haute"))
-    _recommendations(b, recs or [("Maintenir le dispositif et mesurer à nouveau à la prochaine campagne", "Managers", "Prochaine campagne", "Basse")])
+    _recommendations(b, recs or [("Maintenir le dispositif et mesurer à nouveau à la prochaine campagne", "Managers", "Prochaine campagne", "Basse")], ai=ai)
 
     b.h1_plain("Annexe — Détail par personne")
     b.table("Indices et Altitude par personne", ["Personne", "Direction", "HSI", "SSI", "Altitude", "Palier", "Quadrant"],
@@ -518,6 +560,13 @@ class NineBoxGrid(Flowable):
         c.restoreState()
 
 
+def _group_by_department(talents_list):
+    out = defaultdict(list)
+    for t in talents_list:
+        out[_department_name(t.user)].append(t)
+    return out
+
+
 def _talent_kpis(placed):
     improving = sum(1 for t in placed if t.progression > 0)
     leaders = sum(1 for t in placed if t.performance >= 90 and t.progression >= 6)
@@ -553,21 +602,42 @@ def build_ninebox_report(company, campaign, team, prepared_for):
         "priorités d'accompagnement ; il se discute avec chaque manager avant toute décision.",
     ], ["Ce rapport est nominatif. Il est destiné à la Direction Générale, à l'encadrement concerné et à la fonction RH."])
 
-    b.h1("Synthèse exécutive", "Un vivier en dynamique positive" if pct(improving, n) >= 60 else
-         "Des performances à relancer : la trajectoire d'une partie des talents s'infléchit")
+    ai = strategic_summary("9 Box Performance Trajectory", scope.label, campaign.name, {
+        "grille_du_cabinet": {
+            "performance": "Altitude = moyenne des taux d'atteinte des objectifs business et people ; paliers faible < 75 %, moyen 75-89 %, élevé >= 90 %",
+            "progression": "écart relatif avec la propre évaluation précédente de la personne ; paliers régression ou nulle <= 0 %, modérée < 6 %, forte >= 6 %",
+            "cases": {v[0]: v[1] for v in BOXES.values()},
+            "leader_moteur": "performance >= 90 % et progression >= 6 %", "a_risque": "performance < 90 % et progression <= 0 %",
+        },
+        "talents_positionnes": n, "evalues_pour_la_premiere_fois": len(unrated),
+        "en_progression": improving, "leaders_moteurs": leaders, "a_risque": at_risk,
+        "repartition_par_case": {BOXES[k][0]: counts.get(k, 0) for k in BOXES},
+        "altitude_moyenne_pct": round(sum(t.performance for t in placed) / n, 1),
+        "progression_moyenne_pct": round(sum(t.progression for t in placed) / n, 1),
+        "par_direction": {d: {"talents": len(ts), "altitude_pct": round(sum(t.performance for t in ts) / len(ts), 1),
+                              "progression_pct": round(sum(t.progression for t in ts) / len(ts), 1)}
+                          for d, ts in sorted(_group_by_department(placed).items())} if scope.spans_departments else None,
+        "personnes": [{"nom": name_of(t.user), "poste": t.user.position, "precedente_pct": round(t.previous), "actuelle_pct": round(t.performance),
+                       "progression_pct": t.progression, "case": BOXES[t.box][0]} for t in placed[:80]],
+    })
+    b.h1("Synthèse exécutive", ai.headline if ai else ("Un vivier en dynamique positive" if pct(improving, n) >= 60 else
+         "Des performances à relancer : la trajectoire d'une partie des talents s'infléchit"))
     b.kpis([(str(n), "talents positionnés"), (fmt_pct(pct(improving, n)), "en progression"), (str(leaders), "leaders moteurs"),
             (str(at_risk), "à risque (< 90 % et sans progression)")])
-    top_box = counts.most_common(1)[0]
-    msgs = [f"<b>Case la plus peuplée.</b> « {BOXES[top_box[0]][0]} » ({top_box[1]} personnes, {fmt_pct(pct(top_box[1], n))}) : {BOXES[top_box[0]][1].lower()}."]
-    if leaders:
-        msgs.append(f"<b>Leaders moteurs.</b> {leaders} personne(s) cumulent haute performance et forte progression : à reconnaître et fidéliser.")
-    if at_risk:
-        msgs.append(f"<b>Vigilance.</b> {at_risk} personne(s) sont sous 90 % sans progresser : un plan de redressement s'impose.")
-    if counts["20"]:
-        msgs.append(f"<b>Décélération.</b> {counts['20']} haut(s) performeur(s) reculent : un signal d'essoufflement à traiter tôt.")
-    if unrated:
-        msgs.append(f"<b>Non positionnés.</b> {len(unrated)} personne(s) évaluée(s) pour la première fois : progression non calculable.")
-    b.bullets(msgs)
+    if ai:
+        render_executive(b, ai, para, escape)
+    else:
+        top_box = counts.most_common(1)[0]
+        msgs = [f"<b>Case la plus peuplée.</b> « {BOXES[top_box[0]][0]} » ({top_box[1]} personnes, {fmt_pct(pct(top_box[1], n))}) : {BOXES[top_box[0]][1].lower()}."]
+        if leaders:
+            msgs.append(f"<b>Leaders moteurs.</b> {leaders} personne(s) cumulent haute performance et forte progression : à reconnaître et fidéliser.")
+        if at_risk:
+            msgs.append(f"<b>Vigilance.</b> {at_risk} personne(s) sont sous 90 % sans progresser : un plan de redressement s'impose.")
+        if counts["20"]:
+            msgs.append(f"<b>Décélération.</b> {counts['20']} haut(s) performeur(s) reculent : un signal d'essoufflement à traiter tôt.")
+        if unrated:
+            msgs.append(f"<b>Non positionnés.</b> {len(unrated)} personne(s) évaluée(s) pour la première fois : progression non calculable.")
+        b.bullets(msgs)
 
     b.h1("Méthodologie", "Trois paliers de performance, trois paliers de progression")
     b.bullets([
@@ -602,7 +672,7 @@ def build_ninebox_report(company, campaign, team, prepared_for):
         recs.append(("Bâtir des plans de progression ciblés pour les contributeurs en développement et sécuriser les redressements engagés", "Managers", "3 mois", "Moyenne"))
     if counts["22"] + counts["12"] + counts["21"]:
         recs.append(("Inscrire leaders moteurs, talents en accélération et performeurs solides dans les plans de succession", "Direction Générale et RH", "6 mois", "Moyenne"))
-    _recommendations(b, recs)
+    _recommendations(b, recs, ai=ai)
     return b.render(f"9 Box — {scope.name} — {campaign.name}", "Rapport 9 Box", f"9 Box · {scope.name}", campaign.name, "CONFIDENTIEL", cover)
 
 
@@ -629,19 +699,37 @@ def build_tpd_report(company, campaign, team, prepared_for):
         "Là où le 9 Box classe, l'ID-TPD mesure : il permet de suivre dans la durée la dynamique de chaque talent et de l'équipe.",
     ], ["Ce rapport est nominatif. Il est destiné à la Direction Générale, à l'encadrement concerné et à la fonction RH."])
 
-    b.h1("Synthèse exécutive", f"Une Altitude moyenne de {fmt_num(avg_perf, 1)} %" + (f", en {'hausse' if avg_prog > 0 else 'baisse'} de {fmt_num(abs(avg_prog), 1)} % en moyenne" if avg_prog is not None else ""))
+    ai = strategic_summary("ID-TPD — Talents Performance Dashboard", scope.label, campaign.name, {
+        "grille_du_cabinet": {"paliers_de_performance": {label: rng for _k, label, rng, _c in RATINGS},
+                              "progression": "écart relatif avec la propre évaluation précédente de la personne"},
+        "talents_evalues": n, "avec_progression_calculable": len(placed),
+        "altitude_moyenne_pct": round(avg_perf, 1), "progression_moyenne_pct": round(avg_prog, 1) if avg_prog is not None else None,
+        "en_progression": improving, "leaders_moteurs": leaders, "a_risque": at_risk,
+        "paliers": {RATING_LABEL[k]: ratings[k] for k, *_ in RATINGS},
+        "campagnes_suivies": [c.name for c in campaigns],
+        "altitude_moyenne_par_campagne_pct": {c.name: (lambda vals: round(sum(vals) / len(vals), 1) if vals else None)(
+            [float(e.altitude_percentage) for lst in history.values() for e in lst if e.campaign_id == c.id]) for c in campaigns},
+        "par_direction": {d: {"talents": len(ts), "altitude_pct": round(sum(t.performance for t in ts) / len(ts), 1)}
+                          for d, ts in sorted(_group_by_department(points).items())} if scope.spans_departments else None,
+        "personnes": [{"nom": name_of(t.user), "poste": t.user.position, "altitude_pct": round(t.performance),
+                       "progression_pct": t.progression, "palier": RATING_LABEL.get(t.rating)} for t in points[:80]],
+    })
+    b.h1("Synthèse exécutive", ai.headline if ai else (f"Une Altitude moyenne de {fmt_num(avg_perf, 1)} %" + (f", en {'hausse' if avg_prog > 0 else 'baisse'} de {fmt_num(abs(avg_prog), 1)} % en moyenne" if avg_prog is not None else "")))
     b.kpis([(str(n), "talents évalués"), (fmt_pct(round(avg_perf)), "Altitude moyenne"),
             ((f"{'+' if avg_prog > 0 else ''}{fmt_num(avg_prog, 1)} %") if avg_prog is not None else "—", "progression moyenne"),
             (str(leaders), "leaders moteurs"), (str(at_risk), "à risque")])
-    msgs = [f"<b>Paliers.</b> " + ", ".join(f"{ratings[k]} {label.lower()}" for k, label, *_ in RATINGS) + "."]
-    if placed:
-        best = max(placed, key=lambda t: t.progression)
-        worst = min(placed, key=lambda t: t.progression)
-        msgs.append(f"<b>Plus forte progression.</b> {escape(name_of(best.user))} (+{fmt_num(best.progression, 1)} %).")
-        if worst.progression < 0:
-            msgs.append(f"<b>Plus fort recul.</b> {escape(name_of(worst.user))} ({fmt_num(worst.progression, 1)} %).")
-        msgs.append(f"<b>Dynamique.</b> {improving} talents sur {len(placed)} progressent ({fmt_pct(pct(improving, len(placed)))}).")
-    b.bullets(msgs)
+    if ai:
+        render_executive(b, ai, para, escape)
+    else:
+        msgs = [f"<b>Paliers.</b> " + ", ".join(f"{ratings[k]} {label.lower()}" for k, label, *_ in RATINGS) + "."]
+        if placed:
+            best = max(placed, key=lambda t: t.progression)
+            worst = min(placed, key=lambda t: t.progression)
+            msgs.append(f"<b>Plus forte progression.</b> {escape(name_of(best.user))} (+{fmt_num(best.progression, 1)} %).")
+            if worst.progression < 0:
+                msgs.append(f"<b>Plus fort recul.</b> {escape(name_of(worst.user))} ({fmt_num(worst.progression, 1)} %).")
+            msgs.append(f"<b>Dynamique.</b> {improving} talents sur {len(placed)} progressent ({fmt_pct(pct(improving, len(placed)))}).")
+        b.bullets(msgs)
 
     b.h1("Paliers de performance", "Comment se répartit l'atteinte des objectifs")
     b.figure_block("Talents par palier de performance",
@@ -686,7 +774,7 @@ def build_tpd_report(company, campaign, team, prepared_for):
         recs.insert(0, (f"Revoir sans attendre la situation des {at_risk} talent(s) à risque : objectifs, moyens, accompagnement", "Managers et RH", "1 mois", "Haute"))
     if ratings["OUTSTANDING"]:
         recs.append(("Vérifier que les objectifs dépassés (> 100 %) étaient suffisamment ambitieux, et reconnaître ces performances", "Managers", "Prochaine campagne", "Basse"))
-    _recommendations(b, recs)
+    _recommendations(b, recs, ai=ai)
     return b.render(f"ID-TPD — {scope.name} — {campaign.name}", "Rapport ID-TPD", f"ID-TPD · {scope.name}", campaign.name, "CONFIDENTIEL", cover)
 
 
@@ -716,7 +804,35 @@ def build_person_id_report(company, campaign, subject, prepared_for):
         "C'est un support d'entretien : il se lit avec la personne, pour construire ensemble son plan de développement.",
     ], ["Ce rapport est personnel. Il est destiné à la personne concernée, à son manager, à la Direction Générale et à la fonction RH."])
 
-    b.h1("Synthèse", "Le profil en un coup d'œil")
+    notes_now = list(SkillNote.objects.filter(evaluation=current).exclude(text="").order_by("category", "order")) if current else []
+    prev_eval = next((e for e in reversed(evals) if e.campaign.start_date < campaign.start_date), None) if current else None
+    talent = Talent(subject, float(current.altitude_percentage), float(prev_eval.altitude_percentage), current.performance_rating) if prev_eval else None
+    profile_facts = {}
+    if profile:
+        for f in ("contract_type", "qualifications", "previous_positions", "professional_achievements", "personal_achievements", "vision_aspirations",
+                  "personal_projects", "motivates", "dislikes", "personality_traits", "bono_hat", "brings_to_team", "brings_to_manager",
+                  "expects_from_team", "expects_from_manager", "dev_priorities", "dev_professional_perspectives", "dev_actions_support", "dev_risks_obstacles"):
+            value = getattr(profile, f)
+            if value:
+                profile_facts[PerformanceProfile._meta.get_field(f).verbose_name] = value
+    ai = strategic_summary("Performance ID individuelle (carte d'identité de la performance)", name_of(subject), campaign.name, {
+        "grille_du_cabinet": {"niveau_moyen_competence": "3 sur 5 (HSI aptitudes, SSI attitudes)", "quadrants_ID3A": {label: text for _k, label, text, _c in QUADRANTS},
+                              "cases_9_box": {v[0]: v[1] for v in BOXES.values()}},
+        "consigne": "Rapport individuel adressé au manager et à la Direction : synthèse du potentiel, des risques et du plan de développement de la personne ; "
+                    "les recommandations portent sur son développement, sa rétention et sa contribution.",
+        "personne": {"nom": name_of(subject), "poste": subject.position, "direction": _department_name(subject), "age": subject.age,
+                     "anciennete_entreprise_ans": subject.years_in_company, "experience_totale_ans": subject.total_experience_years,
+                     "anciennete_dans_le_poste_ans": subject.years_in_current_role},
+        "evaluations": [{"campagne": e.campaign.name, "business_pct": float(e.business_objectives_score), "people_pct": float(e.people_objectives_score),
+                         "altitude_pct": float(e.altitude_percentage), "palier": RATING_LABEL.get(e.performance_rating), "HSI": float(e.hsi), "SSI": float(e.ssi)} for e in evals],
+        "quadrant_ID3A_actuel": QUADRANT[quadrant_of(float(current.hsi), float(current.ssi))][0] if current else None,
+        "case_9_box": BOXES[talent.box][0] if talent and talent.box else None,
+        "forces_et_axes_de_progres": {
+            label: [f"{n.text} ({float(n.score)})" if n.score is not None else n.text for n in notes_now if n.get_category_display() == label]
+            for label in {n.get_category_display() for n in notes_now}},
+        "fiche_performance_id": profile_facts,
+    })
+    b.h1("Synthèse", ai.headline if ai else "Le profil en un coup d'œil")
     tiles = []
     if current:
         tiles += [(fmt_pct(round(float(current.altitude_percentage))), f"Altitude {campaign.name}"), (fmt_num(float(current.hsi), 2), "Aptitudes (HSI)"),
@@ -739,7 +855,9 @@ def build_person_id_report(company, campaign, subject, prepared_for):
         facts.append(f"<b>Chapeau de Bono.</b> {escape(profile.bono_hat)}.")
     if profile and profile.vision_aspirations:
         facts.append(f"<b>Vision et aspirations.</b> {escape(profile.vision_aspirations)}")
-    if facts:
+    if ai:
+        render_executive(b, ai, para, escape)
+    elif facts:
         b.bullets(facts)
 
     if profile:
@@ -796,6 +914,9 @@ def build_person_id_report(company, campaign, subject, prepared_for):
                 ("Perspectives professionnelles", profile.dev_professional_perspectives), ("Actions de soutien", profile.dev_actions_support),
                 ("Risques et obstacles", profile.dev_risks_obstacles)) if _items(v)]
         b.table("Plan de développement", ["Rubrique", "Éléments"], rows, [55 * mm, CONTENT_W - 55 * mm], align=["left", "left"])
+    if ai:
+        b.h1("Recommandations de développement", "Ce que le manager et la Direction peuvent décider")
+        render_recommendations(b, ai, escape, mm, CONTENT_W)
     b.box("Prochaines étapes", ["Relire ce rapport avec la personne lors de son prochain entretien.",
                                 "Convenir de deux ou trois priorités de développement et des moyens associés.",
                                 "Mettre à jour la fiche Performance ID après l'entretien."])

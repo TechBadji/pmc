@@ -1,6 +1,6 @@
 """URL principal de l'API ID-PMC."""
 from apps.core.presence import PresenceView
-from apps.teams.report_views import ReportPdfView
+from apps.teams.report_views import ReportJobDownloadView, ReportJobView, ReportPdfView
 from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponse
@@ -88,6 +88,9 @@ urlpatterns = [
     path("api/auth/forgot-password/", ForgotPasswordView.as_view(), name="forgot_password"),
     path("api/presence/", PresenceView.as_view(), name="presence"),
     path("api/reports/pdf/", ReportPdfView.as_view(), name="report-pdf"),
+    path("api/reports/jobs/", ReportJobView.as_view(), name="report-jobs"),
+    path("api/reports/jobs/<int:pk>/", ReportJobView.as_view(), name="report-job"),
+    path("api/reports/jobs/<int:pk>/download/", ReportJobDownloadView.as_view(), name="report-job-download"),
     path("api/company-settings/", CompanySettingsView.as_view(), name="company-settings"),
     path("api/company-settings/peer-access/", PeerAccessView.as_view(), name="peer-access"),
     path("api/company-settings/data-reset/", DataResetCatalogueView.as_view(), name="data-reset-catalogue"),

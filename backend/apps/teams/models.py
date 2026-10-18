@@ -317,3 +317,38 @@ class PsychologicalSafetyResponse(models.Model):
 
     def __str__(self):
         return f"PSI — {self.respondent} ({self.campaign})"
+
+
+class GeneratedReport(models.Model):
+    """Rapport PDF produit en arrière-plan à la demande d'un utilisateur.
+
+    La rédaction stratégique par Claude prend une à deux minutes : bien plus
+    que le délai d'une requête web. L'écran lance donc la production, suit son
+    avancement, puis télécharge le fichier. Le PDF est gardé en base et ne sort
+    que par l'API, pour son seul demandeur : il peut nommer des personnes."""
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "En cours"
+        READY = "READY", "Prêt"
+        FAILED = "FAILED", "Échec"
+
+    company = models.ForeignKey("core.Company", on_delete=models.CASCADE, related_name="generated_reports")
+    requested_by = models.ForeignKey("core.User", on_delete=models.CASCADE, related_name="generated_reports")
+    kind = models.CharField("Type", max_length=20)
+    label = models.CharField("Rapport", max_length=120)
+    target_name = models.CharField("Périmètre", max_length=255, blank=True)
+    status = models.CharField("Statut", max_length=10, choices=Status.choices, default=Status.PENDING)
+    filename = models.CharField("Nom du fichier", max_length=255, blank=True)
+    content = models.BinaryField("PDF", null=True, blank=True, editable=False)
+    ai_written = models.BooleanField("Synthèse rédigée par Claude", default=False)
+    error = models.TextField("Motif d'échec", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Rapport généré"
+        verbose_name_plural = "Rapports générés"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.label} — {self.target_name} ({self.get_status_display()})"
