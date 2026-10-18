@@ -29,6 +29,7 @@ import {
   ZAxis,
 } from "recharts";
 import { apiClient } from "@/api/client";
+import ReportButton from "@/components/reports/ReportButton";
 import { useAppSelector } from "@/app/hooks";
 import PageHeader from "@/components/layout/PageHeader";
 import type { Department, Evaluation, Paginated, PerformanceRating, UserRecord } from "@/api/types";
@@ -1032,6 +1033,9 @@ export default function TalentsDashboardPage() {
           view === "boxes" ? "talents.viewBoxes" : view === "trajectory" ? "talents.viewTrajectory" : "talents.viewVisio"
         )}
         subtitle={t("talents.subtitle")}
+        actions={(user?.role === "COMPANY_ADMIN" || user?.role === "MANAGER") && (
+          <ReportButton kinds={["ninebox", "tpd", "id3a"]} defaultKind={view === "boxes" ? "ninebox" : "tpd"} defaultCampaign={campaignId} />
+        )}
       />
 
       {/* Deux lignes de commandes : le choix de la planche d'abord, seul sur

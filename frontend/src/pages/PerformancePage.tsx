@@ -1,6 +1,7 @@
 import { useDisplayScope } from "@/utils/displayScope";
 import { Alert, Box, Button, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
+import ReportButton from "@/components/reports/ReportButton";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
@@ -62,6 +63,7 @@ export default function PerformancePage() {
                 ? "performanceEntry.toggleLabel"
                 : "performanceId.viewTeam"
           )}
+          actions={canEditBoard && <ReportButton kinds={["person_id", "team_id"]} defaultKind={view === "team" ? "team_id" : "person_id"} defaultTeam={teamId} />}
         />
       </Box>
 

@@ -1,0 +1,41 @@
+{
+  "reports": {
+    "open": "Générer un rapport",
+    "title": "Générer un rapport PDF",
+    "intro": "Choisissez le rapport, le périmètre et la campagne. Le fichier PDF se télécharge dès qu'il est prêt.",
+    "kind": {
+      "cohesion": "Cohésion d'équipe",
+      "relational": "Dynamique relationnelle",
+      "psi": "Psychological Safety",
+      "strengths": "Forces & faiblesses",
+      "team_id": "Team Performance ID",
+      "id3a": "Matrice ID-3A",
+      "ninebox": "9 Box",
+      "tpd": "ID-TPD — Talents Performance Dashboard",
+      "person_id": "Performance ID individuelle"
+    },
+    "hint": {
+      "cohesion": "Avis des collaborateurs : participation, indice, critères, évolution, regard de l'encadrant, recommandations. Disponible dès que le seuil d'anonymat est atteint.",
+      "relational": "Cartographie des relations, personnes pivots, tensions, asymétries, catalyseurs et toxines. Rapport nominatif.",
+      "psi": "Indice global, quatre dimensions, douze affirmations, évolution et lecture par direction. Disponible dès que le seuil d'anonymat est atteint.",
+      "strengths": "Carte collective People / Business et forces et axes de progrès individuels consolidés.",
+      "team_id": "Vision, valeurs, réalisations, objectifs et résultats de l'équipe, compétences et cohésion de ses membres.",
+      "id3a": "Matrice Aptitudes × Attitudes, quadrants, paliers de performance, mouvements depuis la campagne précédente.",
+      "ninebox": "Grille performance × progression, conduite à tenir par case, leaders moteurs et talents à risque.",
+      "tpd": "Performance et progression de chaque talent, classement, trajectoires sur les dernières campagnes.",
+      "person_id": "Fiche Performance ID d'une personne : parcours, motivations, évaluations, forces, plan de développement."
+    },
+    "perimeter": "Périmètre",
+    "organisation": "Toute l'organisation ({{company}})",
+    "person": "Personne",
+    "campaign": "Campagne",
+    "pickTeam": "Choisissez une direction.",
+    "pickPerson": "Choisissez une personne.",
+    "pickCampaign": "Choisissez une campagne.",
+    "generate": "Générer le PDF",
+    "busy": "Génération en cours…",
+    "cancel": "Annuler",
+    "done": "Le rapport « {{file}} » a été téléchargé.",
+    "failed": "Le rapport n'a pas pu être généré. Réessayez dans un instant."
+  }
+}

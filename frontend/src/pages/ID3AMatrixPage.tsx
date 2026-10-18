@@ -46,6 +46,7 @@ import {
   ZAxis,
 } from "recharts";
 import { apiClient } from "@/api/client";
+import ReportButton from "@/components/reports/ReportButton";
 import { useAppSelector } from "@/app/hooks";
 import PageHeader from "@/components/layout/PageHeader";
 import type { Department, Evaluation, Paginated, PerformanceRating } from "@/api/types";
@@ -928,6 +929,7 @@ export default function ID3AMatrixPage() {
         title={t("id3aMatrix.title")}
         view={t(viewMode === "matrix" ? "id3aMatrix.viewMatrix" : "id3aMatrix.viewObjectives")}
         subtitle={viewMode === "matrix" ? t("id3aMatrix.subtitleMatrix") : t("id3aMatrix.subtitleObjectives")}
+        actions={(isManager || isCompanyAdmin) && <ReportButton kinds={["id3a", "ninebox", "tpd"]} defaultKind="id3a" />}
       />
 
       {canFilterLeadership && viewMode === "matrix" && teamKpis && (

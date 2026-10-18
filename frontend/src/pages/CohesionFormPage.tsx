@@ -64,7 +64,7 @@ import type {
 import { cohesionColor } from "@/theme";
 import { useCohesionCriteria } from "@/utils/cohesionCriteria";
 import ValidationSummary from "@/components/feedback/ValidationSummary";
-import CohesionReportButton from "@/components/teamBoard/CohesionReportButton";
+import ReportButton from "@/components/reports/ReportButton";
 import { isBlank, isRealDate, toNumber, useIssues } from "@/utils/validation";
 
 type PlanStatus = ActionPlan["status"];
@@ -804,11 +804,10 @@ export default function CohesionFormPage() {
           {!scope.viewHidden("cohesion.psi") && <ToggleButton value="psi">{t("cohesion.viewPsi")}</ToggleButton>}
         </ToggleButtonGroup>
 
-        {/* Rapports PDF : cohésion (avis des collaborateurs) ou dynamique relationnelle. */}
-        <CohesionReportButton
-          campaigns={campaigns}
-          departments={departments}
-          defaultKind={view === "relationship" ? "relational" : "cohesion"}
+        {/* Rapports PDF de la rubrique : cohésion, dynamique relationnelle, forces & faiblesses, PSI, Team Performance ID. */}
+        <ReportButton
+          kinds={["cohesion", "relational", "strengths", "psi", "team_id"]}
+          defaultKind={view === "relationship" ? "relational" : view === "strengths" ? "strengths" : view === "psi" ? "psi" : "cohesion"}
           defaultTeam={orgView || directorsView ? "" : teamId}
           defaultCampaign={campaignId}
         />

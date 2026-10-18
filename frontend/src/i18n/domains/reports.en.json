@@ -1,0 +1,41 @@
+{
+  "reports": {
+    "open": "Generate a report",
+    "title": "Generate a PDF report",
+    "intro": "Choose the report, the scope and the campaign. The PDF downloads as soon as it is ready.",
+    "kind": {
+      "cohesion": "Team cohesion",
+      "relational": "Relationship dynamic",
+      "psi": "Psychological Safety",
+      "strengths": "Strengths & weaknesses",
+      "team_id": "Team Performance ID",
+      "id3a": "ID-3A matrix",
+      "ninebox": "9 Box",
+      "tpd": "ID-TPD — Talents Performance Dashboard",
+      "person_id": "Individual Performance ID"
+    },
+    "hint": {
+      "cohesion": "Employees' opinions: participation, index, criteria, trend, manager's view, recommendations. Available once the anonymity threshold is reached.",
+      "relational": "Relationship map, pivot people, tensions, asymmetries, catalysts and toxins. Named report.",
+      "psi": "Overall index, four dimensions, twelve statements, trend and reading by department. Available once the anonymity threshold is reached.",
+      "strengths": "Collective People / Business board and consolidated individual strengths and development areas.",
+      "team_id": "Team vision, values, achievements, objectives and results, members' skills and cohesion.",
+      "id3a": "Aptitudes × Attitudes matrix, quadrants, performance levels, movements since the previous campaign.",
+      "ninebox": "Performance × progression grid, action per box, driving leaders and talents at risk.",
+      "tpd": "Each talent's performance and progression, ranking, trajectories over recent campaigns.",
+      "person_id": "A person's Performance ID: background, motivations, evaluations, strengths, development plan."
+    },
+    "perimeter": "Scope",
+    "organisation": "Whole organisation ({{company}})",
+    "person": "Person",
+    "campaign": "Campaign",
+    "pickTeam": "Choose a department.",
+    "pickPerson": "Choose a person.",
+    "pickCampaign": "Choose a campaign.",
+    "generate": "Generate PDF",
+    "busy": "Generating…",
+    "cancel": "Cancel",
+    "done": "The report \"{{file}}\" has been downloaded.",
+    "failed": "The report could not be generated. Please try again shortly."
+  }
+}
