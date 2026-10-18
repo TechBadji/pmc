@@ -127,7 +127,21 @@ def was_used():
 
 
 def strategic_summary(report_title, scope_label, campaign_name, facts):
-    """Synthèse rédigée par Claude à partir de `facts` (dict sérialisable), ou `None`."""
+    """Synthèse stratégique : rédigée par Claude quand il est disponible, sinon par
+    le moteur de règles (`report_rules`). `None` seulement si les deux échouent."""
+    written = _claude_summary(report_title, scope_label, campaign_name, facts)
+    if written is not None:
+        return written
+    try:
+        from .report_rules import write
+
+        return write(report_title, scope_label, campaign_name, facts)
+    except Exception:  # noqa: BLE001 — en dernier recours, la rédaction automatique d'origine
+        logger.exception("Rédaction par règles indisponible pour « %s »", report_title)
+        return None
+
+
+def _claude_summary(report_title, scope_label, campaign_name, facts):
     if not enabled():
         return None
     try:

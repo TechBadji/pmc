@@ -45,12 +45,14 @@ class StrategicSummaryTests(SimpleTestCase):
         self.assertIn('"ICE": 3.4', kwargs["messages"][0]["content"])
 
     def test_falls_back_on_refusal_error_or_missing_key(self):
+        # Rapport inconnu du moteur de règles : il ne reste que la rédaction automatique d'origine.
         self.assertIsNone(self.call(fake_client(json.dumps(ANSWER), stop_reason="refusal")))
         broken = mock.MagicMock()
         broken.beta.messages.stream.side_effect = RuntimeError("réseau")
         self.assertIsNone(self.call(broken))
         with mock.patch.dict("os.environ", {"ANTHROPIC_API_KEY": ""}):
             self.assertIsNone(report_ai.strategic_summary("Rapport", "x", "2026", {}))
+        self.assertFalse(report_ai.was_used())
 
 
 class WorkspaceHeaderTests(SimpleTestCase):
