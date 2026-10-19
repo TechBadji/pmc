@@ -1,6 +1,6 @@
 """
 Peuple SUNU IARD sur quatre campagnes (Année 2023, 2024, 2025 closes,
-Semestre 1 2026 ouverte), pour les rubriques que voit son CEO :
+Octobre 2026 ouverte), pour les rubriques que voit son CEO :
 
 - Cohésion d'équipe : avis des collaborateurs sur l'organisation (portée
   ORGANISATION), réponses PSI sur l'organisation, et carte « Forces et
@@ -9,7 +9,7 @@ Semestre 1 2026 ouverte), pour les rubriques que voit son CEO :
 - 360° Feedforward : chaque collaborateur reçoit le guide Round 1 de deux
   collègues et remplit son Round 2 ; le CEO reçoit celui de cinq collaborateurs.
 
-L'ancienne campagne unique « Année 2026 » devient « Semestre 1 2026 ».
+L'ancienne campagne unique « Année 2026 » devient « Octobre 2026 » (nommée « Semestre 1 2026 » jusqu'au 2026-10-19).
 Relancée, la commande RECONSTRUIT ces données (graines fixes : mêmes chiffres
 en local et en production) — ne pas la relancer une fois la démo commencée.
 
@@ -35,9 +35,11 @@ CAMPAIGNS = [
     ("Année 2023", date(2023, 1, 1), date(2023, 12, 31), True),
     ("Année 2024", date(2024, 1, 1), date(2024, 12, 31), True),
     ("Année 2025", date(2025, 1, 1), date(2025, 12, 31), True),
-    ("Semestre 1 2026", date(2026, 1, 1), date(2026, 6, 30), False),
+    ("Octobre 2026", date(2026, 1, 1), date(2026, 6, 30), False),
 ]
 LEGACY_CAMPAIGN = "Année 2026"
+# Nom porté par la campagne en cours jusqu'au 2026-10-19 : une relance la renomme au lieu d'en créer une seconde.
+PREVIOUS_NAMES = ("Semestre 1 2026",)
 PSI_TARGETS = PSI.PROFILES["appartenance sans challenge"]
 PSI_TREND = PSI.TRENDS["progres"]
 BOARD = dict(
@@ -75,6 +77,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Terminé — {company.name} : {len(staff)} collaborateurs, {len(self.campaigns)} campagnes."))
 
     def _campaigns(self):
+        if not EvaluationCampaign.objects.filter(company=self.company, name=CAMPAIGNS[-1][0]).exists():
+            EvaluationCampaign.objects.filter(company=self.company, name__in=PREVIOUS_NAMES).update(name=CAMPAIGNS[-1][0])
         legacy = EvaluationCampaign.objects.filter(company=self.company, name=LEGACY_CAMPAIGN).first()
         if legacy and not EvaluationCampaign.objects.filter(company=self.company, name=CAMPAIGNS[-1][0]).exists():
             legacy.name, legacy.start_date, legacy.end_date = CAMPAIGNS[-1][:3]
