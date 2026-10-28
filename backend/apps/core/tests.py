@@ -137,3 +137,70 @@ class PublicationThresholdTests(TestCase):
         self.assertFalse(one["published"])
         self.assertTrue(two["published"])
         self.assertAlmostEqual(two["score"], 3.5)
+
+
+class CompanyBulkAccountTests(TestCase):
+    """Actions groupées du Super Admin sur les comptes d'une entreprise
+    (réinitialisation des mots de passe, blocage) — pensées pour les démos."""
+
+    def setUp(self):
+        self.company = Company.objects.create(name="Demo Co", slug="demo-co")
+        self.other = Company.objects.create(name="Other Co", slug="other-co")
+        self.root = User.objects.create_user(email="root@pmc.local", password="x", role=User.Role.SUPER_ADMIN, generated_login="ROOTX")
+        self.ceo = User.objects.create_user(email="ceo@demo.co", password="old-pass", role=User.Role.COMPANY_ADMIN, company=self.company, generated_login="DEMOCEO")
+        self.m1 = User.objects.create_user(email="m1@demo.co", password="old-pass", role=User.Role.MEMBER, company=self.company, generated_login="DEMO1")
+        self.m2 = User.objects.create_user(email="m2@demo.co", password="old-pass", role=User.Role.MANAGER, company=self.company, generated_login="DEMO2")
+        self.outsider = User.objects.create_user(email="o@other.co", password="old-pass", role=User.Role.MEMBER, company=self.other, generated_login="OTHER1")
+        self.client = APIClient()
+        self.client.force_authenticate(self.root)
+
+    def url(self, name):
+        return f"/api/companies/{self.company.id}/{name}/"
+
+    def test_reset_passwords_default_excludes_ceo_and_other_companies(self):
+        r = self.client.post(self.url("reset-passwords"), {}, format="json")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.data["updated"], 2)
+        for u in (self.m1, self.m2):
+            u.refresh_from_db()
+            self.assertTrue(u.check_password("123456"))
+            self.assertTrue(u.must_change_password)
+        self.ceo.refresh_from_db()
+        self.outsider.refresh_from_db()
+        self.assertTrue(self.ceo.check_password("old-pass"))
+        self.assertTrue(self.outsider.check_password("old-pass"))
+
+    def test_reset_passwords_custom_with_ceo_without_forced_change(self):
+        r = self.client.post(
+            self.url("reset-passwords"),
+            {"password": "demo2026", "include_admin": True, "must_change_password": False},
+            format="json",
+        )
+        self.assertEqual(r.data["updated"], 3)
+        self.ceo.refresh_from_db()
+        self.assertTrue(self.ceo.check_password("demo2026"))
+        self.assertFalse(self.ceo.must_change_password)
+
+    def test_reset_passwords_rejects_bad_password(self):
+        for bad in ("12345", "demo 2026"):
+            r = self.client.post(self.url("reset-passwords"), {"password": bad}, format="json")
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("password", r.data)
+
+    def test_block_then_unblock_all(self):
+        r = self.client.post(self.url("set-users-active"), {"is_active": False, "include_admin": True}, format="json")
+        self.assertEqual(r.data["updated"], 3)
+        self.assertFalse(User.objects.filter(company=self.company, is_active=True).exists())
+        self.outsider.refresh_from_db()
+        self.assertTrue(self.outsider.is_active)
+        summary = self.client.get(self.url("accounts-summary")).data
+        self.assertEqual((summary["total"], summary["blocked"]), (3, 3))
+        r = self.client.post(self.url("set-users-active"), {"is_active": True}, format="json")
+        self.assertEqual(r.data["updated"], 2)
+        self.ceo.refresh_from_db()
+        self.assertFalse(self.ceo.is_active)
+
+    def test_reserved_to_super_admin(self):
+        self.client.force_authenticate(self.ceo)
+        self.assertEqual(self.client.post(self.url("reset-passwords"), {}, format="json").status_code, 403)
+        self.assertEqual(self.client.post(self.url("set-users-active"), {"is_active": False}, format="json").status_code, 403)

@@ -4,6 +4,7 @@ import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
+import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import UpgradeOutlinedIcon from "@mui/icons-material/UpgradeOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import {
@@ -34,6 +35,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import type { Company, Paginated, Plan } from "@/api/types";
+import CompanyAccountsDialog from "@/components/CompanyAccountsDialog";
 import InlineApiError from "@/components/feedback/InlineApiError";
 import ValidationSummary from "@/components/feedback/ValidationSummary";
 import { describeApiError, type ApiErrorInfo } from "@/utils/apiError";
@@ -74,6 +76,7 @@ export default function CompaniesPage() {
   const [deleteDialogCompany, setDeleteDialogCompany] = useState<Company | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [accountsCompany, setAccountsCompany] = useState<Company | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<ApiErrorInfo | null>(null);
@@ -310,6 +313,11 @@ export default function CompaniesPage() {
                           </IconButton>
                         </span>
                       </Tooltip>
+                      <Tooltip title={t("companies.accounts.tooltip")}>
+                        <IconButton size="small" onClick={() => setAccountsCompany(c)}>
+                          <ManageAccountsOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip
                         title={
                           c.is_active
@@ -493,6 +501,16 @@ export default function CompaniesPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <CompanyAccountsDialog
+        company={accountsCompany}
+        onClose={() => setAccountsCompany(null)}
+        onDone={(message) => {
+          setAccountsCompany(null);
+          setActionMessage(message);
+          load();
+        }}
+      />
 
       <Dialog open={!!deleteDialogCompany} onClose={() => setDeleteDialogCompany(null)} fullWidth maxWidth="xs">
         <DialogTitle sx={{ color: "error.main" }}>{t("companies.deleteTitle")}</DialogTitle>

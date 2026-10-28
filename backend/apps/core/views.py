@@ -200,6 +200,116 @@ class CompanyViewSet(viewsets.ModelViewSet):
         )
         return Response(CompanySerializer(company).data)
 
+    @staticmethod
+    def _account_targets(company, include_admin):
+        """Comptes visés par les actions groupées du Super Admin : Managers et
+        Membres, plus le CEO (Admin Entreprise) quand c'est demandé."""
+        roles = [User.Role.MANAGER, User.Role.MEMBER]
+        if include_admin:
+            roles.append(User.Role.COMPANY_ADMIN)
+        return User.objects.filter(company=company, role__in=roles)
+
+    @staticmethod
+    def _include_admin(request):
+        value = request.data.get("include_admin", False)
+        if not isinstance(value, bool):
+            raise ValidationError({"include_admin": "Indiquez true ou false."})
+        return value
+
+    @action(detail=True, methods=["get"], url_path="accounts-summary")
+    def accounts_summary(self, request, pk=None):
+        """Décompte des comptes de l'entreprise, pour l'écran des actions
+        groupées (réinitialisation des mots de passe, blocage)."""
+        company = self.get_object()
+        users = User.objects.filter(company=company)
+        admins = users.filter(role=User.Role.COMPANY_ADMIN)
+        return Response(
+            {
+                "total": users.count(),
+                "active": users.filter(is_active=True).count(),
+                "blocked": users.filter(is_active=False).count(),
+                "admins": admins.count(),
+                "admins_blocked": admins.filter(is_active=False).count(),
+            }
+        )
+
+    @action(detail=True, methods=["post"], url_path="reset-passwords")
+    def reset_passwords(self, request, pk=None):
+        """Remet d'un seul geste le même mot de passe à tous les comptes de
+        l'entreprise — typiquement avant ou après une démo. Mot de passe par
+        défaut (123456) si aucun n'est fourni ; les règles de complexité
+        Django ne s'appliquent pas ici, puisqu'il s'agit d'un mot de passe
+        provisoire communiqué par le cabinet."""
+        company = self.get_object()
+        include_admin = self._include_admin(request)
+        password = request.data.get("password") or DEFAULT_PASSWORD
+        if not isinstance(password, str):
+            raise ValidationError({"password": "Le mot de passe doit être un texte."})
+        if len(password) < 6:
+            raise ValidationError({"password": "Le mot de passe doit contenir au moins 6 caractères."})
+        if len(password) > 128:
+            raise ValidationError({"password": "Le mot de passe ne doit pas dépasser 128 caractères."})
+        if password != password.strip() or any(ch.isspace() for ch in password):
+            raise ValidationError({"password": "Le mot de passe ne doit pas contenir d'espace."})
+        must_change = request.data.get("must_change_password", True)
+        if not isinstance(must_change, bool):
+            raise ValidationError({"must_change_password": "Indiquez true ou false."})
+
+        targets = list(self._account_targets(company, include_admin))
+        if not targets:
+            raise ValidationError({"detail": "Aucun compte à réinitialiser dans cette entreprise."})
+        # Un seul hachage pour tous : le hacher par compte coûterait plusieurs
+        # secondes sur une entreprise de démo de 100 comptes.
+        user = targets[0]
+        user.set_password(password)
+        hashed = user.password
+        User.objects.filter(id__in=[u.id for u in targets]).update(
+            password=hashed, must_change_password=must_change
+        )
+        PasswordResetRequest.objects.filter(
+            user_id__in=[u.id for u in targets], resolved=False
+        ).update(resolved=True, resolved_at=timezone.now(), resolved_by=request.user)
+        log_event(
+            request.user,
+            "user.password_reset",
+            f"a réinitialisé le mot de passe de {len(targets)} compte(s) de « {company.name} »"
+            f"{' (CEO compris)' if include_admin else ''}.",
+            company=company,
+        )
+        return Response(
+            {
+                "updated": len(targets),
+                "password": password,
+                "must_change_password": must_change,
+                "include_admin": include_admin,
+            }
+        )
+
+    @action(detail=True, methods=["post"], url_path="set-users-active")
+    def set_users_active(self, request, pk=None):
+        """Bloque (ou débloque) tous les comptes de l'entreprise sans toucher
+        à l'entreprise elle-même : à la fin d'une démo, les comptes sont
+        fermés, et on les rouvre tels quels pour la suivante."""
+        company = self.get_object()
+        include_admin = self._include_admin(request)
+        active = request.data.get("is_active")
+        if not isinstance(active, bool):
+            raise ValidationError(
+                {"is_active": "Indiquez true pour débloquer ou false pour bloquer."}
+            )
+        targets = self._account_targets(company, include_admin).exclude(is_active=active)
+        count = targets.count()
+        if count:
+            targets.update(is_active=active)
+            log_event(
+                request.user,
+                "user.unblocked" if active else "user.blocked",
+                f"a {'débloqué' if active else 'bloqué'} {count} compte(s) de « {company.name} »"
+                f"{' (CEO compris)' if include_admin else ''}.",
+                company=company,
+            )
+        return Response({"updated": count, "is_active": active, "include_admin": include_admin})
+
     def perform_destroy(self, instance):
         """Suppression d'une entreprise = suppression en cascade de toutes
         ses données (utilisateurs, départements, évaluations, référentiels de
