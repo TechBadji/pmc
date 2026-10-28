@@ -210,6 +210,12 @@ class CompanyViewSet(viewsets.ModelViewSet):
         return User.objects.filter(company=company, role__in=roles)
 
     @staticmethod
+    def _logins(users):
+        """Identifiants des comptes touchés, pour que le journal dise qui a
+        été concerné et pas seulement combien."""
+        return ", ".join(sorted(u.generated_login or u.email for u in users))
+
+    @staticmethod
     def _include_admin(request):
         value = request.data.get("include_admin", False)
         if not isinstance(value, bool):
@@ -266,14 +272,20 @@ class CompanyViewSet(viewsets.ModelViewSet):
         User.objects.filter(id__in=[u.id for u in targets]).update(
             password=hashed, must_change_password=must_change
         )
-        PasswordResetRequest.objects.filter(
+        closed = PasswordResetRequest.objects.filter(
             user_id__in=[u.id for u in targets], resolved=False
         ).update(resolved=True, resolved_at=timezone.now(), resolved_by=request.user)
+        # Le mot de passe lui-même n'est jamais écrit dans le journal : on
+        # note seulement s'il s'agit de celui par défaut.
         log_event(
             request.user,
             "user.password_reset",
             f"a réinitialisé le mot de passe de {len(targets)} compte(s) de « {company.name} »"
-            f"{' (CEO compris)' if include_admin else ''}.",
+            f"{' (CEO compris)' if include_admin else ' (CEO non compris)'}. "
+            f"Mot de passe : {'par défaut' if password == DEFAULT_PASSWORD else 'personnalisé'} ; "
+            f"changement imposé à la prochaine connexion : {'oui' if must_change else 'non'}"
+            f"{f' ; {closed} demande(s) de réinitialisation en attente close(s)' if closed else ''}. "
+            f"Comptes : {self._logins(targets)}.",
             company=company,
         )
         return Response(
@@ -297,15 +309,16 @@ class CompanyViewSet(viewsets.ModelViewSet):
             raise ValidationError(
                 {"is_active": "Indiquez true pour débloquer ou false pour bloquer."}
             )
-        targets = self._account_targets(company, include_admin).exclude(is_active=active)
-        count = targets.count()
+        targets = list(self._account_targets(company, include_admin).exclude(is_active=active))
+        count = len(targets)
         if count:
-            targets.update(is_active=active)
+            User.objects.filter(id__in=[u.id for u in targets]).update(is_active=active)
             log_event(
                 request.user,
                 "user.unblocked" if active else "user.blocked",
                 f"a {'débloqué' if active else 'bloqué'} {count} compte(s) de « {company.name} »"
-                f"{' (CEO compris)' if include_admin else ''}.",
+                f"{' (CEO compris)' if include_admin else ' (CEO non compris)'}. "
+                f"Comptes : {self._logins(targets)}.",
                 company=company,
             )
         return Response({"updated": count, "is_active": active, "include_admin": include_admin})

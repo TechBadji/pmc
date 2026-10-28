@@ -5,7 +5,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from apps.core.exception_handler import custom_exception_handler
-from apps.core.models import Company, Department, User
+from apps.core.models import AuditLog, Company, Department, User
 from apps.evaluations.models import EvaluationCampaign
 from apps.teams.models import TeamRelationship
 
@@ -180,6 +180,12 @@ class CompanyBulkAccountTests(TestCase):
         self.ceo.refresh_from_db()
         self.assertTrue(self.ceo.check_password("demo2026"))
         self.assertFalse(self.ceo.must_change_password)
+        entry = AuditLog.objects.latest("created_at")
+        self.assertEqual(entry.action, "user.password_reset")
+        self.assertIn("DEMO1, DEMO2, DEMOCEO", entry.description)
+        self.assertIn("personnalisé", entry.description)
+        self.assertIn("prochaine connexion : non", entry.description)
+        self.assertNotIn("demo2026", entry.description)
 
     def test_reset_passwords_rejects_bad_password(self):
         for bad in ("12345", "demo 2026"):
@@ -195,6 +201,10 @@ class CompanyBulkAccountTests(TestCase):
         self.assertTrue(self.outsider.is_active)
         summary = self.client.get(self.url("accounts-summary")).data
         self.assertEqual((summary["total"], summary["blocked"]), (3, 3))
+        entry = AuditLog.objects.latest("created_at")
+        self.assertEqual(entry.action, "user.blocked")
+        self.assertIn("CEO compris", entry.description)
+        self.assertIn("DEMO1, DEMO2, DEMOCEO", entry.description)
         r = self.client.post(self.url("set-users-active"), {"is_active": True}, format="json")
         self.assertEqual(r.data["updated"], 2)
         self.ceo.refresh_from_db()
