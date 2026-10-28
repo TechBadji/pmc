@@ -40,7 +40,7 @@ export default function CompanyAccountsDialog({ company, onClose, onDone }: Prop
   const [summaryError, setSummaryError] = useState(false);
   const [includeAdmin, setIncludeAdmin] = useState(false);
   const [password, setPassword] = useState("123456");
-  const [mustChange, setMustChange] = useState(true);
+  const [mustChange, setMustChange] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiErrorInfo | null>(null);
@@ -59,7 +59,7 @@ export default function CompanyAccountsDialog({ company, onClose, onDone }: Prop
     setSummary(null);
     setIncludeAdmin(false);
     setPassword("123456");
-    setMustChange(true);
+    setMustChange(false);
     setConfirmReset(false);
     setError(null);
     loadSummary();

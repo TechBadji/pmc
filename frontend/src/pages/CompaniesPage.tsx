@@ -3,10 +3,8 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import UpgradeOutlinedIcon from "@mui/icons-material/UpgradeOutlined";
-import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import {
   Alert,
   Button,
@@ -126,13 +124,6 @@ export default function CompaniesPage() {
     } finally {
       setCreating(false);
     }
-  }
-
-  async function handleResetAdminPassword(company: Company) {
-    if (!company.admin_user) return;
-    await apiClient.post(`/users/${company.admin_user}/reset-password/`);
-    setActionMessage(t("companies.adminPasswordReset", { login: company.admin_login }));
-    load();
   }
 
   async function handleToggleCompanyActive(company: Company) {
@@ -284,12 +275,9 @@ export default function CompaniesPage() {
                   </TableCell>
                   <TableCell align="right" onClick={stopRowClick}>
                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                      <Tooltip title={t("companies.bulkUploadTooltip")}>
-                        <IconButton
-                          size="small"
-                          onClick={() => navigate(`/companies/${c.id}/upload`)}
-                        >
-                          <UploadFileOutlinedIcon fontSize="small" />
+                      <Tooltip title={t("companies.accounts.tooltip")}>
+                        <IconButton size="small" onClick={() => setAccountsCompany(c)}>
+                          <ManageAccountsOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title={t("displayScope.tooltip")}>
@@ -300,22 +288,6 @@ export default function CompaniesPage() {
                       <Tooltip title={t("companies.changePlanTooltip")}>
                         <IconButton size="small" onClick={() => openPlanDialog(c)}>
                           <UpgradeOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title={t("companies.resetAdminPasswordTooltip")}>
-                        <span>
-                          <IconButton
-                            size="small"
-                            disabled={!c.admin_user}
-                            onClick={() => handleResetAdminPassword(c)}
-                          >
-                            <LockResetOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                      <Tooltip title={t("companies.accounts.tooltip")}>
-                        <IconButton size="small" onClick={() => setAccountsCompany(c)}>
-                          <ManageAccountsOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip
