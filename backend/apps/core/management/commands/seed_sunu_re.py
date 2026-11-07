@@ -1,7 +1,7 @@
 """
 Jeu de démonstration « SUNU Re » : un CEO (CEOSRE, le Directeur Général) et
 45 collaborateurs EMP1…EMP45, tous avec une photo de portrait, mot de passe
-1234, campagne « Novembre 2026 ».
+123456, campagne « Novembre 2026 ».
 
 Organisation : deux directions (Technique et Rétrocession, qui comprend aussi
 l'Informatique ; Financière et Comptable) avec leurs services, plus la Direction Générale qui regroupe les
@@ -41,7 +41,7 @@ COMPANY_NAME = "SUNU Re"
 CEO_LOGIN = "CEOSRE"
 EMPLOYEE_PREFIX = "EMP"
 EMPLOYEE_COUNT = 45
-PASSWORD = "1234"
+PASSWORD = "123456"
 CAMPAIGN_NAME = "Novembre 2026"
 CAMPAIGN_START = date(2026, 11, 1)
 CAMPAIGN_END = date(2026, 11, 30)
