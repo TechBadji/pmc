@@ -3,8 +3,8 @@ Jeu de démonstration « SUNU Re » : un CEO (CEOSRE, le Directeur Général) et
 45 collaborateurs EMP1…EMP45, tous avec une photo de portrait, mot de passe
 1234, campagne « Novembre 2026 ».
 
-Organisation : deux directions (Technique et Rétrocession, Financière et
-Comptable) avec leurs services, plus la Direction Générale qui regroupe les
+Organisation : deux directions (Technique et Rétrocession, qui comprend aussi
+l'Informatique ; Financière et Comptable) avec leurs services, plus la Direction Générale qui regroupe les
 fonctions rattachées au DG. Chaque direction et chaque service reçoit un
 référentiel Hard Skills et un référentiel Soft Skills de 10 compétences.
 
@@ -56,7 +56,7 @@ DEPARTMENTS = [
     ("SVIE", "Service Souscription Vie", "DTR", "EMP11"),
     ("CTEC", "Service Comptabilité Technique", "DTR", "EMP6"),
     ("DATA", "Service Data et Actuariat", "DTR", "EMP7"),
-    ("INFO", "Service Informatique", "DG", "EMP8"),
+    ("INFO", "Service Informatique", "DTR", "EMP8"),
     ("PBP", "Service Planification, Budget et Pilotage", "DFC", "EMP10"),
     ("TRES", "Service Trésorerie et Placements", "DFC", "EMP13"),
 ]
@@ -70,10 +70,10 @@ LEADERS = [
     ("EMP5", "Chef de Département Souscription", "SOU", "M", "EMP1"),
     ("EMP6", "Responsable Comptabilité Technique", "CTEC", "M", "EMP1"),
     ("EMP7", "Responsable Data et Actuariat", "DATA", "M", "EMP1"),
-    ("EMP8", "Responsable Informatique", "INFO", "M", CEO_LOGIN),
+    ("EMP8", "Responsable Informatique", "INFO", "M", "EMP1"),
     ("EMP9", "Directeur Financier et Comptable", "DFC", "M", CEO_LOGIN),
     ("EMP10", "Responsable Planification, Budget et Pilotage", "PBP", "F", "EMP9"),
-    ("EMP11", "Responsable Souscription Vie", "SVIE", "M", "EMP1"),
+    ("EMP11", "Responsable Souscription Vie", "SVIE", "M", "EMP5"),
     ("EMP12", "Chargé des Processus", "DG", "M", CEO_LOGIN),
     ("EMP13", "Responsable Trésorerie et Placements", "TRES", "M", "EMP9"),
 ]
