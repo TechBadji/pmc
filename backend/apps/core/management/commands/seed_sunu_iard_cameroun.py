@@ -28,7 +28,7 @@ from apps.evaluations.models import EvaluationCampaign
 
 COMPANY_NAME = "SUNU IARD Cameroun"
 CEO_LOGIN = "CEOCMR"
-EMPLOYEE_PREFIX = "EMP"
+EMPLOYEE_PREFIX = "CMR"  # EMP renommés le 2026-11-07 pour SUNU Re
 EMPLOYEE_COUNT = 45
 PASSWORD = "123456"
 CAMPAIGN_NAME = "Novembre 2026"
