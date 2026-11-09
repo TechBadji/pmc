@@ -275,7 +275,8 @@ class Command(BaseCommand):
         for login, _, _, sex, _ in people:
             user = users[login]
             photo = next(pools[sex])
-            if "_portrait" in (user.avatar.name or ""):
+            # Un portrait de démo ou une vraie photo (`_photo`, posée hors dépôt) est gardé.
+            if any(tag in (user.avatar.name or "") for tag in ("_portrait", "_photo")):
                 continue
             if user.avatar:
                 user.avatar.delete(save=False)
@@ -310,7 +311,7 @@ class Command(BaseCommand):
             user.set_password(PASSWORD)
         user.first_name = names.get("first_name") or login
         user.last_name = names.get("last_name", "") if names.get("first_name") else ""
-        user.role, user.position = role, position
+        user.role, user.position = role, names.get("position") or position
         user.company, user.department = company, department
         user.must_change_password = False
         user.is_active = True
