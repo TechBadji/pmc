@@ -3,8 +3,9 @@ Jeu de démonstration « SUNU Re » : un CEO (CEOSRE, le Directeur Général) et
 45 collaborateurs EMP1…EMP45, tous avec une photo de portrait, mot de passe
 123456, campagne « Novembre 2026 ».
 
-Organisation : deux directions (Technique et Rétrocession, qui comprend aussi
-l'Informatique ; Financière et Comptable) avec leurs services, plus la Direction Générale qui regroupe les
+Organisation reprise de l'organigramme du client (2026-11-09) : deux directions
+(Technique et Rétrocession, Financière et Comptable) avec leurs services, plus la
+Direction Générale (IT et Process, Planification-Budget-Pilotage) qui regroupe les
 fonctions rattachées au DG. Chaque direction et chaque service reçoit un
 référentiel Hard Skills et un référentiel Soft Skills de 10 compétences.
 
@@ -56,26 +57,26 @@ DEPARTMENTS = [
     ("SVIE", "Service Souscription Vie", "DTR", "EMP11"),
     ("CTEC", "Service Comptabilité Technique", "DFC", "EMP6"),
     ("DATA", "Service Data et Actuariat", "DTR", "EMP7"),
-    ("INFO", "Service Informatique", "DTR", "EMP8"),
-    ("PBP", "Service Planification, Budget et Pilotage", "DFC", "EMP10"),
-    ("TRES", "Service Trésorerie et Placements", "DFC", "EMP13"),
+    ("INFO", "Service IT et Process", "DG", "EMP8"),
+    ("PBP", "Service Planification, Budget et Pilotage", "DG", "EMP10"),
+    ("TRES", "Service Comptabilité et Trésorerie", "DFC", "EMP13"),
 ]
 
 # login, poste, département, sexe (F/M), login du manager
 LEADERS = [
     ("EMP1", "Directeur Technique et Rétrocession", "DTR", "M", CEO_LOGIN),
     ("EMP2", "Assistante de Direction", "DG", "F", CEO_LOGIN),
-    ("EMP3", "Chauffeur-coursier", "DG", "M", CEO_LOGIN),
+    ("EMP3", "Chauffeur-coursier", "DG", "M", "EMP2"),
     ("EMP4", "Responsable Sinistres", "SIN", "M", "EMP1"),
     ("EMP5", "Chef de Département Souscription", "SOU", "M", "EMP1"),
     ("EMP6", "Responsable Comptabilité Technique", "CTEC", "M", "EMP9"),
     ("EMP7", "Responsable Data et Actuariat", "DATA", "M", "EMP1"),
-    ("EMP8", "Responsable Informatique", "INFO", "M", "EMP1"),
+    ("EMP8", "Senior Manager IT et Process", "INFO", "M", CEO_LOGIN),
     ("EMP9", "Directeur Financier et Comptable", "DFC", "M", CEO_LOGIN),
-    ("EMP10", "Responsable Planification, Budget et Pilotage", "PBP", "F", "EMP9"),
-    ("EMP11", "Responsable Souscription Vie", "SVIE", "M", "EMP5"),
-    ("EMP12", "Chargé des Processus", "DG", "M", CEO_LOGIN),
-    ("EMP13", "Responsable Trésorerie et Placements", "TRES", "M", "EMP9"),
+    ("EMP10", "Manager Planification, Budget et Pilotage", "PBP", "F", CEO_LOGIN),
+    ("EMP11", "Responsable Souscription Vie", "SVIE", "M", "EMP1"),
+    ("EMP12", "Chargé des processus", "INFO", "M", "EMP8"),
+    ("EMP13", "Responsable Comptabilité et Trésorerie", "TRES", "M", "EMP9"),
 ]
 
 # Collaborateurs EMP14…EMP45 : (département, poste, nombre)
@@ -252,7 +253,8 @@ class Command(BaseCommand):
         users = {}
         for login, position, code, _, _ in people:
             role = (User.Role.COMPANY_ADMIN if login == CEO_LOGIN
-                    else User.Role.MANAGER if login in managers.values() else User.Role.MEMBER)
+                    else User.Role.MANAGER if login in managers.values() or login in {p[4] for p in people}
+                    else User.Role.MEMBER)
             users[login] = self._user(company, login, role, position, departments[code], roster.get(login, {}))
         for login, _, code, _, manager in people:
             if login == CEO_LOGIN:
@@ -288,6 +290,9 @@ class Command(BaseCommand):
             for kind, items in ((SkillMatrix.SkillType.HARD, hard), (SkillMatrix.SkillType.SOFT, soft)):
                 matrix, created = SkillMatrix.objects.get_or_create(
                     company=company, department=dept, type=kind, defaults={"name": dept.name})
+                if matrix.name != dept.name:  # service renommé
+                    matrix.name = dept.name
+                    matrix.save(update_fields=["name"])
                 if created:
                     SkillItem.objects.bulk_create(
                         SkillItem(matrix=matrix, name=name, order=i) for i, name in enumerate(items, 1))
