@@ -19,6 +19,8 @@ import NotFoundPage from "@/pages/NotFoundPage";
  * planches de travail, elles n'ont rien à faire dans le paquet initial. */
 const LoginPage1 = lazy(() => import("@/features/auth/variants/login1/LoginPage1"));
 const LoginPage2 = lazy(() => import("@/features/auth/variants/login2/LoginPage2"));
+const LandingV2 = lazy(() => import("@/features/v2/LandingV2"));
+const LoginV2 = lazy(() => import("@/features/v2/LoginV2"));
 
 const ActionPlansPage = lazy(() => import("@/pages/ActionPlansPage"));
 const BulkUploadPage = lazy(() => import("@/pages/BulkUploadPage"));
@@ -70,6 +72,9 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/login1" element={<LoginPage1 />} />
       <Route path="/login2" element={<LoginPage2 />} />
+      {/* Planches v2 (accueil + connexion), testées en local uniquement. */}
+      <Route path="/v2" element={<LandingV2 />} />
+      <Route path="/login-v2" element={<LoginV2 />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/change-password" element={<ChangePasswordPage />} />
