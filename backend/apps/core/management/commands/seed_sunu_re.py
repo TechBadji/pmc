@@ -1,6 +1,6 @@
 """
 Jeu de démonstration « SUNU Re » : un CEO (CEOSRE, le Directeur Général) et
-45 collaborateurs EMP1…EMP45, tous avec une photo de portrait, mot de passe
+45 collaborateurs SRE1…SRE45, tous avec une photo de portrait, mot de passe
 123456, campagne « Novembre 2026 ».
 
 Organisation reprise de l'organigramme du client (2026-11-09) : deux directions
@@ -9,13 +9,13 @@ Direction Générale (IT et Process, Planification-Budget-Pilotage) qui regroupe
 fonctions rattachées au DG. Chaque direction et chaque service reçoit un
 référentiel Hard Skills et un référentiel Soft Skills de 10 compétences.
 
-EMP1…EMP13 sont les responsables de la liste fournie par le client, EMP14…EMP45
+SRE1…SRE13 sont les responsables de la liste fournie par le client, SRE14…SRE45
 des collaborateurs répartis dans les services. Les noms réels ne sont pas
 versionnés : ils viennent d'un fichier JSON passé par `--roster`, de la forme
-`{"CEOSRE": {"first_name": "…", "last_name": "…"}, "EMP1": {…}, …}`.
+`{"CEOSRE": {"first_name": "…", "last_name": "…"}, "SRE1": {…}, …}`.
 Sans ce fichier, le prénom affiché est le login.
 
-La plage EMP1…EMP45 a été libérée au préalable par
+La plage SRE1…SRE45 a été libérée au préalable par
 `rename_aig_emp_accounts --company "SUNU IARD Cameroun" --new-prefix CMR`.
 
 Usage:
@@ -40,7 +40,7 @@ from .seed_sunu_iard_cameroun import FEMALE_POOL, MALE_POOL, PORTRAITS
 
 COMPANY_NAME = "SUNU Re"
 CEO_LOGIN = "CEOSRE"
-EMPLOYEE_PREFIX = "EMP"
+EMPLOYEE_PREFIX = "SRE"  # EMP renommés le 2026-11-20 pour SUNU IARD Mali
 EMPLOYEE_COUNT = 45
 PASSWORD = "123456"
 CAMPAIGN_NAME = "Novembre 2026"
@@ -50,36 +50,36 @@ CAMPAIGN_END = date(2026, 11, 30)
 # code, nom, direction parente (None = direction), login du responsable
 DEPARTMENTS = [
     ("DG", "Direction Générale", None, CEO_LOGIN),
-    ("DTR", "Direction Technique et Rétrocession", None, "EMP1"),
-    ("DFC", "Direction Financière et Comptable", None, "EMP9"),
-    ("SIN", "Service Sinistres", "DTR", "EMP4"),
-    ("SOU", "Département Souscription", "DTR", "EMP5"),
-    ("SVIE", "Service Souscription Vie", "DTR", "EMP11"),
-    ("CTEC", "Service Comptabilité Technique", "DFC", "EMP6"),
-    ("DATA", "Service Data et Actuariat", "DTR", "EMP7"),
-    ("INFO", "Service IT et Process", "DG", "EMP8"),
-    ("PBP", "Service Planification, Budget et Pilotage", "DG", "EMP10"),
-    ("TRES", "Service Comptabilité et Trésorerie", "DFC", "EMP13"),
+    ("DTR", "Direction Technique et Rétrocession", None, "SRE1"),
+    ("DFC", "Direction Financière et Comptable", None, "SRE9"),
+    ("SIN", "Service Sinistres", "DTR", "SRE4"),
+    ("SOU", "Département Souscription", "DTR", "SRE5"),
+    ("SVIE", "Service Souscription Vie", "DTR", "SRE11"),
+    ("CTEC", "Service Comptabilité Technique", "DFC", "SRE6"),
+    ("DATA", "Service Data et Actuariat", "DTR", "SRE7"),
+    ("INFO", "Service IT et Process", "DG", "SRE8"),
+    ("PBP", "Service Planification, Budget et Pilotage", "DG", "SRE10"),
+    ("TRES", "Service Comptabilité et Trésorerie", "DFC", "SRE13"),
 ]
 
 # login, poste, département, sexe (F/M), login du manager
 LEADERS = [
-    ("EMP1", "Directeur Technique et Rétrocession", "DTR", "M", CEO_LOGIN),
-    ("EMP2", "Assistante de Direction", "DG", "F", CEO_LOGIN),
-    ("EMP3", "Chauffeur-coursier", "DG", "M", "EMP2"),
-    ("EMP4", "Responsable Sinistres", "SIN", "M", "EMP1"),
-    ("EMP5", "Chef de Département Souscription", "SOU", "M", "EMP1"),
-    ("EMP6", "Responsable Comptabilité Technique", "CTEC", "M", "EMP9"),
-    ("EMP7", "Responsable Data et Actuariat", "DATA", "M", "EMP1"),
-    ("EMP8", "Senior Manager IT et Process", "INFO", "M", CEO_LOGIN),
-    ("EMP9", "Directeur Financier et Comptable", "DFC", "M", CEO_LOGIN),
-    ("EMP10", "Manager Planification, Budget et Pilotage", "PBP", "F", CEO_LOGIN),
-    ("EMP11", "Responsable Souscription Vie", "SVIE", "M", "EMP1"),
-    ("EMP12", "Chargé des processus", "INFO", "M", "EMP8"),
-    ("EMP13", "Responsable Comptabilité et Trésorerie", "TRES", "M", "EMP9"),
+    ("SRE1", "Directeur Technique et Rétrocession", "DTR", "M", CEO_LOGIN),
+    ("SRE2", "Assistante de Direction", "DG", "F", CEO_LOGIN),
+    ("SRE3", "Chauffeur-coursier", "DG", "M", "SRE2"),
+    ("SRE4", "Responsable Sinistres", "SIN", "M", "SRE1"),
+    ("SRE5", "Chef de Département Souscription", "SOU", "M", "SRE1"),
+    ("SRE6", "Responsable Comptabilité Technique", "CTEC", "M", "SRE9"),
+    ("SRE7", "Responsable Data et Actuariat", "DATA", "M", "SRE1"),
+    ("SRE8", "Senior Manager IT et Process", "INFO", "M", CEO_LOGIN),
+    ("SRE9", "Directeur Financier et Comptable", "DFC", "M", CEO_LOGIN),
+    ("SRE10", "Manager Planification, Budget et Pilotage", "PBP", "F", CEO_LOGIN),
+    ("SRE11", "Responsable Souscription Vie", "SVIE", "M", "SRE1"),
+    ("SRE12", "Chargé des processus", "INFO", "M", "SRE8"),
+    ("SRE13", "Responsable Comptabilité et Trésorerie", "TRES", "M", "SRE9"),
 ]
 
-# Collaborateurs EMP14…EMP45 : (département, poste, nombre)
+# Collaborateurs SRE14…SRE45 : (département, poste, nombre)
 STAFF = [
     ("SOU", "Chargé de souscription non-vie", 5),
     ("SVIE", "Chargé de souscription vie", 3),
