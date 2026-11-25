@@ -43,3 +43,34 @@ class DisplayScopeTests(TestCase):
             response = self.patch(self.admin, scope)
             self.assertEqual(response.status_code, 400, scope)
             self.assertTrue(str(response.data["display_scope"][0]))
+
+    def me(self, user):
+        client = APIClient()
+        client.force_authenticate(user)
+        return client.get("/api/auth/me/", HTTP_HOST="localhost").data["company_display_scope"]
+
+    def test_the_most_precise_setting_wins_person_then_position_then_role(self):
+        chief = User.objects.create_user(email="c@x.co", password="x", role=User.Role.MEMBER, company=self.company, generated_login="DC1", position="Chef de service")
+        other_chief = User.objects.create_user(email="c2@x.co", password="x", role=User.Role.MEMBER, company=self.company, generated_login="DC2", position="chef de  SERVICE")
+        plain = User.objects.create_user(email="m@x.co", password="x", role=User.Role.MEMBER, company=self.company, generated_login="DM1", position="Agent")
+        scope = {
+            "nav": {"MEMBER": ["/", "/evaluations"]},
+            "hidden_views_by_role": {"MEMBER": ["evaluations.id3a"]},
+            "by_position": {"  Chef de Service ": {"nav": ["/", "/team-cohesion"], "hidden_views": []}},
+            "by_user": {str(other_chief.id): {"hidden_views": ["cohesion.psi"]}},
+        }
+        self.assertEqual(self.patch(self.admin, scope).status_code, 200)
+        self.company.refresh_from_db()
+        self.assertIn("chef de service", self.company.display_scope["by_position"])
+        self.assertEqual(self.me(plain), {"nav": {"MEMBER": ["/", "/evaluations"]}, "hidden_views_by_role": {"MEMBER": ["evaluations.id3a"]}})
+        self.assertEqual(self.me(chief), {"nav": {"MEMBER": ["/", "/team-cohesion"]}})
+        self.assertEqual(self.me(other_chief), {"hidden_views_by_role": {"MEMBER": ["cohesion.psi"]}})
+        # Les réglages des autres ne sont jamais servis.
+        self.assertNotIn("by_user", self.me(self.ceo))
+
+    def test_a_person_from_another_company_is_refused(self):
+        stranger = User.objects.create_user(email="s@x.co", password="x", role=User.Role.MEMBER, generated_login="DS1")
+        response = self.patch(self.admin, {"by_user": {str(stranger.id): {"hidden_views": []}}})
+        self.assertEqual(response.status_code, 400)
+        for bad in ({"by_user": {"abc": {}}}, {"by_position": {"  ": {}}}, {"by_position": {"X": {"nav": ["bad"]}}}, {"by_position": {"X": {"oops": 1}}}):
+            self.assertEqual(self.patch(self.admin, bad).status_code, 400, bad)

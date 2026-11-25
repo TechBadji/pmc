@@ -1,7 +1,7 @@
 {
   "displayScope": {
     "title": "Displayed sections — {{company}}",
-    "subtitle": "Choose, for each role, the menu sections and sub-sections shown to this company. This setting is for demonstrations: it hides screens, it changes no permission.",
+    "subtitle": "Choose which menu sections and sub-sections are shown in this company: by role, by job title, or for a specific person. The most precise setting wins (person, then job title, then role). It hides screens; it changes no permission.",
     "tooltip": "Displayed sections",
     "role": {
       "COMPANY_ADMIN": "Leader",
@@ -14,7 +14,7 @@
     "alwaysShown": "Always shown: it is the landing page.",
     "emptySection": "No sub-section ticked: the section disappears from the menu.",
     "summary": "{{shown}} of {{total}} section(s) shown",
-    "showAll": "Show everything for this role",
+    "showAll": "Show everything",
     "copyTo": "Apply this setting to the other roles",
     "save": "Save",
     "back": "Back to companies",
@@ -23,6 +23,29 @@
     "loadFailed": "The company could not be loaded: reload the page.",
     "adminOnly": "This setting is reserved for the super administrator.",
     "viewIndividualPlans": "Individual plans",
-    "viewPersonSheet": "Individual sheet"
+    "viewPersonSheet": "Individual sheet",
+    "level": {
+      "roles": "By role",
+      "positions": "By job title ({{count}} set)",
+      "users": "By person ({{count}} set)"
+    },
+    "levelHelp": {
+      "roles": "Base setting, applied to everyone without a job-title or personal setting.",
+      "positions": "A job title (the position on the profile) can have its own setting: it replaces the role's for everyone holding it.",
+      "users": "A person can have their own setting: it overrides their job title and role."
+    },
+    "searchPosition": "Search a job title",
+    "noPositions": "No position is filled in on this company's profiles.",
+    "holders": "{{count}} person(s)",
+    "custom": "Set",
+    "pickPosition": "Pick a job title from the list.",
+    "searchPerson": "Search a person (name, login, position)",
+    "pickPerson": "Pick a person to see or set what they see.",
+    "unknownPerson": "Person not found",
+    "customToggle": "Own setting",
+    "inheritsRole": "No own setting: people holding this job title see what their role allows.",
+    "inheritsPosition": "No own setting: they see what their job title « {{position}} » allows.",
+    "inheritsRoleNamed": "No own setting: they see what their role ({{role}}) allows.",
+    "hideAll": "Hide all"
   }
 }

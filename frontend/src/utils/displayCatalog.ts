@@ -64,3 +64,22 @@ export function catalogFor(role: ScopedRole) {
     views: (VIEWS_BY_PATH[item.path as ScopedPath] ?? []) as readonly { key: ScopedView; labelKey: string }[],
   }));
 }
+
+export type CatalogItem = ReturnType<typeof catalogFor>[number];
+
+/** Menu réunissant ceux de plusieurs rôles (une fonction tenue par des
+ * personnes de rôles différents), dans l'ordre du premier rôle. */
+export function catalogForRoles(roles: readonly ScopedRole[]): CatalogItem[] {
+  const seen = new Map<string, CatalogItem>();
+  roles.forEach((role) =>
+    catalogFor(role).forEach((item) => {
+      const known = seen.get(item.path);
+      if (!known) seen.set(item.path, item);
+      else {
+        const keys = new Set(known.views.map((v) => v.key));
+        seen.set(item.path, { ...known, views: [...known.views, ...item.views.filter((v) => !keys.has(v.key))] });
+      }
+    })
+  );
+  return [...seen.values()];
+}

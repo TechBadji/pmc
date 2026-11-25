@@ -1,7 +1,7 @@
 {
   "displayScope": {
     "title": "Rubriques affichées — {{company}}",
-    "subtitle": "Choisissez, pour chaque rôle, les rubriques du menu et les sous-rubriques montrées à cette entreprise. Ce réglage sert aux démonstrations : il masque des écrans, il ne change aucun droit.",
+    "subtitle": "Choisissez les rubriques du menu et les sous-rubriques montrées dans cette entreprise : par rôle, par fonction, ou pour un collaborateur précis. Le réglage le plus précis l'emporte (collaborateur, puis fonction, puis rôle). Il masque des écrans, il ne change aucun droit.",
     "tooltip": "Rubriques affichées",
     "role": {
       "COMPANY_ADMIN": "Dirigeant",
@@ -14,7 +14,7 @@
     "alwaysShown": "Toujours affichée : c'est la page d'arrivée.",
     "emptySection": "Aucune sous-rubrique cochée : la rubrique disparaît du menu.",
     "summary": "{{shown}} rubrique(s) affichée(s) sur {{total}}",
-    "showAll": "Tout afficher pour ce rôle",
+    "showAll": "Tout afficher",
     "copyTo": "Appliquer ce réglage aux autres rôles",
     "save": "Enregistrer",
     "back": "Retour aux entreprises",
@@ -23,6 +23,29 @@
     "loadFailed": "L'entreprise n'a pas pu être chargée : rechargez la page.",
     "adminOnly": "Ce réglage est réservé au super administrateur.",
     "viewIndividualPlans": "Plans individuels",
-    "viewPersonSheet": "Fiche individuelle"
+    "viewPersonSheet": "Fiche individuelle",
+    "level": {
+      "roles": "Par rôle",
+      "positions": "Par fonction ({{count}} réglée(s))",
+      "users": "Par collaborateur ({{count}} réglé(s))"
+    },
+    "levelHelp": {
+      "roles": "Réglage de base, appliqué à tous ceux qui n'ont ni réglage de fonction ni réglage personnel.",
+      "positions": "Une fonction (le poste indiqué sur la fiche) peut avoir son propre réglage : il remplace celui du rôle pour tous ceux qui l'occupent.",
+      "users": "Un collaborateur peut avoir son propre réglage : il l'emporte sur sa fonction et sur son rôle."
+    },
+    "searchPosition": "Chercher une fonction",
+    "noPositions": "Aucun poste n'est renseigné sur les fiches de cette entreprise.",
+    "holders": "{{count}} personne(s)",
+    "custom": "Réglée",
+    "pickPosition": "Choisissez une fonction dans la liste.",
+    "searchPerson": "Chercher un collaborateur (nom, identifiant, poste)",
+    "pickPerson": "Choisissez un collaborateur pour voir ou régler ce qu'il voit.",
+    "unknownPerson": "Personne introuvable",
+    "customToggle": "Réglage propre",
+    "inheritsRole": "Pas de réglage propre : ceux qui occupent cette fonction voient ce que prévoit leur rôle.",
+    "inheritsPosition": "Pas de réglage propre : il voit ce que prévoit sa fonction « {{position}} ».",
+    "inheritsRoleNamed": "Pas de réglage propre : il voit ce que prévoit son rôle ({{role}}).",
+    "hideAll": "Tout masquer"
   }
 }

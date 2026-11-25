@@ -10,7 +10,21 @@ export interface DisplayScope {
   hidden_views?: string[];
   /** Vues retirées pour un rôle seulement, en plus de `hidden_views`. */
   hidden_views_by_role?: Record<string, string[]>;
+  /** Réglage propre à une fonction (clé : `normalizePosition`) : il remplace celui du rôle.
+   * Résolu par le serveur — un utilisateur ne reçoit que le sien. */
+  by_position?: Record<string, ScopeProfile>;
+  /** Réglage propre à une personne (clé : son id) : il l'emporte sur sa fonction et son rôle. */
+  by_user?: Record<string, ScopeProfile>;
 }
+
+/** Réglage d'une fonction ou d'une personne. Sans `nav`, tout le menu du rôle est montré. */
+export interface ScopeProfile {
+  nav?: string[];
+  hidden_views: string[];
+}
+
+/** Même règle que le serveur : sans casse ni espaces superflus. */
+export const normalizePosition = (name: string) => name.split(/\s+/).filter(Boolean).join(" ").toLowerCase();
 
 /** Vues masquées pour un rôle : celles de tous, plus les siennes. */
 export function hiddenViewsFor(scope: DisplayScope, role: string | undefined): Set<string> {

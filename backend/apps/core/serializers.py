@@ -38,6 +38,31 @@ def unique_login_email(login: str, domain: str) -> tuple[str, str]:
     return candidate, f"{candidate}@{domain}"
 
 
+
+def normalize_position(name):
+    """Clé d'une fonction : sans casse ni espaces superflus, pour que
+    « Chef de service » et « chef de  service » désignent la même."""
+    return " ".join(str(name).split()).lower()
+
+
+def display_scope_for(user):
+    """Périmètre affiché résolu pour une personne. Le réglage le plus précis
+    l'emporte : le sien, sinon celui de sa fonction, sinon celui de son rôle.
+    Seul le résultat est servi — personne ne reçoit les réglages des autres."""
+    company = getattr(user, "company", None)
+    scope = dict(company.display_scope or {}) if company else {}
+    by_user, by_position = scope.pop("by_user", {}), scope.pop("by_position", {})
+    override = by_user.get(str(user.id)) or by_position.get(normalize_position(user.position or ""))
+    if not override:
+        return scope
+    role = str(user.role)
+    nav = {r: v for r, v in scope.get("nav", {}).items() if r != role}
+    if "nav" in override:
+        nav[role] = override["nav"]
+    hidden = override.get("hidden_views") or []
+    resolved = {"nav": nav, "hidden_views_by_role": {role: hidden} if hidden else {}}
+    return {k: v for k, v in resolved.items() if v}
+
 class CompanySerializer(serializers.ModelSerializer):
     user_count = serializers.IntegerField(source="users.count", read_only=True)
     department_count = serializers.IntegerField(source="departments.count", read_only=True)
@@ -67,12 +92,15 @@ class CompanySerializer(serializers.ModelSerializer):
     SCOPED_ROLES = ("COMPANY_ADMIN", "MANAGER", "MEMBER")
 
     def validate_display_scope(self, value):
-        """Périmètre affiché : rubriques du menu montrées par rôle, vues
-        masquées. La forme est contrôlée ici ; les rubriques et vues elles-mêmes
-        sont celles du catalogue de l'application (`utils/displayCatalog.ts`)."""
+        """Périmètre affiché : rubriques du menu montrées et vues masquées, par
+        rôle, puis — plus précis — par fonction (`by_position`) et par
+        collaborateur (`by_user`). La forme est contrôlée ici ; les rubriques
+        et vues elles-mêmes sont celles du catalogue de l'application
+        (`utils/displayCatalog.ts`)."""
         import re
 
-        if not isinstance(value, dict) or set(value) - {"nav", "hidden_views", "hidden_views_by_role"}:
+        allowed_keys = {"nav", "hidden_views", "hidden_views_by_role", "by_position", "by_user"}
+        if not isinstance(value, dict) or set(value) - allowed_keys:
             raise serializers.ValidationError("Le périmètre affiché n'a pas la forme attendue : rechargez la page puis réessayez.")
         path, view = re.compile(r"^/[a-z0-9\-/]{0,60}$"), re.compile(r"^[a-z0-9]{1,30}\.[a-z0-9]{1,30}$")
 
@@ -86,6 +114,16 @@ class CompanySerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"Les {what} se règlent par rôle (dirigeant, manager, collaborateur) : rôle inconnu reçu.")
             return {role: strings(items, pattern, what) for role, items in block.items()}
 
+        def profile(block, who):
+            """Réglage propre à une fonction ou à une personne : il remplace
+            celui de son rôle. Sans `nav`, tout le menu du rôle est montré."""
+            if not isinstance(block, dict) or set(block) - {"nav", "hidden_views"}:
+                raise serializers.ValidationError(f"Le réglage de {who} n'a pas la forme attendue : rechargez la page puis réessayez.")
+            clean = {"hidden_views": strings(block.get("hidden_views", []), view, "vues masquées")}
+            if "nav" in block:
+                clean["nav"] = strings(block["nav"], path, "rubriques")
+            return clean
+
         clean = {}
         if "nav" in value:
             clean["nav"] = by_role(value["nav"], path, "rubriques")
@@ -93,6 +131,31 @@ class CompanySerializer(serializers.ModelSerializer):
             clean["hidden_views"] = strings(value["hidden_views"], view, "vues masquées")
         if "hidden_views_by_role" in value:
             clean["hidden_views_by_role"] = {r: v for r, v in by_role(value["hidden_views_by_role"], view, "vues masquées").items() if v}
+
+        if "by_position" in value:
+            block = value["by_position"]
+            if not isinstance(block, dict) or len(block) > 300:
+                raise serializers.ValidationError("Les réglages par fonction n'ont pas la forme attendue : rechargez la page puis réessayez.")
+            clean["by_position"] = {}
+            for name, settings in block.items():
+                key = normalize_position(name) if isinstance(name, str) else ""
+                if not key or len(key) > 255:
+                    raise serializers.ValidationError("Une fonction réglée est vide ou trop longue (255 caractères au plus).")
+                clean["by_position"][key] = profile(settings, f"la fonction « {name} »")
+
+        if "by_user" in value:
+            block = value["by_user"]
+            if not isinstance(block, dict) or len(block) > 2000:
+                raise serializers.ValidationError("Les réglages par collaborateur n'ont pas la forme attendue : rechargez la page puis réessayez.")
+            ids = {k for k in block if isinstance(k, str) and k.isdigit()}
+            if len(ids) != len(block):
+                raise serializers.ValidationError("Un collaborateur réglé n'est pas reconnu : rechargez la page puis réessayez.")
+            company_id = self.instance.id if self.instance else None
+            known = {str(i) for i in User.objects.filter(company_id=company_id, id__in=[int(i) for i in ids]).values_list("id", flat=True)}
+            if ids - known:
+                raise serializers.ValidationError("Un collaborateur réglé n'appartient pas (ou plus) à cette entreprise : rechargez la page puis réessayez.")
+            clean["by_user"] = {uid: profile(settings, "ce collaborateur") for uid, settings in block.items()}
+
         return {k: v for k, v in clean.items() if v}
 
     def get_plan_features(self, obj):
@@ -314,13 +377,16 @@ class MeSerializer(UserSerializer):
     company_name = serializers.CharField(
         source="company.name", read_only=True, default=None
     )
-    company_display_scope = serializers.JSONField(source="company.display_scope", read_only=True, default=dict)
+    company_display_scope = serializers.SerializerMethodField()
     company_cohesion_min_respondents = serializers.IntegerField(
         source="company.cohesion_min_respondents", read_only=True, default=None
     )
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ["company_name", "company_cohesion_min_respondents", "company_display_scope"]
+
+    def get_company_display_scope(self, obj):
+        return display_scope_for(obj)
 
 
 class MeUpdateSerializer(serializers.ModelSerializer):
