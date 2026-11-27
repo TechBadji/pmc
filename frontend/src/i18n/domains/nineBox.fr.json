@@ -1,0 +1,14 @@
+{
+  "nineBox": {
+    "heading": "Où se situe chacun, et ce qu'il faut faire",
+    "figure": "Matrice 9 Box Performance Trajectory",
+    "perfAxis": "PERFORMANCE — Altitude (% des objectifs)",
+    "progAxis": "PROGRESSION vs campagne précédente",
+    "perf": { "low": "Faible (< 75 %)", "mid": "Moyen (75-89 %)", "high": "Élevé (≥ 90 %)" },
+    "prog": { "regression": "Régression ou nulle (≤ 0 %)", "moderate": "Modérée (0-6 %)", "strong": "Forte (≥ 6 %)" },
+    "source": "Source : ID-PMC, 9 Box Performance Trajectory, {{company}}, {{period}} — {{count}} talent(s) positionné(s).",
+    "detail": "Performance {{performance}} % · progression {{progression}}",
+    "more": "+ {{count}} autre(s)",
+    "empty": "Personne"
+  }
+}

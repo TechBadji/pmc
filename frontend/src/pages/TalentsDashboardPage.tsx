@@ -1,7 +1,6 @@
 import { useDisplayScope } from "@/utils/displayScope";
 import {
   Alert,
-  Box,
   Checkbox,
   Button,
   CircularProgress,
@@ -31,6 +30,7 @@ import {
 import { apiClient } from "@/api/client";
 import ReportButton from "@/components/reports/ReportButton";
 import { useAppSelector } from "@/app/hooks";
+import NineBoxBoard from "@/components/talents/NineBoxBoard";
 import PageHeader from "@/components/layout/PageHeader";
 import type { Department, Evaluation, Paginated, PerformanceRating, UserRecord } from "@/api/types";
 import PersonOption, { rankPeopleByHierarchy } from "@/components/PersonOption";
@@ -71,177 +71,14 @@ interface TalentPoint {
   campaignName?: string;
 }
 
-/** Paliers de performance (abscisse) et de progression (ordonnée). */
-const PERF_BANDS = [
-  { key: "low", max: 74.999 },
-  { key: "mid", max: 89.999 },
-  { key: "high", max: Infinity },
-] as const;
-
 // Valeur sentinelle du sélecteur de collaborateur : filtrer sur les seuls
 // directeurs de département (tout rôle autre que membre d'équipe).
 const DIRECTORS_ONLY = "__directors__";
 
 const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
 
-// Le 9 Box étire lui aussi ses paliers extrêmes — jusqu'à 125 % et ±30 % —
-// et gagne la hauteur correspondante.
-// Relevée avec la taille des vignettes : à 600 pixels, des pastilles presque
-// doublées se seraient recouvertes dans les cases les plus peuplées. Toute la
-// géométrie de la planche — bandeau des ordonnées, pastilles chiffrées,
-// séparateurs — se déduit de cette constante et suit d'elle-même.
-const CHART_HEIGHT = 780;
-// Marges du repère : la marge gauche n'a besoin que de la place des pastilles
-// chiffrées et des intitulés de paliers à la verticale — la réduire rapproche
-// d'autant le bandeau bleu de l'axe des ordonnées.
-const CHART_MARGIN = { top: 20, right: 40, bottom: 60, left: 92 };
-const AXIS_BAND_HEIGHT = Math.round(CHART_HEIGHT * 0.7);
-// Décalage des pastilles chiffrées sous l'axe des abscisses, et de celles de
-// l'ordonnée par rapport au bord gauche du tracé — au plus près des axes.
-const MARKER_ROW_OFFSET = 24;
 // Transitions du survol des vignettes — mêmes durées que la matrice ID-3A.
 const DOT_TRANSITION = "r 0.15s ease, width 0.15s ease, height 0.15s ease, x 0.15s ease, y 0.15s ease, font-size 0.15s ease";
-const MARKER_SIDE_OFFSET = 22;
-const PLOT_HEIGHT = CHART_HEIGHT - CHART_MARGIN.top - CHART_MARGIN.bottom;
-const PLOT_BOTTOM = CHART_HEIGHT - CHART_MARGIN.bottom;
-// Le bandeau "TAUX DE PROGRESSION" se centre entre les pastilles 3 et 4 de
-// l'ordonnée, qui marquent les deux séparations de rangées : la 3 au tiers du
-// tableau, la 4 aux deux tiers. Leur milieu tombe donc au centre du tableau.
-const MARKER_3_Y = PLOT_BOTTOM - PLOT_HEIGHT / 3;
-const MARKER_4_Y = PLOT_BOTTOM - (PLOT_HEIGHT * 2) / 3;
-// Décalage sous le centrage, en fraction de la hauteur du bandeau. Les
-// ajustements successifs (+25 %, -20 %, -10 %, +5 %) s'annulent : le bandeau
-// est finalement centré pile entre les pastilles 3 et 4.
-const AXIS_BAND_DROP = 0;
-const AXIS_BAND_TOP = (MARKER_3_Y + MARKER_4_Y) / 2 - AXIS_BAND_HEIGHT / 2 + AXIS_BAND_HEIGHT * AXIS_BAND_DROP;
-
-const PROGRESS_BANDS = [
-  { key: "regression", max: 0 },
-  { key: "moderate", max: 5.999 },
-  { key: "strong", max: Infinity },
-] as const;
-
-
-/** Position dans le repère : chaque palier occupe exactement UNE unité, si
- * bien que les trois colonnes (et les trois lignes) ont la même largeur — la
- * personne se place à l'intérieur de son palier au prorata de sa valeur.
- * Les bornes gardent la vignette entière dans le cadre : un point posé sur
- * l'arête déborderait de la moitié de sa photo. */
-// Relevées avec le rayon des vignettes, qui demandent maintenant 27 px de
-// dégagement au lieu de 18. L'abscisse était la plus juste : 0,1 unité ne vaut
-// 30 px que sur un tracé large de 900 px, et tombait sous le rayon dès que la
-// fenêtre se rétrécissait.
-const X_INSET = 0.14; // ~42 px sur un tracé de 900 px de large
-const Y_INSET = 0.2; // ~47 px sur un tracé de 700 px de haut
-
-function clamp(value: number, inset: number) {
-  return Math.min(3 - inset, Math.max(inset, value));
-}
-
-function xPos(performance: number) {
-  const raw =
-    performance < 75
-      ? Math.max(0, performance) / 75 // 0 → 1
-      : performance < 90
-        ? 1 + (performance - 75) / 15 // 1 → 2
-        : 2 + Math.min(1, (performance - 90) / 35); // 2 → 3 (90 % → 125 %)
-  return clamp(raw, X_INSET);
-}
-
-function yPos(progression: number) {
-  const raw =
-    progression <= 0
-      ? 1 + Math.max(-30, progression) / 30 // 0 → 1 (−30 % → 0)
-      : progression < 6
-        ? 1 + progression / 6 // 1 → 2
-        : 2 + Math.min(1, (progression - 6) / 24); // 2 → 3 (6 % → +30 %)
-  return clamp(raw, Y_INSET);
-}
-
-/** Cadre de la 9 Box dessiné dans le repère : séparateurs pointillés, repères
- * chiffrés de l'échelle 1-5, intitulés des paliers et nom de chaque case. */
-function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
-  const { t } = useTranslation();
-  const xAxis = xAxisMap?.[0];
-  const yAxis = yAxisMap?.[0];
-  if (!xAxis || !yAxis) return null;
-  const X = (v: number) => xAxis.scale(v);
-  const Y = (v: number) => yAxis.scale(v);
-  const cellLabel = { fontSize: 10, fontWeight: 700, fill: CHART_NEUTRALS.quadrantLabel } as const;
-  const bandLabel = { fontSize: 11, fontWeight: 700, fill: "#5b8ac6" } as const;
-  const edges = [0, 1, 2, 3];
-  const xMarkers = [1, 3, 4, 5]; // numéros du support, aux arêtes des colonnes
-  const yMarkers = [3, 4, 5]; // idem, aux arêtes des lignes (hors bas du repère)
-
-  function marker(cx: number, cy: number, value: number) {
-    return (
-      <g key={`m-${value}-${cx}-${cy}`}>
-        <circle cx={cx} cy={cy} r={14} fill="#4a7ebb" />
-        <text x={cx} y={cy + 5} textAnchor="middle" fontSize={14} fontWeight={800} fill="#fff">
-          {value}
-        </text>
-      </g>
-    );
-  }
-
-  return (
-    <g>
-      {/* Grille des 9 cases */}
-      {edges.map((v) => (
-        <line key={`vx-${v}`} x1={X(v)} y1={Y(3)} x2={X(v)} y2={Y(0)} stroke="#9fb3d1" strokeDasharray="3 3" />
-      ))}
-      {edges.map((v) => (
-        <line key={`hy-${v}`} x1={X(0)} y1={Y(v)} x2={X(3)} y2={Y(v)} stroke="#9fb3d1" strokeDasharray="3 3" />
-      ))}
-
-      {/* Intitulé de chaque case, en filigrane */}
-      {[0, 1, 2].map((col) =>
-        [0, 1, 2].map((row) => (
-          <text
-            key={`c-${col}-${row}`}
-            x={X(col) + 8}
-            y={Y(row + 1) + 14}
-            textAnchor="start"
-            style={cellLabel}
-          >
-            {t(`talents.box.${col}${row}.title`).toUpperCase()}
-          </text>
-        ))
-      )}
-
-      {/* Repères chiffrés de l'échelle 1-5 */}
-      {xMarkers.map((label, i) => marker(X(edges[i]), Y(0) + MARKER_ROW_OFFSET, label))}
-      {yMarkers.map((label, i) => marker(X(0) - MARKER_SIDE_OFFSET, Y(i + 1), label))}
-
-      {/* Paliers de performance sous l'axe, paliers de progression à gauche */}
-      {[
-        { at: 0.5, key: PERF_BANDS[0].key },
-        { at: 1.5, key: PERF_BANDS[1].key },
-        { at: 2.5, key: PERF_BANDS[2].key },
-      ].map((b) => (
-        <text key={b.key} x={X(b.at)} y={Y(0) + 30} textAnchor="middle" style={bandLabel}>
-          {t(`talents.perfBand.${b.key}`)}
-        </text>
-      ))}
-      {[
-        { at: 0.5, key: PROGRESS_BANDS[0].key },
-        { at: 1.5, key: PROGRESS_BANDS[1].key },
-        { at: 2.5, key: PROGRESS_BANDS[2].key },
-      ].map((b) => (
-        <text
-          key={b.key}
-          x={X(0) - 50}
-          y={Y(b.at)}
-          textAnchor="middle"
-          transform={`rotate(-90 ${X(0) - 50} ${Y(b.at)})`}
-          style={bandLabel}
-        >
-          {t(`talents.progressBand.${b.key}`)}
-        </text>
-      ))}
-    </g>
-  );
-}
 
 /** Point d'une personne : photo cerclée de la couleur de son palier de
  * performance, écart relatif affiché à côté. La vignette grossit au survol,
@@ -1009,7 +846,6 @@ export default function TalentsDashboardPage() {
     y: Math.min(TRAJECTORY_Y[1] - TRAJECTORY_Y_INSET, Math.max(TRAJECTORY_Y[0] + TRAJECTORY_Y_INSET, p.progression as number)),
     z: 200,
   }));
-  const boxData = placed.map((p) => ({ ...p, x: xPos(p.performance), y: yPos(p.progression as number), z: 200 }));
   /** Même découpage que la 9 Box, mais ramené au numéro de case : la planche
    * TPD-VISIO range les personnes dans des casiers plutôt que de les poser au
    * pixel près. */
@@ -1288,76 +1124,12 @@ export default function TalentsDashboardPage() {
           periodLabel={campaigns.find((c) => c.id === campaignId)?.name ?? ""}
         />
       ) : view === "boxes" ? (
-        <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
-          {/* Intitulé du schéma, repris tel quel du support ID-PMC. */}
-          <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 1.5, textAlign: "center", color: "primary.main" }}>
-            {t("talents.boxesTitle")}
-          </Typography>
-          {/* Bande "TAUX DE PROGRESSION" à gauche, repère au centre, bande
-            * "PERFORMANCE %" en bas — comme la planche du support. */}
-          <Stack direction="row" spacing={0.5}>
-            <Box
-              sx={{
-                width: 34,
-                // Bandeau raccourci de 30 %, et centré sur la ZONE DE TRACÉ
-                // (hors marges haute et basse) : le centrer sur le bloc entier
-                // le décalait vers le bas, la marge basse portant les pastilles
-                // et les intitulés de paliers.
-                height: AXIS_BAND_HEIGHT,
-                // Décalage par `top` et non par `mt` : MUI Stack impose
-                // `margin: 0` à TOUS ses enfants directs, avec un sélecteur plus
-                // spécifique que le nôtre. Toute marge posée ici était donc
-                // écrasée et le bandeau restait collé en haut, quelle que soit
-                // la valeur calculée.
-                position: "relative",
-                top: `${AXIS_BAND_TOP}px`,
-                alignSelf: "flex-start",
-                flexShrink: 0,
-                bgcolor: "#12275c",
-                color: "#fff",
-                borderRadius: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Typography
-                variant="caption"
-                fontWeight={700}
-                sx={{ writingMode: "vertical-rl", transform: "rotate(180deg)", letterSpacing: 1 }}
-              >
-                {t("talents.progressionAxis")}
-              </Typography>
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-                <ScatterChart margin={CHART_MARGIN}>
-                  <Customized component={<NineBoxFrame />} />
-                  <Customized
-                    component={
-                      <TrailLayer trail={trail} toX={(p: TalentPoint) => xPos(p.performance)} toY={(p: TalentPoint) => yPos(p.progression as number)} />
-                    }
-                  />
-                  {/* width/height à 0 : sans graduations, Recharts réserve
-                    * quand même la taille par défaut de ses axes (60 px à
-                    * gauche, 30 px en bas) — c'est ce vide qui éloignait le
-                    * bandeau et le repère. Les marges suffisent aux pastilles
-                    * et aux intitulés de paliers, que nous dessinons nous-mêmes. */}
-                  <XAxis type="number" dataKey="x" domain={[0, 3]} ticks={[]} tickLine={false} axisLine={false} tick={false} height={0} />
-                  <YAxis type="number" dataKey="y" domain={[0, 3]} ticks={[]} tickLine={false} axisLine={false} tick={false} width={0} />
-                  <ZAxis type="number" dataKey="z" range={[160, 160]} />
-                  <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} content={<TalentTooltip />} />
-                  <Scatter data={boxData} shape={(props: any) => <TalentDot {...props} />} isAnimationActive={false} />
-                </ScatterChart>
-              </ResponsiveContainer>
-              {/* Barre d'abscisse réduite de moitié et centrée sur le repère. */}
-              <Box sx={{ bgcolor: "#3F9142", color: "#fff", borderRadius: 1, textAlign: "center", py: 0.5, mt: 0.5, width: "50%", mx: "auto" }}>
-                <Typography variant="caption" fontWeight={700} sx={{ letterSpacing: 1 }}>
-                  {t("talents.performanceAxis")}
-                </Typography>
-              </Box>
-            </Box>
-          </Stack>
+        <Paper elevation={0} sx={{ p: { xs: 1.5, md: 3 }, border: "1px solid", borderColor: "divider" }}>
+          <NineBoxBoard
+            people={placed.map((p) => ({ userId: p.userId, name: p.name, performance: p.performance, progression: p.progression as number }))}
+            company={user?.company_name ?? ""}
+            period={campaigns.find((c) => c.id === campaignId)?.name ?? ""}
+          />
         </Paper>
       ) : (
         <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "divider" }}>
@@ -1410,7 +1182,7 @@ export default function TalentsDashboardPage() {
         </Paper>
       )}
 
-      {trail.length > 1 && (
+      {trail.length > 1 && view === "trajectory" && (
         <Alert severity="info" icon={false}>
           {t("talents.trailHint", { name: trail[0].name })}
         </Alert>
