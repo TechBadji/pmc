@@ -158,6 +158,19 @@ function yPos(progression: number) {
   return clamp(raw, Y_INSET);
 }
 
+/** Couleur de chaque case (colonne performance, ligne progression). */
+const NINE_BOX_COLOR: Record<string, string> = {
+  "22": "#4A9A52",
+  "21": "#17A89E",
+  "12": "#17A89E",
+  "20": "#D9B42C",
+  "11": "#2E7FC1",
+  "02": "#2E7FC1",
+  "10": "#F28C28",
+  "01": "#F28C28",
+  "00": "#B23F3F",
+};
+
 /** Cadre de la 9 Box dessiné dans le repère : séparateurs pointillés, repères
  * chiffrés de l'échelle 1-5, intitulés des paliers et nom de chaque case. */
 function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
@@ -186,6 +199,25 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
 
   return (
     <g>
+      {/* Teinte propre à chaque case, liseré de sa couleur en haut — mêmes
+        * couleurs que la 9 Box du rapport PDF. Dessinée en premier : les
+        * vignettes restent au-dessus. */}
+      {[0, 1, 2].map((col) =>
+        [0, 1, 2].map((row) => {
+          const color = NINE_BOX_COLOR[`${col}${row}`];
+          const x = X(col);
+          const y = Y(row + 1);
+          const w = X(col + 1) - x;
+          const h = Y(row) - y;
+          return (
+            <g key={`tint-${col}-${row}`}>
+              <rect x={x} y={y} width={w} height={h} fill={color} fillOpacity={0.13} />
+              <rect x={x} y={y} width={w} height={5} fill={color} />
+            </g>
+          );
+        })
+      )}
+
       {/* Grille des 9 cases */}
       {edges.map((v) => (
         <line key={`vx-${v}`} x1={X(v)} y1={Y(3)} x2={X(v)} y2={Y(0)} stroke="#9fb3d1" strokeDasharray="3 3" />
@@ -200,7 +232,7 @@ function NineBoxFrame({ xAxisMap, yAxisMap }: any) {
           <text
             key={`c-${col}-${row}`}
             x={X(col) + 8}
-            y={Y(row + 1) + 14}
+            y={Y(row + 1) + 20}
             textAnchor="start"
             style={cellLabel}
           >
