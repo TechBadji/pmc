@@ -28,7 +28,7 @@ from apps.evaluations.models import EvaluationCampaign
 
 COMPANY_NAME = "SUNU IARD Mali"
 CEO_LOGIN = "CEOMLI"
-EMPLOYEE_PREFIX = "MLI"  # EMP libérés pour DSI—SENELEC-2026 le 2026-11-25
+EMPLOYEE_PREFIX = "IARDML"  # MLI renommés le 2026-11-27
 EMPLOYEE_COUNT = 60
 PASSWORD = "123456"
 CAMPAIGN_NAME = "Novembre 2026"
