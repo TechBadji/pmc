@@ -3,10 +3,21 @@ direction, sur une campagne. Mêmes règles que l'écran : rien n'est publié so
 le seuil de répondants de l'entreprise, les commentaires sont reproduits sans
 nom, rangés par note."""
 from django.utils import timezone
+from reportlab.lib import colors
 from reportlab.lib.units import mm
+from reportlab.lib.utils import simpleSplit
+from reportlab.platypus import Flowable
 
-from apps.core.models import Department
+from apps.core.models import Department, User
 from apps.evaluations.feedforward_report import (
+    CONTENT_W,
+    F_BOLD,
+    F_REG,
+    F_SEMI,
+    GREY,
+    NAVY,
+    RULE,
+    TEXT,
     BarList,
     Builder,
     ReportError,
@@ -31,6 +42,142 @@ QUESTION_2 = ("Quelle est la principale raison de votre note et quelle améliora
               "davantage notre organisation ?")
 CATEGORY_LABEL = {"promoter": "Promoteurs (9-10)", "passive": "Neutres (7-8)", "detractor": "Détracteurs (0-6)"}
 MAX_VERBATIMS = 15
+CAT_COLOR = {"detractor": colors.HexColor("#D7263D"), "passive": colors.HexColor("#E3A008"), "promoter": colors.HexColor("#2E9E44")}
+ROWS_PER_CHART = 14
+
+
+def _reading_color(v):
+    return CAT_COLOR["promoter"] if v >= 40 else colors.HexColor("#17A89E") if v >= 10 else CAT_COLOR["passive"] if v >= 0 else CAT_COLOR["detractor"]
+
+
+class EnpsDirectionsChart(Flowable):
+    """Planche « eNPS par direction », identique à l'écran : rang et direction
+    avec sa participation, barre 100 % détracteurs / neutres / promoteurs,
+    échelle −100 → +100 avec le repère de l'entreprise, valeur et écart."""
+
+    ROW = 11 * mm
+    HEAD = 17 * mm
+
+    def __init__(self, rows, benchmark, first_rank=1, width=CONTENT_W):
+        super().__init__()
+        self.rows, self.benchmark, self.first_rank, self.width = rows, benchmark, first_rank, width
+        self.height = self.HEAD + len(rows) * self.ROW
+        w = width
+        self.x_name, self.w_name = 0, 0.29 * w
+        self.x_bar, self.w_bar = 0.31 * w, 0.31 * w
+        self.x_scale, self.w_scale = 0.65 * w, 0.21 * w
+        self.x_val = w
+
+    def wrap(self, *_args):
+        return self.width, self.height
+
+    def _sx(self, v):
+        return self.x_scale + (v + 100) / 200 * self.w_scale
+
+    def draw(self):
+        c = self.canv
+        top = self.height
+        # Légende
+        x = 0
+        c.setFont(F_SEMI, 7)
+        for key, label in (("detractor", "Détracteurs"), ("passive", "Neutres"), ("promoter", "Promoteurs")):
+            c.setFillColor(CAT_COLOR[key])
+            c.rect(x, top - 3.2 * mm, 2.6 * mm, 2.6 * mm, stroke=0, fill=1)
+            c.setFillColor(TEXT)
+            c.drawString(x + 3.6 * mm, top - 2.9 * mm, label)
+            x += 3.6 * mm + c.stringWidth(label, F_SEMI, 7) + 5 * mm
+        if self.benchmark is not None:
+            c.setStrokeColor(NAVY)
+            c.setDash(1.5, 1.2)
+            c.setLineWidth(1)
+            c.line(x + 1 * mm, top - 3.6 * mm, x + 1 * mm, top - 0.4 * mm)
+            c.setDash()
+            c.setFillColor(TEXT)
+            c.drawString(x + 2.6 * mm, top - 2.9 * mm, f"eNPS de l'entreprise ({_signed(self.benchmark)})")
+        # En-têtes de colonnes
+        y_head = top - 9 * mm
+        c.setFont(F_BOLD, 6.8)
+        c.setFillColor(GREY)
+        c.drawString(self.x_name, y_head, "Direction")
+        c.drawString(self.x_bar, y_head, "Répartition des répondants")
+        c.drawString(self.x_scale, y_head, "eNPS (−100 à +100)")
+        c.drawRightString(self.x_val, y_head, "eNPS")
+        c.setStrokeColor(NAVY)
+        c.setLineWidth(1.2)
+        c.line(0, y_head - 1.8 * mm, self.width, y_head - 1.8 * mm)
+        # Graduations
+        c.setFont(F_REG, 5.8)
+        c.setFillColor(GREY)
+        for v in (-100, -50, 0, 50, 100):
+            c.drawCentredString(self._sx(v), top - self.HEAD + 1.2 * mm, _signed(v))
+
+        for i, (rank_name, participation, summary) in enumerate(self.rows):
+            y0 = top - self.HEAD - (i + 1) * self.ROW
+            mid = y0 + self.ROW / 2
+            c.setStrokeColor(RULE)
+            c.setLineWidth(0.5)
+            c.line(0, y0, self.width, y0)
+            # Rang, direction, participation
+            c.setFont(F_BOLD, 7)
+            c.setFillColor(GREY)
+            c.drawString(self.x_name, mid + 1.2 * mm, str(self.first_rank + i))
+            lines = simpleSplit(rank_name, F_BOLD, 7.6, self.w_name - 5 * mm)[:2]
+            c.setFillColor(NAVY)
+            c.setFont(F_BOLD, 7.6)
+            base = mid + (2.6 * mm if len(lines) == 2 else 1.2 * mm)
+            for k, line in enumerate(lines):
+                c.drawString(self.x_name + 4.5 * mm, base - k * 3.1 * mm, line)
+            c.setFont(F_REG, 6.2)
+            c.setFillColor(GREY)
+            c.drawString(self.x_name + 4.5 * mm, base - len(lines) * 3.1 * mm, participation)
+            # Barre 100 %
+            bx, bh = self.x_bar, 4.6 * mm
+            by = mid - bh / 2
+            for key in ("detractor", "passive", "promoter"):
+                p = summary["pct"][key]
+                if not p:
+                    continue
+                w = self.w_bar * p / 100
+                c.setFillColor(CAT_COLOR[key])
+                c.rect(bx, by, w, bh, stroke=0, fill=1)
+                if p >= 12:
+                    c.setFillColor(colors.white)
+                    c.setFont(F_BOLD, 6.2)
+                    c.drawCentredString(bx + w / 2, by + 1.45 * mm, f"{int(p + 0.5)}%")
+                bx += w
+            # Échelle
+            c.setStrokeColor(colors.HexColor("#E2E6EC"))
+            c.setLineWidth(1.4)
+            c.line(self.x_scale, mid, self.x_scale + self.w_scale, mid)
+            c.setStrokeColor(colors.HexColor("#A0A8B4"))
+            c.setLineWidth(0.6)
+            c.line(self._sx(0), mid - 2.2 * mm, self._sx(0), mid + 2.2 * mm)
+            if self.benchmark is not None:
+                c.setStrokeColor(NAVY)
+                c.setDash(1.5, 1.2)
+                c.setLineWidth(0.9)
+                c.line(self._sx(self.benchmark), mid - 3.2 * mm, self._sx(self.benchmark), mid + 3.2 * mm)
+                c.setDash()
+            color = _reading_color(summary["enps"])
+            c.setStrokeColor(color)
+            c.setStrokeAlpha(0.5)
+            c.setLineWidth(2.2)
+            c.line(self._sx(0), mid, self._sx(summary["enps"]), mid)
+            c.setStrokeAlpha(1)
+            c.setFillColor(colors.white)
+            c.setStrokeColor(color)
+            c.setLineWidth(1)
+            c.circle(self._sx(summary["enps"]), mid, 1.9 * mm, stroke=1, fill=1)
+            c.setFillColor(color)
+            c.circle(self._sx(summary["enps"]), mid, 1.3 * mm, stroke=0, fill=1)
+            # Valeur et écart
+            c.setFont(F_BOLD, 11)
+            c.drawRightString(self.x_val, mid + 0.6 * mm, _signed(summary["enps"]))
+            if self.benchmark is not None:
+                gap = summary["enps"] - self.benchmark
+                c.setFont(F_SEMI, 6.2)
+                c.setFillColor(CAT_COLOR["promoter"] if gap > 0 else CAT_COLOR["detractor"] if gap < 0 else GREY)
+                c.drawRightString(self.x_val, mid - 3.2 * mm, "= entreprise" if gap == 0 else f"{_signed(gap)} vs entreprise")
 
 
 def _rows(company, team, campaign):
@@ -157,13 +304,20 @@ def build_enps_report(company, campaign, team, prepared_for):
             if rs:
                 teams.append((dept, len(rs), _summary(rs) if len(rs) >= threshold else None))
         if teams:
+            published = sorted([(d, n, h) for d, n, h in teams if h], key=lambda t: -t[2]["enps"])
+            hidden = [(d, n) for d, n, h in teams if not h]
             b.h1("Lecture par direction", "Où l'adhésion est forte, où elle se fragilise")
-            b.table("eNPS par direction", ["Direction", "Répondants", "Promoteurs", "Neutres", "Détracteurs", "eNPS"],
-                    [[escape(d.name), str(n)] + ([fmt_pct(round(h["pct"]["promoter"])), fmt_pct(round(h["pct"]["passive"])),
-                                                  fmt_pct(round(h["pct"]["detractor"])), _signed(h["enps"])] if h else ["non publié", "", "", ""])
-                     for d, n, h in teams],
-                    [52 * mm, 22 * mm, 24 * mm, 22 * mm, 24 * mm, 20 * mm], align=["left"] + ["center"] * 5,
-                    note=f"une direction n'est publiée qu'à partir de {threshold} répondants")
+            if published:
+                rows = [(d.name, f"{n} / {User.objects.filter(department=d, is_active=True).count()} répondants", h)
+                        for d, n, h in published]
+                note = "directions classées de la plus forte à la plus faible adhésion ; repère en pointillés : eNPS de l'entreprise"
+                for start in range(0, len(rows), ROWS_PER_CHART):
+                    chunk = rows[start:start + ROWS_PER_CHART]
+                    title = "eNPS par direction" + (" (suite)" if start else "")
+                    b.figure_block(title, EnpsDirectionsChart(chunk, s["enps"], first_rank=start + 1), note=note)
+            if hidden:
+                b.bullets([f"<b>Non publiées</b> (moins de {threshold} répondants) : "
+                           + " · ".join(f"{escape(d.name)} ({n} répondant{'s' if n > 1 else ''})" for d, n in hidden) + "."])
 
     b.h1("Ce que disent les collaborateurs", "Raisons des notes et améliorations proposées")
     for key in ("detractor", "passive", "promoter"):
