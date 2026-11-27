@@ -72,6 +72,16 @@ class ReportPdfTests(TestCase):
                                                        scores=[4, 4, 3, 3, 4, 2, 5, 4, 4, 3, 2, 3])
         self.assertPdf(self.get(self.ceo, kind="psi", team=self.dept.id))
 
+    def test_enps_report(self):
+        from apps.teams.models import EnpsResponse
+        self.assertEqual(self.get(self.ceo, kind="enps").status_code, 400)
+        for i, person in enumerate(self.members):
+            EnpsResponse.objects.create(company=self.company, team=self.dept, campaign=self.c2, respondent=person,
+                                        score=[10, 6, 8, 9][i % 4], reason=f"Raison {i} & <amélioration>")
+        self.assertPdf(self.get(self.ceo, kind="enps"))
+        self.assertPdf(self.get(self.ceo, kind="enps", team=self.dept.id))
+        self.assertEqual(self.get(self.ceo, kind="enps", subject=self.members[0].id).status_code, 400)
+
     def test_members_and_strangers_are_refused(self):
         self.assertEqual(self.get(self.members[0], kind="id3a").status_code, 403)
         self.assertEqual(self.get(self.manager, kind="id3a").status_code, 400)

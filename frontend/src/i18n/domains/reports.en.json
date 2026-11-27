@@ -7,6 +7,7 @@
       "cohesion": "Team cohesion",
       "relational": "Relationship dynamic",
       "psi": "Psychological Safety",
+      "enps": "eNPS",
       "strengths": "Strengths & weaknesses",
       "team_id": "Team Performance ID",
       "id3a": "ID-3A matrix",
@@ -17,6 +18,7 @@
     "hint": {
       "cohesion": "Employees' opinions: participation, index, criteria, trend, manager's view, recommendations. Available once the anonymity threshold is reached.",
       "relational": "Relationship map, pivot people, tensions, asymmetries, catalysts and toxins. Named report.",
+      "enps": "eNPS score, promoters / passives / detractors split, 0-10 scores, trend, reading by department and anonymous comments. Available once the anonymity threshold is reached.",
       "psi": "Overall index, four dimensions, twelve statements, trend and reading by department. Available once the anonymity threshold is reached.",
       "strengths": "Collective People / Business board and consolidated individual strengths and development areas.",
       "team_id": "Team vision, values, achievements, objectives and results, members' skills and cohesion.",

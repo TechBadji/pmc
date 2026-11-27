@@ -810,8 +810,8 @@ export default function CohesionFormPage() {
 
         {/* Rapports PDF de la rubrique : cohésion, dynamique relationnelle, forces & faiblesses, PSI, Team Performance ID. */}
         <ReportButton
-          kinds={["cohesion", "relational", "strengths", "psi", "team_id"]}
-          defaultKind={view === "relationship" ? "relational" : view === "strengths" ? "strengths" : view === "psi" ? "psi" : "cohesion"}
+          kinds={["cohesion", "relational", "strengths", "psi", "enps", "team_id"]}
+          defaultKind={view === "relationship" ? "relational" : view === "strengths" ? "strengths" : view === "psi" ? "psi" : view === "enps" ? "enps" : "cohesion"}
           defaultTeam={orgView || directorsView ? "" : teamId}
           defaultCampaign={campaignId}
         />

@@ -31,6 +31,7 @@ from apps.evaluations.models import EvaluationCampaign
 from . import cohesion_report as C
 from .models import GeneratedReport
 from . import team_reports as R
+from . import enps_report as E
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ KINDS = {
     "cohesion": ("Cohésion d'équipe", C.build_cohesion_report, COHESION, {ORG, TEAM}, "Cohesion-equipe"),
     "relational": ("Dynamique relationnelle", C.build_relational_report, COHESION, {ORG, TEAM}, "Dynamique-relationnelle"),
     "psi": ("Psychological Safety", R.build_psi_report, COHESION, {ORG, TEAM}, "Psychological-Safety"),
+    "enps": ("eNPS", E.build_enps_report, COHESION, {ORG, TEAM}, "eNPS"),
     "strengths": ("Forces & faiblesses", R.build_strengths_report, COHESION, {ORG, GROUP, TEAM}, "Forces-faiblesses"),
     "team_id": ("Team Performance ID", R.build_team_id_report, COHESION, {TEAM}, "Team-Performance-ID"),
     "id3a": ("Matrice ID-3A", T.build_id3a_report, TALENTS, {ORG, GROUP, TEAM, PERSON}, "Matrice-ID-3A"),

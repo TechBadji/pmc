@@ -22,7 +22,7 @@ import { apiClient } from "@/api/client";
 import { useAppSelector } from "@/app/hooks";
 import type { Department, EvaluationCampaign, Paginated, UserRecord } from "@/api/types";
 
-export type ReportKind = "cohesion" | "relational" | "psi" | "strengths" | "team_id" | "id3a" | "ninebox" | "tpd" | "person_id";
+export type ReportKind = "cohesion" | "relational" | "psi" | "enps" | "strengths" | "team_id" | "id3a" | "ninebox" | "tpd" | "person_id";
 
 type Scope = "org" | "group" | "team" | "person";
 type Group = "leadership" | "directors" | "service_heads";
@@ -33,6 +33,7 @@ const SCOPES: Record<ReportKind, Scope[]> = {
   cohesion: ["org", "team"],
   relational: ["org", "team"],
   psi: ["org", "team"],
+  enps: ["org", "team"],
   strengths: ["org", "group", "team"],
   team_id: ["team"],
   id3a: ["org", "group", "team", "person"],
