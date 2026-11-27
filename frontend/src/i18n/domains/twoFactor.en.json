@@ -1,0 +1,41 @@
+{
+  "twoFactor": {
+    "title": "Sign-in code",
+    "intro": "To protect your account, a 6-digit code has just been sent to {{email}}. Enter it to finish signing in.",
+    "codeLabel": "Code received by email",
+    "validity": "The code is valid for {{minutes}} minutes. Check your spam folder too.",
+    "submit": "Confirm",
+    "cancel": "Cancel",
+    "resend": "Send a new code",
+    "resendIn": "Send a new code ({{seconds}} s)",
+    "resent": "A new code has been sent to {{email}}.",
+    "codeFormat": "Enter the 6 digits of the code received by email.",
+    "network": "The server is not responding. Check your internet connection and try again.",
+    "throttled": "Too many attempts. Wait a minute before trying again.",
+    "expired": "This sign-in attempt has expired. Sign in again with your password.",
+    "admin": {
+      "tooltip": "Two-factor authentication",
+      "title": "Two-factor authentication — {{company}}",
+      "intro": "When enabled, everyone in the company receives a code by email after their password. The super admin is not affected.",
+      "switch": "Sign-in code by email",
+      "notReady": "Email sending is not configured on this server: two-factor authentication cannot be enabled until it is.",
+      "missing": "{{count}} account(s) without a real email address: they won't be able to sign in until an address is entered.",
+      "allSet": "Every account has a real email address.",
+      "onlyMissing": "Only accounts without an address",
+      "search": "Search (name, login, email)",
+      "login": "Login",
+      "name": "Name",
+      "email": "Email address",
+      "technical": "Technical address (receives nothing)",
+      "save": "Save",
+      "saved": "Address saved for {{login}}.",
+      "enabled": "Two-factor authentication enabled for {{company}}.",
+      "disabled": "Two-factor authentication disabled for {{company}}.",
+      "loadFailed": "Could not load the company's accounts. Try again.",
+      "emailInvalid": "\"{{email}}\" is not a valid email address.",
+      "none": "No matching account.",
+      "close": "Close",
+      "loginHint": "The person can then sign in with their login or with this address."
+    }
+  }
+}

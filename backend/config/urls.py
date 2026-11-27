@@ -20,6 +20,7 @@ from apps.core.views import (
     PasswordResetRequestViewSet,
     GuessSheetViewSet,
     PerformanceProfileViewSet,
+    LoginCodeView,
     PMCTokenObtainPairView,
     UserViewSet,
 )
@@ -82,6 +83,7 @@ urlpatterns = [
     path("health/", lambda request: HttpResponse("ok"), name="health"),
     path("admin/", admin.site.urls),
     path("api/auth/login/", PMCTokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/auth/login/code/", LoginCodeView.as_view(), name="login_code"),
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/auth/me/", MeView.as_view(), name="me"),
     path("api/auth/change-password/", ChangePasswordView.as_view(), name="change_password"),

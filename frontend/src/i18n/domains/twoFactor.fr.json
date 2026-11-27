@@ -1,0 +1,41 @@
+{
+  "twoFactor": {
+    "title": "Code de connexion",
+    "intro": "Pour protéger votre compte, un code à 6 chiffres vient d'être envoyé à {{email}}. Saisissez-le pour terminer la connexion.",
+    "codeLabel": "Code reçu par e-mail",
+    "validity": "Le code est valable {{minutes}} minutes. Pensez à regarder dans vos courriers indésirables.",
+    "submit": "Valider",
+    "cancel": "Annuler",
+    "resend": "Renvoyer un code",
+    "resendIn": "Renvoyer un code ({{seconds}} s)",
+    "resent": "Un nouveau code a été envoyé à {{email}}.",
+    "codeFormat": "Saisissez les 6 chiffres du code reçu par e-mail.",
+    "network": "Le serveur ne répond pas. Vérifiez votre connexion internet, puis réessayez.",
+    "throttled": "Trop de tentatives. Patientez une minute avant de réessayer.",
+    "expired": "Cette tentative de connexion a expiré. Reconnectez-vous avec votre mot de passe.",
+    "admin": {
+      "tooltip": "Double authentification",
+      "title": "Double authentification — {{company}}",
+      "intro": "Quand elle est activée, chaque personne de l'entreprise reçoit un code par e-mail après son mot de passe. Le super admin n'est pas concerné.",
+      "switch": "Code de connexion par e-mail",
+      "notReady": "L'envoi d'e-mails n'est pas configuré sur ce serveur : la double authentification ne peut pas être activée tant qu'il ne l'est pas.",
+      "missing": "{{count}} compte(s) sans adresse e-mail réelle : ils ne pourront pas se connecter tant qu'une adresse n'est pas renseignée.",
+      "allSet": "Tous les comptes ont une adresse e-mail réelle.",
+      "onlyMissing": "Seulement les comptes sans adresse",
+      "search": "Rechercher (nom, identifiant, e-mail)",
+      "login": "Identifiant",
+      "name": "Nom",
+      "email": "Adresse e-mail",
+      "technical": "Adresse technique (ne reçoit rien)",
+      "save": "Enregistrer",
+      "saved": "Adresse de {{login}} enregistrée.",
+      "enabled": "Double authentification activée pour {{company}}.",
+      "disabled": "Double authentification désactivée pour {{company}}.",
+      "loadFailed": "Impossible de charger les comptes de l'entreprise. Réessayez.",
+      "emailInvalid": "« {{email}} » n'est pas une adresse e-mail valide.",
+      "none": "Aucun compte ne correspond.",
+      "close": "Fermer",
+      "loginHint": "La personne peut ensuite se connecter avec son identifiant ou avec cette adresse."
+    }
+  }
+}

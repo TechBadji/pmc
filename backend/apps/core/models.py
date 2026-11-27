@@ -39,6 +39,10 @@ class Company(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(20)],
         help_text="Nombre minimal de collaborateurs ayant répondu pour publier les indices de cohésion d'une direction.",
     )
+    # Double authentification : après le mot de passe, un code à usage unique
+    # est envoyé à l'adresse e-mail du compte. Réglée par le super admin ;
+    # ne s'applique jamais au super admin lui-même (sans entreprise).
+    two_factor_enabled = models.BooleanField("Double authentification par e-mail", default=False)
     admin_first_name = models.CharField("Prénom du CEO", max_length=150, blank=True)
     admin_last_name = models.CharField("Nom du CEO", max_length=150, blank=True)
     admin_user = models.OneToOneField(
@@ -309,6 +313,40 @@ class PasswordResetRequest(models.Model):
 
     def __str__(self):
         return f"Réinitialisation pour {self.user} ({'traitée' if self.resolved else 'en attente'})"
+
+
+TECHNICAL_EMAIL_SUFFIX = ".pmc.local"
+
+
+def has_real_email(user) -> bool:
+    """Les comptes créés automatiquement reçoivent une adresse technique
+    (`<login>@<slug>.pmc.local`) qui ne reçoit rien : seule une adresse
+    renseignée à la main peut servir à envoyer un code."""
+    email = (user.email or "").strip().lower()
+    return bool(email) and "@" in email and not email.endswith(TECHNICAL_EMAIL_SUFFIX)
+
+
+class LoginChallenge(models.Model):
+    """Code de connexion envoyé par e-mail (double authentification). Le code
+    n'est jamais stocké en clair ; `token` identifie la tentative côté
+    navigateur entre l'étape mot de passe et l'étape code."""
+
+    MAX_ATTEMPTS = 5
+    LIFETIME_MINUTES = 10
+    RESEND_COOLDOWN_SECONDS = 30
+
+    user = models.ForeignKey("core.User", on_delete=models.CASCADE, related_name="login_challenges")
+    token = models.CharField(max_length=64, unique=True)
+    code_hash = models.CharField(max_length=128)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    used = models.BooleanField(default=False)
+    expires_at = models.DateTimeField()
+    sent_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Code de connexion"
+        verbose_name_plural = "Codes de connexion"
 
 
 class Presence(models.Model):

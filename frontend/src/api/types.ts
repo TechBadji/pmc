@@ -70,6 +70,8 @@ export interface Company {
   user_count: number;
   department_count: number;
   created_at: string;
+  /** Double authentification par e-mail exigée pour les comptes de l'entreprise. */
+  two_factor_enabled?: boolean;
 }
 
 export interface Department {

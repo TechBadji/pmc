@@ -6,6 +6,7 @@ import { PeerDirectionScope } from "@/app/peerDirection";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import ChangePasswordPage from "@/features/auth/ChangePasswordPage";
 import LoginPage from "@/features/auth/LoginPage";
+import TwoFactorDialog from "@/features/auth/TwoFactorDialog";
 import NotFoundPage from "@/pages/NotFoundPage";
 
 /* Chaque écran est chargé à la demande. Les planches de cette application
@@ -68,6 +69,7 @@ function RouteFallback() {
 export default function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
+      <TwoFactorDialog />
       <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/login1" element={<LoginPage1 />} />

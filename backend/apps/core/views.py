@@ -17,7 +17,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .audit import log_event
 from .constants import DEFAULT_PASSWORD
 from .exceptions import AccountBlocked
-from .models import AuditLog, Company, Department, GuessSheet, PasswordResetRequest, PeerAccess, PerformanceProfile, User
+from . import two_factor
+from .models import AuditLog, Company, Department, GuessSheet, LoginChallenge, PasswordResetRequest, PeerAccess, PerformanceProfile, User, has_real_email
 from .permissions import (
     CompanyScopedQuerySetMixin,
     IsCompanyAdminOrManager,
@@ -66,6 +67,75 @@ class PMCTokenObtainPairView(TokenObtainPairView):
                 message = "Échec de connexion (identifiant manquant)."
             log_event(None, "auth.login_failed", message)
             raise
+
+
+class LoginCodeView(APIView):
+    """Deuxième étape de la double authentification : le code reçu par e-mail
+    contre les jetons de session. `action == "resend"` renvoie un nouveau code."""
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_scope = "login"
+
+    INVALID = "Ce code de connexion n'est plus valable. Reconnectez-vous avec votre mot de passe pour en recevoir un nouveau."
+
+    def _challenge(self, token):
+        challenge = (
+            LoginChallenge.objects.select_related("user__company")
+            .filter(token=str(token or "")[:64], used=False)
+            .first()
+        )
+        if challenge is None or challenge.expires_at <= timezone.now():
+            raise ValidationError({"code": "challenge_expired", "detail": self.INVALID})
+        user = challenge.user
+        if not user.is_active or (user.company is not None and not user.company.is_active):
+            challenge.used = True
+            challenge.save(update_fields=["used"])
+            raise ValidationError({"code": "challenge_expired", "detail": self.INVALID})
+        return challenge
+
+    def post(self, request):
+        challenge = self._challenge(request.data.get("challenge"))
+        if request.data.get("action") == "resend":
+            return self._resend(challenge)
+        code = "".join(ch for ch in str(request.data.get("code") or "") if ch.isdigit())
+        if len(code) != 6:
+            raise ValidationError({"code": "code_format", "detail": "Saisissez les 6 chiffres du code reçu par e-mail."})
+        if not two_factor.code_matches(challenge, code):
+            challenge.attempts += 1
+            left = LoginChallenge.MAX_ATTEMPTS - challenge.attempts
+            if left <= 0:
+                challenge.used = True
+            challenge.save(update_fields=["attempts", "used"])
+            log_event(challenge.user, "auth.2fa_failed", "a saisi un code de connexion erroné.")
+            if left <= 0:
+                raise ValidationError({
+                    "code": "challenge_expired",
+                    "detail": "Trop de codes erronés : ce code est annulé. Reconnectez-vous avec votre mot de passe pour en recevoir un nouveau.",
+                })
+            raise ValidationError({
+                "code": "code_invalid",
+                "detail": f"Code incorrect. Il vous reste {left} essai{'s' if left > 1 else ''}.",
+            })
+        challenge.used = True
+        challenge.save(update_fields=["used"])
+        user = challenge.user
+        refresh = PMCTokenObtainPairSerializer.get_token(user)
+        User.objects.filter(pk=user.pk).update(last_login=timezone.now())
+        log_event(user, "auth.login_succeeded", f"s'est connecté(e) ({user.get_role_display()}) avec un code reçu par e-mail.")
+        return Response({"access": str(refresh.access_token), "refresh": str(refresh)})
+
+    def _resend(self, challenge):
+        elapsed = (timezone.now() - challenge.sent_at).total_seconds()
+        wait = int(LoginChallenge.RESEND_COOLDOWN_SECONDS - elapsed)
+        if wait > 0:
+            raise ValidationError({"code": "resend_wait", "detail": f"Patientez {wait} s avant de demander un nouveau code.", "retry_after": wait})
+        try:
+            two_factor.resend(challenge)
+        except Exception:
+            two_factor.logger.exception("Renvoi du code de connexion impossible (user %s)", challenge.user_id)
+            raise ValidationError({"code": "send_failed", "detail": "Le code n'a pas pu être renvoyé. Réessayez dans quelques instants."})
+        return Response(two_factor.pending_response(challenge))
 
 
 class MeView(APIView):
@@ -183,6 +253,78 @@ class CompanyViewSet(viewsets.ModelViewSet):
                 f"a changé la formule de « {company.name} » : {previous_plan} → {company.plan}.",
                 company=company,
             )
+
+    @action(detail=True, methods=["get", "post"], url_path="two-factor")
+    def two_factor_settings(self, request, pk=None):
+        """Double authentification de l'entreprise : état, comptes sans adresse
+        e-mail réelle (ils ne pourront plus se connecter), et activation."""
+        company = self.get_object()
+        if request.method == "POST":
+            enabled = request.data.get("enabled")
+            if not isinstance(enabled, bool):
+                raise ValidationError({"detail": "Indiquez si la double authentification doit être activée ou non."})
+            if enabled and not two_factor.email_sending_ready():
+                raise ValidationError({
+                    "detail": "L'envoi d'e-mails n'est pas configuré sur ce serveur (Brevo) : "
+                    "personne ne recevrait son code. Configurez l'envoi avant d'activer la double authentification.",
+                })
+            if company.two_factor_enabled != enabled:
+                company.two_factor_enabled = enabled
+                company.save(update_fields=["two_factor_enabled"])
+                log_event(
+                    request.user,
+                    "company.2fa_enabled" if enabled else "company.2fa_disabled",
+                    f"a {'activé' if enabled else 'désactivé'} la double authentification par e-mail pour « {company.name} ».",
+                    company=company,
+                )
+        accounts = [
+            {
+                "id": u.id,
+                "full_name": u.get_full_name(),
+                "login": u.generated_login,
+                "email": u.email,
+                "role": u.role,
+                "is_active": u.is_active,
+                "has_real_email": has_real_email(u),
+            }
+            for u in User.objects.filter(company=company).order_by("generated_login", "email")
+        ]
+        return Response({
+            "enabled": company.two_factor_enabled,
+            "sending_ready": two_factor.email_sending_ready(),
+            "accounts": accounts,
+        })
+
+    @action(detail=True, methods=["post"], url_path="account-email")
+    def account_email(self, request, pk=None):
+        """Renseigne la vraie adresse e-mail d'un compte de l'entreprise (elle
+        reçoit les codes de connexion et sert aussi d'identifiant de connexion)."""
+        company = self.get_object()
+        user = User.objects.filter(company=company, pk=request.data.get("user")).first()
+        if user is None:
+            raise ValidationError({"detail": "Ce compte n'appartient pas à cette entreprise ou n'existe plus."})
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        email = str(request.data.get("email") or "").strip().lower()
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            raise ValidationError({"email": f"« {email or '(vide)'} » n'est pas une adresse e-mail valide."})
+        if email.endswith(".pmc.local"):
+            raise ValidationError({"email": "Saisissez une adresse e-mail réelle : les adresses en .pmc.local ne reçoivent rien."})
+        other = User.objects.filter(Q(email__iexact=email) | Q(generated_login__iexact=email)).exclude(pk=user.pk).first()
+        if other is not None:
+            raise ValidationError({"email": f"L'adresse {email} est déjà utilisée par le compte {other.generated_login or other.get_full_name()}."})
+        previous = user.email
+        user.email = email
+        user.save(update_fields=["email"])
+        log_event(
+            request.user,
+            "user.email_changed",
+            f"a remplacé l'adresse e-mail de {user.generated_login or user.get_full_name()} ({previous} → {email}).",
+            company=company,
+        )
+        return Response({"id": user.id, "email": user.email, "has_real_email": has_real_email(user)})
 
     @action(detail=True, methods=["post"], url_path="toggle-active")
     def toggle_active(self, request, pk=None):

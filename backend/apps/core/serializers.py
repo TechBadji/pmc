@@ -4,6 +4,8 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from . import two_factor
+
 from .audit import log_event
 from .constants import DEFAULT_DEPARTMENTS, PLAN_FEATURES, DEFAULT_PASSWORD
 from .exceptions import AccountBlocked
@@ -86,8 +88,9 @@ class CompanySerializer(serializers.ModelSerializer):
             "is_active", "is_compliant", "admin_first_name", "admin_last_name", "admin_user",
             "admin_email", "admin_login", "admin_is_active", "admin_must_change_password",
             "user_count", "department_count", "created_at", "updated_at", "display_scope",
+            "two_factor_enabled",
         ]
-        read_only_fields = ["id", "slug", "admin_user", "created_at", "updated_at"]
+        read_only_fields = ["id", "slug", "admin_user", "created_at", "updated_at", "two_factor_enabled"]
 
     SCOPED_ROLES = ("COMPANY_ADMIN", "MANAGER", "MEMBER")
 
@@ -476,6 +479,8 @@ class PMCTokenObtainPairSerializer(TokenObtainPairSerializer):
             raise serializers.ValidationError(
                 "Votre entreprise a été suspendue par l'administrateur de la plateforme."
             )
+        if two_factor.two_factor_applies(self.user):
+            return self._start_two_factor()
         # Connexion réussie : symétrique à auth.login_failed (views.py) —
         # sans cette trace, le Super Admin ne voyait dans le journal que les
         # échecs de connexion, jamais les connexions elles-mêmes.
@@ -485,6 +490,33 @@ class PMCTokenObtainPairSerializer(TokenObtainPairSerializer):
             f"s'est connecté(e) ({self.user.get_role_display()}).",
         )
         return data
+
+    def _start_two_factor(self):
+        """Mot de passe correct, entreprise en double authentification : pas de
+        jeton tout de suite, un code est envoyé par e-mail."""
+        user = self.user
+        if not two_factor.user_has_deliverable_email(user):
+            log_event(user, "auth.2fa_no_email", "connexion refusée : aucune adresse e-mail réelle pour recevoir le code.")
+            raise serializers.ValidationError(
+                "Votre entreprise exige un code de connexion envoyé par e-mail, mais aucune "
+                "adresse e-mail n'est enregistrée pour votre compte. Demandez à votre "
+                "administrateur de renseigner votre adresse, puis reconnectez-vous."
+            )
+        if not two_factor.email_sending_ready():
+            raise serializers.ValidationError(
+                "L'envoi des codes de connexion par e-mail n'est pas disponible pour le moment. "
+                "Réessayez plus tard ou prévenez votre administrateur."
+            )
+        try:
+            challenge = two_factor.start_challenge(user)
+        except Exception:
+            two_factor.logger.exception("Envoi du code de connexion impossible (user %s)", user.pk)
+            raise serializers.ValidationError(
+                "Le code de connexion n'a pas pu être envoyé à votre adresse e-mail. "
+                "Réessayez dans quelques instants ; si le problème persiste, prévenez votre administrateur."
+            )
+        log_event(user, "auth.2fa_code_sent", f"a reçu un code de connexion à {two_factor.mask_email(user.email)}.")
+        return two_factor.pending_response(challenge)
 
     @staticmethod
     def _reject_blocked_account(attrs):

@@ -4,6 +4,7 @@ import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
+import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import UpgradeOutlinedIcon from "@mui/icons-material/UpgradeOutlined";
 import {
   Alert,
@@ -34,6 +35,7 @@ import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/api/client";
 import type { Company, Paginated, Plan } from "@/api/types";
 import CompanyAccountsDialog from "@/components/CompanyAccountsDialog";
+import CompanyTwoFactorDialog from "@/components/CompanyTwoFactorDialog";
 import InlineApiError from "@/components/feedback/InlineApiError";
 import ValidationSummary from "@/components/feedback/ValidationSummary";
 import { describeApiError, type ApiErrorInfo } from "@/utils/apiError";
@@ -75,6 +77,7 @@ export default function CompaniesPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [accountsCompany, setAccountsCompany] = useState<Company | null>(null);
+  const [twoFactorCompany, setTwoFactorCompany] = useState<Company | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<ApiErrorInfo | null>(null);
@@ -280,6 +283,15 @@ export default function CompaniesPage() {
                           <ManageAccountsOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+                      <Tooltip title={t("twoFactor.admin.tooltip")}>
+                        <IconButton
+                          size="small"
+                          color={c.two_factor_enabled ? "success" : "default"}
+                          onClick={() => setTwoFactorCompany(c)}
+                        >
+                          <ShieldOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip title={t("displayScope.tooltip")}>
                         <IconButton size="small" onClick={() => navigate(`/companies/${c.id}/display`)}>
                           <VisibilityOutlinedIcon fontSize="small" />
@@ -479,6 +491,18 @@ export default function CompaniesPage() {
         onClose={() => setAccountsCompany(null)}
         onDone={(message) => {
           setAccountsCompany(null);
+          setActionMessage(message);
+          load();
+        }}
+      />
+
+      <CompanyTwoFactorDialog
+        company={twoFactorCompany}
+        onClose={() => {
+          setTwoFactorCompany(null);
+          load();
+        }}
+        onDone={(message) => {
           setActionMessage(message);
           load();
         }}
