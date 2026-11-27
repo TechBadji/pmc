@@ -38,12 +38,10 @@ PHOTOS = sorted(p.relative_to(PORTRAITS).with_suffix("").as_posix() for p in POR
 
 
 class Command(BaseCommand):
-    help = "Crée l'entreprise de démonstration DSI—SENELEC-2026 (CEO + 100 collaborateurs, avec photos)."
+    help = "Crée l'entreprise de démonstration DSI—SENELEC-2026 (CEO + 100 collaborateurs, sans photo)."
 
     @transaction.atomic
     def handle(self, *args, **options):
-        if len(PHOTOS) < EMPLOYEE_COUNT + 1:
-            raise CommandError(f"{len(PHOTOS)} portraits dans {PORTRAITS}, il en faut {EMPLOYEE_COUNT + 1}.")
         logins = [CEO_LOGIN] + [f"{EMPLOYEE_PREFIX}{n}" for n in range(1, EMPLOYEE_COUNT + 1)]
         company = Company.objects.filter(name=COMPANY_NAME).first()
         # `generated_login` est unique sur toute la plateforme : on refuse avant d'écrire.
@@ -65,15 +63,12 @@ class Command(BaseCommand):
             self._user(company, f"{EMPLOYEE_PREFIX}{n}", User.Role.MEMBER, "Collaborateur")
             for n in range(1, EMPLOYEE_COUNT + 1)
         ]
-        for index, user in enumerate(users):
-            # Un portrait déjà posé est gardé : chaque login garde son visage.
-            if "_portrait" in (user.avatar.name or ""):
-                continue
+        # Sans photo à la demande du client (2026-11-27) : on retire celles déjà posées.
+        removed = 0
+        for user in users:
             if user.avatar:
-                user.avatar.delete(save=False)
-            photo = PHOTOS[index]
-            user.avatar.save(f"{user.generated_login}_portrait.jpg",
-                             ContentFile((PORTRAITS / f"{photo}.jpg").read_bytes()), save=True)
+                user.avatar.delete(save=True)
+                removed += 1
 
         if not EvaluationCampaign.objects.filter(company=company).exists():
             EvaluationCampaign.objects.create(
@@ -84,7 +79,7 @@ class Command(BaseCommand):
         company.save()
         self.stdout.write(self.style.SUCCESS(
             f"{company.name} : CEO {CEO_LOGIN}, {EMPLOYEE_PREFIX}1…{EMPLOYEE_PREFIX}{EMPLOYEE_COUNT}, "
-            f"mot de passe {PASSWORD}, campagne {CAMPAIGN_NAME}, {len(users)} photos"))
+            f"mot de passe {PASSWORD}, campagne {CAMPAIGN_NAME}, {removed} photo(s) retirée(s), aucun portrait"))
 
     def _user(self, company, login, role, position):
         user = User.objects.filter(generated_login=login).first()
