@@ -44,6 +44,7 @@ import { DecimalField } from "@/components/inputs/DecimalField";
 import { BoardPeriodBar } from "@/components/teamBoard/BoardPieces";
 import TeamRelationshipBoard from "@/components/teamBoard/TeamRelationshipBoard";
 import PsychologicalSafetyBoard from "@/components/teamBoard/PsychologicalSafetyBoard";
+import EnpsBoard from "@/components/enps/EnpsBoard";
 import CohesionOpinionBoard from "@/components/teamBoard/CohesionOpinionBoard";
 import CohesionSurveyPage from "@/pages/CohesionSurveyPage";
 import { useDisplayScope } from "@/utils/displayScope";
@@ -204,10 +205,10 @@ export default function CohesionFormPage() {
   // Trois lectures d'une même équipe, dans l'ordre où elles se travaillent :
   // la cohésion mesurée, la dynamique relationnelle qui l'explique, puis les
   // forces et faiblesses qui s'en déduisent.
-  const VIEW_KEYS = { cohesion: "cohesion.sheet", relationship: "cohesion.relationship", strengths: "cohesion.strengths", opinion: "cohesion.opinion", psi: "cohesion.psi" } as const;
+  const VIEW_KEYS = { cohesion: "cohesion.sheet", relationship: "cohesion.relationship", strengths: "cohesion.strengths", opinion: "cohesion.opinion", psi: "cohesion.psi", enps: "cohesion.enps" } as const;
   // La page s'ouvre sur la première vue que le périmètre affiché de l'entreprise laisse en place.
-  const [view, setView] = useState<"cohesion" | "strengths" | "relationship" | "opinion" | "psi">(
-    () => (["cohesion", "relationship", "strengths", "opinion", "psi"] as const).find((v) => !scope.viewHidden(VIEW_KEYS[v])) ?? "cohesion"
+  const [view, setView] = useState<"cohesion" | "strengths" | "relationship" | "opinion" | "psi" | "enps">(
+    () => (["cohesion", "relationship", "strengths", "opinion", "psi", "enps"] as const).find((v) => !scope.viewHidden(VIEW_KEYS[v])) ?? "cohesion"
   );
   const [aggregate, setAggregate] = useState<CohesionAggregate | null>(null);
   // La fiche se lit désormais par campagne : une campagne borne une période,
@@ -780,7 +781,9 @@ export default function CohesionFormPage() {
                 ? "cohesion.viewOpinion"
                 : view === "psi"
                   ? "cohesion.viewPsi"
-                  : "cohesion.viewRelationship"
+                  : view === "enps"
+                    ? "enps.tab"
+                    : "cohesion.viewRelationship"
         )}
         subtitle={t("cohesion.subtitle")}
       />
@@ -802,6 +805,7 @@ export default function CohesionFormPage() {
           {!scope.viewHidden("cohesion.strengths") && <ToggleButton value="strengths">{t("cohesion.viewStrengths")}</ToggleButton>}
           {!scope.viewHidden("cohesion.opinion") && <ToggleButton value="opinion">{t("cohesion.viewOpinion")}</ToggleButton>}
           {!scope.viewHidden("cohesion.psi") && <ToggleButton value="psi">{t("cohesion.viewPsi")}</ToggleButton>}
+          {!scope.viewHidden("cohesion.enps") && <ToggleButton value="enps">{t("enps.tab")}</ToggleButton>}
         </ToggleButtonGroup>
 
         {/* Rapports PDF de la rubrique : cohésion, dynamique relationnelle, forces & faiblesses, PSI, Team Performance ID. */}
@@ -875,8 +879,9 @@ export default function CohesionFormPage() {
         * les directeurs », la comparaison des directions entre elles — les
         * directeurs répondent chacun dans leur direction. */}
       {view === "psi" && <PsychologicalSafetyBoard teamId={teamId} orgView={orgView || directorsView} byDirection={directorsView} />}
+      {view === "enps" && <EnpsBoard teamId={teamId} orgView={orgView || directorsView} />}
 
-      {view !== "cohesion" && view !== "opinion" && view !== "psi" && !(directorsView && !ownTeam) && (
+      {view !== "cohesion" && view !== "opinion" && view !== "psi" && view !== "enps" && !(directorsView && !ownTeam) && (
         <Stack spacing={2}>
           <BoardPeriodBar
             dates={board.dates}

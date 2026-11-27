@@ -352,3 +352,36 @@ class GeneratedReport(models.Model):
 
     def __str__(self):
         return f"{self.label} — {self.target_name} ({self.get_status_display()})"
+
+
+class EnpsResponse(models.Model):
+    """Réponse d'un collaborateur à l'eNPS (employee Net Promoter Score) pour une
+    campagne : une note de 0 à 10 (« recommanderiez-vous votre organisation
+    comme un endroit où il fait bon travailler ? ») et la raison de la note avec
+    l'amélioration qui l'inciterait à recommander davantage. Anonyme :
+    l'encadrement ne lit que les répartitions et les commentaires sans nom,
+    et seulement à partir du seuil de répondants de l'entreprise."""
+
+    company = models.ForeignKey("core.Company", on_delete=models.CASCADE, related_name="enps_responses")
+    campaign = models.ForeignKey("evaluations.EvaluationCampaign", on_delete=models.CASCADE, related_name="enps_responses")
+    respondent = models.ForeignKey("core.User", on_delete=models.CASCADE, related_name="enps_responses")
+    # Direction du répondant au moment de la réponse (nulle s'il n'en a pas).
+    team = models.ForeignKey("core.Department", null=True, blank=True, on_delete=models.SET_NULL, related_name="enps_responses")
+    score = models.PositiveSmallIntegerField("Note (0 à 10)")
+    reason = models.TextField("Raison et amélioration souhaitée")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Réponse eNPS"
+        verbose_name_plural = "Réponses eNPS"
+        constraints = [
+            models.UniqueConstraint(fields=["respondent", "campaign"], name="unique_enps_per_respondent_campaign")
+        ]
+
+    @staticmethod
+    def category(score: int) -> str:
+        return "detractor" if score <= 6 else "passive" if score <= 8 else "promoter"
+
+    def __str__(self):
+        return f"eNPS — {self.respondent} ({self.campaign})"

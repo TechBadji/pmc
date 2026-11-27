@@ -6,6 +6,7 @@ from apps.core.serializer_fields import DecimalCommaMixin
 from apps.core.validators import require_manages_team, require_same_company
 
 from .models import (
+    EnpsResponse,
     CohesionCriterionScore,
     CohesionResponse,
     PsychologicalSafetyResponse,
@@ -358,3 +359,45 @@ class PsychologicalSafetyReviewSerializer(serializers.ModelSerializer):
         if len(value) > 2000:
             raise serializers.ValidationError("Le commentaire est trop long : 2 000 caractères au plus.")
         return value.strip()
+
+
+class EnpsResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EnpsResponse
+        fields = ["id", "campaign", "score", "reason", "updated_at"]
+        read_only_fields = ["id", "updated_at"]
+
+    def validate_score(self, value):
+        if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 10:
+            raise serializers.ValidationError("Choisissez une note entière de 0 à 10.")
+        return value
+
+    def validate_reason(self, value):
+        text = " ".join(str(value or "").split())
+        if len(text) < 3:
+            raise serializers.ValidationError(
+                "Indiquez la principale raison de votre note et l'amélioration qui vous inciterait à recommander davantage l'organisation."
+            )
+        if len(text) > 2000:
+            raise serializers.ValidationError(f"Votre réponse fait {len(text)} caractères : 2 000 au maximum.")
+        return text
+
+    def validate_campaign(self, campaign):
+        user = self.context["request"].user
+        if campaign.company_id != user.company_id:
+            raise serializers.ValidationError("Campagne introuvable.")
+        already = self.instance and self.instance.campaign_id == campaign.id
+        if campaign.is_closed and not already:
+            raise serializers.ValidationError("Cette campagne d'évaluation est clôturée : la réponse n'est plus possible.")
+        if self.instance is not None and self.instance.campaign_id != campaign.id:
+            raise serializers.ValidationError("Une réponse ne change pas de campagne.")
+        return campaign
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        campaign = attrs.get("campaign") or (self.instance.campaign if self.instance else None)
+        if self.instance is None and EnpsResponse.objects.filter(respondent=user, campaign=campaign).exists():
+            raise serializers.ValidationError("Vous avez déjà répondu à l'eNPS pour cette campagne : modifiez votre réponse.")
+        if self.instance is not None and campaign.is_closed:
+            raise serializers.ValidationError("Cette campagne d'évaluation est clôturée : la réponse ne peut plus être modifiée.")
+        return attrs

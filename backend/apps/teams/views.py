@@ -15,9 +15,10 @@ from apps.core.permissions import CompanyScopedQuerySetMixin, IsCompanyAdminOrMa
 from apps.core.scoping import managed_department_ids, readable_department_ids
 
 from .aggregation import aggregate_organisation, aggregate_responses, company_score
-from .models import CohesionResponse, PsychologicalSafetyResponse, TeamBoard, TeamCohesionAnalysis, TeamRelationship
+from .models import CohesionResponse, EnpsResponse, PsychologicalSafetyResponse, TeamBoard, TeamCohesionAnalysis, TeamRelationship
 from .serializers import (
     CohesionResponseSerializer,
+    EnpsResponseSerializer,
     PSI_DIMENSIONS,
     PsychologicalSafetyResponseSerializer,
     PsychologicalSafetyReviewSerializer,
@@ -479,6 +480,84 @@ class PsychologicalSafetyResponseViewSet(viewsets.ModelViewSet):
                 )),
                 headcount,
             )
+        return Response(payload)
+
+
+def enps_summary(responses, headcount, min_respondents):
+    """Répartition eNPS d'un groupe de réponses. Rien n'est publié sous le seuil
+    de répondants ; les commentaires sont livrés sans nom, rangés par note puis
+    par texte — leur ordre ne trahit ni la date ni l'auteur."""
+    n = len(responses)
+    out = {"respondents": n, "headcount": headcount, "published": n >= min_respondents, "min_respondents": min_respondents}
+    if not out["published"]:
+        return out
+    counts = {"detractor": 0, "passive": 0, "promoter": 0}
+    distribution = [0] * 11
+    for r in responses:
+        counts[EnpsResponse.category(r.score)] += 1
+        distribution[r.score] += 1
+    pct = {k: round(v * 100 / n, 1) for k, v in counts.items()}
+    out.update({
+        "counts": counts,
+        "percentages": pct,
+        "enps": round((counts["promoter"] - counts["detractor"]) * 100 / n),
+        "average": round(sum(r.score for r in responses) / n, 1),
+        "distribution": distribution,
+        "comments": [
+            {"score": r.score, "category": EnpsResponse.category(r.score), "text": r.reason}
+            for r in sorted(responses, key=lambda r: (r.score, r.reason.lower()))
+        ],
+    })
+    return out
+
+
+class EnpsResponseViewSet(viewsets.ModelViewSet):
+    """eNPS : chacun dépose et relit sa propre réponse (une par campagne) ;
+    `results` livre à l'encadrement les répartitions et les commentaires
+    anonymes, à partir du seuil de répondants de l'entreprise."""
+
+    serializer_class = EnpsResponseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ["campaign"]
+    http_method_names = ["get", "post", "put", "patch", "head", "options"]
+
+    def get_queryset(self):
+        return EnpsResponse.objects.filter(respondent=self.request.user)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.company_id is None:
+            raise PermissionDenied("L'eNPS est réservé aux collaborateurs d'une entreprise.")
+        serializer.save(respondent=user, company=user.company, team=user.department)
+
+    @action(detail=False, methods=["get"], url_path="results")
+    def results(self, request):
+        user = request.user
+        if user.role == user.Role.MEMBER:
+            raise PermissionDenied("Les résultats eNPS sont réservés à l'encadrement.")
+        campaign = EvaluationCampaign.objects.filter(
+            pk=request.query_params.get("campaign"), company_id=user.company_id
+        ).first()
+        if campaign is None:
+            raise ValidationError({"campaign": "Choisissez une campagne."})
+        min_respondents = getattr(user.company, "cohesion_min_respondents", None) or 2
+        departments = Department.objects.filter(company_id=user.company_id)
+        if user.role == user.Role.MANAGER:
+            departments = departments.filter(id__in=readable_department_ids(request, ("COHESION",)))
+        team = request.query_params.get("team")
+        if team:
+            departments = departments.filter(id=team)
+        all_responses = list(EnpsResponse.objects.filter(company_id=user.company_id, campaign=campaign))
+        teams = []
+        for dept in departments.order_by("name"):
+            rs = [r for r in all_responses if r.team_id == dept.id]
+            summary = enps_summary(rs, User.objects.filter(department=dept, is_active=True).count(), min_respondents)
+            summary.update({"team": dept.id, "team_name": dept.name})
+            teams.append(summary)
+        payload = {"teams": teams}
+        if user.role in (user.Role.COMPANY_ADMIN, user.Role.SUPER_ADMIN) and not team:
+            headcount = User.objects.filter(company_id=user.company_id, is_active=True).count()
+            payload["company"] = enps_summary(all_responses, headcount, min_respondents)
         return Response(payload)
 
 

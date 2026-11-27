@@ -15,10 +15,12 @@ export const VIEWS_BY_PATH = {
     { key: "cohesion.strengths", labelKey: "cohesion.viewStrengths" },
     { key: "cohesion.opinion", labelKey: "cohesion.viewOpinion" },
     { key: "cohesion.psi", labelKey: "cohesion.viewPsi" },
+    { key: "cohesion.enps", labelKey: "enps.tab" },
   ],
   "/team-cohesion": [
     { key: "cohesion.strengths", labelKey: "nav.myStrengths" },
     { key: "cohesion.psi", labelKey: "nav.psychologicalSafety" },
+    { key: "cohesion.enps", labelKey: "enps.tab" },
   ],
   "/evaluations": [
     { key: "evaluations.id3a", labelKey: "objectivesSheet.viewId3a" },

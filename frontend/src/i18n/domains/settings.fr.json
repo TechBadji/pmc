@@ -125,6 +125,10 @@
           "label": "360° Feedback et Feedforward",
           "help": "Les avis 360° donnés et reçus (notes de compétences, points forts, axes de progrès, conseils pour l'avenir)."
         },
+        "enps": {
+          "label": "eNPS",
+          "help": "Les réponses des collaborateurs à l'eNPS (note de 0 à 10 et commentaire)."
+        },
         "psi": {
           "label": "Psychological Safety (PSI)",
           "help": "Les réponses des collaborateurs et des managers au questionnaire Psychological Safety."

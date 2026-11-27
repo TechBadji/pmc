@@ -35,6 +35,7 @@ RUBRIQUES = [
     Rubrique("cohesion_sheets", True, "cohesion"),
     Rubrique("cohesion_answers", True, "cohesion"),
     Rubrique("psi", True, "cohesion"),
+    Rubrique("enps", True, "cohesion"),
     Rubrique("team_boards", True, "teams"),
     Rubrique("action_plans", False, "teams"),
     Rubrique("relationships", False, "teams"),
@@ -74,6 +75,7 @@ def querysets(company, key, campaigns, department):
     )
     from apps.teams.models import (
         CohesionResponse,
+        EnpsResponse,
         PsychologicalSafetyResponse,
         TeamBoard,
         TeamCohesionAnalysis,
@@ -125,6 +127,13 @@ def querysets(company, key, campaigns, department):
             qs = qs.filter(campaign__in=campaigns)
         if department is not None:
             qs = qs.filter(subject__department=department)
+        return [qs]
+    if key == "enps":
+        qs = EnpsResponse.objects.filter(company=company)
+        if campaigns is not None:
+            qs = qs.filter(campaign__in=campaigns)
+        if department is not None:
+            qs = qs.filter(team=department)
         return [qs]
     if key == "psi":
         qs = PsychologicalSafetyResponse.objects.filter(company=company)
