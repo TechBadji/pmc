@@ -1,6 +1,9 @@
 import { useDisplayScope } from "@/utils/displayScope";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
+import FitScreenOutlinedIcon from "@mui/icons-material/FitScreenOutlined";
 import GridOnOutlinedIcon from "@mui/icons-material/GridOnOutlined";
+import ZoomOutMapOutlinedIcon from "@mui/icons-material/ZoomOutMapOutlined";
+import MuiTooltip from "@mui/material/Tooltip";
 import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
 import TrendingFlatOutlinedIcon from "@mui/icons-material/TrendingFlatOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
@@ -77,12 +80,41 @@ const ID3A_MID = 3;
 // séparer deux vignettes voisines. Tout ce que dessine `MatrixBackground` se
 // déduit des axes, la hauteur se change donc ici seule.
 const MATRIX_HEIGHT = 880;
-const AXIS_TICKS = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
-const AXIS_TICKS_Y = AXIS_TICKS;
 // Quadrillage secondaire (pas de 0.25) — lecture plus fine entre les
 // graduations principales de 0.5, sans les dupliquer.
-const MINOR_AXIS_TICKS = [1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25, 5.75];
-const MINOR_AXIS_TICKS_Y = MINOR_AXIS_TICKS;
+
+type Domain = [number, number];
+const FULL_DOMAIN: Domain = [AXIS_MIN, AXIS_MAX];
+
+/** Cadrage « ajusté aux données » : de la plus petite à la plus grande note
+ *  affichée, avec une marge pour les vignettes, arrondi au 0,5 et sans jamais
+ *  perdre 3 (frontière des zones) — les quatre zones restent visibles. */
+function fitDomain(values: number[]): Domain {
+  if (!values.length) return FULL_DOMAIN;
+  let lo = Math.min(ID3A_MID, ...values) - 0.3;
+  let hi = Math.max(ID3A_MID, ...values) + 0.3;
+  lo = Math.max(AXIS_MIN, Math.floor(lo * 2) / 2);
+  hi = Math.min(AXIS_MAX, Math.ceil(hi * 2) / 2);
+  // Étendue minimale de 2 points : un groupe très resserré ne doit pas
+  // donner l'illusion de grands écarts.
+  while (hi - lo < 2) {
+    if (lo > AXIS_MIN) lo -= 0.5;
+    if (hi - lo < 2 && hi < AXIS_MAX) hi += 0.5;
+  }
+  return [lo, hi];
+}
+
+function ticksFor([lo, hi]: Domain, step: number, offset = 0) {
+  const out: number[] = [];
+  for (let v = lo + offset; v <= hi + 1e-9; v += step) out.push(Math.round(v * 100) / 100);
+  return out;
+}
+
+/** Hauteur du tracé selon l'étendue des Aptitudes : 880 px pour l'échelle
+ *  complète (1 à 6), moins quand le cadrage se resserre. */
+function matrixHeight([lo, hi]: Domain) {
+  return Math.round(Math.max(520, Math.min(MATRIX_HEIGHT, 140 + (hi - lo) * 148)));
+}
 
 const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
 
@@ -455,15 +487,15 @@ function MatrixTrail({ xAxisMap, yAxisMap, trail }: any) {
 /** Fond gris clair optionnel de la zone de tracé, dessiné avant les
  * quadrants/points (voir `matrixBackground`) — mêmes coordonnées d'échelle
  * que MatrixQuadrants pour rester pixel-parfait avec les axes. */
-function MatrixBackground({ xAxisMap, yAxisMap, enabled }: any) {
+function MatrixBackground({ xAxisMap, yAxisMap, enabled, xDomain = FULL_DOMAIN, yDomain = FULL_DOMAIN }: any) {
   if (!enabled) return null;
   const xAxis = xAxisMap?.[0];
   const yAxis = yAxisMap?.[0];
   if (!xAxis || !yAxis) return null;
-  const x0 = xAxis.scale(AXIS_MIN);
-  const x5 = xAxis.scale(AXIS_MAX);
-  const y0 = yAxis.scale(AXIS_MIN);
-  const y5 = yAxis.scale(AXIS_MAX_Y);
+  const x0 = xAxis.scale(xDomain[0]);
+  const x5 = xAxis.scale(xDomain[1]);
+  const y0 = yAxis.scale(yDomain[0]);
+  const y5 = yAxis.scale(yDomain[1]);
   return (
     <rect
       x={Math.min(x0, x5)}
@@ -475,16 +507,16 @@ function MatrixBackground({ xAxisMap, yAxisMap, enabled }: any) {
   );
 }
 
-function MatrixQuadrants({ xAxisMap, yAxisMap }: any) {
+function MatrixQuadrants({ xAxisMap, yAxisMap, xDomain = FULL_DOMAIN, yDomain = FULL_DOMAIN }: any) {
   const { t } = useTranslation();
   const xAxis = xAxisMap?.[0];
   const yAxis = yAxisMap?.[0];
   if (!xAxis || !yAxis) return null;
-  const x0 = xAxis.scale(AXIS_MIN);
-  const x5 = xAxis.scale(AXIS_MAX);
+  const x0 = xAxis.scale(xDomain[0]);
+  const x5 = xAxis.scale(xDomain[1]);
   const xMid = xAxis.scale(ID3A_MID);
-  const y0 = yAxis.scale(AXIS_MIN);
-  const y5 = yAxis.scale(AXIS_MAX_Y);
+  const y0 = yAxis.scale(yDomain[0]);
+  const y5 = yAxis.scale(yDomain[1]);
   const yMid = yAxis.scale(ID3A_MID);
   const labelStyle = {
     fontSize: 10,
@@ -705,6 +737,8 @@ export default function ID3AMatrixPage() {
   const displayScope = useDisplayScope();
   const [viewMode, setViewMode] = useState<"matrix" | "objectives">(() => displayScope.firstShown("matrix", ["matrix", "objectives"] as const));
   const [matrixBackground, setMatrixBackground] = useState(false);
+  /** Axes ajustés aux notes affichées (par défaut) ou échelle complète 1-6. */
+  const [fitToData, setFitToData] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [compareNotice, setCompareNotice] = useState(false);
@@ -878,6 +912,12 @@ export default function ID3AMatrixPage() {
     () => (showsArrows ? currentPoints : declutterPoints(currentPoints)),
     [currentPoints, showsArrows]
   );
+
+  const [xDomain, yDomain] = useMemo<[Domain, Domain]>(() => {
+    if (!fitToData) return [FULL_DOMAIN, FULL_DOMAIN];
+    const shown = [...currentPoints, ...comparePoints, ...personTrail];
+    return [fitDomain(shown.map((p) => p.x)), fitDomain(shown.map((p) => p.y))];
+  }, [fitToData, currentPoints, comparePoints, personTrail]);
 
   const objectivePairs = useMemo<ObjectivePair[]>(() => {
     if (viewMode !== "objectives" || !selectedCampaignId) return [];
@@ -1150,6 +1190,24 @@ export default function ID3AMatrixPage() {
             <GridOnOutlinedIcon fontSize="small" />
           </IconButton>
         )}
+        {viewMode === "matrix" && (
+          <MuiTooltip title={fitToData ? t("id3aFit.showFull") : t("id3aFit.fit")}>
+            <IconButton
+              size="small"
+              aria-label={fitToData ? t("id3aFit.showFull") : t("id3aFit.fit")}
+              aria-pressed={fitToData}
+              onClick={() => setFitToData((v) => !v)}
+              sx={{
+                border: "1px solid",
+                borderColor: fitToData ? "primary.main" : "divider",
+                color: fitToData ? "primary.main" : "text.secondary",
+                borderRadius: 1,
+              }}
+            >
+              {fitToData ? <ZoomOutMapOutlinedIcon fontSize="small" /> : <FitScreenOutlinedIcon fontSize="small" />}
+            </IconButton>
+          </MuiTooltip>
+        )}
       </Stack>
 
       {viewMode === "matrix" ? (
@@ -1164,17 +1222,17 @@ export default function ID3AMatrixPage() {
           {/* Échelle des abscisses réduite de 20 % pour les vues Manager et
               CEO (Admin Entreprise) — seule la vue Super Admin garde la
               pleine largeur. */}
-          <ResponsiveContainer width={isManager || isCompanyAdmin ? "80%" : "100%"} height={MATRIX_HEIGHT}>
+          <ResponsiveContainer width={isManager || isCompanyAdmin ? "80%" : "100%"} height={matrixHeight(yDomain)}>
             <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
-              <Customized component={<MatrixBackground enabled={matrixBackground} />} />
-              <CartesianGrid horizontalValues={MINOR_AXIS_TICKS_Y} verticalValues={MINOR_AXIS_TICKS} stroke="#e1e0d9" strokeDasharray="2 3" strokeOpacity={0.6} />
+              <Customized component={<MatrixBackground enabled={matrixBackground} xDomain={xDomain} yDomain={yDomain} />} />
+              <CartesianGrid horizontalValues={ticksFor(yDomain, 0.5, 0.25)} verticalValues={ticksFor(xDomain, 0.5, 0.25)} stroke="#e1e0d9" strokeDasharray="2 3" strokeOpacity={0.6} />
               <CartesianGrid stroke="#e1e0d9" />
               <XAxis
                 type="number"
                 dataKey="x"
                 name="Attitudes (Soft Skills)"
-                domain={[AXIS_MIN, AXIS_MAX]}
-                ticks={AXIS_TICKS}
+                domain={xDomain}
+                ticks={ticksFor(xDomain, 0.5)}
                 tick={{ fill: "#898781", fontSize: 12 }}
                 label={{ value: "ATTITUDE (SOFT SKILLS)", position: "insideBottom", offset: -10, fill: CHART_NEUTRALS.axisTitle }}
               />
@@ -1182,13 +1240,13 @@ export default function ID3AMatrixPage() {
                 type="number"
                 dataKey="y"
                 name="Aptitudes (Hard Skills)"
-                domain={[AXIS_MIN, AXIS_MAX_Y]}
-                ticks={AXIS_TICKS_Y}
+                domain={yDomain}
+                ticks={ticksFor(yDomain, 0.5)}
                 tick={{ fill: "#898781", fontSize: 12 }}
                 label={{ value: "APTITUDES (HARD SKILLS)", angle: -90, position: "insideLeft", fill: CHART_NEUTRALS.axisTitle }}
               />
               <ZAxis type="number" dataKey="z" range={[120, 120]} />
-              <Customized component={<MatrixQuadrants />} />
+              <Customized component={<MatrixQuadrants xDomain={xDomain} yDomain={yDomain} />} />
               <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: "3 3" }} />
               {personTrail.length > 1 ? (
                 <>
