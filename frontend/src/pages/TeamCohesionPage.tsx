@@ -32,7 +32,7 @@ export default function TeamCohesionPage() {
         <Tabs value={shown} onChange={(_, v) => setTab(v)} sx={{ px: 1 }}>
           {showStrengths && <Tab value={0} label={t("nav.myStrengths").toUpperCase()} />}
           {showPsi && <Tab value={1} label={t("nav.psychologicalSafety").toUpperCase()} />}
-          {showEnps && <Tab value={2} label={t("enps.tab")} />}
+          {showEnps && <Tab value={2} label={t("enps.tab")} sx={{ textTransform: "none" }} />}
         </Tabs>
       </Paper>
       <Box hidden={shown !== 0 || !showStrengths}>

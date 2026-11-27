@@ -805,7 +805,7 @@ export default function CohesionFormPage() {
           {!scope.viewHidden("cohesion.strengths") && <ToggleButton value="strengths">{t("cohesion.viewStrengths")}</ToggleButton>}
           {!scope.viewHidden("cohesion.opinion") && <ToggleButton value="opinion">{t("cohesion.viewOpinion")}</ToggleButton>}
           {!scope.viewHidden("cohesion.psi") && <ToggleButton value="psi">{t("cohesion.viewPsi")}</ToggleButton>}
-          {!scope.viewHidden("cohesion.enps") && <ToggleButton value="enps">{t("enps.tab")}</ToggleButton>}
+          {!scope.viewHidden("cohesion.enps") && <ToggleButton value="enps" sx={{ textTransform: "none" }}>{t("enps.tab")}</ToggleButton>}
         </ToggleButtonGroup>
 
         {/* Rapports PDF de la rubrique : cohésion, dynamique relationnelle, forces & faiblesses, PSI, Team Performance ID. */}
