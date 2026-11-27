@@ -117,7 +117,7 @@ function SummaryCard({ summary }: { summary: EnpsSummary }) {
     <Paper elevation={0} sx={{ p: { xs: 2, md: 3 }, border: "1px solid", borderColor: "divider" }}>
       <Stack direction={{ xs: "column", sm: "row" }} spacing={3} alignItems={{ sm: "center" }}>
         <Box sx={{ textAlign: "center", minWidth: 160 }}>
-          <Typography variant="overline" color="text.secondary" fontWeight={700}>
+          <Typography variant="overline" color="text.secondary" fontWeight={700} sx={{ textTransform: "none" }}>
             {t("enps.score")}
           </Typography>
           <Typography sx={{ fontSize: 56, fontWeight: 800, lineHeight: 1, color: reading.color }}>{signed(summary.enps)}</Typography>
