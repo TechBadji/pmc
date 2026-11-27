@@ -88,7 +88,16 @@ def resend(challenge: LoginChallenge) -> None:
     _send(challenge.user, code)
 
 
+def dev_code() -> str:
+    """Code de développement accepté pour tous (vide hors phase de développement)."""
+    code = getattr(settings, "TWO_FACTOR_DEV_CODE", "")
+    return code if len(code) == 6 and code.isdigit() else ""
+
+
 def code_matches(challenge: LoginChallenge, code: str) -> bool:
+    dev = dev_code()
+    if dev and hmac.compare_digest(dev, code):
+        return True
     return hmac.compare_digest(challenge.code_hash, _hash(code))
 
 
@@ -99,6 +108,8 @@ def pending_response(challenge: LoginChallenge) -> dict:
         "email_hint": mask_email(challenge.user.email),
         "expires_in": LoginChallenge.LIFETIME_MINUTES * 60,
         "resend_after": LoginChallenge.RESEND_COOLDOWN_SECONDS,
+        # Affiché dans la fenêtre de saisie tant que la phase de développement dure.
+        "dev_code": dev_code() or None,
     }
 
 

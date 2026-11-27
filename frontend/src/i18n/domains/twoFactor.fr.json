@@ -36,6 +36,7 @@
       "none": "Aucun compte ne correspond.",
       "close": "Fermer",
       "loginHint": "La personne peut ensuite se connecter avec son identifiant ou avec cette adresse."
-    }
+    },
+    "devCode": "Phase de développement : vous pouvez aussi saisir ce code."
   }
 }

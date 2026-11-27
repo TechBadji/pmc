@@ -158,6 +158,10 @@ EMAIL_BACKEND = (
     if EMAIL_HOST
     else "django.core.mail.backends.console.EmailBackend"
 )
+# Phase de développement seulement : code de connexion accepté pour tous les
+# comptes et affiché dans la fenêtre de saisie. À retirer de l'environnement
+# avant la mise en production réelle (vide = désactivé).
+TWO_FACTOR_DEV_CODE = os.getenv("TWO_FACTOR_DEV_CODE", "").strip()
 TWO_FACTOR_CONSOLE_EMAIL = os.getenv("TWO_FACTOR_CONSOLE_EMAIL", "0") == "1"
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "ID-PMC <no-reply@id-pmc.com>")
 

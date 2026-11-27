@@ -44,6 +44,18 @@ class TwoFactorTests(TestCase):
         r3 = self.code({"challenge": r.data["challenge"], "code": self.sent_code()})
         self.assertEqual(r3.status_code, 400)
 
+    @override_settings(TWO_FACTOR_DEV_CODE="121212")
+    def test_dev_code_is_accepted_and_shown(self):
+        r = self.login("AWA1")
+        self.assertEqual(r.data["dev_code"], "121212")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("access", self.code({"challenge": r.data["challenge"], "code": "121212"}).data)
+
+    def test_no_dev_code_by_default(self):
+        r = self.login("AWA1")
+        self.assertIsNone(r.data["dev_code"])
+        self.assertEqual(self.code({"challenge": r.data["challenge"], "code": "121212"}).status_code, 400) if self.sent_code() != "121212" else None
+
     def test_login_by_real_email_also_works(self):
         self.assertTrue(self.login("awa@example.com").data["two_factor_required"])
 

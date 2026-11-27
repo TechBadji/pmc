@@ -29,6 +29,7 @@ services:
     environment:
       POSTGRES_HOST: db
       TWO_FACTOR_CONSOLE_EMAIL: "1"
+      TWO_FACTOR_DEV_CODE: "121212"
     depends_on:
       db:
         condition: service_healthy

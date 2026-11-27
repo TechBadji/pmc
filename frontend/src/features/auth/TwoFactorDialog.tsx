@@ -111,6 +111,14 @@ export default function TwoFactorDialog() {
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 0.5 }}>
             <Typography variant="body2">{t("twoFactor.intro", { email: pending.emailHint })}</Typography>
+            {pending.devCode && (
+              <Alert severity="info" icon={false} sx={{ "& .MuiAlert-message": { width: "100%" } }}>
+                <Typography variant="body2">{t("twoFactor.devCode")}</Typography>
+                <Typography sx={{ fontSize: 22, fontWeight: 800, letterSpacing: "0.3em", textAlign: "center", mt: 0.5 }}>
+                  {pending.devCode}
+                </Typography>
+              </Alert>
+            )}
             <TextField
               autoFocus
               label={t("twoFactor.codeLabel")}

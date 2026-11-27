@@ -36,6 +36,7 @@
       "none": "No matching account.",
       "close": "Close",
       "loginHint": "The person can then sign in with their login or with this address."
-    }
+    },
+    "devCode": "Development phase: you can also enter this code."
   }
 }

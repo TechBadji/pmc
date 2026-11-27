@@ -19,6 +19,8 @@ export interface TwoFactorPending {
   emailHint: string;
   expiresIn: number;
   resendAfter: number;
+  /** Code accepté pour tous pendant la phase de développement (sinon null). */
+  devCode: string | null;
   email: string;
   rememberMe: boolean;
 }
@@ -109,6 +111,7 @@ export const login = createAsyncThunk<
           emailHint: data.email_hint,
           expiresIn: data.expires_in,
           resendAfter: data.resend_after,
+          devCode: data.dev_code ?? null,
           email,
           rememberMe,
         },
