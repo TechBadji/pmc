@@ -63,6 +63,12 @@ class TwoFactorTests(TestCase):
         self.assertIn("aucune adresse e-mail", str(r.data))
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_old_demo_domain_counts_as_technical(self):
+        User.objects.create_user(email="ana@elias-demo.pmc", password="secret123", role=User.Role.MEMBER, company=self.company)
+        r = self.login("ana@elias-demo.pmc")
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_wrong_password_sends_nothing(self):
         self.assertIn(self.login("AWA1", "nope").status_code, (400, 401))
         self.assertEqual(len(mail.outbox), 0)

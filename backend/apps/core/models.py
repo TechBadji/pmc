@@ -316,6 +316,9 @@ class PasswordResetRequest(models.Model):
 
 
 TECHNICAL_EMAIL_SUFFIX = ".pmc.local"
+# Extensions qui ne reçoivent jamais d'e-mail : `.local` (comptes générés) et
+# `.pmc` (anciens comptes de démo, ex. `@elias-demo.pmc`).
+TECHNICAL_EMAIL_TLDS = ("local", "pmc")
 
 
 def has_real_email(user) -> bool:
@@ -323,7 +326,9 @@ def has_real_email(user) -> bool:
     (`<login>@<slug>.pmc.local`) qui ne reçoit rien : seule une adresse
     renseignée à la main peut servir à envoyer un code."""
     email = (user.email or "").strip().lower()
-    return bool(email) and "@" in email and not email.endswith(TECHNICAL_EMAIL_SUFFIX)
+    if not email or "@" not in email:
+        return False
+    return email.rsplit(".", 1)[-1] not in TECHNICAL_EMAIL_TLDS
 
 
 class LoginChallenge(models.Model):

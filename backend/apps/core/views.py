@@ -310,8 +310,8 @@ class CompanyViewSet(viewsets.ModelViewSet):
             validate_email(email)
         except DjangoValidationError:
             raise ValidationError({"email": f"« {email or '(vide)'} » n'est pas une adresse e-mail valide."})
-        if email.endswith(".pmc.local"):
-            raise ValidationError({"email": "Saisissez une adresse e-mail réelle : les adresses en .pmc.local ne reçoivent rien."})
+        if not has_real_email(User(email=email)):
+            raise ValidationError({"email": "Saisissez une adresse e-mail réelle : les adresses en .pmc.local ou .pmc ne reçoivent rien."})
         other = User.objects.filter(Q(email__iexact=email) | Q(generated_login__iexact=email)).exclude(pk=user.pk).first()
         if other is not None:
             raise ValidationError({"email": f"L'adresse {email} est déjà utilisée par le compte {other.generated_login or other.get_full_name()}."})

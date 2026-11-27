@@ -112,7 +112,7 @@ export default function CompanyTwoFactorDialog({ company, onClose, onDone }: Pro
   async function saveEmail(account: Account) {
     if (!company) return;
     const email = (drafts[account.id] ?? "").trim();
-    if (!EMAIL_PATTERN.test(email) || email.toLowerCase().endsWith(".pmc.local")) {
+    if (!EMAIL_PATTERN.test(email) || /\.(local|pmc)$/i.test(email)) {
       setFieldErrors((e) => ({ ...e, [account.id]: t("twoFactor.admin.emailInvalid", { email }) }));
       return;
     }
