@@ -22,9 +22,10 @@ def two_factor_applies(user) -> bool:
 
 
 def email_sending_ready() -> bool:
-    """En local (DEBUG) les e-mails s'affichent dans les logs ; en prod il faut
-    un serveur SMTP configuré, sinon personne ne recevrait son code."""
-    return bool(settings.EMAIL_HOST) or settings.DEBUG
+    """Il faut un serveur SMTP configuré, sinon personne ne recevrait son code.
+    En local seulement, TWO_FACTOR_CONSOLE_EMAIL=1 accepte l'affichage des
+    e-mails dans les logs (jamais déduit de DEBUG, qui vaut 1 par défaut)."""
+    return bool(settings.EMAIL_HOST) or settings.TWO_FACTOR_CONSOLE_EMAIL
 
 
 def mask_email(email: str) -> str:

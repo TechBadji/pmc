@@ -158,6 +158,7 @@ EMAIL_BACKEND = (
     if EMAIL_HOST
     else "django.core.mail.backends.console.EmailBackend"
 )
+TWO_FACTOR_CONSOLE_EMAIL = os.getenv("TWO_FACTOR_CONSOLE_EMAIL", "0") == "1"
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "ID-PMC <no-reply@id-pmc.com>")
 
 SIMPLE_JWT = {

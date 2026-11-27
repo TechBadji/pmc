@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 from apps.core.models import Company, LoginChallenge, User
 
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", DEBUG=True)
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", TWO_FACTOR_CONSOLE_EMAIL=True)
 class TwoFactorTests(TestCase):
     def setUp(self):
         cache.clear()
@@ -71,6 +71,12 @@ class TwoFactorTests(TestCase):
         self.company.two_factor_enabled = False
         self.company.save()
         self.assertIn("access", self.login("BOB1").data)
+
+    @override_settings(EMAIL_HOST="", TWO_FACTOR_CONSOLE_EMAIL=False)
+    def test_cannot_enable_without_smtp(self):
+        self.client.force_authenticate(self.root)
+        r = self.client.post(f"/api/companies/{self.company.id}/two-factor/", {"enabled": True}, format="json", HTTP_HOST="localhost")
+        self.assertEqual(r.status_code, 400)
 
     def test_super_admin_toggles_and_sets_email(self):
         self.client.force_authenticate(self.root)
