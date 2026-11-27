@@ -66,6 +66,8 @@ import { CHART_NEUTRALS, performanceColors } from "@/theme";
  *  restent découpés à 2,5 sur chaque axe. */
 const AXIS_MAX = 6;
 const AXIS_MAX_Y = 6;
+/** Début des deux axes : l'échelle des compétences commence à 1. */
+const AXIS_MIN = 1;
 /** Niveau moyen d'une compétence (3 sur 5, Hard comme Soft Skills) : il sépare les quadrants. */
 const ID3A_MID = 3;
 // Hauteur du tracé. Relevée une première fois de 480 à 640 avec la taille
@@ -75,11 +77,11 @@ const ID3A_MID = 3;
 // séparer deux vignettes voisines. Tout ce que dessine `MatrixBackground` se
 // déduit des axes, la hauteur se change donc ici seule.
 const MATRIX_HEIGHT = 880;
-const AXIS_TICKS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
+const AXIS_TICKS = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
 const AXIS_TICKS_Y = AXIS_TICKS;
 // Quadrillage secondaire (pas de 0.25) — lecture plus fine entre les
 // graduations principales de 0.5, sans les dupliquer.
-const MINOR_AXIS_TICKS = [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25, 5.75];
+const MINOR_AXIS_TICKS = [1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25, 5.75];
 const MINOR_AXIS_TICKS_Y = MINOR_AXIS_TICKS;
 
 const ALL_RATINGS: PerformanceRating[] = ["VERY_LOW", "LOW", "AVERAGE", "GOOD", "OUTSTANDING"];
@@ -105,8 +107,10 @@ interface Point {
 function toPoint(e: Evaluation): Point {
   return {
     userId: e.user,
-    x: Number(e.ssi),
-    y: Number(e.hsi),
+    // Position d'affichage bornée au repère (qui commence à 1) ; la note
+    // réelle reste dans hsi/ssi, montrée telle quelle dans la bulle.
+    x: Math.min(AXIS_MAX, Math.max(AXIS_MIN, Number(e.ssi))),
+    y: Math.min(AXIS_MAX_Y, Math.max(AXIS_MIN, Number(e.hsi))),
     z: 200,
     name: e.user_name,
     position: e.user_position,
@@ -155,8 +159,8 @@ function declutterPoints(points: Point[]): Point[] {
     if (!moved) break;
   }
   adjusted.forEach((p) => {
-    p.x = Math.min(AXIS_MAX, Math.max(0, p.x));
-    p.y = Math.min(AXIS_MAX_Y, Math.max(0, p.y));
+    p.x = Math.min(AXIS_MAX, Math.max(AXIS_MIN, p.x));
+    p.y = Math.min(AXIS_MAX_Y, Math.max(AXIS_MIN, p.y));
   });
   return adjusted;
 }
@@ -456,9 +460,9 @@ function MatrixBackground({ xAxisMap, yAxisMap, enabled }: any) {
   const xAxis = xAxisMap?.[0];
   const yAxis = yAxisMap?.[0];
   if (!xAxis || !yAxis) return null;
-  const x0 = xAxis.scale(0);
+  const x0 = xAxis.scale(AXIS_MIN);
   const x5 = xAxis.scale(AXIS_MAX);
-  const y0 = yAxis.scale(0);
+  const y0 = yAxis.scale(AXIS_MIN);
   const y5 = yAxis.scale(AXIS_MAX_Y);
   return (
     <rect
@@ -476,10 +480,10 @@ function MatrixQuadrants({ xAxisMap, yAxisMap }: any) {
   const xAxis = xAxisMap?.[0];
   const yAxis = yAxisMap?.[0];
   if (!xAxis || !yAxis) return null;
-  const x0 = xAxis.scale(0);
+  const x0 = xAxis.scale(AXIS_MIN);
   const x5 = xAxis.scale(AXIS_MAX);
   const xMid = xAxis.scale(ID3A_MID);
-  const y0 = yAxis.scale(0);
+  const y0 = yAxis.scale(AXIS_MIN);
   const y5 = yAxis.scale(AXIS_MAX_Y);
   const yMid = yAxis.scale(ID3A_MID);
   const labelStyle = {
@@ -1169,7 +1173,7 @@ export default function ID3AMatrixPage() {
                 type="number"
                 dataKey="x"
                 name="Attitudes (Soft Skills)"
-                domain={[0, AXIS_MAX]}
+                domain={[AXIS_MIN, AXIS_MAX]}
                 ticks={AXIS_TICKS}
                 tick={{ fill: "#898781", fontSize: 12 }}
                 label={{ value: "ATTITUDE (SOFT SKILLS)", position: "insideBottom", offset: -10, fill: CHART_NEUTRALS.axisTitle }}
@@ -1178,7 +1182,7 @@ export default function ID3AMatrixPage() {
                 type="number"
                 dataKey="y"
                 name="Aptitudes (Hard Skills)"
-                domain={[0, AXIS_MAX_Y]}
+                domain={[AXIS_MIN, AXIS_MAX_Y]}
                 ticks={AXIS_TICKS_Y}
                 tick={{ fill: "#898781", fontSize: 12 }}
                 label={{ value: "APTITUDES (HARD SKILLS)", angle: -90, position: "insideLeft", fill: CHART_NEUTRALS.axisTitle }}
