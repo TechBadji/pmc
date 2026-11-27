@@ -48,6 +48,24 @@
       "good": "Good",
       "fragile": "Needs improvement",
       "critical": "Critical"
+    },
+    "directions": {
+      "kicker": "Reading by department",
+      "title": "eNPS by department",
+      "subtitle": "Departments ranked from strongest to weakest advocacy. Dashed marker: company eNPS ({{value}}).",
+      "subtitleNoBenchmark": "Departments ranked from strongest to weakest advocacy.",
+      "benchmark": "Company eNPS",
+      "col": {
+        "direction": "Department",
+        "split": "Respondent split",
+        "scale": "eNPS (−100 to +100)",
+        "score": "eNPS"
+      },
+      "participation": "{{n}} / {{headcount}} respondents",
+      "gap": "{{value}} vs company",
+      "atBenchmark": "= company",
+      "notPublishedTitle": "Not published (fewer than {{min}} respondents)",
+      "source": "Source: ID-PMC eNPS survey. eNPS = % promoters (9-10) − % detractors (0-6). Anonymous answers."
     }
   }
 }

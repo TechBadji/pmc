@@ -48,6 +48,24 @@
       "good": "Bon",
       "fragile": "À améliorer",
       "critical": "Critique"
+    },
+    "directions": {
+      "kicker": "Lecture par direction",
+      "title": "eNPS par direction",
+      "subtitle": "Directions classées de la plus forte à la plus faible adhésion. Repère en pointillés : eNPS de l'entreprise ({{value}}).",
+      "subtitleNoBenchmark": "Directions classées de la plus forte à la plus faible adhésion.",
+      "benchmark": "eNPS de l'entreprise",
+      "col": {
+        "direction": "Direction",
+        "split": "Répartition des répondants",
+        "scale": "eNPS (−100 à +100)",
+        "score": "eNPS"
+      },
+      "participation": "{{n}} / {{headcount}} répondants",
+      "gap": "{{value}} vs entreprise",
+      "atBenchmark": "= entreprise",
+      "notPublishedTitle": "Non publiées (moins de {{min}} répondants)",
+      "source": "Source : questionnaire eNPS ID-PMC. eNPS = % de promoteurs (9-10) − % de détracteurs (0-6). Réponses anonymes."
     }
   }
 }

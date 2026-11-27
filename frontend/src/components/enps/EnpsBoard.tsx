@@ -5,11 +5,6 @@ import {
   MenuItem,
   Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   TextField,
   Tooltip,
   Typography,
@@ -20,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import type { EvaluationCampaign, Paginated } from "@/api/types";
 import { ENPS_COLORS, enpsCategory, enpsReading, type EnpsCategory, type EnpsResults, type EnpsSummary } from "@/utils/enps";
+import EnpsDirectionsChart from "./EnpsDirectionsChart";
 import EnpsScaleLegend from "./EnpsScaleLegend";
 
 const CATEGORIES: { key: EnpsCategory; label: string }[] = [
@@ -94,11 +90,11 @@ export default function EnpsBoard({ teamId, orgView }: { teamId: number | ""; or
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.4fr) minmax(0, 1fr)" }, gap: 2.5, alignItems: "start" }}>
         <Stack spacing={2.5}>
           {summary && <SummaryCard summary={summary} />}
-          {wholeCompany && data && data.teams.length > 1 && <DirectionsTable teams={data.teams} />}
-          {summary?.published && <Comments summary={summary} />}
         </Stack>
         <EnpsScaleLegend />
       </Box>
+      {wholeCompany && data && data.teams.length > 1 && <EnpsDirectionsChart teams={data.teams} company={data.company} />}
+      {summary?.published && <Comments summary={summary} />}
     </Stack>
   );
 }
@@ -191,57 +187,6 @@ function SummaryCard({ summary }: { summary: EnpsSummary }) {
           </Typography>
         ))}
       </Box>
-    </Paper>
-  );
-}
-
-function DirectionsTable({ teams }: { teams: EnpsSummary[] }) {
-  const { t } = useTranslation();
-  return (
-    <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflowX: "auto" }}>
-      <Typography variant="subtitle1" fontWeight={800} sx={{ px: 2, pt: 2 }}>
-        {t("enps.byDirection")}
-      </Typography>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>{t("enps.direction")}</TableCell>
-            <TableCell align="center">{t("enps.respondentsCol")}</TableCell>
-            <TableCell align="center">{t("enps.promoters")}</TableCell>
-            <TableCell align="center">{t("enps.passives")}</TableCell>
-            <TableCell align="center">{t("enps.detractors")}</TableCell>
-            <TableCell align="center">{t("enps.score")}</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {teams.map((s) => (
-            <TableRow key={s.team}>
-              <TableCell sx={{ fontWeight: 600 }}>{s.team_name}</TableCell>
-              <TableCell align="center">
-                {s.respondents} / {s.headcount}
-              </TableCell>
-              {s.published && s.percentages ? (
-                <>
-                  {CATEGORIES.map((c) => (
-                    <TableCell key={c.key} align="center" sx={{ color: ENPS_COLORS[c.key], fontWeight: 600 }}>
-                      {Math.round(s.percentages![c.key])} %
-                    </TableCell>
-                  ))}
-                  <TableCell align="center" sx={{ fontWeight: 800, color: enpsReading(s.enps!).color }}>
-                    {signed(s.enps!)}
-                  </TableCell>
-                </>
-              ) : (
-                <TableCell colSpan={4} align="center">
-                  <Typography variant="caption" color="text.secondary">
-                    {s.respondents ? t("enps.notPublished", { n: s.respondents, min: s.min_respondents }) : "—"}
-                  </Typography>
-                </TableCell>
-              )}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
     </Paper>
   );
 }
